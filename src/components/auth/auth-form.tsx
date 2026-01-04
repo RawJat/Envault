@@ -6,7 +6,8 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { motion } from "framer-motion"
 import { Loader2, Lock } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
+import Link from "next/link"
 
 import { useEnvaultStore } from "@/lib/store"
 import { Button } from "@/components/ui/button"
@@ -20,6 +21,7 @@ import {
     CardTitle,
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { PasswordInput } from "@/components/ui/password-input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
@@ -33,8 +35,27 @@ type AuthValues = z.infer<typeof authSchema>
 
 export function AuthForm() {
     const [isLoading, setIsLoading] = React.useState(false)
+    const [activeTab, setActiveTab] = React.useState("login")
     const router = useRouter()
     const login = useEnvaultStore((state) => state.login)
+    const searchParams = useSearchParams()
+
+    React.useEffect(() => {
+        if (searchParams.get("accountDeleted")) {
+            setTimeout(() => {
+                toast.success("Account deleted successfully")
+                // Clean up the URL
+                router.replace("/")
+            }, 100)
+        }
+        if (searchParams.get("emailConfirmed")) {
+            setTimeout(() => {
+                toast.success("Email confirmed! You can now sign in.")
+                // Clean up the URL
+                router.replace("/")
+            }, 100)
+        }
+    }, [searchParams, router])
 
     const {
         register,
@@ -72,6 +93,7 @@ export function AuthForm() {
         } else {
             toast.success("Check your email to confirm your account")
             setIsLoading(false)
+            setActiveTab("login")
         }
     }
 
@@ -89,7 +111,7 @@ export function AuthForm() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <Tabs defaultValue="login" className="w-full">
+                            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                                 <TabsList className="grid w-full grid-cols-2 mb-4">
                                     <TabsTrigger value="login">Login</TabsTrigger>
                                     <TabsTrigger value="signup">Sign Up</TabsTrigger>
@@ -132,10 +154,9 @@ export function AuthForm() {
                                         </div>
                                         <div className="space-y-2">
                                             <Label htmlFor="password">Password</Label>
-                                            <Input
+                                            <PasswordInput
                                                 suppressHydrationWarning
                                                 id="password"
-                                                type="password"
                                                 placeholder="••••••••"
                                                 {...register("password")}
                                             />
@@ -144,6 +165,14 @@ export function AuthForm() {
                                                     {errors.password.message}
                                                 </p>
                                             )}
+                                            <div className="flex justify-end mt-1">
+                                                <Link
+                                                    href="/forgot-password"
+                                                    className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                                                >
+                                                    Forgot password?
+                                                </Link>
+                                            </div>
                                         </div>
                                         <Button className="w-full" type="submit" disabled={isLoading}>
                                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -169,10 +198,9 @@ export function AuthForm() {
                                         </div>
                                         <div className="space-y-2">
                                             <Label htmlFor="signup-password">Password</Label>
-                                            <Input
+                                            <PasswordInput
                                                 suppressHydrationWarning
                                                 id="signup-password"
-                                                type="password"
                                                 placeholder="••••••••"
                                                 {...register("password")}
                                             />

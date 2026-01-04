@@ -27,7 +27,6 @@ import { useRouter } from "next/navigation"
 const variableSchema = z.object({
     key: z.string().min(1, "Key is required").regex(/^[a-zA-Z0-9_]+$/, "Only alphanumeric characters and underscores"),
     value: z.string().min(1, "Value is required"),
-    isSecret: z.boolean(),
 })
 
 type VariableValues = z.infer<typeof variableSchema>
@@ -60,7 +59,6 @@ export function VariableDialog({ projectId, existingVariable, trigger, open: con
         defaultValues: {
             key: existingVariable?.key || "",
             value: existingVariable?.value || "",
-            isSecret: existingVariable?.isSecret ?? true,
         },
     })
 
@@ -69,9 +67,8 @@ export function VariableDialog({ projectId, existingVariable, trigger, open: con
         if (existingVariable) {
             setValue("key", existingVariable.key)
             setValue("value", existingVariable.value)
-            setValue("isSecret", existingVariable.isSecret)
         } else {
-            reset({ key: "", value: "", isSecret: true })
+            reset({ key: "", value: "" })
         }
     }, [existingVariable, setValue, reset])
 
@@ -80,7 +77,7 @@ export function VariableDialog({ projectId, existingVariable, trigger, open: con
             const result = await updateVariableAction(existingVariable.id, projectId, {
                 key: data.key,
                 value: data.value,
-                is_secret: data.isSecret,
+                is_secret: true,
             })
             if (result.error) {
                 toast.error(result.error)
@@ -88,7 +85,7 @@ export function VariableDialog({ projectId, existingVariable, trigger, open: con
             }
             toast.success("Variable updated")
         } else {
-            const result = await addVariableAction(projectId, data.key, data.value, data.isSecret)
+            const result = await addVariableAction(projectId, data.key, data.value, true)
             if (result.error) {
                 toast.error(result.error)
                 return
@@ -132,7 +129,7 @@ export function VariableDialog({ projectId, existingVariable, trigger, open: con
                         <Input
                             id="value"
                             placeholder="postgres://..."
-                            type={watch("isSecret") ? "password" : "text"}
+                            type="password"
                             {...register("value")}
                             className="font-mono"
                         />
@@ -140,15 +137,6 @@ export function VariableDialog({ projectId, existingVariable, trigger, open: con
                             <p className="text-xs text-destructive">{errors.value.message}</p>
                         )}
                     </div>
-                    <div className="flex items-center space-x-2">
-                        <Switch
-                            id="is-secret"
-                            checked={watch("isSecret")}
-                            onCheckedChange={(checked) => setValue("isSecret", checked)}
-                        />
-                        <Label htmlFor="is-secret">Mask value in dashboard</Label>
-                    </div>
-
                     <DialogFooter>
                         <Button type="submit" disabled={isSubmitting}>
                             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

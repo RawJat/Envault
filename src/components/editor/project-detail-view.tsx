@@ -58,7 +58,7 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
                         <VariableDialog
                             projectId={projectId}
                             trigger={
-                                <Button variant="secondary">
+                                <Button variant="default">
                                     <Plus className="w-4 h-4 mr-2" />
                                     Add Variable
                                 </Button>

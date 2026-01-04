@@ -9,12 +9,13 @@ export function AuthSync({ user }: { user: User }) {
 
     useEffect(() => {
         if (user) {
+            const meta = user.user_metadata || {}
             login({
-                firstName: user.user_metadata.full_name?.split(' ')[0] || user.email?.split('@')[0] || '',
-                lastName: user.user_metadata.full_name?.split(' ').slice(1).join(' ') || '',
-                username: user.email?.split('@')[0] || '',
+                firstName: meta.first_name || meta.full_name?.split(' ')[0] || user.email?.split('@')[0] || '',
+                lastName: meta.last_name || meta.full_name?.split(' ').slice(1).join(' ') || '',
+                username: meta.username || user.email?.split('@')[0] || '',
                 email: user.email!,
-                avatar: user.user_metadata.avatar_url,
+                avatar: meta.avatar_url,
                 authProvider: user.app_metadata.provider === 'google' ? 'google' : 'email',
             })
         }

@@ -79,7 +79,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                    <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={handleDeleteClick}>
+                                    <DropdownMenuItem className="text-red-600 dark:text-red-500 focus:text-red-600 dark:focus:text-red-500" onClick={handleDeleteClick}>
                                         <Trash2 className="w-4 h-4 mr-2" />
                                         Delete
                                     </DropdownMenuItem>

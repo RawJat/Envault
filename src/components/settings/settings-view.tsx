@@ -21,10 +21,12 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { createClient } from "@/lib/supabase/client"
+import { deleteAccountAction } from "@/app/actions"
 
 export default function SettingsView() {
     const router = useRouter()
-    const { user, updateUser, deleteAccount, logout } = useEnvaultStore()
+    const { user, updateUser, deleteAccount, logout, projects } = useEnvaultStore()
 
     // State for navigation
     const [activeTab, setActiveTab] = useState("profile")
@@ -35,6 +37,8 @@ export default function SettingsView() {
     const [username, setUsername] = useState("")
     const [email, setEmail] = useState("")
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+    const [deleteConfirmation, setDeleteConfirmation] = useState("")
+    const [isDeleteConfirmed, setIsDeleteConfirmed] = useState(false)
 
     // Initialize state from user store
     useEffect(() => {
@@ -46,7 +50,22 @@ export default function SettingsView() {
         }
     }, [user])
 
-    const handleUpdateProfile = () => {
+    const handleUpdateProfile = async () => {
+        const supabase = createClient()
+        const { error } = await supabase.auth.updateUser({
+            data: {
+                first_name: firstName,
+                last_name: lastName,
+                username,
+                full_name: `${firstName} ${lastName}`.trim()
+            }
+        })
+
+        if (error) {
+            toast.error("Failed to update profile")
+            return
+        }
+
         updateUser({
             firstName,
             lastName,
@@ -56,14 +75,21 @@ export default function SettingsView() {
     }
 
     const handleDeleteAccountClick = () => {
+        setDeleteConfirmation("")
+        setIsDeleteConfirmed(false)
         setDeleteDialogOpen(true)
     }
 
-    const handleDeleteAccountConfirm = () => {
-        deleteAccount()
-        toast.error("Account deleted")
+    const handleDeleteAccountConfirm = async () => {
+        const result = await deleteAccountAction()
+        if (result?.error) {
+            toast.error(result.error)
+            setDeleteDialogOpen(false)
+            return
+        }
+        deleteAccount() // Clear local store
+        toast.success("Account deleted")
         setDeleteDialogOpen(false)
-        router.push("/")
     }
 
     const handleLogout = () => {
@@ -84,7 +110,7 @@ export default function SettingsView() {
                     <div className="flex items-center gap-4">
                         <AnimatedThemeToggler />
                         <Button variant="ghost" size="icon" onClick={handleLogout} title="Log out">
-                            <LogOut className="w-5 h-5 text-muted-foreground" />
+                            <LogOut className="w-5 h-5" />
                         </Button>
                     </div>
                 </div>
@@ -112,7 +138,7 @@ export default function SettingsView() {
                             </Button>
                             <Button
                                 variant={activeTab === "danger" ? "secondary" : "ghost"}
-                                className="justify-start w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+                                className="justify-start w-full text-red-600 dark:text-red-500 hover:text-red-700 dark:hover:text-red-400 hover:bg-destructive/10"
                                 onClick={() => setActiveTab("danger")}
                             >
                                 <Trash2 className="mr-2 h-4 w-4" />
@@ -190,6 +216,7 @@ export default function SettingsView() {
                                                     checked={user?.authProvider === 'google'}
                                                     disabled
                                                     aria-label="Toggle Google connection"
+                                                    className="data-[state=checked]:bg-green-500"
                                                 />
                                             </div>
                                         </div>
@@ -209,7 +236,15 @@ export default function SettingsView() {
                                         </div>
 
                                         <div className="flex justify-end pt-4">
-                                            <Button onClick={handleUpdateProfile} className="px-8">
+                                            <Button
+                                                onClick={handleUpdateProfile}
+                                                className="px-8"
+                                                disabled={
+                                                    firstName === (user?.firstName || "") &&
+                                                    lastName === (user?.lastName || "") &&
+                                                    username === (user?.username || "")
+                                                }
+                                            >
                                                 Save Changes
                                             </Button>
                                         </div>
@@ -244,11 +279,11 @@ export default function SettingsView() {
                         {activeTab === "danger" && (
                             <div className="space-y-6">
                                 <div>
-                                    <h2 className="text-lg font-medium text-destructive">Danger Zone</h2>
+                                    <h2 className="text-lg font-medium text-red-600 dark:text-red-500">Danger Zone</h2>
                                 </div>
                                 <Card className="border-destructive/20">
                                     <CardHeader>
-                                        <CardTitle className="text-destructive">Delete Account</CardTitle>
+                                        <CardTitle className="text-red-600 dark:text-red-500">Delete Account</CardTitle>
                                         <CardDescription>Permanently remove your account and all data.</CardDescription>
                                     </CardHeader>
                                     <CardContent>
@@ -271,14 +306,57 @@ export default function SettingsView() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Delete Account</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Are you sure you want to delete your account? This action cannot be undone and will permanently delete all your projects and environment variables.
+                            Are you sure you want to delete your account? This action cannot be undone and will permanently delete your account and all associated data.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
+
+                    <div className="py-4 space-y-4">
+                        {projects.length > 0 && (
+                            <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md space-y-3">
+                                <p className="text-sm font-medium text-destructive">
+                                    You have {projects.length} active project{projects.length === 1 ? '' : 's'}.
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                    Please consider migrating them before deletion. If you proceed, they will be permanently lost.
+                                </p>
+                                <div className="flex items-center space-x-2 pt-2">
+                                    <input
+                                        type="checkbox"
+                                        id="confirm-delete-projects"
+                                        checked={isDeleteConfirmed}
+                                        onChange={(e) => setIsDeleteConfirmed(e.target.checked)}
+                                        className="h-4 w-4 rounded border-gray-300 text-destructive focus:ring-destructive"
+                                    />
+                                    <label htmlFor="confirm-delete-projects" className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                        I understand that my projects will be permanently deleted.
+                                    </label>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="space-y-2">
+                            <Label htmlFor="delete-confirmation" className="text-sm font-normal">
+                                To confirm, type <span className="font-bold">{user?.username || user?.email}</span> below:
+                            </Label>
+                            <Input
+                                id="delete-confirmation"
+                                value={deleteConfirmation}
+                                onChange={(e) => setDeleteConfirmation(e.target.value)}
+                                placeholder={user?.username || user?.email}
+                                className="bg-background"
+                            />
+                        </div>
+                    </div>
+
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={handleDeleteAccountConfirm}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            disabled={
+                                deleteConfirmation !== (user?.username || user?.email) ||
+                                (projects.length > 0 && !isDeleteConfirmed)
+                            }
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             Delete Account
                         </AlertDialogAction>
