@@ -88,7 +88,7 @@ export async function addVariable(projectId: string, key: string, value: string,
     const { encrypt } = await import('@/lib/encryption')
 
     // Encrypt the value before storing
-    const encryptedValue = encrypt(value)
+    const encryptedValue = await encrypt(value)
 
     const { data, error } = await supabase
         .from('secrets')
@@ -222,9 +222,6 @@ export async function addVariablesBulk(projectId: string, variables: BulkImportV
         else added++
 
         return {
-            id: existingId, // If undefined, Supabase will treat as Insert (if no other unique constraint conflict)
-            // WAIT: If we pass `undefined` ID, Supabase ignores it? Or fails?
-            // Safest to NOT include `id` key if it's undefined.
             ...(existingId ? { id: existingId } : {}),
             user_id: user.id,
             project_id: projectId,

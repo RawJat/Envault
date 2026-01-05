@@ -22,7 +22,7 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { createClient } from "@/lib/supabase/client"
-import { deleteAccountAction, signInWithGoogle, signInWithGithub } from "@/app/actions"
+import { deleteAccountAction, signInWithGoogle, signInWithGithub, signOut } from "@/app/actions"
 
 export default function SettingsView() {
     const router = useRouter()
@@ -92,9 +92,9 @@ export default function SettingsView() {
         setDeleteDialogOpen(false)
     }
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
         logout()
-        router.push("/")
+        await signOut()
     }
 
     return (

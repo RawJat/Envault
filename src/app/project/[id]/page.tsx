@@ -37,6 +37,7 @@ export default async function ProjectPage({ params }: PageProps) {
     const isEncrypted = (value: string): boolean => {
         // Encrypted values are base64 strings with a minimum length
         // Base64 pattern: only contains A-Z, a-z, 0-9, +, /, and = for padding
+        if (value.startsWith('v1:')) return true
         const base64Pattern = /^[A-Za-z0-9+/]+=*$/
         return value.length > 40 && base64Pattern.test(value)
     }
@@ -45,13 +46,13 @@ export default async function ProjectPage({ params }: PageProps) {
         id: project.id,
         name: project.name,
         createdAt: project.created_at,
-        variables: project.secrets?.map((secret: any) => {
+        variables: await Promise.all(project.secrets?.map(async (secret: any) => {
             let decryptedValue = secret.value
 
             // Only try to decrypt if it looks like encrypted data
             if (isEncrypted(secret.value)) {
                 try {
-                    decryptedValue = decrypt(secret.value)
+                    decryptedValue = await decrypt(secret.value)
                 } catch (error) {
                     // If decryption fails, log error and keep original value
                     console.error(`Failed to decrypt value for key: ${secret.key}`, error)
@@ -64,7 +65,7 @@ export default async function ProjectPage({ params }: PageProps) {
                 value: decryptedValue,
                 isSecret: secret.is_secret,
             }
-        }) || [],
+        }) || []),
         secretCount: project.secrets?.length || 0,
     }
 
