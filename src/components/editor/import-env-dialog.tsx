@@ -156,7 +156,7 @@ export function ImportEnvDialog({ projectId, existingVariables, trigger }: Impor
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
             {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-            <DialogContent className="sm:max-w-[480px] max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden border-b">
+            <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden border-b">
                 <div className="px-6 pt-6">
                     <DialogHeader>
                         <DialogTitle>Import Environment Variables</DialogTitle>
@@ -187,7 +187,8 @@ export function ImportEnvDialog({ projectId, existingVariables, trigger }: Impor
                                         ref={fileInputRef}
                                         id="file-upload"
                                         type="file"
-                                        accept=".env,.env.local,.env.example,.env.production,.env.development,text/plain"
+                                        // accept=".env,.env.local,.env.example,.env.production,.env.development,text/plain"
+                                        // Removed accept attribute to allow all files as some OS/browsers don't strictly recognize .env as text/plain
                                         onChange={handleFileSelect}
                                         className="hidden"
                                     />
@@ -267,7 +268,9 @@ export function ImportEnvDialog({ projectId, existingVariables, trigger }: Impor
                             {parsedVariables.length > 0 && (
                                 <div className="space-y-2">
                                     <Label>Preview ({parsedVariables.length} variable{parsedVariables.length > 1 ? 's' : ''})</Label>
-                                    <div className="border rounded-md max-h-[250px] overflow-y-auto custom-scrollbar">
+
+                                    {/* Desktop Table View */}
+                                    <div className="hidden md:block border rounded-md max-h-[250px] overflow-y-auto custom-scrollbar">
                                         <Table>
                                             <TableHeader className="sticky top-0 bg-background z-10">
                                                 <TableRow>
@@ -308,6 +311,37 @@ export function ImportEnvDialog({ projectId, existingVariables, trigger }: Impor
                                                 })}
                                             </TableBody>
                                         </Table>
+                                    </div>
+
+                                    {/* Mobile Card View */}
+                                    <div className="md:hidden max-h-[250px] overflow-y-auto custom-scrollbar space-y-3">
+                                        {parsedVariables.map((variable, idx) => {
+                                            const existing = existingVariables.find(v => v.key === variable.key)
+                                            const status = existing
+                                                ? existing.value === variable.value
+                                                    ? 'Skip'
+                                                    : 'Update'
+                                                : 'New'
+
+                                            return (
+                                                <div key={idx} className="bg-card p-3 rounded-lg border shadow-sm space-y-2">
+                                                    <div className="flex justify-between items-start gap-2">
+                                                        <div className="font-mono text-sm font-medium break-all">{variable.key}</div>
+                                                        <span className={`text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap ${status === 'New'
+                                                            ? 'bg-green-500/10 text-green-600 dark:text-green-400'
+                                                            : status === 'Update'
+                                                                ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                                                                : 'bg-gray-500/10 text-gray-600 dark:text-gray-400'
+                                                            }`}>
+                                                            {status}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-xs text-muted-foreground font-mono bg-muted/30 p-2 rounded break-all">
+                                                        {variable.isSecret ? '••••••••' : variable.value}
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
                                     </div>
                                 </div>
                             )}

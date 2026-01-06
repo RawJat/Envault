@@ -90,6 +90,9 @@ export async function addVariable(projectId: string, key: string, value: string,
     // Encrypt the value before storing
     const encryptedValue = await encrypt(value)
 
+    // Extract key_id from encrypted format: v1:key_id:ciphertext
+    const keyId = encryptedValue.split(':')[1]
+
     const { data, error } = await supabase
         .from('secrets')
         .insert({
@@ -97,6 +100,7 @@ export async function addVariable(projectId: string, key: string, value: string,
             project_id: projectId,
             key,
             value: encryptedValue,
+            key_id: keyId,
             is_secret: isSecret,
         })
         .select()
@@ -120,10 +124,12 @@ export async function updateVariable(id: string, projectId: string, updates: { k
     }
 
     // If updating the value, encrypt it first
-    let finalUpdates = { ...updates }
+    let finalUpdates: any = { ...updates }
     if (updates.value) {
         const { encrypt } = await import('@/lib/encryption')
         finalUpdates.value = await encrypt(updates.value)
+        // Extract key_id
+        finalUpdates.key_id = finalUpdates.value.split(':')[1]
     }
 
     const { error } = await supabase
@@ -221,12 +227,16 @@ export async function addVariablesBulk(projectId: string, variables: BulkImportV
         if (existingId) updated++
         else added++
 
+        // Extract key_id
+        const keyId = encryptedValue.split(':')[1]
+
         return {
             ...(existingId ? { id: existingId } : {}),
             user_id: user.id,
             project_id: projectId,
             key: variable.key,
             value: encryptedValue,
+            key_id: keyId,
             is_secret: variable.isSecret
         }
     }

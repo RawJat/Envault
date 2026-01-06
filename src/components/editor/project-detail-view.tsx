@@ -40,11 +40,11 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
             </header>
 
             <main className="container mx-auto py-8 px-4">
-                <div className="flex items-center justify-between mb-8">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4 sm:gap-0">
                     <div>
                         <h2 className="text-2xl font-semibold tracking-tight">Variables ({project.variables.length})</h2>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
                         <ImportEnvDialog
                             projectId={projectId}
                             existingVariables={project.variables}

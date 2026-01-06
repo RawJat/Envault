@@ -29,6 +29,12 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { Project, useEnvaultStore } from "@/lib/store"
 import { toast } from "sonner"
 import { deleteProject as deleteProjectAction } from "@/app/project-actions"
@@ -90,7 +96,16 @@ export function ProjectCard({ project }: ProjectCardProps) {
                     <CardFooter className="absolute bottom-0 w-full bg-muted/20 border-t p-3">
                         <div className="flex items-center justify-between w-full text-xs text-muted-foreground">
                             <span>{project.secretCount ?? project.variables.length} variables</span>
-                            <span>{formatDistanceToNow(new Date(project.createdAt), { addSuffix: true })}</span>
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <span className="cursor-help">{formatDistanceToNow(new Date(project.createdAt), { addSuffix: true })}</span>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{new Date(project.createdAt).toLocaleString()}</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
                         </div>
                     </CardFooter>
                     <div className="h-12" /> {/* Spacer for footer */}

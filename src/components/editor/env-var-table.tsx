@@ -29,6 +29,12 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { EnvironmentVariable, useEnvaultStore } from "@/lib/store"
 import { VariableDialog } from "./variable-dialog"
 import { deleteVariable as deleteVariableAction } from "@/app/project-actions"
@@ -78,13 +84,14 @@ export function EnvVarTable({ projectId, variables }: EnvVarTableProps) {
 
     return (
         <>
-            <div className="rounded-md border">
+            {/* Desktop View */}
+            <div className="hidden md:block rounded-md border overflow-x-auto">
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="w-[300px]">Key</TableHead>
+                            <TableHead className="min-w-[200px] w-[300px]">Key</TableHead>
                             <TableHead className="min-w-[300px]">Value</TableHead>
-                            <TableHead className="w-[100px] text-right">Actions</TableHead>
+                            <TableHead className="w-[100px] text-right min-w-[100px]">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -116,21 +123,26 @@ export function EnvVarTable({ projectId, variables }: EnvVarTableProps) {
                                                     {variable.isSecret ? (
                                                         isVisible ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />
                                                     ) : (
-                                                        // If not secret, just show copy button immediately?
-                                                        // Design choice: keep consistent spacing.
-                                                        // Actually, let's allow copying transparently.
                                                         null
                                                     )}
                                                 </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-6 w-6"
-                                                    onClick={() => copyToClipboard(variable.value)}
-                                                    title="Copy Value"
-                                                >
-                                                    <Copy className="w-3 h-3" />
-                                                </Button>
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-6 w-6"
+                                                                onClick={() => copyToClipboard(variable.value)}
+                                                            >
+                                                                <Copy className="w-3 h-3" />
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            <p>Copy Value</p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-right">
@@ -166,6 +178,75 @@ export function EnvVarTable({ projectId, variables }: EnvVarTableProps) {
                         )}
                     </TableBody>
                 </Table>
+            </div>
+
+            {/* Mobile View */}
+            <div className="md:hidden space-y-4">
+                {variables.length === 0 ? (
+                    <div className="text-center p-8 border border-dashed rounded-lg text-muted-foreground">
+                        No variables added yet.
+                    </div>
+                ) : (
+                    variables.map((variable) => {
+                        const isVisible = !variable.isSecret || visibleSecrets[variable.id];
+                        return (
+                            <div key={variable.id} className="bg-card text-card-foreground p-4 rounded-xl border shadow-sm space-y-3">
+                                <div className="flex justify-between items-start">
+                                    <div className="font-mono font-medium break-all">{variable.key}</div>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2">
+                                                <MoreHorizontal className="w-4 h-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem onClick={() => copyToClipboard(variable.key)}>
+                                                <Copy className="w-4 h-4 mr-2" />
+                                                Copy Key
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => copyToClipboard(variable.value)}>
+                                                <Copy className="w-4 h-4 mr-2" />
+                                                Copy Value
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => setEditingVariable(variable)}>
+                                                <Pencil className="w-4 h-4 mr-2" />
+                                                Edit
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => handleDeleteClick(variable.id)}>
+                                                <Trash2 className="w-4 h-4 mr-2" />
+                                                Delete
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
+
+                                <div className="flex items-center space-x-2 bg-muted/40 p-2 rounded-md">
+                                    <div className="font-mono text-sm break-all line-clamp-2 flex-1">
+                                        {isVisible ? variable.value : "••••••••••••••••"}
+                                    </div>
+                                    {variable.isSecret && (
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-8 w-8 shrink-0"
+                                            onClick={() => toggleVisibility(variable.id)}
+                                        >
+                                            {isVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                        </Button>
+                                    )}
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 shrink-0"
+                                        onClick={() => copyToClipboard(variable.value)}
+                                    >
+                                        <Copy className="w-4 h-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        )
+                    })
+                )}
             </div>
 
             <VariableDialog

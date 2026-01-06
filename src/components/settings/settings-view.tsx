@@ -21,6 +21,12 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { createClient } from "@/lib/supabase/client"
 import { deleteAccountAction, signInWithGoogle, signInWithGithub, signOut } from "@/app/actions"
 
@@ -109,9 +115,18 @@ export default function SettingsView() {
                     </div>
                     <div className="flex items-center gap-4">
                         <AnimatedThemeToggler />
-                        <Button variant="ghost" size="icon" onClick={handleLogout} title="Log out">
-                            <LogOut className="w-5 h-5" />
-                        </Button>
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" onClick={handleLogout}>
+                                        <LogOut className="w-5 h-5" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Log out</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
                     </div>
                 </div>
             </header>
@@ -119,7 +134,7 @@ export default function SettingsView() {
             <main className="container mx-auto py-8 px-4">
                 <div className="flex flex-col md:flex-row gap-8">
                     <aside className="w-full md:w-64 space-y-2">
-                        <nav className="flex md:flex-col space-x-2 md:space-x-0 md:space-y-1">
+                        <nav className="flex md:flex-col space-x-2 md:space-x-0 md:space-y-1 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                             <Button
                                 variant={activeTab === "profile" ? "secondary" : "ghost"}
                                 className="justify-start w-full"

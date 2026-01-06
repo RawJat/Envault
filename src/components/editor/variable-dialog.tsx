@@ -4,7 +4,7 @@ import * as React from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import { Loader2, Plus, Save, CheckCircle2, Info, AlertCircle } from "lucide-react"
+import { Loader2, Plus, Save, CheckCircle2, Info, AlertCircle, Eye, EyeOff } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -42,6 +42,7 @@ interface VariableDialogProps {
 
 export function VariableDialog({ projectId, existingVariable, existingVariables = [], trigger, open: controlledOpen, onOpenChange }: VariableDialogProps) {
     const [internalOpen, setInternalOpen] = React.useState(false)
+    const [showPassword, setShowPassword] = React.useState(false)
 
     const isControlled = controlledOpen !== undefined
     const open = isControlled ? controlledOpen : internalOpen
@@ -141,7 +142,7 @@ export function VariableDialog({ projectId, existingVariable, existingVariables 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle>{existingVariable ? "Edit Variable" : "Add Variable"}</DialogTitle>
                     <DialogDescription>
@@ -167,13 +168,31 @@ export function VariableDialog({ projectId, existingVariable, existingVariables 
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="value">Value</Label>
-                        <Input
-                            id="value"
-                            placeholder="postgres://..."
-                            type="password"
-                            {...register("value")}
-                            className="font-mono"
-                        />
+                        <div className="relative">
+                            <Input
+                                id="value"
+                                placeholder="postgres://..."
+                                type={showPassword ? "text" : "password"}
+                                {...register("value")}
+                                className="font-mono pr-10"
+                            />
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                onClick={() => setShowPassword(!showPassword)}
+                            >
+                                {showPassword ? (
+                                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                                ) : (
+                                    <Eye className="h-4 w-4 text-muted-foreground" />
+                                )}
+                                <span className="sr-only">
+                                    {showPassword ? "Hide password" : "Show password"}
+                                </span>
+                            </Button>
+                        </div>
                         {errors.value && (
                             <p className="text-xs text-destructive">{errors.value.message}</p>
                         )}

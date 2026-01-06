@@ -64,7 +64,7 @@ export function CreateProjectDialog() {
                     Create Project
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle>Create Project</DialogTitle>
                     <DialogDescription>

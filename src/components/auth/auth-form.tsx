@@ -98,7 +98,7 @@ export function AuthForm() {
     }
 
     return (
-        <div className="w-full max-w-md mx-auto">
+        <div className="w-full max-w-md mx-auto px-4">
             <div className="w-full max-w-md mx-auto">
                 <div>
                     <Card className="border-muted/40 shadow-2xl backdrop-blur-sm bg-background/80">
