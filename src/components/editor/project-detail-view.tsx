@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useParams } from "next/navigation"
-import { ArrowLeft, Plus, Upload } from "lucide-react"
+import { ArrowLeft, Plus, Upload, Download } from "lucide-react"
 import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
@@ -19,6 +19,22 @@ interface ProjectDetailViewProps {
 export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
     const params = useParams()
     const projectId = params.id as string
+
+    const handleDownloadEnv = () => {
+        const envContent = project.variables
+            .map((v) => `${v.key}=${v.value}`)
+            .join("\n")
+
+        const blob = new Blob([envContent], { type: "text/plain" })
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = `${project.name.toLowerCase().replace(/\s+/g, "-")}.env`
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+    }
 
     return (
         <div className="min-h-screen bg-background">
@@ -45,6 +61,10 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
                         <h2 className="text-2xl font-semibold tracking-tight">Variables ({project.variables.length})</h2>
                     </div>
                     <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <Button variant="outline" onClick={handleDownloadEnv}>
+                            <Download className="w-4 h-4 mr-2" />
+                            Download .env
+                        </Button>
                         <ImportEnvDialog
                             projectId={projectId}
                             existingVariables={project.variables}

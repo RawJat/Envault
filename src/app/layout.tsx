@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     creator: "@envault",
   },
   icons: {
-    icon: "/icon.png",
+    icon: "/favicon.svg",
   },
 };
 
