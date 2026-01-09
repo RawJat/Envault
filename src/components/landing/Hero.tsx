@@ -24,7 +24,7 @@ export function Hero() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-                        className="text-5xl sm:text-6xl md:text-7xl font-black tracking-tight leading-[1.1]"
+                        className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight leading-[1.1]"
                     >
                         Secure Your{" "}
                         <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-purple-500 to-pink-500 animate-gradient">

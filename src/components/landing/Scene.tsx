@@ -169,9 +169,18 @@ function SceneObjects() {
         // Animate scale: normal (1) -> larger (1.3) as we scroll
 
         if (isMobile) {
-            // On mobile, keep centered
+            // On mobile, keep centered but smaller and add subtle scroll effect
             groupRef.current.position.x = 0
-            groupRef.current.scale.setScalar(1)
+
+            // Base scale 0.65, grows slightly on scroll
+            const targetScale = THREE.MathUtils.lerp(0.65, 0.75, scrollProgress * 1.5)
+
+            // Rotate slightly on scroll
+            groupRef.current.rotation.y = scrollProgress * Math.PI * 0.5
+
+            const currentScale = groupRef.current.scale.x
+            const newScale = currentScale + (targetScale - currentScale) * 0.05
+            groupRef.current.scale.setScalar(newScale)
         } else {
             // On desktop, animate from right to center
             const targetX = THREE.MathUtils.lerp(4, 0, scrollProgress * 1) // Move to center by 50% scroll

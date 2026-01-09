@@ -11,16 +11,14 @@ export function AuthLayout({ children }: AuthLayoutProps) {
     return (
         <main className="min-h-screen grid grid-cols-1 lg:grid-cols-2 relative overflow-hidden font-sans">
             <div className="absolute inset-0 -z-10 h-full w-full bg-background bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
-            {/* Theme Toggler */}
-            <div className="absolute top-4 right-4 z-50">
+            {/* Header - Logo & Theme Toggler */}
+            <div className="absolute top-0 left-0 right-0 z-50 flex items-center justify-between p-4 md:p-8">
+                <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                    <ShieldCheck className="w-8 h-8 text-primary" />
+                    <h1 className="text-xl font-bold tracking-tight text-primary">Envault</h1>
+                </Link>
                 <AnimatedThemeToggler />
             </div>
-
-            {/* Logo Area - Absolute positioned for consistent visibility */}
-            <Link href="/" className="absolute top-8 left-8 z-50 flex items-center gap-2 hover:opacity-80 transition-opacity">
-                <ShieldCheck className="w-8 h-8 text-primary" />
-                <h1 className="text-xl font-bold tracking-tight text-primary">Envault</h1>
-            </Link>
 
             {/* LEFT COLUMN: Visuals / Brand */}
             <div className="hidden lg:flex flex-col justify-center p-8 lg:p-12 relative overflow-hidden text-muted-foreground pointer-events-none">

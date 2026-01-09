@@ -80,7 +80,7 @@ export default function ForgotPasswordPage() {
                                     Please check your inbox and click the link to reset your password.
                                 </p>
                                 <Button asChild className="w-full" variant="outline">
-                                    <Link href="/">
+                                    <Link href="/login">
                                         Return to Login
                                     </Link>
                                 </Button>
@@ -110,7 +110,7 @@ export default function ForgotPasswordPage() {
                     {!isSubmitted && (
                         <CardFooter className="justify-center">
                             <Link
-                                href="/"
+                                href="/login"
                                 className="flex items-center text-sm text-muted-foreground hover:text-primary transition-colors"
                             >
                                 <ArrowLeft className="w-4 h-4 mr-2" />
