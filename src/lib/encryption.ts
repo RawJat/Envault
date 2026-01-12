@@ -1,5 +1,5 @@
 import crypto from 'crypto'
-import { createClient } from './supabase/server' // We need server client to fetch keys
+import { createAdminClient } from './supabase/admin' // We need admin client to fetch keys from protected table
 import { redis } from './redis'
 
 const ALGORITHM = 'aes-256-gcm'
@@ -50,7 +50,7 @@ async function getDataKey(keyId: string): Promise<Buffer> {
         console.warn('Redis Cache Miss/Error:', e)
     }
 
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     const { data, error } = await supabase
         .from('encryption_keys')
         .select('encrypted_key')
@@ -104,7 +104,7 @@ async function getActiveKey(): Promise<{ id: string; key: Buffer }> {
         console.warn('Redis Cache Miss/Error:', e)
     }
 
-    const supabase = await createClient()
+    const supabase = createAdminClient()
     const { data, error } = await supabase
         .from('encryption_keys')
         .select('id, encrypted_key')

@@ -11,6 +11,11 @@ export async function createProject(name: string) {
         return { error: 'Not authenticated' }
     }
 
+    const { checkReauthRequired } = await import('@/lib/auth-check')
+    if (await checkReauthRequired(supabase)) {
+        return { error: 'REAUTH_REQUIRED' }
+    }
+
     const { data, error } = await supabase
         .from('projects')
         .insert({
@@ -62,6 +67,11 @@ export async function deleteProject(id: string) {
         return { error: 'Not authenticated' }
     }
 
+    const { checkReauthRequired } = await import('@/lib/auth-check')
+    if (await checkReauthRequired(supabase)) {
+        return { error: 'REAUTH_REQUIRED' }
+    }
+
     const { error } = await supabase
         .from('projects')
         .delete()
@@ -82,6 +92,11 @@ export async function addVariable(projectId: string, key: string, value: string,
 
     if (!user) {
         return { error: 'Not authenticated' }
+    }
+
+    const { checkReauthRequired } = await import('@/lib/auth-check')
+    if (await checkReauthRequired(supabase)) {
+        return { error: 'REAUTH_REQUIRED' }
     }
 
     // Import encryption utility
@@ -123,6 +138,11 @@ export async function updateVariable(id: string, projectId: string, updates: { k
         return { error: 'Not authenticated' }
     }
 
+    const { checkReauthRequired } = await import('@/lib/auth-check')
+    if (await checkReauthRequired(supabase)) {
+        return { error: 'REAUTH_REQUIRED' }
+    }
+
     // If updating the value, encrypt it first
     let finalUpdates: any = { ...updates }
     if (updates.value) {
@@ -152,6 +172,11 @@ export async function deleteVariable(id: string, projectId: string) {
 
     if (!user) {
         return { error: 'Not authenticated' }
+    }
+
+    const { checkReauthRequired } = await import('@/lib/auth-check')
+    if (await checkReauthRequired(supabase)) {
+        return { error: 'REAUTH_REQUIRED' }
     }
 
     const { error } = await supabase
@@ -187,6 +212,11 @@ export async function addVariablesBulk(projectId: string, variables: BulkImportV
 
     if (!user) {
         return { added: 0, updated: 0, skipped: 0, error: 'Not authenticated' }
+    }
+
+    const { checkReauthRequired } = await import('@/lib/auth-check')
+    if (await checkReauthRequired(supabase)) {
+        return { added: 0, updated: 0, skipped: 0, error: 'REAUTH_REQUIRED' }
     }
 
     // Import encryption utility

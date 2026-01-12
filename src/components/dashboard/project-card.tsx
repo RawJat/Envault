@@ -7,6 +7,8 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
     Card,
     CardFooter,
@@ -38,6 +40,7 @@ import {
 import { Project, useEnvaultStore } from "@/lib/store"
 import { toast } from "sonner"
 import { deleteProject as deleteProjectAction } from "@/app/project-actions"
+import { useReauthStore } from "@/lib/reauth-store"
 
 interface ProjectCardProps {
     project: Project
@@ -46,17 +49,23 @@ interface ProjectCardProps {
 export function ProjectCard({ project }: ProjectCardProps) {
     const deleteProject = useEnvaultStore((state) => state.deleteProject)
     const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
+    const [deleteConfirmation, setDeleteConfirmation] = React.useState("")
     const router = useRouter()
 
     const handleDeleteClick = (e: React.MouseEvent) => {
         e.preventDefault()
         e.stopPropagation()
+        setDeleteConfirmation("")
         setDeleteDialogOpen(true)
     }
 
     const handleDeleteConfirm = async () => {
         const result = await deleteProjectAction(project.id)
         if (result.error) {
+            if (result.error === 'REAUTH_REQUIRED') {
+                useReauthStore.getState().openReauth(() => handleDeleteConfirm())
+                return
+            }
             toast.error(result.error)
             return
         }
@@ -120,11 +129,26 @@ export function ProjectCard({ project }: ProjectCardProps) {
                             Are you sure you want to delete "{project.name}"? This will permanently delete all environment variables in this project.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="project-delete-confirmation" className="text-sm font-normal">
+                            To confirm, type <span className="font-bold">{project.name}</span> below:
+                        </Label>
+                        <Input
+                            id="project-delete-confirmation"
+                            value={deleteConfirmation}
+                            onChange={(e) => setDeleteConfirmation(e.target.value)}
+                            placeholder={project.name}
+                            className="bg-background"
+                        />
+                    </div>
+
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={handleDeleteConfirm}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            disabled={deleteConfirmation !== project.name}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             Delete
                         </AlertDialogAction>

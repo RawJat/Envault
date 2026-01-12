@@ -3,6 +3,8 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthSync } from "@/components/auth/auth-sync";
+import { ReauthDialog } from "@/components/auth/reauth-dialog";
+import { SessionMonitor } from "@/components/auth/session-monitor";
 import { createClient } from "@/lib/supabase/server";
 import { Analytics } from "@vercel/analytics/react";
 
@@ -67,6 +69,8 @@ export default async function RootLayout({
           {children}
           <Toaster />
           {user && <AuthSync user={user} />}
+          <SessionMonitor />
+          <ReauthDialog />
           <Analytics />
         </ThemeProvider>
       </body>

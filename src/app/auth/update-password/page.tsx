@@ -30,9 +30,19 @@ const updatePasswordSchema = z.object({
     path: ["confirmPassword"],
 })
 
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
+
 type UpdatePasswordValues = z.infer<typeof updatePasswordSchema>
 
-export default function UpdatePasswordPage() {
+export default async function UpdatePasswordPage() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        redirect('/login')
+    }
+
     const [isLoading, setIsLoading] = useState(false)
     const router = useRouter()
 

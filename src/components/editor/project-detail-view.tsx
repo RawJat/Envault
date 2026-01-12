@@ -10,6 +10,7 @@ import { EnvVarTable } from "@/components/editor/env-var-table"
 import { VariableDialog } from "@/components/editor/variable-dialog"
 import { ImportEnvDialog } from "@/components/editor/import-env-dialog"
 import { Project } from "@/lib/store"
+import { useReauthStore } from "@/lib/reauth-store"
 import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler"
 
 interface ProjectDetailViewProps {
@@ -20,12 +21,20 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
     const params = useParams()
     const projectId = params.id as string
 
-    const handleDownloadEnv = () => {
-        const envContent = project.variables
+    const handleDownloadEnv = async () => {
+        // Check re-auth
+        const { checkReauthRequiredAction } = await import("@/app/reauth-actions")
+        const reauthRequired = await checkReauthRequiredAction()
+        if (reauthRequired) {
+            useReauthStore.getState().openReauth(() => handleDownloadEnv())
+            return
+        }
+
+        const content = project.variables
             .map((v) => `${v.key}=${v.value}`)
             .join("\n")
 
-        const blob = new Blob([envContent], { type: "text/plain" })
+        const blob = new Blob([content], { type: "text/plain" })
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement("a")
         a.href = url
@@ -60,7 +69,7 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
                     <div>
                         <h2 className="text-2xl font-semibold tracking-tight">Variables ({project.variables.length})</h2>
                     </div>
-                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                         <Button variant="outline" onClick={handleDownloadEnv}>
                             <Download className="w-4 h-4 mr-2" />
                             Download .env

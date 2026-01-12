@@ -39,6 +39,7 @@ import { EnvironmentVariable, useEnvaultStore } from "@/lib/store"
 import { VariableDialog } from "./variable-dialog"
 import { deleteVariable as deleteVariableAction } from "@/app/project-actions"
 import { useRouter } from "next/navigation"
+import { useReauthStore } from "@/lib/reauth-store"
 
 interface EnvVarTableProps {
     projectId: string
@@ -54,7 +55,17 @@ export function EnvVarTable({ projectId, variables }: EnvVarTableProps) {
     // Local state for visibility toggles map: variableId -> boolean (true = visible)
     const [visibleSecrets, setVisibleSecrets] = React.useState<Record<string, boolean>>({})
 
-    const toggleVisibility = (id: string) => {
+    const toggleVisibility = async (id: string, isCurrentlyVisible: boolean) => {
+        if (!isCurrentlyVisible) {
+            // We are about to show it. Check re-auth
+            const { checkReauthRequiredAction } = await import("@/app/reauth-actions")
+            const reauthRequired = await checkReauthRequiredAction()
+
+            if (reauthRequired) {
+                useReauthStore.getState().openReauth(() => toggleVisibility(id, isCurrentlyVisible))
+                return
+            }
+        }
         setVisibleSecrets(prev => ({ ...prev, [id]: !prev[id] }))
     }
 
@@ -73,6 +84,10 @@ export function EnvVarTable({ projectId, variables }: EnvVarTableProps) {
 
         const result = await deleteVariableAction(variableToDelete, projectId)
         if (result.error) {
+            if (result.error === 'REAUTH_REQUIRED') {
+                useReauthStore.getState().openReauth(() => handleDeleteConfirm())
+                return
+            }
             toast.error(result.error)
             return
         }
@@ -117,7 +132,7 @@ export function EnvVarTable({ projectId, variables }: EnvVarTableProps) {
                                                     size="icon"
                                                     className="h-6 w-6"
                                                     onClick={() =>
-                                                        variable.isSecret ? toggleVisibility(variable.id) : copyToClipboard(variable.value)
+                                                        variable.isSecret ? toggleVisibility(variable.id, !!visibleSecrets[variable.id]) : copyToClipboard(variable.value)
                                                     }
                                                 >
                                                     {variable.isSecret ? (
@@ -229,7 +244,7 @@ export function EnvVarTable({ projectId, variables }: EnvVarTableProps) {
                                             variant="ghost"
                                             size="icon"
                                             className="h-8 w-8 shrink-0"
-                                            onClick={() => toggleVisibility(variable.id)}
+                                            onClick={() => toggleVisibility(variable.id, !!visibleSecrets[variable.id])}
                                         >
                                             {isVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                         </Button>

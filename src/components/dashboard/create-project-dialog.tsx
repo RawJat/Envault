@@ -22,6 +22,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { createProject } from "@/app/project-actions"
+import { useReauthStore } from "@/lib/reauth-store"
 
 const projectSchema = z.object({
     name: z.string().min(1, "Project name is required"),
@@ -46,6 +47,10 @@ export function CreateProjectDialog() {
         const result = await createProject(data.name)
 
         if (result.error) {
+            if (result.error === 'REAUTH_REQUIRED') {
+                useReauthStore.getState().openReauth(() => onSubmit(data))
+                return
+            }
             toast.error(result.error)
             return
         }

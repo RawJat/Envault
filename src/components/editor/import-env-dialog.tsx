@@ -20,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { parseEnvContent, ParsedVariable, ParseError } from "@/lib/env-parser"
 import { addVariablesBulk, BulkImportVariable } from "@/app/project-actions"
 import { useRouter } from "next/navigation"
+import { useReauthStore } from "@/lib/reauth-store"
 import {
     Table,
     TableBody,
@@ -112,6 +113,10 @@ export function ImportEnvDialog({ projectId, existingVariables, trigger }: Impor
             const result = await addVariablesBulk(projectId, variables)
 
             if (result.error) {
+                if (result.error === 'REAUTH_REQUIRED') {
+                    useReauthStore.getState().openReauth(() => handleImport())
+                    return
+                }
                 toast.error(result.error)
             } else {
                 const messages = []

@@ -29,7 +29,17 @@ const forgotPasswordSchema = z.object({
 
 type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>
 
-export default function ForgotPasswordPage() {
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
+
+export default async function ForgotPasswordPage() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (user) {
+        redirect('/dashboard')
+    }
+
     const [isLoading, setIsLoading] = useState(false)
     const [isSubmitted, setIsSubmitted] = useState(false)
 

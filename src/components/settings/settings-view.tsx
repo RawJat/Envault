@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/tooltip"
 import { createClient } from "@/lib/supabase/client"
 import { deleteAccountAction, signInWithGoogle, signInWithGithub, signOut } from "@/app/actions"
+import { useReauthStore } from "@/lib/reauth-store"
 
 export default function SettingsView() {
     const router = useRouter()
@@ -89,6 +90,11 @@ export default function SettingsView() {
     const handleDeleteAccountConfirm = async () => {
         const result = await deleteAccountAction()
         if (result?.error) {
+            if (result.error === 'REAUTH_REQUIRED') {
+                useReauthStore.getState().openReauth(() => handleDeleteAccountConfirm())
+                setDeleteDialogOpen(false)
+                return
+            }
             toast.error(result.error)
             setDeleteDialogOpen(false)
             return

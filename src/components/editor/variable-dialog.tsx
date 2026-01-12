@@ -23,6 +23,7 @@ import { EnvironmentVariable, useEnvaultStore } from "@/lib/store"
 import { toast } from "sonner"
 import { addVariable as addVariableAction, updateVariable as updateVariableAction } from "@/app/project-actions"
 import { useRouter } from "next/navigation"
+import { useReauthStore } from "@/lib/reauth-store"
 
 const variableSchema = z.object({
     key: z.string().min(1, "Key is required").regex(/^[a-zA-Z0-9_]+$/, "Only alphanumeric characters and underscores"),
@@ -105,6 +106,10 @@ export function VariableDialog({ projectId, existingVariable, existingVariables 
                 is_secret: true,
             })
             if (result.error) {
+                if (result.error === 'REAUTH_REQUIRED') {
+                    useReauthStore.getState().openReauth(() => onSubmit(data))
+                    return
+                }
                 toast.error(result.error)
                 return
             }
@@ -120,6 +125,10 @@ export function VariableDialog({ projectId, existingVariable, existingVariables 
                     is_secret: true,
                 })
                 if (result.error) {
+                    if (result.error === 'REAUTH_REQUIRED') {
+                        useReauthStore.getState().openReauth(() => onSubmit(data))
+                        return
+                    }
                     toast.error(result.error)
                     return
                 }
@@ -128,6 +137,10 @@ export function VariableDialog({ projectId, existingVariable, existingVariables 
                 // Create new
                 const result = await addVariableAction(projectId, data.key, data.value, true)
                 if (result.error) {
+                    if (result.error === 'REAUTH_REQUIRED') {
+                        useReauthStore.getState().openReauth(() => onSubmit(data))
+                        return
+                    }
                     toast.error(result.error)
                     return
                 }

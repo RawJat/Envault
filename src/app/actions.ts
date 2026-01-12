@@ -11,7 +11,7 @@ export async function signInWithGoogle() {
     const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-            redirectTo: `${origin}/auth/callback`,
+            redirectTo: `${origin}/auth/callback?next=/dashboard`,
         },
     })
 
@@ -32,7 +32,7 @@ export async function signInWithGithub() {
     const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
-            redirectTo: `${origin}/auth/callback`,
+            redirectTo: `${origin}/auth/callback?next=/dashboard`,
         },
     })
 
@@ -96,6 +96,11 @@ export async function deleteAccountAction() {
 
     if (!user) {
         redirect('/')
+    }
+
+    const { checkReauthRequired } = await import('@/lib/auth-check')
+    if (await checkReauthRequired(supabase)) {
+        return { error: 'REAUTH_REQUIRED' }
     }
 
     const { createAdminClient } = await import('@/lib/supabase/admin')
