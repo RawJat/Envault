@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Analytics } from "@vercel/analytics/react";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://envault-zero.vercel.app"),
+  metadataBase: new URL("https://www.envault.tech"),
   title: {
     default: "Envault - Secure Environment Variables",
     template: "%s | Envault",
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://envault-zero.vercel.app",
+    url: "https://www.envault.tech",
     title: "Envault - Secure Environment Variables",
     description: "Manage your environment variables securely with Envault. End-to-end encryption for your peace of mind.",
     siteName: "Envault",

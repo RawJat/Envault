@@ -33,7 +33,7 @@ export function parseEnvContent(content: string): ParseResult {
     let i = 0
     while (i < lines.length) {
         const lineNumber = i + 1
-        let line = lines[i].trim()
+        const line = lines[i].trim()
 
         // Skip empty lines and comments
         if (!line || line.startsWith('#')) {
@@ -128,19 +128,6 @@ export function parseEnvContent(content: string): ParseResult {
 /**
  * Determines if a variable is likely a secret based on key name and value patterns
  */
-function isLikelySecret(key: string, value: string): boolean {
-    const secretKeywords = [
-        'SECRET', 'PASSWORD', 'TOKEN', 'KEY', 'API', 'AUTH',
-        'PRIVATE', 'CREDENTIAL', 'PASS', 'PWD', 'USER', 'USERNAME', 'VITE', 'NEXT'
-    ]
-
-    const keyUpper = key.toUpperCase()
-
-    // Check if key contains secret keywords
-    const hasSecretKeyword = secretKeywords.some(keyword => keyUpper.includes(keyword))
-
-    // Check if value looks like a secret (long random string, has special chars, etc.)
-    const looksLikeSecret = value.length > 20 || /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value)
-
-    return hasSecretKeyword || looksLikeSecret
+function isLikelySecret(_key: string, _value: string): boolean {
+    return true
 }
