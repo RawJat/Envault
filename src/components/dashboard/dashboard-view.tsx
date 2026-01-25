@@ -15,11 +15,12 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 import { signOut } from "@/app/actions"
 
 export default function DashboardPage() {
     const projects = useEnvaultStore((state) => state.projects)
-    const { user, logout } = useEnvaultStore()
+    const { user, logout, isLoading } = useEnvaultStore()
 
     const handleLogout = async () => {
         logout()
@@ -87,7 +88,26 @@ export default function DashboardPage() {
                     <CreateProjectDialog />
                 </div>
 
-                {projects.length === 0 ? (
+                {isLoading ? (
+                    <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6">
+                        {Array.from({ length: 6 }).map((_, i) => (
+                            <div key={i} className="flex flex-col rounded-xl border bg-card text-card-foreground shadow h-48 relative overflow-hidden">
+                                <div className="p-6">
+                                    <div className="flex items-center space-x-2">
+                                        <Skeleton className="h-9 w-9 rounded-lg" />
+                                        <Skeleton className="h-6 w-32" />
+                                    </div>
+                                </div>
+                                <div className="mt-auto p-3 border-t bg-muted/20">
+                                    <div className="flex items-center justify-between">
+                                        <Skeleton className="h-4 w-20" />
+                                        <Skeleton className="h-4 w-24" />
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : projects.length === 0 ? (
                     <div className="text-center py-20 border-2 border-dashed rounded-xl">
                         <ShieldCheck className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                         <h3 className="text-lg font-medium">No projects yet</h3>

@@ -6,9 +6,11 @@ import { getProjects } from '@/app/project-actions'
 
 export function ProjectsSync() {
     const setProjects = useEnvaultStore((state) => state.setProjects)
+    const setLoading = useEnvaultStore((state) => state.setLoading)
 
     useEffect(() => {
         async function loadProjects() {
+            setLoading(true)
             const result = await getProjects()
             if (result.data) {
                 // Transform Supabase data to match local store format
@@ -20,10 +22,12 @@ export function ProjectsSync() {
                     secretCount: project.secrets?.[0]?.count || 0,
                 }))
                 setProjects(projects)
+            } else {
+                setLoading(false)
             }
         }
         loadProjects()
-    }, [setProjects])
+    }, [setProjects, setLoading])
 
     return null
 }

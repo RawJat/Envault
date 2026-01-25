@@ -29,6 +29,8 @@ interface EnvaultState {
     deleteVariable: (projectId: string, variableId: string) => void
     updateVariable: (projectId: string, variableId: string, updates: Partial<EnvironmentVariable>) => void
     deleteAccount: () => void
+    isLoading: boolean
+    setLoading: (loading: boolean) => void
 }
 
 export type User = {
@@ -43,6 +45,7 @@ export type User = {
 export const useEnvaultStore = create<EnvaultState>()(
     (set) => ({
         projects: [],
+        isLoading: true,
         user: null,
         login: (user) => set({ user }),
         logout: () => set({ user: null }),
@@ -51,7 +54,8 @@ export const useEnvaultStore = create<EnvaultState>()(
                 user: state.user ? { ...state.user, ...updates } : null,
             })),
         deleteAccount: () => set({ user: null, projects: [] }),
-        setProjects: (projects) => set({ projects }),
+        setProjects: (projects) => set({ projects, isLoading: false }),
+        setLoading: (loading) => set({ isLoading: loading }),
 
         addProject: (name) => {
             const newProject: Project = {

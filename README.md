@@ -4,10 +4,22 @@
 
 ## Features
 
+- **Bank-Grade Security**: AES-256-GCM encryption with master/data key hierarchy and automatic key rotation.
+- **Project Workspaces**: Organize secrets into distinct projects for better management.
 - **Secure Authentication**: Powered by Supabase Auth for robust user management.
-- **Modern UI/UX**: Built with Tailwind CSS and Radix UI for a premium, accessible experience.
+- **Modern UI/UX**: Built with Tailwind CSS, Shadcn UI, and Framer Motion for a premium experience.
+- **Interactive 3D Elements**: High-performance 3D visuals powered by React Three Fiber.
 - **Responsive Design**: Fully responsive layout that works seamlessly on desktop and mobile.
 - **Dark Mode Support**: Built-in support for light and dark themes.
+ 
+## Security Architecture
+
+Envault uses a hybrid encryption model to ensure maximum security:
+
+1.  **Master Key**: A 32-byte key stored in environment variables, used solely to encrypt/decrypt Data Keys.
+2.  **Data Keys**: Unique keys for encrypting actual data. These are stored encrypted in the database.
+3.  **Key Rotation**: Data keys can be rotated. The active key is cached in Redis for high performance without compromising security.
+4.  **AES-256-GCM**: Industry-standard authenticated encryption for all secrets.
 
 ## Tech Stack
 
@@ -16,8 +28,13 @@
 - **KV Store**: [Upstash Redis](https://upstash.com/)
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/)
 - **UI Components**: [Shadcn UI](https://ui.shadcn.com/) / [Radix UI](https://www.radix-ui.com/)
+- **3D & Graphics**: [React Three Fiber](https://r3f.docs.pmnd.rs/) / [Three.js](https://threejs.org/)
+- **Animations**: [Framer Motion](https://www.framer.com/motion/)
+- **Icons**: [Lucide React](https://lucide.dev/)
 - **State Management**: [Zustand](https://github.com/pmndrs/zustand)
 - **Forms**: [React Hook Form](https://react-hook-form.com/) + [Zod](https://zod.dev/)
+- **Notifications**: [Sonner](https://sonner.emilkowal.ski/)
+- **Analytics**: [Vercel Analytics](https://vercel.com/analytics)
 
 ## Getting Started
 
@@ -80,7 +97,7 @@ Follow these steps to get the project running locally.
 
     Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## contributing
+## Contributing
 
 We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to submit a pull request and our code of conduct.
 

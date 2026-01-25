@@ -4,9 +4,12 @@ import { Features } from "@/components/landing/Features"
 import { Footer } from "@/components/landing/Footer"
 import { Scene } from "@/components/landing/Scene"
 
+import { Preloader } from "@/components/landing/Preloader"
+
 export default function LandingPage() {
     return (
         <div className="flex min-h-screen flex-col font-sans selection:bg-primary/20 relative">
+            <Preloader />
             <Scene />
             <Navbar />
             <main className="flex-1">
