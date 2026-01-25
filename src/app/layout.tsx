@@ -28,12 +28,21 @@ export const metadata: Metadata = {
     title: "Envault - Secure Environment Variables",
     description: "Manage your environment variables securely with Envault. End-to-end encryption for your peace of mind.",
     siteName: "Envault",
+    images: [
+      {
+        url: "/open-graph.png",
+        width: 1200,
+        height: 630,
+        alt: "Envault - Secure Environment Variables",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Envault - Secure Environment Variables",
     description: "Premium, secure vault for your environment variables.",
     creator: "@envault",
+    images: ["/open-graph.png"],
   },
   icons: {
     icon: "/favicon.svg",
