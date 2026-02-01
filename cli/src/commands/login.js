@@ -5,6 +5,7 @@ import ora from 'ora';
 import open from 'open';
 import { api, handleApiError } from '../lib/api.js';
 import { setToken } from '../lib/config.js';
+import os from 'os';
 
 export async function login() {
     console.log(chalk.blue('  Starting Device Authentication Flow...\n'));
@@ -13,8 +14,16 @@ export async function login() {
     const spinner = ora('Contacting Envault servers...').start();
     let deviceCode, userCode, verificationUri, interval;
 
+    const deviceInfo = {
+        hostname: os.hostname(),
+        platform: os.platform(),
+        release: os.release(),
+        type: os.type(),
+        arch: os.arch()
+    };
+
     try {
-        const { data } = await api.post('/auth/device/code');
+        const { data } = await api.post('/auth/device/code', { device_info: deviceInfo });
         deviceCode = data.device_code;
         userCode = data.user_code; // 8-char
         verificationUri = data.verification_uri;

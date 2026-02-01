@@ -43,17 +43,46 @@ export async function init() {
     }
 
     if (projects.length === 0) {
-        console.log(chalk.yellow('No projects found. Create one in the dashboard first.'));
-        return;
+        console.log(chalk.yellow('No existing projects found.'));
     }
 
-    const { projectId } = await inquirer.prompt([{
+    const { selectedProjectId } = await inquirer.prompt([{
         type: 'list',
-        name: 'projectId',
+        name: 'selectedProjectId',
         message: 'Select the project to link:',
-        choices: projects.map(p => ({ name: p.name, value: p.id }))
+        choices: [
+            new inquirer.Separator(),
+            { name: '+ Create New Project', value: 'CREATE_NEW' },
+            new inquirer.Separator(),
+            ...projects.map(p => ({ name: p.name, value: p.id }))
+        ]
     }]);
 
-    fs.writeFileSync('envault.json', JSON.stringify({ projectId }, null, 2));
-    console.log(chalk.green(`\n✔ Project linked! (ID: ${projectId})`));
+    let projectId = selectedProjectId;
+
+    if (selectedProjectId === 'CREATE_NEW') {
+        const { newProjectName } = await inquirer.prompt([{
+            type: 'input',
+            name: 'newProjectName',
+            message: 'Enter name for the new project:',
+            validate: input => input.trim().length > 0 ? true : 'Project name cannot be empty'
+        }]);
+
+        const createSpinner = ora('Creating project...').start();
+        try {
+            const { data } = await api.post('/projects', { name: newProjectName });
+            projectId = data.project.id;
+            createSpinner.succeed(chalk.green(`Project "${data.project.name}" created!`));
+        } catch (error) {
+            createSpinner.fail('Failed to create project.');
+            console.error(chalk.red(handleApiError(error)));
+            return; // Exit if creation fails
+        }
+    }
+
+    // Only write config if we have a valid projectId
+    if (projectId) {
+        fs.writeFileSync('envault.json', JSON.stringify({ projectId }, null, 2));
+        console.log(chalk.green(`\n✔ Project linked! (ID: ${projectId})`));
+    }
 }

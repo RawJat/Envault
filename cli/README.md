@@ -1,10 +1,6 @@
 # Envault CLI
 
 <p align="center">
-  <img src="https://envault.tech/logo.png" alt="Envault Logo" width="100" />
-</p>
-
-<p align="center">
   <b>Secure Environment Variable Management for Modern Teams</b>
 </p>
 

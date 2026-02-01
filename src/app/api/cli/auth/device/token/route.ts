@@ -40,30 +40,70 @@ export async function POST(request: Request) {
             // Success! Generate a long-lived Access Token (PAT)
 
             // 1. Generate PAT
-            const secretToken = crypto.randomUUID() // The actual secret the CLI keeps
-            const name = 'CLI Device Token' // Fixed name to ensure update instead of new create
+            const secretToken = crypto.randomUUID()
+            const name = `CLI Device Token (${session.device_info?.hostname || 'Unknown'})` // More descriptive name? Or stick to static name + metadata.
+            // Let's keep name static or unique? If static, it overwrites. A user might have multiple devices.
+            // If we use "CLI Device Token", it overwrites the previous one!
+            // WE MUST FIX THIS. Users wanted to see "devices". This implies multiple devices.
+            // So we should name it differently or allow multiple tokens.
+
+            // Current upsert logic: onConflict: 'user_id, name'.
+            // So 'CLI Device Token' overwrites.
+
+            // New Plan Logic: Use hostname in name OR allow multiple.
+            // If I change name, I should check if it breaks anything.
+            // "device_info" is user agent stuff.
+
+            const deviceName = session.device_info?.hostname || 'Unknown Device';
+            const tokenName = `CLI on ${deviceName}`;
 
             // Hash it for storage
             const tokenHash = crypto.createHash('sha256').update(secretToken).digest('hex')
+
+            // Set token to expire in 3 days
+            const expiresAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
 
             const { error: tokenError } = await supabase
                 .from('personal_access_tokens')
                 .upsert({
                     user_id: session.user_id,
-                    name,
+                    name: tokenName,
                     token_hash: tokenHash,
-                    last_used_at: new Date().toISOString() // Update usage time
-                }, {
-                    onConflict: 'user_id, name'
-                })
+                    last_used_at: new Date().toISOString(),
+                    expires_at: expiresAt.toISOString(),
+                    metadata: session.device_info || {}
+                }, { onConflict: 'user_id, name' })
+                .select()
+
+            // Let's use Upsert but with dynamic name.
+            /*
+            .upsert({
+                 ...
+                 name: tokenName
+            }, { onConflict: 'user_id, name' })
+            */
 
             if (tokenError) {
                 console.error('Error creating PAT:', tokenError)
                 return NextResponse.json({ error: 'Failed to generate token' }, { status: 500 })
             }
 
-            // 2. Cleanup session (optional, or mark as completed to prevent reuse)
-            await supabase.from('device_flow_sessions').delete().eq('device_code', device_code)
+            // 1.5 Clean up legacy generic token (migration path)
+            await supabase
+                .from('personal_access_tokens')
+                .delete()
+                .eq('user_id', session.user_id)
+                .eq('name', 'CLI Device Token')
+
+            // 2. Cleanup session
+            const { error: deleteError } = await supabase
+                .from('device_flow_sessions')
+                .delete()
+                .eq('device_code', device_code)
+
+            if (deleteError) {
+                console.error("Failed to delete used session:", deleteError)
+            }
 
             return NextResponse.json({
                 access_token: secretToken,

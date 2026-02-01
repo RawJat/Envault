@@ -4,14 +4,15 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { headers } from 'next/headers'
 
-export async function signInWithGoogle() {
+export async function signInWithGoogle(formData?: FormData) {
     const supabase = await createClient()
     const origin = (await headers()).get('origin')
+    const next = formData?.get('next') as string || '/dashboard'
 
     const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-            redirectTo: `${origin}/auth/callback?next=/dashboard`,
+            redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}`,
         },
     })
 
@@ -25,14 +26,15 @@ export async function signInWithGoogle() {
     }
 }
 
-export async function signInWithGithub() {
+export async function signInWithGithub(formData?: FormData) {
     const supabase = await createClient()
     const origin = (await headers()).get('origin')
+    const next = formData?.get('next') as string || '/dashboard'
 
     const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
-            redirectTo: `${origin}/auth/callback?next=/dashboard`,
+            redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}`,
         },
     })
 
@@ -51,6 +53,8 @@ export async function signInWithPassword(formData: FormData) {
     const password = formData.get('password') as string
     const supabase = await createClient()
 
+    const next = formData.get('next') as string
+
     const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -58,6 +62,10 @@ export async function signInWithPassword(formData: FormData) {
 
     if (error) {
         return { error: error.message }
+    }
+
+    if (next && next.startsWith('/')) {
+        redirect(next)
     }
 
     redirect('/dashboard')
@@ -163,6 +171,48 @@ export async function updatePassword(formData: FormData) {
     const { error } = await supabase.auth.updateUser({
         password,
     })
+
+    if (error) {
+        return { error: error.message }
+    }
+
+    return { success: true }
+}
+
+export async function getPersonalAccessTokens() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { error: "Not authenticated" }
+    }
+
+    const { data, error } = await supabase
+        .from('personal_access_tokens')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+
+    if (error) {
+        return { error: error.message }
+    }
+
+    return { tokens: data }
+}
+
+export async function revokePersonalAccessToken(id: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { error: "Not authenticated" }
+    }
+
+    const { error } = await supabase
+        .from('personal_access_tokens')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id) // Ensure ownership
 
     if (error) {
         return { error: error.message }

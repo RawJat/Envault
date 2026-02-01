@@ -13,10 +13,11 @@ export async function GET(
     request: Request,
     { params }: { params: Promise<{ projectId: string }> } // In Next 15, params is a Promise
 ) {
-    const userId = await validateCliToken(request)
-    if (!userId) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const result = await validateCliToken(request)
+    if (typeof result !== 'string') {
+        return result // Return the error response
     }
+    const userId = result
 
     const { projectId } = await params
 
@@ -63,10 +64,11 @@ export async function POST(
     request: Request,
     { params }: { params: Promise<{ projectId: string }> }
 ) {
-    const userId = await validateCliToken(request)
-    if (!userId) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const result = await validateCliToken(request)
+    if (typeof result !== 'string') {
+        return result // Return the error response
     }
+    const userId = result
 
     const { projectId } = await params
     const body = await request.json()

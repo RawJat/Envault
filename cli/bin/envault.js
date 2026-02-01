@@ -7,6 +7,10 @@ import { login } from '../src/commands/login.js';
 import { init } from '../src/commands/init.js';
 import { deploy } from '../src/commands/deploy.js';
 import { pull } from '../src/commands/pull.js';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const pkg = require('../package.json');
 
 const program = new Command();
 
@@ -26,7 +30,7 @@ const showLogo = () => {
 program
     .name('envault')
     .description('Cliff-side security for your environment variables')
-    .version('1.0.0')
+    .version(pkg.version)
     .hook('preAction', (thisCommand) => {
         // Show logo on all commands? Maybe too noisy.
         // Let's show it only on help or specific ones.
@@ -50,6 +54,7 @@ program.command('deploy')
     .description('Deploy local .env to Envault (Encrypt & Push)')
     .option('-p, --project <id>', 'Project ID')
     .option('--dry-run', 'Show what would change without pushing')
+    .option('-f, --force', 'Skip confirmation prompts')
     .action(async (options) => {
         await deploy(options);
     });

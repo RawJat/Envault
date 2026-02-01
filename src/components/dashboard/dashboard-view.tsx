@@ -47,6 +47,7 @@ export default function DashboardPage() {
                                                 src={user.avatar}
                                                 alt={user.firstName || "User"}
                                                 className="w-full h-full object-cover"
+                                                referrerPolicy="no-referrer"
                                             />
                                         ) : (
                                             <User className="w-5 h-5 text-primary" />

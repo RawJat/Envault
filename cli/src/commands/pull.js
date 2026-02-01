@@ -2,6 +2,8 @@
 import fs from 'fs';
 import chalk from 'chalk';
 import ora from 'ora';
+import boxen from 'boxen';
+
 import inquirer from 'inquirer';
 import { api, handleApiError } from '../lib/api.js';
 
@@ -22,13 +24,50 @@ export async function pull(options) {
     }
 
     if (fs.existsSync('.env') && !options.force) {
+        let projectName = 'Envault';
+        try {
+            const { data } = await api.get('/projects');
+            const projects = data.projects || data.data || [];
+            const project = projects.find(p => p.id === projectId);
+            if (project) {
+                projectName = project.name;
+            }
+        } catch (e) {
+            // Ignore
+        }
+
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://envault.tech';
+
+        console.log(boxen(
+            chalk.red.bold('WARNING: POTENTIAL DATA LOSS') +
+            '\n\n' +
+            chalk.white('You are about to ') + chalk.red.bold('OVERWRITE') + chalk.white(' your local ') + chalk.yellow('.env') + chalk.white(' file.') +
+            '\n\n' +
+            chalk.white('Any local changes not synced to ') + chalk.cyan.bold(projectName) + chalk.white(' will be ') + chalk.red.bold('PERMANENTLY LOST.') +
+            '\n\n' +
+            chalk.dim('We recommend checking the dashboard for differences:') +
+            '\n' +
+            chalk.cyan(`${appUrl}/projects/${projectId}`),
+            {
+                padding: 1,
+                margin: 1,
+                borderStyle: 'double',
+                borderColor: 'red',
+                title: 'Sync Warning',
+                titleAlignment: 'center'
+            }
+        ));
+
         const { confirm } = await inquirer.prompt([{
             type: 'confirm',
             name: 'confirm',
-            message: 'This will overwrite your current .env file. Continue?',
+            message: 'Are you sure you want to overwrite your local .env file?',
             default: false
         }]);
-        if (!confirm) return;
+        if (!confirm) {
+            console.log(chalk.yellow('Operation cancelled.'));
+            return;
+        }
     }
 
     const spinner = ora('Fetching secrets...').start();
