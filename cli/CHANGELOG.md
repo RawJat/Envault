@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/DinanathDash/Envault/compare/v1.0.2...v1.1.0) (2026-02-01)
+
+
+### Features
+
+* Implement CLI device authentication, add new CLI API routes for projects and secrets, and enhance CLI commands with improved warnings. ([e4871c4](https://github.com/DinanathDash/Envault/commit/e4871c453d7e3974e94505e1f65014350a15a53a))
+
 ## [1.0.2](https://github.com/DinanathDash/Envault/compare/v1.0.1...v1.0.2) (2026-02-01)
 
 
