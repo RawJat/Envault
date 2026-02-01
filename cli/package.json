@@ -1,6 +1,6 @@
 {
     "name": "@dinanathdash/envault",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Envault CLI - Securely manage your environment variables",
     "repository": {
         "type": "git",
