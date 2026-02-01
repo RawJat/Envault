@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/DinanathDash/Envault/compare/v1.0.1...v1.0.2) (2026-02-01)
+
+
+### Bug Fixes
+
+* sync version and verify automated release ([ab54ab2](https://github.com/DinanathDash/Envault/commit/ab54ab2b4a9ac045ea986d34d9187ab4c705c76e))
+
 # 1.0.0 (2026-02-01)
 
 
