@@ -61,7 +61,12 @@ Deno.serve(async (req: Request) => {
         )
 
         // Parse Request
-        const { job_id } = await req.json().catch(() => ({ job_id: null }))
+        const { job_id, cleanup_only } = await req.json().catch(() => ({ job_id: null, cleanup_only: false }))
+
+        // Mode 0: Cleanup Only (For testing/maintenance)
+        if (cleanup_only) {
+            return await performCleanup(supabaseClient)
+        }
 
         // Mode 1: Initialization (No job_id provided)
         if (!job_id) {
@@ -216,6 +221,9 @@ async function processRotationChunk(supabase: any, job_id: string) {
             console.error('Failed to invalidate Redis:', e)
         }
 
+        // Perform Cleanup
+        await performCleanup(supabase)
+
         return new Response(
             JSON.stringify({ success: true, message: 'Rotation COMPLETED', job_id }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -307,6 +315,61 @@ async function processRotationChunk(supabase: any, job_id: string) {
             message: 'Chunk processed',
             processed: processedCount,
             next_cursor: lastId
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+}
+
+async function performCleanup(supabase: any) {
+    let deletedKeysCount = 0
+    let deletedJobsCount = 0
+
+    // 1. Cleanup Completed Jobs (Keep last 3)
+    const { data: completedJobs, error: jobsError } = await supabase
+        .from('key_rotation_jobs')
+        .select('id')
+        .eq('status', 'completed')
+        .order('created_at', { ascending: false })
+
+    if (!jobsError && completedJobs && completedJobs.length > 3) {
+        const jobsToDelete = completedJobs.slice(3).map((j: any) => j.id)
+        if (jobsToDelete.length > 0) {
+            const { error: delJobError } = await supabase
+                .from('key_rotation_jobs')
+                .delete()
+                .in('id', jobsToDelete)
+
+            if (!delJobError) deletedJobsCount = jobsToDelete.length
+            else console.error("Failed to delete jobs:", delJobError)
+        }
+    }
+
+    // 2. Cleanup Retired Keys (Keep last 3)
+    const { data: retiredKeys, error: keysError } = await supabase
+        .from('encryption_keys')
+        .select('id')
+        .eq('status', 'retired')
+        .order('created_at', { ascending: false })
+
+    if (!keysError && retiredKeys && retiredKeys.length > 3) {
+        const keysToDelete = retiredKeys.slice(3).map((k: any) => k.id)
+        if (keysToDelete.length > 0) {
+            const { error: delKeyError } = await supabase
+                .from('encryption_keys')
+                .delete()
+                .in('id', keysToDelete)
+
+            if (!delKeyError) deletedKeysCount = keysToDelete.length
+            else console.error("Failed to delete keys:", delKeyError)
+        }
+    }
+
+    return new Response(
+        JSON.stringify({
+            success: true,
+            message: 'Cleanup completed',
+            deleted_keys: deletedKeysCount,
+            deleted_jobs: deletedJobsCount
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )

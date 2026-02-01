@@ -1,0 +1,47 @@
+name: Publish CLI
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'cli/**' # Only trigger if changes inside cli/ folder
+      - '.github/workflows/publish.yml'
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required to commit version bumps and create releases
+      issues: write
+      pull-requests: write
+      id-token: write # Required for OIDC publishing
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required for commit analysis
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install Dependencies
+        run: |
+          cd cli
+          npm install
+
+      - name: Semantic Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }} 
+          # Note: Even with OIDC, semantic-release often checks for NPM_TOKEN. 
+          # If you strictly want OIDC, you might need extra config, but setting NPM_TOKEN (Granular Access Token) 
+          # in GitHub Secrets is the most reliable way for semantic-release to work out of the box.
+        run: |
+          cd cli
+          npx semantic-release
