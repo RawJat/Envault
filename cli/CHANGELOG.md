@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/DinanathDash/Envault/compare/v1.1.0...v1.2.0) (2026-02-02)
+
+
+### Features
+
+* Improve CLI login with clipboard support and user email display, enhance `.env` file detection for deploy, and add a `/api/cli/me` endpoint. ([f66aa4a](https://github.com/DinanathDash/Envault/commit/f66aa4a028242d4939fdedcd4165b2bba2a5e290))
+
 # [1.1.0](https://github.com/DinanathDash/Envault/compare/v1.0.2...v1.1.0) (2026-02-01)
 
 
