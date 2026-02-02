@@ -83,7 +83,20 @@ export function DeviceAuthForm() {
                             <CardDescription className="text-green-600/90 dark:text-green-500/90">
                                 You have successfully authenticated your CLI session.
                                 <br />
-                                This window will close in {countdown} seconds...
+                                {countdown > 0 ? (
+                                    <span>This window will close in {countdown} seconds...</span>
+                                ) : (
+                                    <span className="block mt-2 font-medium">
+                                        You can now safely close this window.
+                                        <Button
+                                            variant="outline"
+                                            className="mt-4 w-full bg-background/50 hover:bg-background/80"
+                                            onClick={() => window.close()}
+                                        >
+                                            Close Window
+                                        </Button>
+                                    </span>
+                                )}
                             </CardDescription>
                         </CardHeader>
                     </Card>

@@ -23,10 +23,32 @@ export async function deploy(options) {
         return;
     }
 
-    const envPath = '.env';
-    if (!fs.existsSync(envPath)) {
-        console.error(chalk.red('Error: .env file not found.'));
+    // 1. Scan for env files
+    const allFiles = fs.readdirSync(process.cwd());
+    const envFiles = allFiles.filter(file => file.startsWith('.env') && !['.env.example', '.env.template', '.env.sample'].includes(file));
+
+    let envPath = '.env';
+
+    if (envFiles.length === 0) {
+        console.error(chalk.red('Error: No .env files found (looked for files starting with .env, excluding .example/.template/.sample).'));
         return;
+    } else if (envFiles.length === 1) {
+        envPath = envFiles[0];
+        console.log(chalk.blue(`Using environment file: ${envPath}`));
+    } else {
+        // prioritize .env.local if users want, but for now let's ask
+        // OR we can default to .env.local if present, else asking.
+        // The plan said "Multiple files found: Use inquirer to show a list"
+
+        console.log(chalk.yellow(`Multiple environment files found: ${envFiles.join(', ')}`));
+        const { selectedEnv } = await inquirer.prompt([{
+            type: 'list',
+            name: 'selectedEnv',
+            message: 'Which environment file do you want to deploy?',
+            choices: envFiles
+        }]);
+        envPath = selectedEnv;
+        console.log(chalk.blue(`Selected: ${envPath}`));
     }
 
     const envConfig = dotenv.parse(fs.readFileSync(envPath));
@@ -71,7 +93,7 @@ export async function deploy(options) {
             '\n\n' +
             chalk.dim('We recommend checking the dashboard for differences:') +
             '\n' +
-            chalk.cyan(`${appUrl}/projects/${projectId}`),
+            chalk.cyan(`${appUrl}/project/${projectId}`),
             {
                 padding: 1,
                 margin: 1,
@@ -98,7 +120,7 @@ export async function deploy(options) {
 
     try {
         const { data } = await api.post(`/projects/${projectId}/secrets`, { secrets });
-        spinner.succeed(chalk.green(`✔ Successfully deployed ${secrets.length} secrets!`));
+        spinner.succeed(chalk.green(`Successfully deployed ${secrets.length} secrets!`));
     } catch (error) {
         spinner.fail('Deploy failed.');
         console.error(chalk.red(handleApiError(error)));

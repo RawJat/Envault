@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import boxen from 'boxen';
 import ora from 'ora';
 import open from 'open';
+import clipboard from 'clipboardy';
 import { api, handleApiError } from '../lib/api.js';
 import { setToken } from '../lib/config.js';
 import os from 'os';
@@ -41,11 +42,19 @@ export async function login() {
     console.log(boxen(chalk.green.bold(userCode), {
         title: 'Authentication Code',
         titleAlignment: 'center',
+        textAlignment: 'center',
         padding: 1,
         margin: 1,
         borderStyle: 'round',
         borderColor: 'green'
     }));
+
+    try {
+        clipboard.writeSync(userCode);
+        console.log(chalk.dim('(Code copied to clipboard)'));
+    } catch (e) {
+        // Ignore errors if clipboard fails (headless etc)
+    }
 
     // Open browser automatically
     try {
@@ -87,7 +96,22 @@ export async function login() {
     try {
         const token = await poll();
         setToken(token);
+
+        // Fetch user info
+        let email = '';
+        try {
+            const { data: userData } = await api.get('/me');
+            if (userData && userData.email) {
+                email = userData.email;
+            }
+        } catch (e) {
+            // Ignore error if fetching user info fails, just show generic success
+        }
+
         spinner.succeed(chalk.green('Successfully authenticated! Token saved.'));
+        if (email) {
+            console.log(chalk.green(`Logged in as: ${chalk.bold(email)}`));
+        }
     } catch (error) {
         spinner.fail('Authentication failed.');
         console.error(chalk.red(error.message));

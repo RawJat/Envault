@@ -47,7 +47,7 @@ export async function pull(options) {
             '\n\n' +
             chalk.dim('We recommend checking the dashboard for differences:') +
             '\n' +
-            chalk.cyan(`${appUrl}/projects/${projectId}`),
+            chalk.cyan(`${appUrl}/project/${projectId}`),
             {
                 padding: 1,
                 margin: 1,
@@ -86,7 +86,7 @@ export async function pull(options) {
             .join('\n');
 
         fs.writeFileSync('.env', envContent);
-        spinner.succeed(chalk.green(`✔ Pulled ${data.secrets.length} secrets to .env`));
+        spinner.succeed(chalk.green(`Pulled ${data.secrets.length} secrets to .env`));
 
     } catch (error) {
         spinner.fail('Pull failed.');
