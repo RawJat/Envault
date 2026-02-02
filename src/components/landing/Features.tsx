@@ -21,7 +21,7 @@ const features = [
     },
     {
         title: "Developer First",
-        description: "Simple API and CLI (coming soon) to integrate secrets into your development workflow.",
+        description: "Powerful CLI and simple API to manage secrets directly from your terminal workflow.",
         icon: Code,
     },
     {

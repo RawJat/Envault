@@ -11,7 +11,19 @@
 - **Interactive 3D Elements**: High-performance 3D visuals powered by React Three Fiber.
 - **Responsive Design**: Fully responsive layout that works seamlessly on desktop and mobile.
 - **Dark Mode Support**: Built-in support for light and dark themes.
- 
+- **CLI Support**: Manage your secrets directly from your terminal.
+
+## CLI
+
+Envault comes with a powerful CLI to manage your secrets without leaving your terminal.
+
+```bash
+# Login securely
+npx @dinanathdash/envault login
+```
+
+For more details, check out the [CLI Documentation](./cli/README.md).
+
 ## Security Architecture
 
 Envault uses a hybrid encryption model to ensure maximum security:

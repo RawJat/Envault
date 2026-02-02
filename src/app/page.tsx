@@ -4,6 +4,8 @@ import { Features } from "@/components/landing/Features"
 import { Footer } from "@/components/landing/Footer"
 import { Scene } from "@/components/landing/Scene"
 
+import { CliSection } from "@/components/landing/CliSection"
+
 import { Preloader } from "@/components/landing/Preloader"
 
 export default function LandingPage() {
@@ -14,6 +16,7 @@ export default function LandingPage() {
             <Navbar />
             <main className="flex-1">
                 <Hero />
+                <CliSection />
                 <div id="features">
                     <Features />
                 </div>
