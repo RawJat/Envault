@@ -1,3 +1,20 @@
+# [1.3.0](https://github.com/DinanathDash/Envault/compare/v1.2.0...v1.3.0) (2026-02-03)
+
+
+### Bug Fixes
+
+* **db:** RLS recursion fixes and performance optimizations ([44d9634](https://github.com/DinanathDash/Envault/commit/44d963424527a985d0e1e0dc988a30131ee3aa79))
+
+
+### Features
+
+* Add Dependabot configuration for automated npm dependency updates in root and cli directories. ([8c5cad5](https://github.com/DinanathDash/Envault/commit/8c5cad5b1437c8c82337fd8ebaa97d85539197b5))
+* **cli:** Update CLI project/secret routes and auth migration ([0a2e8ea](https://github.com/DinanathDash/Envault/commit/0a2e8eae6471bb68e1811369888b4f34ec4b2f90))
+* **editor:** Enhance env var table, store, and project view ([ae4cb95](https://github.com/DinanathDash/Envault/commit/ae4cb95966d28b0be7aa61e3ecf5205f5813e1dd))
+* **email:** Update email templates and handlers ([3343a07](https://github.com/DinanathDash/Envault/commit/3343a07dea846424417788f80841ba1d429b2b46))
+* introduce a dedicated CLI section with interactive terminal visualization and update the developer features description. ([0ebce0a](https://github.com/DinanathDash/Envault/commit/0ebce0a796b933820ab074269c34c12933bde92a))
+* **sharing:** Implement project/secret sharing, access requests, and join flow ([8a0407b](https://github.com/DinanathDash/Envault/commit/8a0407baac5714ae709a9fdb719051f3a133c02e))
+
 # [1.2.0](https://github.com/DinanathDash/Envault/compare/v1.1.0...v1.2.0) (2026-02-02)
 
 
