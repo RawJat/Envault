@@ -5,7 +5,8 @@ import { useEnvaultStore } from "@/lib/store"
 import { CreateProjectDialog } from "@/components/dashboard/create-project-dialog"
 import { ProjectCard } from "@/components/dashboard/project-card"
 import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler"
-import { ShieldCheck, User, Settings as SettingsIcon, LogOut } from "lucide-react"
+import { ShieldCheck, User, Settings as SettingsIcon, LogOut, Share2 } from "lucide-react"
+import { UserAvatar } from "@/components/ui/user-avatar"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -17,6 +18,8 @@ import {
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { signOut } from "@/app/actions"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { NotificationDropdown } from "@/components/notifications/notification-dropdown"
 
 export default function DashboardPage() {
     const projects = useEnvaultStore((state) => state.projects)
@@ -26,6 +29,10 @@ export default function DashboardPage() {
         logout()
         await signOut()
     }
+
+    // Filter Projects
+    const myProjects = projects.filter(p => !p.role || p.role === 'owner')
+    const sharedProjects = projects.filter(p => p.role && p.role !== 'owner')
 
     return (
         <div className="min-h-screen bg-background">
@@ -37,22 +44,19 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex items-center gap-4">
                         <AnimatedThemeToggler />
+                        <NotificationDropdown />
 
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon" className="rounded-full">
-                                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
-                                        {user?.avatar ? (
-                                            <img
-                                                src={user.avatar}
-                                                alt={user.firstName || "User"}
-                                                className="w-full h-full object-cover"
-                                                referrerPolicy="no-referrer"
-                                            />
-                                        ) : (
-                                            <User className="w-5 h-5 text-primary" />
-                                        )}
-                                    </div>
+                                    <UserAvatar
+                                        user={{
+                                            email: user?.email,
+                                            avatar: user?.avatar,
+                                            firstName: user?.firstName
+                                        }}
+                                        className="h-8 w-8"
+                                    />
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-56">
@@ -89,42 +93,81 @@ export default function DashboardPage() {
                     <CreateProjectDialog />
                 </div>
 
-                {isLoading ? (
-                    <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6">
-                        {Array.from({ length: 6 }).map((_, i) => (
-                            <div key={i} className="flex flex-col rounded-xl border bg-card text-card-foreground shadow h-48 relative overflow-hidden">
-                                <div className="p-6">
-                                    <div className="flex items-center space-x-2">
-                                        <Skeleton className="h-9 w-9 rounded-lg" />
-                                        <Skeleton className="h-6 w-32" />
-                                    </div>
-                                </div>
-                                <div className="mt-auto p-3 border-t bg-muted/20">
-                                    <div className="flex items-center justify-between">
-                                        <Skeleton className="h-4 w-20" />
-                                        <Skeleton className="h-4 w-24" />
-                                    </div>
-                                </div>
+                <Tabs defaultValue="my-projects" className="w-full">
+                    <TabsList className="mb-6">
+                        <TabsTrigger value="my-projects">My Projects</TabsTrigger>
+                        <TabsTrigger value="shared-with-me">Shared with Me</TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="my-projects">
+                        {isLoading ? (
+                            <ProjectSkeletonGrid />
+                        ) : myProjects.length === 0 ? (
+                            <EmptyState />
+                        ) : (
+                            <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6">
+                                {myProjects.map((project) => (
+                                    <ProjectCard key={project.id} project={project} />
+                                ))}
                             </div>
-                        ))}
-                    </div>
-                ) : projects.length === 0 ? (
-                    <div className="text-center py-20 border-2 border-dashed rounded-xl">
-                        <ShieldCheck className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                        <h3 className="text-lg font-medium">No projects yet</h3>
-                        <p className="text-muted-foreground mb-4">Create your first project to get started.</p>
-                        <div className="inline-block">
-                            <CreateProjectDialog />
+                        )}
+                    </TabsContent>
+
+                    <TabsContent value="shared-with-me">
+                        {isLoading ? (
+                            <ProjectSkeletonGrid />
+                        ) : sharedProjects.length === 0 ? (
+                            <div className="text-center py-20 border-2 border-dashed rounded-xl">
+                                <Share2 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                                <h3 className="text-lg font-medium">No shared projects</h3>
+                                <p className="text-muted-foreground mb-4">You haven't been invited to any projects yet.</p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6">
+                                {sharedProjects.map((project) => (
+                                    <ProjectCard key={project.id} project={project} />
+                                ))}
+                            </div>
+                        )}
+                    </TabsContent>
+                </Tabs>
+            </main>
+        </div>
+    )
+}
+
+function ProjectSkeletonGrid() {
+    return (
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6">
+            {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex flex-col rounded-xl border bg-card text-card-foreground shadow h-48 relative overflow-hidden">
+                    <div className="p-6">
+                        <div className="flex items-center space-x-2">
+                            <Skeleton className="h-9 w-9 rounded-lg" />
+                            <Skeleton className="h-6 w-32" />
                         </div>
                     </div>
-                ) : (
-                    <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6">
-                        {projects.map((project) => (
-                            <ProjectCard key={project.id} project={project} />
-                        ))}
+                    <div className="mt-auto p-3 border-t bg-muted/20">
+                        <div className="flex items-center justify-between">
+                            <Skeleton className="h-4 w-20" />
+                            <Skeleton className="h-4 w-24" />
+                        </div>
                     </div>
-                )}
-            </main>
+                </div>
+            ))}
+        </div>
+    )
+}
+
+function EmptyState() {
+    return (
+        <div className="text-center py-20 border-2 border-dashed rounded-xl">
+            <ShieldCheck className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-medium">No projects yet</h3>
+            <p className="text-muted-foreground mb-4">Create your first project to get started.</p>
+            <div className="inline-block">
+                <CreateProjectDialog />
+            </div>
         </div>
     )
 }

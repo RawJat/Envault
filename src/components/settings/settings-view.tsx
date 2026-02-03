@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { User, HelpCircle, Trash2, LogOut, ArrowLeft, Laptop, Shield } from "lucide-react"
+import { User, HelpCircle, Trash2, LogOut, ArrowLeft, Laptop, Shield, Bell } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler"
+import { NotificationPreferences } from "@/components/notifications/notification-preferences"
 import {
     AlertDialog,
     AlertDialogAction,
@@ -30,6 +31,7 @@ import {
 import { createClient } from "@/lib/supabase/client"
 import { deleteAccountAction, signOut } from "@/app/actions"
 import { useReauthStore } from "@/lib/reauth-store"
+import { NotificationDropdown } from "@/components/notifications/notification-dropdown"
 
 export default function SettingsView() {
     const router = useRouter()
@@ -121,6 +123,7 @@ export default function SettingsView() {
                     </div>
                     <div className="flex items-center gap-4">
                         <AnimatedThemeToggler />
+                        <NotificationDropdown />
                         <TooltipProvider>
                             <Tooltip>
                                 <TooltipTrigger asChild>
@@ -156,6 +159,14 @@ export default function SettingsView() {
                             >
                                 <Shield className="mr-2 h-4 w-4" />
                                 Security
+                            </Button>
+                            <Button
+                                variant={activeTab === "notifications" ? "secondary" : "ghost"}
+                                className="justify-start w-full"
+                                onClick={() => setActiveTab("notifications")}
+                            >
+                                <Bell className="mr-2 h-4 w-4" />
+                                Notifications
                             </Button>
                             <Button
                                 variant={activeTab === "support" ? "secondary" : "ghost"}
@@ -260,6 +271,18 @@ export default function SettingsView() {
 
                         {activeTab === "security" && (
                             <SecurityTab user={user} />
+                        )}
+
+                        {activeTab === "notifications" && (
+                            <div className="space-y-6">
+                                <div>
+                                    <h2 className="text-lg font-medium">Notification Preferences</h2>
+                                    <p className="text-sm text-muted-foreground mt-1">
+                                        Manage how and when you receive notifications
+                                    </p>
+                                </div>
+                                <NotificationPreferences />
+                            </div>
                         )}
 
                         {activeTab === "support" && (
