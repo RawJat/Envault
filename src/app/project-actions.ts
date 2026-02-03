@@ -42,13 +42,10 @@ export async function getProjects() {
         return { error: 'Not authenticated' }
     }
 
-    const { data, error } = await supabase
+    // Step 1: Fetch projects only (no joins to avoid RLS recursion)
+    const { data: projects, error } = await supabase
         .from('projects')
-        .select(`
-      *,
-      secrets(count)
-    `)
-        .eq('user_id', user.id)
+        .select('*')
         .order('created_at', { ascending: false })
 
     if (error) {
@@ -56,7 +53,51 @@ export async function getProjects() {
         return { error: error.message }
     }
 
-    return { data }
+    if (!projects || projects.length === 0) {
+        return { data: [] }
+    }
+
+    // Step 2: Fetch secrets count for each project
+    const projectIds = projects.map(p => p.id)
+    const { data: secretCounts } = await supabase
+        .from('secrets')
+        .select('id, project_id')
+        .in('project_id', projectIds)
+
+    // Create a count map
+    const secretCountMap = new Map<string, number>()
+    secretCounts?.forEach(s => {
+        secretCountMap.set(s.project_id, (secretCountMap.get(s.project_id) || 0) + 1)
+    })
+
+    // Step 3: Fetch project members for current user
+    const { data: memberships } = await supabase
+        .from('project_members')
+        .select('project_id, role')
+        .in('project_id', projectIds)
+        .eq('user_id', user.id)
+
+    // Create membership map
+    const membershipMap = new Map(memberships?.map(m => [m.project_id, m.role]) || [])
+
+    // Step 4: Enrich projects with the data
+    const enrichedProjects = projects.map((p: any) => {
+        let role = 'viewer' // Safe default
+        if (p.user_id === user.id) {
+            role = 'owner'
+        } else if (membershipMap.has(p.id)) {
+            role = membershipMap.get(p.id)
+        }
+
+        return {
+            ...p,
+            secrets: [{ count: secretCountMap.get(p.id) || 0 }],
+            role,
+            isStart: false // UI Helper
+        }
+    })
+
+    return { data: enrichedProjects }
 }
 
 export async function deleteProject(id: string) {
@@ -72,11 +113,20 @@ export async function deleteProject(id: string) {
         return { error: 'REAUTH_REQUIRED' }
     }
 
+    // Permission Check: Owner Only
+    const { getProjectRole } = await import('@/lib/permissions')
+    const role = await getProjectRole(supabase, id, user.id)
+
+    if (role !== 'owner') {
+        return { error: 'Unauthorized: Only the owner can delete a project.' }
+    }
+
     const { error } = await supabase
         .from('projects')
         .delete()
         .eq('id', id)
-        .eq('user_id', user.id)
+    // We rely on RLS and the permission check above. 
+    // strictly ensuring only ID match is fine if we validated ownership.
 
     if (error) {
         return { error: error.message }
@@ -99,6 +149,14 @@ export async function addVariable(projectId: string, key: string, value: string,
         return { error: 'REAUTH_REQUIRED' }
     }
 
+    // Permission Check: Owner or Editor
+    const { getProjectRole } = await import('@/lib/permissions')
+    const role = await getProjectRole(supabase, projectId, user.id)
+
+    if (role !== 'owner' && role !== 'editor') {
+        return { error: 'Unauthorized: You do not have permission to add variables.' }
+    }
+
     // Import encryption utility
     const { encrypt } = await import('@/lib/encryption')
 
@@ -111,12 +169,14 @@ export async function addVariable(projectId: string, key: string, value: string,
     const { data, error } = await supabase
         .from('secrets')
         .insert({
-            user_id: user.id,
+            user_id: user.id, // Creator
             project_id: projectId,
             key,
             value: encryptedValue,
             key_id: keyId,
             is_secret: isSecret,
+            last_updated_by: user.id,
+            last_updated_at: new Date().toISOString()
         })
         .select()
         .single()
@@ -143,8 +203,25 @@ export async function updateVariable(id: string, projectId: string, updates: { k
         return { error: 'REAUTH_REQUIRED' }
     }
 
+    // Permission Check: Owner or Editor
+    // Note: Technically we should check if they can access THIS specific secret too? 
+    // `getProjectRole` covers project-level access. 
+    // If we support Granular Shares having "Edit" rights (unlikely? usually Read Only), we'd check that here.
+    // For now, only Project Editors/Owners can update.
+    const { getProjectRole } = await import('@/lib/permissions')
+    const role = await getProjectRole(supabase, projectId, user.id)
+
+    if (role !== 'owner' && role !== 'editor') {
+        return { error: 'Unauthorized: You do not have permission to update variables.' }
+    }
+
     // If updating the value, encrypt it first
-    let finalUpdates: any = { ...updates }
+    let finalUpdates: any = {
+        ...updates,
+        last_updated_by: user.id,
+        last_updated_at: new Date().toISOString()
+    }
+
     if (updates.value) {
         const { encrypt } = await import('@/lib/encryption')
         finalUpdates.value = await encrypt(updates.value)
@@ -156,7 +233,7 @@ export async function updateVariable(id: string, projectId: string, updates: { k
         .from('secrets')
         .update(finalUpdates)
         .eq('id', id)
-        .eq('user_id', user.id)
+    // Remove .eq('user_id') because editors can update secrets they didn't create
 
     if (error) {
         return { error: error.message }
@@ -179,11 +256,18 @@ export async function deleteVariable(id: string, projectId: string) {
         return { error: 'REAUTH_REQUIRED' }
     }
 
+    const { getProjectRole } = await import('@/lib/permissions')
+    const role = await getProjectRole(supabase, projectId, user.id)
+
+    if (role !== 'owner' && role !== 'editor') {
+        return { error: 'Unauthorized: You do not have permission to delete variables.' }
+    }
+
     const { error } = await supabase
         .from('secrets')
         .delete()
         .eq('id', id)
-        .eq('user_id', user.id)
+    // Remove .eq('user_id')
 
     if (error) {
         return { error: error.message }
@@ -219,16 +303,22 @@ export async function addVariablesBulk(projectId: string, variables: BulkImportV
         return { added: 0, updated: 0, skipped: 0, error: 'REAUTH_REQUIRED' }
     }
 
+    const { getProjectRole } = await import('@/lib/permissions')
+    const role = await getProjectRole(supabase, projectId, user.id)
+
+    if (role !== 'owner' && role !== 'editor') {
+        return { added: 0, updated: 0, skipped: 0, error: 'Unauthorized' }
+    }
+
     // Import encryption utility
     const { encrypt, decrypt } = await import('@/lib/encryption')
 
-    // Fetch existing variables for this project
-    // Fetch existing variables for this project to map Keys to IDs (for Upsert)
+    // Fetch existing variables
     const { data: existingSecrets } = await supabase
         .from('secrets')
         .select('id, key')
         .eq('project_id', projectId)
-        .eq('user_id', user.id)
+    // Removed eq('user_id') to see ALL secrets in project
 
     const keyToIdMap = new Map(
         (existingSecrets || []).map(s => [s.key, s.id])
@@ -237,18 +327,7 @@ export async function addVariablesBulk(projectId: string, variables: BulkImportV
     const upsertPayload = []
     let added = 0
     let updated = 0
-    let skipped = 0 // Concept of "skipped" is harder in batch upsert unless we check values. 
-    // For massive bulk, we usually just overwrite (update).
-    // If we want to strictly skip unchanged, we'd need to decrypt and compare.
-    // Given the goal is "Scalability", skipping the decryption/comparison is faster.
-    // We will just overwrite everything.
-
-    // Pre-process and encrypt parallelly (Promise.all) if massive? 
-    // For JS single-thread, map is fine.
-
-    // We need to async helper for encryption if it was async? 
-    // In `encryption.ts`, `encrypt` IS async (returns Promise<string>).
-    // So we need Promise.all.
+    let skipped = 0
 
     const processVariable = async (variable: BulkImportVariable) => {
         const encryptedValue = await encrypt(variable.value)
@@ -262,12 +341,14 @@ export async function addVariablesBulk(projectId: string, variables: BulkImportV
 
         return {
             ...(existingId ? { id: existingId } : {}),
-            user_id: user.id,
+            user_id: user.id, // Only matters on insert
             project_id: projectId,
             key: variable.key,
             value: encryptedValue,
             key_id: keyId,
-            is_secret: variable.isSecret
+            is_secret: variable.isSecret,
+            last_updated_by: user.id,
+            last_updated_at: new Date().toISOString()
         }
     }
 

@@ -1,0 +1,138 @@
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { Loader2, Check, X, ArrowRight } from "lucide-react"
+
+export interface PendingChange {
+    userId: string
+    type: 'approve' | 'deny' | 'role_change' | 'revoke'
+    currentRole?: 'viewer' | 'editor' | 'pending'
+    newRole?: 'viewer' | 'editor'
+    email?: string
+    requestId?: string
+}
+
+interface ShareConfirmationDialogProps {
+    open: boolean
+    onOpenChange: (open: boolean) => void
+    changes: PendingChange[]
+    onConfirm: () => Promise<void>
+    loading?: boolean
+}
+
+export function ShareConfirmationDialog({
+    open,
+    onOpenChange,
+    changes,
+    onConfirm,
+    loading = false
+}: ShareConfirmationDialogProps) {
+    const approvals = changes.filter(c => c.type === 'approve')
+    const denials = changes.filter(c => c.type === 'deny')
+    const roleChanges = changes.filter(c => c.type === 'role_change')
+    const revocations = changes.filter(c => c.type === 'revoke')
+
+    return (
+        <AlertDialog open={open} onOpenChange={onOpenChange}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Confirm Changes</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Review and confirm the following changes to project access:
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+
+                <div className="space-y-4 py-4">
+                    {/* Approvals */}
+                    {approvals.length > 0 && (
+                        <div className="space-y-2">
+                            <h4 className="text-sm font-medium flex items-center gap-2">
+                                <Check className="h-4 w-4 text-green-600" />
+                                Approve Access ({approvals.length})
+                            </h4>
+                            <div className="space-y-1 pl-6">
+                                {approvals.map((change) => (
+                                    <p key={change.userId} className="text-sm text-muted-foreground">
+                                        {change.email || 'User'} as <span className="font-medium capitalize">{change.newRole || 'viewer'}</span>
+                                    </p>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Denials */}
+                    {denials.length > 0 && (
+                        <div className="space-y-2">
+                            <h4 className="text-sm font-medium flex items-center gap-2">
+                                <X className="h-4 w-4 text-red-600" />
+                                Deny Access ({denials.length})
+                            </h4>
+                            <div className="space-y-1 pl-6">
+                                {denials.map((change) => (
+                                    <p key={change.userId} className="text-sm text-muted-foreground">
+                                        {change.email || 'User'}
+                                    </p>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Role Changes */}
+                    {roleChanges.length > 0 && (
+                        <div className="space-y-2">
+                            <h4 className="text-sm font-medium flex items-center gap-2">
+                                <ArrowRight className="h-4 w-4 text-blue-600" />
+                                Change Roles ({roleChanges.length})
+                            </h4>
+                            <div className="space-y-1 pl-6">
+                                {roleChanges.map((change) => (
+                                    <p key={change.userId} className="text-sm text-muted-foreground">
+                                        {change.email || 'User'}: <span className="capitalize">{change.currentRole}</span> → <span className="font-medium capitalize">{change.newRole}</span>
+                                    </p>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Revocations */}
+                    {revocations.length > 0 && (
+                        <div className="space-y-2">
+                            <h4 className="text-sm font-medium flex items-center gap-2">
+                                <X className="h-4 w-4 text-destructive" />
+                                Revoke Access ({revocations.length})
+                            </h4>
+                            <div className="space-y-1 pl-6">
+                                {revocations.map((change) => (
+                                    <p key={change.userId} className="text-sm text-muted-foreground">
+                                        {change.email || 'User'}
+                                    </p>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                <AlertDialogFooter>
+                    <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={onConfirm} disabled={loading}>
+                        {loading ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Applying...
+                            </>
+                        ) : (
+                            'Confirm'
+                        )}
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    )
+}

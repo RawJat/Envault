@@ -41,6 +41,8 @@ import { Project, useEnvaultStore } from "@/lib/store"
 import { toast } from "sonner"
 import { deleteProject as deleteProjectAction } from "@/app/project-actions"
 import { useReauthStore } from "@/lib/reauth-store"
+import { ShareProjectDialog } from "@/components/dashboard/share-project-dialog"
+import { Share2 } from "lucide-react"
 
 interface ProjectCardProps {
     project: Project
@@ -49,6 +51,7 @@ interface ProjectCardProps {
 export function ProjectCard({ project }: ProjectCardProps) {
     const deleteProject = useEnvaultStore((state) => state.deleteProject)
     const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
+    const [shareDialogOpen, setShareDialogOpen] = React.useState(false)
     const [deleteConfirmation, setDeleteConfirmation] = React.useState("")
     const router = useRouter()
 
@@ -87,19 +90,29 @@ export function ProjectCard({ project }: ProjectCardProps) {
                                 </div>
                                 <CardTitle className="line-clamp-1">{project.name}</CardTitle>
                             </div>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 -mt-1 -mr-2 text-muted-foreground" onClick={(e) => e.preventDefault()}>
-                                        <MoreVertical className="w-4 h-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuItem className="text-red-600 dark:text-red-500 focus:text-red-600 dark:focus:text-red-500" onClick={handleDeleteClick}>
-                                        <Trash2 className="w-4 h-4 mr-2" />
-                                        Delete
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                            <div className="flex items-center" onClick={(e) => e.preventDefault()}>
+
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2 text-muted-foreground">
+                                            <MoreVertical className="w-4 h-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={(e) => {
+                                            e.stopPropagation()
+                                            setShareDialogOpen(true)
+                                        }}>
+                                            <Share2 className="w-4 h-4 mr-2" />
+                                            Share
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem className="text-red-600 dark:text-red-500 focus:text-red-600 dark:focus:text-red-500" onClick={handleDeleteClick}>
+                                            <Trash2 className="w-4 h-4 mr-2" />
+                                            Delete
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
                         </div>
                     </CardHeader>
                     <CardFooter className="absolute bottom-0 w-full bg-muted/20 border-t p-3">
@@ -155,6 +168,12 @@ export function ProjectCard({ project }: ProjectCardProps) {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            <ShareProjectDialog
+                project={project}
+                open={shareDialogOpen}
+                onOpenChange={setShareDialogOpen}
+            />
         </>
     )
 }
