@@ -6,6 +6,12 @@ export type EnvironmentVariable = {
     key: string
     value: string
     isSecret: boolean
+    lastUpdatedBy?: string
+    lastUpdatedAt?: string
+    userInfo?: {
+        creator?: { email: string; id: string; avatar?: string }
+        updater?: { email: string; id: string; avatar?: string }
+    }
 }
 
 export type Project = {
@@ -14,6 +20,7 @@ export type Project = {
     variables: EnvironmentVariable[]
     secretCount: number
     createdAt: string
+    role?: 'owner' | 'editor' | 'viewer'
 }
 
 interface EnvaultState {

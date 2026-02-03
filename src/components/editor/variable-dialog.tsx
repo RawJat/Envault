@@ -182,19 +182,34 @@ export function VariableDialog({ projectId, existingVariable, existingVariables 
                     <div className="space-y-2">
                         <Label htmlFor="value">Value</Label>
                         <div className="relative">
-                            <Input
-                                id="value"
-                                placeholder="postgres://..."
-                                type={showPassword ? "text" : "password"}
-                                {...register("value")}
-                                className="font-mono pr-10"
-                            />
+                            {showPassword ? (
+                                <Input
+                                    key="visible-input"
+                                    id="value"
+                                    placeholder="postgres://..."
+                                    type="text"
+                                    {...register("value")}
+                                    className="font-mono pr-10"
+                                />
+                            ) : (
+                                <Input
+                                    key="masked-input"
+                                    id="value-masked"
+                                    value="••••••••••"
+                                    readOnly
+                                    type="text"
+                                    className="font-mono pr-10 text-muted-foreground"
+                                />
+                            )}
                             <Button
                                 type="button"
                                 variant="ghost"
                                 size="sm"
-                                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent z-10"
+                                onClick={(e) => {
+                                    e.preventDefault()
+                                    setShowPassword((prev) => !prev)
+                                }}
                             >
                                 {showPassword ? (
                                     <EyeOff className="h-4 w-4 text-muted-foreground" />
