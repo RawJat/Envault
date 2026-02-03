@@ -12,10 +12,12 @@ create table if not exists public.personal_access_tokens (
 
 alter table public.personal_access_tokens enable row level security;
 
+drop policy if exists "Users can view their own tokens" on public.personal_access_tokens;
 create policy "Users can view their own tokens"
 on public.personal_access_tokens for select
 using (auth.uid() = user_id);
 
+drop policy if exists "Users can delete their own tokens" on public.personal_access_tokens;
 create policy "Users can delete their own tokens"
 on public.personal_access_tokens for delete
 using (auth.uid() = user_id);
@@ -34,8 +36,34 @@ create table if not exists public.device_flow_sessions (
 -- Index for polling by user_code and device_code
 create index if not exists idx_device_sessions_user_code on public.device_flow_sessions(user_code);
 
--- No RLS needed for device sessions as they are accessed by server-side API mainly, 
--- but if we want client-side polling from CLI without auth, we might need public insert/select?
--- Actually, the CLI polls with `device_code`. The User enters `user_code` in browser (authed).
--- So the browser part needs RLS or Service Role. 
--- We will use Service Role for the API interactions to keep it simple and secure.
+-- Enable RLS on device_flow_sessions
+alter table public.device_flow_sessions enable row level security;
+
+-- RLS Policies for device_flow_sessions
+-- Users should be able to view and update their own device flow sessions
+-- The CLI polls with device_code (unauthenticated), but approval requires auth
+
+-- Allow users to view their own device flow sessions
+drop policy if exists "Users can view their own device sessions" on public.device_flow_sessions;
+create policy "Users can view their own device sessions"
+on public.device_flow_sessions for select
+using (auth.uid() = user_id OR user_id IS NULL);
+
+-- Allow users to update their own device flow sessions (for approval/denial)
+drop policy if exists "Users can update their own device sessions" on public.device_flow_sessions;
+create policy "Users can update their own device sessions"
+on public.device_flow_sessions for update
+using (auth.uid() = user_id);
+
+-- Allow unauthenticated insert for device flow initiation (CLI)
+-- But validate that required fields are present to prevent abuse
+drop policy if exists "Allow insert for device flow" on public.device_flow_sessions;
+create policy "Allow insert for device flow"
+on public.device_flow_sessions for insert
+with check (
+  device_code is not null 
+  and user_code is not null 
+  and status is not null
+  and expires_at is not null
+  and user_id is null  -- Must be null on insert, gets set during approval
+);

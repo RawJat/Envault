@@ -136,7 +136,7 @@ export function CliSection() {
                             </p>
                         </div>
 
-                        <div className="space-y-0">
+                        <div className="space-y-4">
                             {workflowSteps.map((item, i) => (
                                 <motion.div
                                     key={i}

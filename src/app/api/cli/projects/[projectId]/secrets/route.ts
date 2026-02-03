@@ -11,7 +11,7 @@ interface SecretPayload {
 
 export async function GET(
     request: Request,
-    { params }: { params: Promise<{ projectId: string }> } // In Next 15, params is a Promise
+    { params }: { params: Promise<{ projectId: string }> }
 ) {
     const result = await validateCliToken(request)
     if (typeof result !== 'string') {
@@ -23,31 +23,69 @@ export async function GET(
 
     const supabase = createAdminClient()
 
-    // Verify project ownership
-    const { data: project } = await supabase
-        .from('projects')
-        .select('id')
-        .eq('id', projectId)
-        .eq('user_id', userId)
-        .single()
+    // 1. Determine Access Level
+    // We can't use `getProjectRole` from `@/lib/permissions` easily if it relies on RLS-enforced client 
+    // BUT `createAdminClient` bypasses RLS, so manual checks are needed, which `getProjectRole` does 
+    // (it checks DB records manually). So we CAN use it.
 
-    if (!project) {
-        return NextResponse.json({ error: 'Project not found' }, { status: 404 })
-    }
+    // However, importing from `@/lib/permissions` in API route is fine.
+    const { getProjectRole } = await import('@/lib/permissions')
+    const role = await getProjectRole(supabase, projectId, userId)
 
-    // Fetch secrets
-    const { data: secrets } = await supabase
-        .from('secrets')
-        .select('key, value')
-        .eq('project_id', projectId)
+    let targetSecrets = []
 
-    if (!secrets) {
-        return NextResponse.json({ secrets: [] })
+    if (role) {
+        // Has Project-Level Access (Owner/Editor/Viewer)
+        // Fetch ALL secrets for project
+        const { data: secrets, error } = await supabase
+            .from('secrets')
+            .select('key, value')
+            .eq('project_id', projectId)
+
+        if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+        targetSecrets = secrets || []
+
+    } else {
+        // Check for Granular Secret Shares
+        // Fetch secrets where id IN (select secret_id from secret_shares where user_id = me)
+        const { data: shares, error } = await supabase
+            .from('secret_shares')
+            .select('secret_id, secrets(key, value, project_id)')
+            .eq('user_id', userId)
+            // We need to filter by project_id in the joined table, but Supabase filtering on joined table 
+            // is `secrets.project_id`.eq.`${projectId}` which is tricky in JS syntax without flatten.
+
+            // Allow fetching all shares, then filter by project in memory? 
+            // Or better: filter `secrets` where `project_id` = projectId.
+            // .eq('secrets.project_id', projectId) should work if inner valid.
+
+            // Let's try:
+            // But `secret_shares` -> `secrets`.
+            .eq('secrets.project_id', projectId) // This acts as Inner Join filter often
+        // If it fails to filter, we do in memory.
+
+        // Actually, with `!inner` on join it works as filter.
+        // .select('..., secrets!inner(...)')
+
+        const { data: sharesFiltered } = await supabase
+            .from('secret_shares')
+            .select('secret_id, secrets!inner(key, value, project_id)')
+            .eq('user_id', userId)
+            .eq('secrets.project_id', projectId)
+
+        if (sharesFiltered && sharesFiltered.length > 0) {
+            targetSecrets = sharesFiltered.map((s: any) => ({
+                key: s.secrets.key,
+                value: s.secrets.value
+            }))
+        } else {
+            // No access
+            return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
+        }
     }
 
     // Decrypt secrets
-    // Note: This is heavy if many secrets.
-    const decryptedSecrets = await Promise.all(secrets.map(async (s) => {
+    const decryptedSecrets = await Promise.all(targetSecrets.map(async (s) => {
         try {
             const cleanValue = await decrypt(s.value)
             return { key: s.key, value: cleanValue }
@@ -80,30 +118,15 @@ export async function POST(
 
     const supabase = createAdminClient()
 
-    // Verify project
-    const { data: project } = await supabase
-        .from('projects')
-        .select('id')
-        .eq('id', projectId)
-        .eq('user_id', userId)
-        .single()
+    // Verify Access: Owner OR Editor
+    const { getProjectRole } = await import('@/lib/permissions')
+    const role = await getProjectRole(supabase, projectId, userId)
 
-    if (!project) {
-        return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    if (role !== 'owner' && role !== 'editor') {
+        return NextResponse.json({ error: 'Unauthorized: Read-only access' }, { status: 403 })
     }
 
     // Process Upsert
-    // We need to fetch existing secrets to reuse IDs or KeyIDs if existing
-    // Or simpler: We use `encrypt` which handles KeyID internally (fetches active key).
-
-    // We also need to map Keys to existing IDs if we want to update vs insert?
-    // Supabase upsert on (project_id, user_id, key) if unique constraint exists.
-    // Let's check schema... likely `unique(user_id, project_id, key)` or similar.
-    // Assuming upsert works by key for the project.
-
-    // BUT `secrets` table has `id`. We need to fetch existing IDs for these keys to properly upsert without duplicates if constraint is just ID?
-    // Usually unique constraint is (project_id, key, user_id).
-
     // Fetch existing keys for IDs
     const { data: existingSecrets } = await supabase
         .from('secrets')
@@ -118,20 +141,33 @@ export async function POST(
 
         return {
             ...(keyMap.has(s.key) ? { id: keyMap.get(s.key) } : {}),
-            user_id: userId,
+            user_id: userId, // Current user is modifying it (or new owner if inserting, but user_id usually creator)
+            // If updating, strictly `upsert` might require us to NOT change `user_id` if we want to preserve original creator?
+            // But `user_id` in secrets is just for record. 
+            // Let's set it to current user for new, but for update `upsert` handles it?
+            // If ID present, `upsert` updates provided fields.
+            // If we provide `user_id`, access control policies usually ignore it for updates? 
+            // But we are ADMIN client here.
+            // Let's keep `user_id` as the person who LAST "Created/Pushed" this version?
+            // Or better, respect `last_updated_by`.
+
+            // We should use `last_updated_by` for audit.
+            // `user_id` is NOT NULL usually.
+
             project_id: projectId,
             key: s.key,
             value: encryptedValue,
             key_id: keyId,
-            is_secret: true // Default to secret for CLI pushes
+            is_secret: true,
+            last_updated_by: userId,
+            last_updated_at: new Date().toISOString()
         }
     }))
 
     if (upsertData.length > 0) {
         const { error } = await supabase
             .from('secrets')
-            .upsert(upsertData) // Upsert relies on ID being present for updates, or unique constraint.
-        // If we provided ID, it updates. If no ID, it inserts.
+            .upsert(upsertData)
 
         if (error) {
             console.error('Deploy error:', error)
