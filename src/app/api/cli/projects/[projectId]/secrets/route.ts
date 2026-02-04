@@ -2,6 +2,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { validateCliToken } from '@/lib/cli-auth'
 import { decrypt, encrypt } from '@/lib/encryption'
+import { revalidatePath } from 'next/cache'
 import { NextResponse } from 'next/server'
 
 interface SecretPayload {
@@ -95,6 +96,36 @@ export async function GET(
         }
     }))
 
+    // Notification for Pull
+    // Retrieve project name for notification
+    const { data: projectData } = await supabase
+        .from('projects')
+        .select('name')
+        .eq('id', projectId)
+        .single()
+
+    const projectName = projectData?.name || 'Project'
+
+    // We use a fire-and-forget approach for the notification to not block the response
+    supabase.from('notifications').insert({
+        user_id: userId,
+        type: 'secrets_pulled',
+        title: 'Secrets Pulled via CLI',
+        message: `Environment variables pulled from "${projectName}"`,
+        icon: 'Download',
+        variant: 'info',
+        metadata: {
+            projectId,
+            projectName,
+            secretCount: decryptedSecrets.length,
+            source: 'cli'
+        },
+        action_url: `/project/${projectId}`,
+        action_type: 'view_project'
+    }).then(({ error }) => {
+        if (error) console.error('Failed to create pull notification:', error)
+    })
+
     return NextResponse.json({ secrets: decryptedSecrets })
 }
 
@@ -173,6 +204,38 @@ export async function POST(
             console.error('Deploy error:', error)
             return NextResponse.json({ error: error.message }, { status: 500 })
         }
+
+        // Notification for Push/Deploy
+        const { data: projectData } = await supabase
+            .from('projects')
+            .select('name')
+            .eq('id', projectId)
+            .single()
+
+        const projectName = projectData?.name || 'Project'
+
+        await supabase.from('notifications').insert({
+            user_id: userId,
+            type: 'secrets_pushed',
+            title: 'Secrets Deployed via CLI',
+            message: `Deployed ${upsertData.length} secrets to "${projectName}"`,
+            icon: 'Upload',
+            variant: 'success', // Deployment is an "action" so success is good
+            metadata: {
+                projectId,
+                projectName,
+                secretCount: upsertData.length,
+                source: 'cli'
+            },
+            action_url: `/project/${projectId}`,
+            action_type: 'view_project'
+        })
+
+        // Invalidate user's project list cache (update secret counts)
+        const { cacheDel, CacheKeys } = await import('@/lib/cache')
+        await cacheDel(CacheKeys.userProjects(userId))
+        revalidatePath('/dashboard')
+        revalidatePath(`/project/${projectId}`)
     }
 
     return NextResponse.json({ success: true, count: upsertData.length })

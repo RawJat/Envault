@@ -43,9 +43,7 @@ export function NotificationDropdown() {
     return (
         <DropdownMenu open={open} onOpenChange={setOpen}>
             <DropdownMenuTrigger asChild>
-                <div>
-                    <NotificationBell />
-                </div>
+                <NotificationBell />
             </DropdownMenuTrigger>
 
             <DropdownMenuContent

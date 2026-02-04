@@ -48,5 +48,29 @@ export async function verifyDeviceCode(userCode: string) {
         return { error: 'Failed to approve device. Please try again.' }
     }
 
+    // Create notification for device login
+    const deviceName = session.device_info?.hostname || 'Unknown Device'
+    const { error: notifError } = await admin
+        .from('notifications')
+        .insert({
+            user_id: user.id,
+            type: 'new_device_access',
+            title: 'New Device Authenticated',
+            message: `CLI access granted to ${deviceName}`,
+            icon: 'Terminal', // Icon for CLI access
+            variant: 'info',
+            metadata: {
+                device_info: session.device_info,
+                device_code: session.device_code
+            }
+        })
+
+    if (notifError) {
+        console.error('Failed to create device login notification:', notifError)
+        // Don't fail the request if notification fails
+    } else {
+        console.log('✅ Device login notification created successfully')
+    }
+
     return { success: true }
 }

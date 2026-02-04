@@ -51,6 +51,8 @@ async function shouldCreateNotification(
         'settings_changed',
         'secrets_pulled',
         'secrets_pushed',
+        'new_device_access',
+        'new_location',
         'member_joined',
         'member_left',
         'role_upgraded',

@@ -44,6 +44,21 @@ export function DeviceAuthForm() {
         }
     }
 
+    const handleClose = () => {
+        try {
+            window.close()
+        } catch (e) {
+            // ignore
+        }
+
+        // If the window is still open after a delay, show a message
+        setTimeout(() => {
+            toast.info('Browser prevented automatic closing. Please close this window manually.', {
+                duration: 5000
+            })
+        }, 300)
+    }
+
     useEffect(() => {
         let timer: NodeJS.Timeout
         if (success && countdown > 0) {
@@ -51,7 +66,7 @@ export function DeviceAuthForm() {
                 setCountdown((prev) => prev - 1)
             }, 1000)
         } else if (success && countdown === 0) {
-            window.close()
+            handleClose()
         }
         return () => clearTimeout(timer)
     }, [success, countdown])
@@ -91,7 +106,7 @@ export function DeviceAuthForm() {
                                         <Button
                                             variant="outline"
                                             className="mt-4 w-full bg-background/50 hover:bg-background/80"
-                                            onClick={() => window.close()}
+                                            onClick={handleClose}
                                         >
                                             Close Window
                                         </Button>

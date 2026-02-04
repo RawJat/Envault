@@ -1,22 +1,25 @@
 "use client"
 
 import { Bell } from 'lucide-react'
+import { Kbd } from '@/components/ui/kbd'
 import { useNotificationStore } from '@/lib/stores/notification-store'
 import { cn } from '@/lib/utils'
 
-interface NotificationBellProps {
-    onClick?: () => void
-    className?: string
+import { forwardRef } from 'react'
+
+interface NotificationBellProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+
 }
 
-export function NotificationBell({ onClick, className }: NotificationBellProps) {
+export const NotificationBell = forwardRef<HTMLButtonElement, NotificationBellProps>(({ className, ...props }, ref) => {
     const unreadCount = useNotificationStore(state => state.unreadCount)
 
     return (
         <button
-            onClick={onClick}
+            ref={ref}
+            {...props}
             className={cn(
-                'relative inline-flex items-center justify-center h-10 w-10 rounded-md transition-colors',
+                'inline-flex items-center justify-center h-10 px-3 rounded-md transition-colors gap-2',
                 'hover:bg-accent hover:text-accent-foreground',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                 className
@@ -25,10 +28,9 @@ export function NotificationBell({ onClick, className }: NotificationBellProps) 
         >
             <Bell className="w-5 h-5" />
             {unreadCount > 0 && (
-                <span className="absolute top-0.5 right-1 flex h-4 min-w-[16px] items-center justify-center rounded-sm bg-muted-foreground/20 dark:bg-muted-foreground/30 px-1 text-[12px] font-semibold text-foreground border border-border">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
+                <Kbd>{unreadCount > 9 ? '9+' : unreadCount}</Kbd>
             )}
         </button>
     )
-}
+})
+NotificationBell.displayName = "NotificationBell"
