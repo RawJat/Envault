@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/DinanathDash/Envault/compare/v1.4.0...v1.5.0) (2026-02-04)
+
+
+### Features
+
+* Implement comprehensive keyboard shortcuts and Kbd hints across the application, introduce a global search dialog, and enhance notification management. ([8fda2df](https://github.com/DinanathDash/Envault/commit/8fda2df82047dcf19d34c534a539d850710c411d))
+
 # [1.4.0](https://github.com/DinanathDash/Envault/compare/v1.3.0...v1.4.0) (2026-02-04)
 
 
