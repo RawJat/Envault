@@ -1,12 +1,10 @@
-"use client"
-
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Shield, Smartphone, Laptop, Trash2, Calendar, Clock } from "lucide-react"
 import { toast } from "sonner"
 import { getPersonalAccessTokens, revokePersonalAccessToken } from "@/app/actions"
 import { formatDistanceToNow } from "date-fns"
+import { CornerDownLeft, Shield, Laptop, Trash2, Calendar, Clock } from "lucide-react"
 import {
     AlertDialog,
     AlertDialogAction,
@@ -18,6 +16,9 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { useHotkeys } from "@/hooks/use-hotkeys"
+import { Kbd } from "@/components/ui/kbd"
+import { getModifierKey } from "@/lib/utils"
 
 interface Token {
     id: string
@@ -35,14 +36,17 @@ interface Token {
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { signInWithGoogle, signInWithGithub } from "@/app/actions"
-import { User } from "@/lib/store"
 // actually I'll just rely on what I see in settings-view.tsx
 
-export function SecurityTab({ user }: { user: any }) {
+interface User {
+    authProviders?: string[]
+}
+
+export function SecurityTab({ user }: { user: User | null }) {
     const [tokens, setTokens] = useState<Token[]>([])
     const [loading, setLoading] = useState(true)
 
-    const fetchTokens = async () => {
+    const fetchTokens = useCallback(async () => {
         setLoading(true)
         const result = await getPersonalAccessTokens()
         if (result.error) {
@@ -51,11 +55,15 @@ export function SecurityTab({ user }: { user: any }) {
             setTokens(result.tokens || [])
         }
         setLoading(false)
-    }
+    }, [])
 
     useEffect(() => {
-        fetchTokens()
-    }, [])
+        // Run async to avoid synchronous state update in effect
+        const timer = setTimeout(() => {
+            fetchTokens()
+        }, 0)
+        return () => clearTimeout(timer)
+    }, [fetchTokens])
 
     const handleRevoke = async (id: string) => {
         const result = await revokePersonalAccessToken(id)
@@ -66,6 +74,18 @@ export function SecurityTab({ user }: { user: any }) {
             fetchTokens() // Refresh list
         }
     }
+
+    useHotkeys("alt+x", () => {
+        if (tokens.length > 0) {
+            handleRevoke(tokens[0].id)
+        }
+    })
+
+    useHotkeys("alt+x", () => {
+        if (tokens.length > 0) {
+            handleRevoke(tokens[0].id)
+        }
+    })
 
     const getDeviceIcon = (metadata: Token['metadata']) => {
         const platform = metadata?.platform || '';
@@ -203,6 +223,11 @@ export function SecurityTab({ user }: { user: any }) {
                                             <AlertDialogTrigger asChild>
                                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive -mt-1 -mr-1">
                                                     <Trash2 className="w-4 h-4" />
+                                                    {tokens.indexOf(token) === 0 && (
+                                                        <Kbd variant="outline" size="xs" className="absolute -top-4 -right-2 scale-75 opacity-0 group-hover:opacity-100 transition-opacity hidden md:inline-flex">
+                                                            {getModifierKey('ctrl')}X
+                                                        </Kbd>
+                                                    )}
                                                 </Button>
                                             </AlertDialogTrigger>
                                             <AlertDialogContent>
@@ -215,8 +240,11 @@ export function SecurityTab({ user }: { user: any }) {
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter>
                                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handleRevoke(token.id)} className="bg-destructive text-destructive-foreground">
+                                                    <AlertDialogAction onClick={() => handleRevoke(token.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 flex items-center gap-2">
                                                         Revoke Access
+                                                        <div className="hidden md:flex items-center gap-1">
+                                                            <Kbd variant="primary" size="xs"><CornerDownLeft className="h-3 w-3" /></Kbd>
+                                                        </div>
                                                     </AlertDialogAction>
                                                 </AlertDialogFooter>
                                             </AlertDialogContent>

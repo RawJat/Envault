@@ -14,12 +14,12 @@ export default function TermsPage() {
             <main className="flex-1 container max-w-3xl py-12 px-4 md:px-6">
                 <h1 className="text-3xl font-bold tracking-tight mb-8">Terms of Service</h1>
                 <div className="prose prose-stone dark:prose-invert max-w-none space-y-8">
-                    <p className="lead">Last updated: {new Date().toLocaleDateString()}</p>
+                    <p className="lead">Last updated: 05 February 2026</p>
 
                     <section>
                         <h2 className="text-xl font-semibold mb-4">1. Agreement to Terms</h2>
                         <p className="text-muted-foreground">
-                            By accessing or using Envault ("Service"), you agree to be bound by these Terms of Service ("Terms").
+                            By accessing or using Envault (&quot;Service&quot;), you agree to be bound by these Terms of Service (&quot;Terms&quot;).
                             If you disagree with any part of the terms, then you may not access the Service. These Terms apply to all visitors, users, and others who access or use the Service.
                         </p>
                     </section>
@@ -83,7 +83,7 @@ export default function TermsPage() {
                     <section>
                         <h2 className="text-xl font-semibold mb-4">8. Disclaimer</h2>
                         <p className="text-muted-foreground">
-                            Your use of the Service is at your sole risk. The Service is provided on an "AS IS" and "AS AVAILABLE" basis. The Service is provided without warranties of any kind, whether express or implied, including, but not limited to, implied warranties of merchantability, fitness for a particular purpose, non-infringement or course of performance.
+                            Your use of the Service is at your sole risk. The Service is provided on an &quot;AS IS&quot; and &quot;AS AVAILABLE&quot; basis. The Service is provided without warranties of any kind, whether express or implied, including, but not limited to, implied warranties of merchantability, fitness for a particular purpose, non-infringement or course of performance.
                         </p>
                     </section>
 

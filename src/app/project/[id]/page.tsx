@@ -17,13 +17,13 @@ export default async function ProjectPage({ params }: PageProps) {
     }
 
     // Fetch the project first (no joins to avoid RLS recursion)
-    const { data: project, error: projectError } = await supabase
+    const { data: project, error: _projectError } = await supabase
         .from('projects')
         .select('*')
         .eq('id', id)
         .single()
 
-    if (projectError || !project) {
+    if (_projectError || !project) {
         redirect('/dashboard')
     }
 
@@ -74,7 +74,7 @@ export default async function ProjectPage({ params }: PageProps) {
         // For MVP, parallel `getUserById` is okay for < 50 users.
 
         await Promise.all(Array.from(userIds).map(async (uid) => {
-            const { data, error } = await adminSupabase.auth.admin.getUserById(uid)
+            const { data } = await adminSupabase.auth.admin.getUserById(uid)
             if (data?.user) {
                 userMap.set(uid, {
                     id: uid,
@@ -89,7 +89,7 @@ export default async function ProjectPage({ params }: PageProps) {
         id: project.id,
         name: project.name,
         createdAt: project.created_at,
-        variables: await Promise.all((secrets || []).map(async (secret: any) => {
+        variables: await Promise.all((secrets || []).map(async (secret) => {
             let decryptedValue = secret.value
 
             // Only try to decrypt if it looks like encrypted data

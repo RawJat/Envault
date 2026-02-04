@@ -59,7 +59,7 @@ export function UpdatePasswordForm() {
     }
 
     return (
-        <div className="w-full max-w-md p-4">
+        <div className="w-[90vw] sm:w-full sm:max-w-md p-4">
             <Card className="border-muted/40 shadow-2xl backdrop-blur-sm bg-background/80">
                 <CardHeader className="space-y-1">
                     <CardTitle className="text-2xl font-bold tracking-tight text-center">

@@ -11,6 +11,10 @@ export const CACHE_TTL = {
     PROJECT_LIST: 900,           // 15 minutes
     PROJECT_MEMBERS: 600,        // 10 minutes
     UNREAD_COUNT: 120,           // 2 minutes (real-time data)
+    DETAILS: 3600,               // 1 hour
+    PREFERENCES: 3600,           // 1 hour
+    NOTIFICATIONS_LIST: 300,     // 5 minutes
+    USER_PROFILE: 3600,          // 1 hour
 } as const
 
 /**
@@ -29,6 +33,15 @@ export const CacheKeys = {
 
     userUnreadCount: (userId: string) =>
         `user:${userId}:unread_count`,
+
+    userPreferences: (userId: string) =>
+        `user:${userId}:preferences`,
+
+    userNotificationsList: (userId: string) =>
+        `user:${userId}:notifications:list`,
+
+    userProfile: (userId: string) =>
+        `user:${userId}:profile`,
 
     // Project-specific keys
     projectMembers: (projectId: string) =>
@@ -204,7 +217,7 @@ export async function invalidateUserProjectRole(
  */
 export async function invalidateUserSecretAccess(
     userId: string,
-    projectId: string
+
 ): Promise<void> {
     // We need to invalidate all secret access caches for this user in this project
     // Since we don't know all secret IDs, we use pattern matching

@@ -111,7 +111,7 @@ export function parseEnvContent(content: string): ParseResult {
 
         // Determine if value should be treated as secret
         // Consider it secret if it contains common secret patterns
-        const isSecret = isLikelySecret(key, value)
+        const isSecret = isLikelySecret()
 
         variables.push({
             key: key.toUpperCase(),
@@ -128,6 +128,6 @@ export function parseEnvContent(content: string): ParseResult {
 /**
  * Determines if a variable is likely a secret based on key name and value patterns
  */
-function isLikelySecret(_key: string, _value: string): boolean {
+function isLikelySecret(): boolean {
     return true
 }

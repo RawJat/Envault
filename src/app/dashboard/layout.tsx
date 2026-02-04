@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { ProjectsSync } from '@/components/dashboard/projects-sync'
-import { NotificationProvider } from '@/components/notifications/notification-provider'
+
 
 export default async function DashboardLayout({
     children,
@@ -18,7 +18,6 @@ export default async function DashboardLayout({
     return (
         <>
             <ProjectsSync />
-            <NotificationProvider />
             {children}
         </>
     )

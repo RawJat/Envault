@@ -41,7 +41,7 @@ export async function POST(request: Request) {
 
             // 1. Generate PAT
             const secretToken = crypto.randomUUID()
-            const name = `CLI Device Token (${session.device_info?.hostname || 'Unknown'})` // More descriptive name? Or stick to static name + metadata.
+
             // Let's keep name static or unique? If static, it overwrites. A user might have multiple devices.
             // If we use "CLI Device Token", it overwrites the previous one!
             // WE MUST FIX THIS. Users wanted to see "devices". This implies multiple devices.

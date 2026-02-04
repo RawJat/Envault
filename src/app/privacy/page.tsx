@@ -14,12 +14,12 @@ export default function PrivacyPage() {
             <main className="flex-1 container max-w-3xl py-12 px-4 md:px-6">
                 <h1 className="text-3xl font-bold tracking-tight mb-8">Privacy Policy</h1>
                 <div className="prose prose-stone dark:prose-invert max-w-none space-y-8">
-                    <p className="lead">Last updated: {new Date().toLocaleDateString()}</p>
+                    <p className="lead">Last updated: 05 February 2026</p>
 
                     <section>
                         <h2 className="text-xl font-semibold mb-4">1. Introduction</h2>
                         <p className="text-muted-foreground">
-                            Welcome to Envault ("we," "our," or "us"). We respect your privacy and are committed to protecting your personal data.
+                            Welcome to Envault (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;). We respect your privacy and are committed to protecting your personal data.
                             This privacy policy will inform you as to how we look after your personal data when you visit our website
                             and tell you about your privacy rights and how the law protects you. By using our Service, you agree to the collection and use of information in accordance with this policy.
                         </p>
@@ -32,10 +32,10 @@ export default function PrivacyPage() {
                         </p>
                         <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
                             <li>
-                                <strong>Personal Data:</strong> While using our Service, we may ask you to provide us with certain personally identifiable information that can be used to contact or identify you ("Personal Data"). Personally identifiable information may include, but is not limited to: Email address, First name and last name, Cookies and Usage Data.
+                                <strong>Personal Data:</strong> While using our Service, we may ask you to provide us with certain personally identifiable information that can be used to contact or identify you (&quot;Personal Data&quot;). Personally identifiable information may include, but is not limited to: Email address, First name and last name, Cookies and Usage Data.
                             </li>
                             <li>
-                                <strong>Usage Data:</strong> We may also collect information how the Service is accessed and used ("Usage Data"). This Usage Data may include information such as your computer's Internet Protocol address (e.g. IP address), browser type, browser version, the pages of our Service that you visit, the time and date of your visit, the time spent on those pages, unique device identifiers and other diagnostic data.
+                                <strong>Usage Data:</strong> We may also collect information how the Service is accessed and used (&quot;Usage Data&quot;). This Usage Data may include information such as your computer&apos;s Internet Protocol address (e.g. IP address), browser type, browser version, the pages of our Service that you visit, the time and date of your visit, the time spent on those pages, unique device identifiers and other diagnostic data.
                             </li>
                         </ul>
                     </section>
@@ -45,7 +45,7 @@ export default function PrivacyPage() {
                         <p className="text-muted-foreground">
                             The security of your data is important to us. Envault employs end-to-end encryption for your stored environment variables.
                             Your secrets are encrypted on the client-side before being transmitted to our servers (if applicable)
-                            or stored securely using our provider's infrastructure. We use industry-standard AES-256-GCM encryption.
+                            or stored securely using our provider&apos;s infrastructure. We use industry-standard AES-256-GCM encryption.
                             However, please remember that no method of transmission over the Internet, or method of electronic storage is 100% secure.
                             While we strive to use commercially acceptable means to protect your Personal Data, we cannot guarantee its absolute security.
                         </p>
@@ -70,7 +70,7 @@ export default function PrivacyPage() {
                     <section>
                         <h2 className="text-xl font-semibold mb-4">5. Third-Party Service Providers</h2>
                         <p className="text-muted-foreground">
-                            We may employ third party companies and individuals to facilitate our Service ("Service Providers"), to provide the Service on our behalf, to perform Service-related services or to assist us in analyzing how our Service is used.
+                            We may employ third party companies and individuals to facilitate our Service (&quot;Service Providers&quot;), to provide the Service on our behalf, to perform Service-related services or to assist us in analyzing how our Service is used.
                             These third parties have access to your Personal Data only to perform these tasks on our behalf and are obligated not to disclose or use it for any other purpose.
                             Examples include <strong>Supabase</strong> for authentication and database services, and <strong>Upstash</strong> for data storage.
                         </p>
@@ -102,7 +102,7 @@ export default function PrivacyPage() {
                         <h2 className="text-xl font-semibold mb-4">8. Changes to This Privacy Policy</h2>
                         <p className="text-muted-foreground">
                             We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page.
-                            We will let you know via email and/or a prominent notice on our Service, prior to the change becoming effective and update the "effective date" at the top of this Privacy Policy.
+                            We will let you know via email and/or a prominent notice on our Service, prior to the change becoming effective and update the &quot;effective date&quot; at the top of this Privacy Policy.
                             You are advised to review this Privacy Policy periodically for any changes. Changes to this Privacy Policy are effective when they are posted on this page.
                         </p>
                     </section>

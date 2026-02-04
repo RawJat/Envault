@@ -5,7 +5,7 @@ import { useEnvaultStore } from "@/lib/store"
 import { CreateProjectDialog } from "@/components/dashboard/create-project-dialog"
 import { ProjectCard } from "@/components/dashboard/project-card"
 import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler"
-import { ShieldCheck, User, Settings as SettingsIcon, LogOut, Share2 } from "lucide-react"
+import { ShieldCheck, Settings as SettingsIcon, LogOut, Share2, Search, Keyboard } from "lucide-react"
 import { UserAvatar } from "@/components/ui/user-avatar"
 import {
     DropdownMenu,
@@ -16,14 +16,51 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
+import { Kbd } from "@/components/ui/kbd"
+import { getModifierKey } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 import { signOut } from "@/app/actions"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { NotificationDropdown } from "@/components/notifications/notification-dropdown"
+import { useState, useEffect } from "react"
 
 export default function DashboardPage() {
     const projects = useEnvaultStore((state) => state.projects)
     const { user, logout, isLoading } = useEnvaultStore()
+    const [activeTab, setActiveTab] = useState("my-projects")
+    const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+
+    // Shortcuts
+    useEffect(() => {
+        const handleNew = () => setIsCreateDialogOpen(true)
+        const handleSwitch = (e: Event) => {
+            const index = (e as CustomEvent).detail.index
+            if (index === 0) setActiveTab("my-projects")
+            if (index === 1) setActiveTab("shared-with-me")
+        }
+        const handlePrev = () => setActiveTab("my-projects")
+        const handleNext = () => setActiveTab("shared-with-me")
+        const handleShare = () => {
+            // Ideally we'd share the "focused" project, but as a shortcut:
+            // Find first project card or do something global.
+            // For now, let's just toast or do nothing if ambiguous.
+            console.log("Global share triggered on dashboard")
+        }
+
+        document.addEventListener('universal-new', handleNew)
+        document.addEventListener('switch-tab', handleSwitch)
+        document.addEventListener('prev-tab', handlePrev)
+        document.addEventListener('next-tab', handleNext)
+        document.addEventListener('universal-share', handleShare)
+
+        return () => {
+            document.removeEventListener('universal-new', handleNew)
+            document.removeEventListener('switch-tab', handleSwitch)
+            document.removeEventListener('prev-tab', handlePrev)
+            document.removeEventListener('next-tab', handleNext)
+            document.removeEventListener('universal-share', handleShare)
+        }
+    }, [])
 
     const handleLogout = async () => {
         logout()
@@ -43,6 +80,25 @@ export default function DashboardPage() {
                         <span className="font-bold text-lg">Envault</span>
                     </div>
                     <div className="flex items-center gap-4">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-muted-foreground hidden md:flex items-center gap-2 h-9"
+                            onClick={() => {
+                                // Now handled globally by Cmd+K, but we keep button for clickability
+                                // We can either dispatch an event or just let ShortcutProvider handle it.
+                                // Simplest: dispatch a custom event that ShortcutProvider can listen to OR 
+                                // Since we want it to be global, let's just use the same event pattern.
+                                document.dispatchEvent(new CustomEvent('open-global-search'))
+                            }}
+                        >
+                            <Search className="w-4 h-4" />
+                            Search...
+                            <div className="ml-2 hidden md:flex items-center gap-1">
+                                <Kbd variant="outline" size="xs">{getModifierKey('mod')}</Kbd>
+                                <Kbd variant="outline" size="xs">K</Kbd>
+                            </div>
+                        </Button>
                         <AnimatedThemeToggler />
                         <NotificationDropdown />
 
@@ -71,12 +127,31 @@ export default function DashboardPage() {
                                     <Link href="/settings" className="cursor-pointer flex w-full items-center">
                                         <SettingsIcon className="mr-2 h-4 w-4" />
                                         <span>Settings</span>
+                                        <div className="ml-auto hidden md:flex items-center gap-1">
+                                            <Kbd variant="outline" size="xs">G</Kbd>
+                                            <Kbd variant="outline" size="xs">O</Kbd>
+                                        </div>
                                     </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    className="cursor-pointer"
+                                    onClick={() => document.dispatchEvent(new CustomEvent('open-shortcut-help'))}
+                                >
+                                    <Keyboard className="mr-2 h-4 w-4" />
+                                    <span>Keyboard Shortcuts</span>
+                                    <div className="ml-auto hidden md:flex items-center gap-1">
+                                        <Kbd variant="outline" size="xs">Shift</Kbd>
+                                        <Kbd variant="outline" size="xs">?</Kbd>
+                                    </div>
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem className="text-red-600 dark:text-red-500 focus:text-red-600 dark:focus:text-red-500 cursor-pointer" onClick={handleLogout}>
                                     <LogOut className="mr-2 h-4 w-4" />
                                     <span>Log out</span>
+                                    <div className="ml-auto hidden md:flex items-center gap-1">
+                                        <Kbd variant="outline" size="xs">{getModifierKey('ctrl')}</Kbd>
+                                        <Kbd variant="outline" size="xs">Q</Kbd>
+                                    </div>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -90,13 +165,17 @@ export default function DashboardPage() {
                         <h1 className="text-3xl font-bold tracking-tight">Projects</h1>
                         <p className="text-muted-foreground">Manage your environment variables securely.</p>
                     </div>
-                    <CreateProjectDialog />
+                    <CreateProjectDialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} />
                 </div>
 
-                <Tabs defaultValue="my-projects" className="w-full">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                     <TabsList className="mb-6">
-                        <TabsTrigger value="my-projects">My Projects</TabsTrigger>
-                        <TabsTrigger value="shared-with-me">Shared with Me</TabsTrigger>
+                        <TabsTrigger value="my-projects" className="flex items-center gap-2">
+                            My Projects<Kbd variant="outline" size="xs">1</Kbd>
+                        </TabsTrigger>
+                        <TabsTrigger value="shared-with-me" className="flex items-center gap-2">
+                            Shared with Me<Kbd variant="outline" size="xs">2</Kbd>
+                        </TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="my-projects">
@@ -120,7 +199,7 @@ export default function DashboardPage() {
                             <div className="text-center py-20 border-2 border-dashed rounded-xl">
                                 <Share2 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                                 <h3 className="text-lg font-medium">No shared projects</h3>
-                                <p className="text-muted-foreground mb-4">You haven't been invited to any projects yet.</p>
+                                <p className="text-muted-foreground mb-4">You haven&apos;t been invited to any projects yet.</p>
                             </div>
                         ) : (
                             <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6">
@@ -132,7 +211,7 @@ export default function DashboardPage() {
                     </TabsContent>
                 </Tabs>
             </main>
-        </div>
+        </div >
     )
 }
 

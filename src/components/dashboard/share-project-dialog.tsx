@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,11 +11,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
-import { Copy, Share2, Check, Loader2 } from "lucide-react"
+import { Copy, Share2, Check, CornerDownLeft } from "lucide-react"
 import { MemberSkeleton } from "@/components/notifications/notification-skeleton"
 import { inviteUser, approveRequest, rejectRequest, updateMemberRole, removeMember } from "@/app/invite-actions"
 import { Project } from "@/lib/store"
 import { ShareConfirmationDialog, PendingChange } from "./share-confirmation-dialog"
+import { useHotkeys } from "@/hooks/use-hotkeys"
+import { Kbd } from "@/components/ui/kbd"
 
 interface ShareProjectDialogProps {
     project: Project
@@ -247,6 +249,14 @@ export function ShareProjectDialog({ project, children, open: controlledOpen, on
         return originalValue
     }
 
+    // Shortcut for saving changes
+    useHotkeys("mod+s", (e) => {
+        if (open && isOwner && hasChanges) {
+            e.preventDefault()
+            handleSave()
+        }
+    }, { enableOnContentEditable: true, enableOnFormTags: true })
+
     return (
         <>
             <Dialog open={open} onOpenChange={(val) => {
@@ -299,7 +309,7 @@ export function ShareProjectDialog({ project, children, open: controlledOpen, on
 
                             <div className="border-t my-4" />
 
-                            <div className="flex flex-col space-y-2">
+                            <form onSubmit={(e) => { e.preventDefault(); handleInvite() }} className="flex flex-col space-y-2">
                                 <Label className="text-sm">Invite by Email</Label>
                                 <div className="flex flex-col sm:flex-row gap-2">
                                     <Input
@@ -308,11 +318,11 @@ export function ShareProjectDialog({ project, children, open: controlledOpen, on
                                         onChange={(e) => setEmail(e.target.value)}
                                         className="flex-1"
                                     />
-                                    <Button onClick={handleInvite} disabled={loading || !email} className="sm:w-auto">
-                                        {loading ? "Sending..." : "Send Invitation"}
+                                    <Button type="submit" disabled={loading || !email} className="sm:w-auto">
+                                        {loading ? "Sending..." : <span className="flex items-center gap-2">Send Invitation <span className="flex items-center gap-1"><Kbd className="bg-primary-foreground/20 text-primary-foreground border-0">⌘</Kbd><Kbd className="bg-primary-foreground/20 text-primary-foreground border-0"><CornerDownLeft className="w-3 h-3" /></Kbd></span></span>}
                                     </Button>
                                 </div>
-                            </div>
+                            </form>
                         </TabsContent>
 
                         <TabsContent value="members" className="pt-4 space-y-4">
@@ -346,7 +356,7 @@ export function ShareProjectDialog({ project, children, open: controlledOpen, on
                                                                 <Select
                                                                     value={getCurrentValue(request.user_id, 'pending')}
                                                                     onValueChange={(value: 'pending' | 'approve' | 'deny') =>
-                                                                        handleRequestAction(request, value as any)
+                                                                        handleRequestAction(request, value)
                                                                     }
                                                                 >
                                                                     <SelectTrigger className="w-full sm:w-32">
@@ -414,7 +424,7 @@ export function ShareProjectDialog({ project, children, open: controlledOpen, on
                                                 onClick={handleSave}
                                                 disabled={!hasChanges}
                                             >
-                                                Save Changes
+                                                Save Changes <span className="ml-2 flex items-center gap-1"><Kbd className="bg-primary-foreground/20 text-primary-foreground border-0">⌘</Kbd><Kbd className="bg-primary-foreground/20 text-primary-foreground border-0">S</Kbd></span>
                                             </Button>
                                         )}
                                     </>

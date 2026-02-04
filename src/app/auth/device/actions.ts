@@ -3,7 +3,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { redirect } from 'next/navigation'
+
 
 export async function verifyDeviceCode(userCode: string) {
     const supabase = await createClient()

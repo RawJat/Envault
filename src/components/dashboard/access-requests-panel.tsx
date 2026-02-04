@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -10,6 +10,8 @@ import { toast } from "sonner"
 import { approveRequest, rejectRequest } from "@/app/invite-actions"
 import { createClient } from "@/lib/supabase/client"
 import { AccessRequestSkeleton } from "@/components/notifications/notification-skeleton"
+import { useHotkeys } from "@/hooks/use-hotkeys"
+import { Kbd } from "@/components/ui/kbd"
 
 interface AccessRequest {
     id: string
@@ -17,7 +19,7 @@ interface AccessRequest {
     project_id: string
     status: string
     created_at: string
-    projects: any // Supabase join returns array, we'll handle it
+    projects: { name: string, user_id: string } | { name: string, user_id: string }[]
     requester_email?: string
 }
 
@@ -26,8 +28,8 @@ export function AccessRequestsPanel() {
     const [loading, setLoading] = useState(true)
     const [processingIds, setProcessingIds] = useState<Set<string>>(new Set())
 
-    const fetchRequests = async () => {
-        setLoading(true)
+    const fetchRequests = useCallback(async (shouldSetLoading = true) => {
+        if (shouldSetLoading) setLoading(true)
         const supabase = createClient()
 
         // Get current user
@@ -35,7 +37,7 @@ export function AccessRequestsPanel() {
         if (!user) return
 
         // Fetch pending requests for projects owned by current user
-        const { data, error } = await supabase
+        const { data } = await supabase
             .from('access_requests')
             .select(`
                 id,
@@ -70,11 +72,12 @@ export function AccessRequestsPanel() {
         }
 
         setLoading(false)
-    }
+    }, [])
 
     useEffect(() => {
-        fetchRequests()
-    }, [])
+        // eslint-disable-next-line
+        fetchRequests(false)
+    }, [fetchRequests])
 
     const handleApprove = async (requestId: string, projectName: string) => {
         setProcessingIds(prev => new Set(prev).add(requestId))
@@ -114,6 +117,23 @@ export function AccessRequestsPanel() {
         })
     }
 
+    // Shortcuts for the first request
+    useHotkeys("y", () => {
+        if (requests.length > 0 && !processingIds.has(requests[0].id)) {
+            const first = requests[0]
+            const project = Array.isArray(first.projects) ? first.projects[0] : first.projects
+            handleApprove(first.id, project?.name || 'Project')
+        }
+    })
+
+    useHotkeys("x", () => {
+        if (requests.length > 0 && !processingIds.has(requests[0].id)) {
+            const first = requests[0]
+            const project = Array.isArray(first.projects) ? first.projects[0] : first.projects
+            handleReject(first.id, project?.name || 'Project')
+        }
+    })
+
     if (loading) {
         return <AccessRequestSkeleton />
     }
@@ -146,9 +166,10 @@ export function AccessRequestsPanel() {
             </CardHeader>
             <CardContent>
                 <div className="space-y-4">
-                    {requests.map((request) => {
+                    {requests.map((request, index) => {
                         const isProcessing = processingIds.has(request.id)
-                        const projectName = (request.projects as any)?.name || 'Unknown Project'
+                        const project = Array.isArray(request.projects) ? request.projects[0] : request.projects
+                        const projectName = project?.name || 'Unknown Project'
 
                         return (
                             <div
@@ -186,7 +207,7 @@ export function AccessRequestsPanel() {
                                         ) : (
                                             <>
                                                 <Check className="h-4 w-4 mr-1" />
-                                                Approve
+                                                Approve{index === 0 && <Kbd variant="primary" size="xs" className="ml-2">Y</Kbd>}
                                             </>
                                         )}
                                     </Button>
@@ -201,7 +222,7 @@ export function AccessRequestsPanel() {
                                         ) : (
                                             <>
                                                 <X className="h-4 w-4 mr-1" />
-                                                Reject
+                                                Reject{index === 0 && <Kbd variant="ghost" size="xs" className="ml-2">X</Kbd>}
                                             </>
                                         )}
                                     </Button>

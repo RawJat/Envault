@@ -32,7 +32,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
             </div>
 
             {/* RIGHT COLUMN: Auth Form */}
-            <div className="flex flex-col items-center justify-center p-8 lg:p-24 relative">
+            <div className="flex flex-col items-center justify-center p-2 sm:p-8 lg:p-24 relative">
                 {children}
             </div>
         </main>

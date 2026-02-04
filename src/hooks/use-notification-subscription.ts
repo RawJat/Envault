@@ -30,7 +30,8 @@ export function useNotificationSubscription() {
 
                 if (!isMounted) return
 
-                // Initial fetch
+                // Initial fetch if needed
+                // We always fetch on mount to ensure freshness, handled by store's idempotent-ish nature
                 await fetchNotifications()
 
                 if (!isMounted) return

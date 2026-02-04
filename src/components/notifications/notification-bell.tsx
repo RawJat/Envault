@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 
 import { forwardRef } from 'react'
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface NotificationBellProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 }
@@ -28,7 +29,7 @@ export const NotificationBell = forwardRef<HTMLButtonElement, NotificationBellPr
         >
             <Bell className="w-5 h-5" />
             {unreadCount > 0 && (
-                <Kbd>{unreadCount > 9 ? '9+' : unreadCount}</Kbd>
+                <Kbd showOnMobile>{unreadCount > 9 ? '9+' : unreadCount}</Kbd>
             )}
         </button>
     )

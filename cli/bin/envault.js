@@ -2,7 +2,6 @@
 
 import { Command } from 'commander';
 import chalk from 'chalk';
-import boxen from 'boxen';
 import { login } from '../src/commands/login.js';
 import { init } from '../src/commands/init.js';
 import { deploy } from '../src/commands/deploy.js';
@@ -31,7 +30,7 @@ program
     .name('envault')
     .description('Cliff-side security for your environment variables')
     .version(pkg.version)
-    .hook('preAction', (thisCommand) => {
+    .hook('preAction', () => {
         // Show logo on all commands? Maybe too noisy.
         // Let's show it only on help or specific ones.
         // Or just a mini header.

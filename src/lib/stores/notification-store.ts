@@ -1,6 +1,5 @@
 import { create } from 'zustand'
 import { Notification } from '@/lib/types/notifications'
-import { createClient } from '@/lib/supabase/client'
 
 interface NotificationStore {
     notifications: Notification[]
@@ -28,37 +27,34 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
 
     fetchNotifications: async () => {
         set({ isLoading: true })
-        const supabase = createClient()
 
-        try {
-            const { data: { user } } = await supabase.auth.getUser()
-            if (!user) {
-                set({ isLoading: false })
-                return
+        const fetchWithRetry = async (retries = 3, delay = 1000) => {
+            try {
+                // Use cached server action (dynamically imported to avoid build issues if this file is bundled client-side)
+                const { getNotificationsAction } = await import('@/app/notification-actions')
+                const { data, error } = await getNotificationsAction()
+
+                if (error) throw error
+
+                const notifications = (data || []) as Notification[]
+                const unreadCount = notifications.filter(n => !n.is_read).length
+
+                set({
+                    notifications,
+                    unreadCount,
+                    isLoading: false
+                })
+            } catch (error) {
+                console.error(`Failed to fetch notifications (attempt ${4 - retries}/3):`, error)
+                if (retries > 0) {
+                    setTimeout(() => fetchWithRetry(retries - 1, delay * 1.5), delay)
+                } else {
+                    set({ isLoading: false })
+                }
             }
-
-            // Fetch notifications (always fresh - real-time requirement)
-            const { data, error } = await supabase
-                .from('notifications')
-                .select('*')
-                .eq('user_id', user.id)
-                .order('created_at', { ascending: false })
-                .limit(50)
-
-            if (error) throw error
-
-            const notifications = (data || []) as Notification[]
-            const unreadCount = notifications.filter(n => !n.is_read).length
-
-            set({
-                notifications,
-                unreadCount,
-                isLoading: false
-            })
-        } catch (error) {
-            console.error('Failed to fetch notifications:', error)
-            set({ isLoading: false })
         }
+
+        fetchWithRetry()
     },
 
     addNotification: (notification: Notification) => {
@@ -114,17 +110,10 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
             }))
         }
 
-        // Then update database
-        const supabase = createClient()
+        // Then update database via server action
+        const { markNotificationReadAction } = await import('@/app/notification-actions')
         try {
-            const { error } = await supabase
-                .from('notifications')
-                .update({
-                    is_read: true,
-                    read_at: new Date().toISOString()
-                })
-                .eq('id', id)
-
+            const { error } = await markNotificationReadAction(id)
             if (error) throw error
         } catch (error) {
             console.error('Failed to mark notification as read:', error)
@@ -157,20 +146,9 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
         }))
 
         // Then update database
-        const supabase = createClient()
+        const { markAllNotificationsReadAction } = await import('@/app/notification-actions')
         try {
-            const { data: { user } } = await supabase.auth.getUser()
-            if (!user) return
-
-            const { error } = await supabase
-                .from('notifications')
-                .update({
-                    is_read: true,
-                    read_at: new Date().toISOString()
-                })
-                .eq('user_id', user.id)
-                .eq('is_read', false)
-
+            const { error } = await markAllNotificationsReadAction()
             if (error) throw error
         } catch (error) {
             console.error('Failed to mark all as read:', error)
@@ -198,13 +176,9 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
         }))
 
         // Then delete from database
-        const supabase = createClient()
+        const { deleteNotificationAction } = await import('@/app/notification-actions')
         try {
-            const { error } = await supabase
-                .from('notifications')
-                .delete()
-                .eq('id', id)
-
+            const { error } = await deleteNotificationAction(id)
             if (error) throw error
         } catch (error) {
             console.error('Failed to delete notification:', error)
@@ -230,13 +204,9 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
         })
 
         // Then delete from database
-        const supabase = createClient()
+        const { deleteMultipleNotificationsAction } = await import('@/app/notification-actions')
         try {
-            const { error } = await supabase
-                .from('notifications')
-                .delete()
-                .in('id', ids)
-
+            const { error } = await deleteMultipleNotificationsAction(ids)
             if (error) throw error
         } catch (error) {
             console.error('Failed to delete notifications:', error)
@@ -257,17 +227,9 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
         }))
 
         // Then delete from database
-        const supabase = createClient()
+        const { deleteAllReadNotificationsAction } = await import('@/app/notification-actions')
         try {
-            const { data: { user } } = await supabase.auth.getUser()
-            if (!user) return
-
-            const { error } = await supabase
-                .from('notifications')
-                .delete()
-                .eq('user_id', user.id)
-                .eq('is_read', true)
-
+            const { error } = await deleteAllReadNotificationsAction()
             if (error) throw error
         } catch (error) {
             console.error('Failed to delete read notifications:', error)

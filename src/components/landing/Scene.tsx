@@ -1,10 +1,22 @@
 "use client"
 
-import { useRef, useMemo } from "react"
+import { useRef, useMemo, useState } from "react"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
-import { PerspectiveCamera, Environment, ContactShadows, Float, Stars, Trail } from "@react-three/drei"
+import { PerspectiveCamera, Environment, Stars } from "@react-three/drei"
 import * as THREE from "three"
 import { Suspense } from "react"
+
+// Define Particle type
+type Particle = {
+    t: number
+    factor: number
+    speed: number
+    xFactor: number
+    yFactor: number
+    zFactor: number
+    mx: number
+    my: number
+}
 
 function Core() {
     const meshRef = useRef<THREE.Mesh>(null)
@@ -87,8 +99,9 @@ function MovingParticles() {
     const count = 200
     const mesh = useRef<THREE.InstancedMesh>(null)
 
-    const particles = useMemo(() => {
-        const temp = []
+    // Use lazy state initialization to avoid useEffect set-state
+    const [particles] = useState<Particle[]>(() => {
+        const temp: Particle[] = []
         for (let i = 0; i < count; i++) {
             const t = Math.random() * 100
             const factor = 20 + Math.random() * 100
@@ -99,16 +112,20 @@ function MovingParticles() {
             temp.push({ t, factor, speed, xFactor, yFactor, zFactor, mx: 0, my: 0 })
         }
         return temp
-    }, [count])
+    })
 
     const dummy = useMemo(() => new THREE.Object3D(), [])
 
-    useFrame((state) => {
+    useFrame(() => {
         if (!mesh.current) return
 
         particles.forEach((particle, i) => {
-            let { t, factor, speed, xFactor, yFactor, zFactor } = particle
-            t = particle.t += speed / 2
+            const { factor, speed, xFactor, yFactor, zFactor } = particle
+            let { t } = particle
+
+            t += speed / 2
+            particle.t = t
+
             const a = Math.cos(t) + Math.sin(t * 1) / 10
             const b = Math.sin(t) + Math.cos(t * 2) / 10
             const s = Math.cos(t)
@@ -136,9 +153,9 @@ function MovingParticles() {
 }
 
 function CameraController() {
-    const { camera } = useThree()
+    // camera was unused
 
-    useFrame(() => {
+    useFrame((state) => {
         const scrollY = window.scrollY
         const height = document.documentElement.scrollHeight - window.innerHeight
         const scrollProgress = Math.min(scrollY / height, 1)
@@ -146,8 +163,8 @@ function CameraController() {
         // Subtle camera rotation based on scroll
         const targetY = scrollProgress * 2
 
-        camera.position.y += (targetY - camera.position.y) * 0.05
-        camera.lookAt(0, 0, 0)
+        state.camera.position.y += (targetY - state.camera.position.y) * 0.05
+        state.camera.lookAt(0, 0, 0)
     })
 
     return null

@@ -76,7 +76,7 @@ export async function deploy(options) {
             if (project) {
                 projectName = project.name;
             }
-        } catch (e) {
+        } catch {
             // Ignore error and use default
         }
 
@@ -119,7 +119,7 @@ export async function deploy(options) {
     const spinner = ora('Encrypting and deploying secrets...').start();
 
     try {
-        const { data } = await api.post(`/projects/${projectId}/secrets`, { secrets });
+        await api.post(`/projects/${projectId}/secrets`, { secrets });
         spinner.succeed(chalk.green(`Successfully deployed ${secrets.length} secrets!`));
     } catch (error) {
         spinner.fail('Deploy failed.');

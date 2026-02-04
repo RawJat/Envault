@@ -51,7 +51,7 @@ export function CliSection() {
     useEffect(() => {
         if (!isInView) return
 
-        let currentStep = 0
+
         let charIndex = 0
 
         // Initial delay before typing starts

@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import nodeCrypto from "node:crypto";
 import { Buffer } from "node:buffer";
 import { Redis } from 'https://esm.sh/@upstash/redis'
@@ -44,7 +44,7 @@ function decryptWithKey(encryptedText: string, key: Buffer): string {
         let decrypted = decipher.update(encrypted.toString(ENCODING), ENCODING, 'utf8')
         decrypted += decipher.final('utf8')
         return decrypted
-    } catch (e) {
+    } catch {
         throw new Error('Decryption Failed')
     }
 }
@@ -76,16 +76,17 @@ Deno.serve(async (req: Request) => {
         // Mode 2: Processing Loop (job_id provided)
         return await processRotationChunk(supabaseClient, job_id)
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
         return new Response(
-            JSON.stringify({ error: error.message }),
+            JSON.stringify({ error: errorMessage }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
         )
     }
 })
 
 
-async function initializeRotationJob(supabase: any) {
+async function initializeRotationJob(supabase: SupabaseClient) {
     // 1. Create NEW Data Key
     const newKeyBuffer = nodeCrypto.randomBytes(32)
     const masterKey = getMasterKey()
@@ -155,7 +156,7 @@ async function initializeRotationJob(supabase: any) {
 }
 
 
-async function processRotationChunk(supabase: any, job_id: string) {
+async function processRotationChunk(supabase: SupabaseClient, job_id: string) {
     // 1. Fetch Job State
     const { data: job, error: jobFetchError } = await supabase
         .from('key_rotation_jobs')
@@ -320,7 +321,7 @@ async function processRotationChunk(supabase: any, job_id: string) {
     )
 }
 
-async function performCleanup(supabase: any) {
+async function performCleanup(supabase: SupabaseClient) {
     let deletedKeysCount = 0
     let deletedJobsCount = 0
 
@@ -332,7 +333,7 @@ async function performCleanup(supabase: any) {
         .order('created_at', { ascending: false })
 
     if (!jobsError && completedJobs && completedJobs.length > 3) {
-        const jobsToDelete = completedJobs.slice(3).map((j: any) => j.id)
+        const jobsToDelete = completedJobs.slice(3).map((j: { id: string }) => j.id)
         if (jobsToDelete.length > 0) {
             const { error: delJobError } = await supabase
                 .from('key_rotation_jobs')
@@ -352,7 +353,7 @@ async function performCleanup(supabase: any) {
         .order('created_at', { ascending: false })
 
     if (!keysError && retiredKeys && retiredKeys.length > 3) {
-        const keysToDelete = retiredKeys.slice(3).map((k: any) => k.id)
+        const keysToDelete = retiredKeys.slice(3).map((k: { id: string }) => k.id)
         if (keysToDelete.length > 0) {
             const { error: delKeyError } = await supabase
                 .from('encryption_keys')

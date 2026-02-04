@@ -5,6 +5,8 @@ import { Moon, Sun } from "lucide-react"
 import { flushSync } from "react-dom"
 
 import { cn } from "@/lib/utils"
+import { Tooltip, TooltipContent, TooltipTrigger } from "./tooltip"
+import { Kbd } from "./kbd"
 
 interface AnimatedThemeTogglerProps extends React.ComponentPropsWithoutRef<"button"> {
   duration?: number
@@ -71,14 +73,24 @@ export const AnimatedThemeToggler = ({
   }, [isDark, duration])
 
   return (
-    <button
-      ref={buttonRef}
-      onClick={toggleTheme}
-      className={cn(className)}
-      {...props}
-    >
-      {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-      <span className="sr-only">Toggle theme</span>
-    </button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          ref={buttonRef}
+          onClick={toggleTheme}
+          className={cn(className)}
+          data-theme-toggle
+          {...props}
+        >
+          {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+          <span className="sr-only">Toggle theme (t)</span>
+        </button>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p className="flex items-center gap-2">
+          Toggle theme <Kbd>T</Kbd>
+        </p>
+      </TooltipContent>
+    </Tooltip>
   )
 }

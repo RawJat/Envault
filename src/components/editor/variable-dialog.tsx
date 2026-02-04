@@ -4,7 +4,8 @@ import * as React from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import { Loader2, Plus, Save, CheckCircle2, Info, AlertCircle, Eye, EyeOff } from "lucide-react"
+import { Loader2, CheckCircle2, Info, AlertCircle, Eye, EyeOff, CornerDownLeft } from "lucide-react"
+import { Kbd } from "@/components/ui/kbd"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -18,12 +19,13 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
-import { EnvironmentVariable, useEnvaultStore } from "@/lib/store"
+import { EnvironmentVariable } from "@/lib/store"
 import { toast } from "sonner"
 import { addVariable as addVariableAction, updateVariable as updateVariableAction } from "@/app/project-actions"
 import { useRouter } from "next/navigation"
 import { useReauthStore } from "@/lib/reauth-store"
+import { useHotkeys } from "@/hooks/use-hotkeys"
+import { getModifierKey } from "@/lib/utils"
 
 const variableSchema = z.object({
     key: z.string().min(1, "Key is required").regex(/^[a-zA-Z0-9_]+$/, "Only alphanumeric characters and underscores"),
@@ -65,8 +67,11 @@ export function VariableDialog({ projectId, existingVariable, existingVariables 
         },
     })
 
+
+    // eslint-disable-next-line react-hooks/incompatible-library
     const key = watch("key")
     const value = watch("value")
+
 
     const status = React.useMemo(() => {
         if (existingVariable || !key) return null
@@ -152,6 +157,12 @@ export function VariableDialog({ projectId, existingVariable, existingVariables 
         router.refresh()
     }
 
+    useHotkeys("v", () => {
+        if (open) setShowPassword(prev => !prev)
+    }, { enableOnContentEditable: true, enableOnFormTags: true })
+
+    const modKey = getModifierKey('mod')
+
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
@@ -216,6 +227,7 @@ export function VariableDialog({ projectId, existingVariable, existingVariables 
                                 ) : (
                                     <Eye className="h-4 w-4 text-muted-foreground" />
                                 )}
+                                <Kbd variant="ghost" size="xs" className="ml-1">V</Kbd>
                                 <span className="sr-only">
                                     {showPassword ? "Hide password" : "Show password"}
                                 </span>
@@ -244,12 +256,12 @@ export function VariableDialog({ projectId, existingVariable, existingVariables 
                         <Button type="submit" disabled={isSubmitting || status?.type === 'skip'}>
                             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             {existingVariable
-                                ? "Save Changes"
+                                ? <span className="flex items-center gap-2">Save Changes <span className="hidden md:flex items-center gap-1"><Kbd variant="primary" size="xs">{modKey}</Kbd><Kbd variant="primary" size="xs"><CornerDownLeft className="w-3 h-3" /></Kbd></span></span>
                                 : status?.type === 'update'
-                                    ? "Update Variable"
+                                    ? <span className="flex items-center gap-2">Update Variable <span className="hidden md:flex items-center gap-1"><Kbd variant="primary" size="xs">{modKey}</Kbd><Kbd variant="primary" size="xs"><CornerDownLeft className="w-3 h-3" /></Kbd></span></span>
                                     : status?.type === 'skip'
                                         ? "No Changes"
-                                        : "Add Variable"
+                                        : <span className="flex items-center gap-2">Add Variable <span className="hidden md:flex items-center gap-1"><Kbd variant="primary" size="xs">{modKey}</Kbd><Kbd variant="primary" size="xs"><CornerDownLeft className="w-3 h-3" /></Kbd></span></span>
                             }
                         </Button>
                     </DialogFooter>

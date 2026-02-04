@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useParams, useRouter } from "next/navigation"
-import { ArrowLeft, Plus, Upload, Download, Settings, Share2, Trash2, Settings as SettingsIcon, LogOut } from "lucide-react"
+import { ArrowLeft, Plus, Upload, Download, Settings, Share2, Trash2, Settings as SettingsIcon, LogOut, CornerDownLeft, Keyboard } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 
@@ -12,6 +12,7 @@ import { VariableDialog } from "@/components/editor/variable-dialog"
 import { ImportEnvDialog } from "@/components/editor/import-env-dialog"
 import { Project, useEnvaultStore } from "@/lib/store"
 import { useReauthStore } from "@/lib/reauth-store"
+import { useEffect } from "react"
 import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler"
 import { UserAvatar } from "@/components/ui/user-avatar"
 import {
@@ -22,6 +23,8 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Kbd } from "@/components/ui/kbd"
+import { getModifierKey } from "@/lib/utils"
 import {
     AlertDialog,
     AlertDialogAction,
@@ -38,6 +41,7 @@ import { toast } from "sonner"
 import { deleteProject as deleteProjectAction } from "@/app/project-actions"
 import { ShareProjectDialog } from "@/components/dashboard/share-project-dialog"
 import { NotificationDropdown } from "@/components/notifications/notification-dropdown"
+import { signOut } from "@/app/actions"
 
 interface ProjectDetailViewProps {
     project: Project
@@ -52,7 +56,39 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
     const { deleteProject, user } = useEnvaultStore()
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
     const [shareDialogOpen, setShareDialogOpen] = useState(false)
+    const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+    const [isImportDialogOpen, setIsImportDialogOpen] = useState(false)
     const [deleteConfirmation, setDeleteConfirmation] = useState("")
+    // Listen for global command context
+    useEffect(() => {
+        const handleOpenAdd = () => setIsAddDialogOpen(true)
+        const handleDownload = () => {
+            const btn = document.getElementById('download-env-btn')
+            if (btn) btn.click()
+        }
+        const handleOpenImport = () => setIsImportDialogOpen(true)
+        const handleOpenShare = () => setShareDialogOpen(true)
+        const handleUniversalDelete = () => {
+            // Trigger project delete if specifically requested, or suggest selection
+            setDeleteDialogOpen(true)
+        }
+
+        document.addEventListener('open-new-variable', handleOpenAdd)
+        document.addEventListener('universal-new', handleOpenAdd)
+        document.addEventListener('universal-download', handleDownload)
+        document.addEventListener('universal-import', handleOpenImport)
+        document.addEventListener('universal-share', handleOpenShare)
+        document.addEventListener('universal-delete', handleUniversalDelete)
+
+        return () => {
+            document.removeEventListener('open-new-variable', handleOpenAdd)
+            document.removeEventListener('universal-new', handleOpenAdd)
+            document.removeEventListener('universal-download', handleDownload)
+            document.removeEventListener('universal-import', handleOpenImport)
+            document.removeEventListener('universal-share', handleOpenShare)
+            document.removeEventListener('universal-delete', handleUniversalDelete)
+        }
+    }, [project])
 
     const handleDeleteClick = (e: React.MouseEvent) => {
         e.preventDefault()
@@ -126,12 +162,14 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuItem onClick={() => setShareDialogOpen(true)}>
-                                    <Share2 className="w-4 h-4 mr-2" />
-                                    Share
+                                    <Share2 className="w-4 h-4 mr-2" /> Share<Kbd variant="outline" size="xs" className="ml-auto hidden md:inline-flex">A</Kbd>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={handleDeleteClick}>
-                                    <Trash2 className="w-4 h-4 mr-2" />
-                                    Delete
+                                    <Trash2 className="w-4 h-4 mr-2" /> Delete
+                                    <div className="ml-auto hidden md:flex items-center gap-1">
+                                        <Kbd variant="outline" size="xs">{getModifierKey('ctrl')}</Kbd>
+                                        <Kbd variant="outline" size="xs">X</Kbd>
+                                    </div>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -162,17 +200,35 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
                                     <Link href="/settings" className="cursor-pointer flex w-full items-center">
                                         <SettingsIcon className="mr-2 h-4 w-4" />
                                         <span>Settings</span>
+                                        <div className="ml-auto hidden md:flex items-center gap-1">
+                                            <Kbd variant="outline" size="xs">G</Kbd>
+                                            <Kbd variant="outline" size="xs">O</Kbd>
+                                        </div>
                                     </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    className="cursor-pointer"
+                                    onClick={() => document.dispatchEvent(new CustomEvent('open-shortcut-help'))}
+                                >
+                                    <Keyboard className="mr-2 h-4 w-4" />
+                                    <span>Keyboard Shortcuts</span>
+                                    <div className="ml-auto hidden md:flex items-center gap-1">
+                                        <Kbd variant="outline" size="xs">Shift</Kbd>
+                                        <Kbd variant="outline" size="xs">?</Kbd>
+                                    </div>
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem className="text-red-600 dark:text-red-500 focus:text-red-600 dark:focus:text-red-500 cursor-pointer" onClick={() => {
                                     const { logout } = useEnvaultStore.getState()
-                                    const { signOut } = require("@/app/actions")
                                     logout()
                                     signOut()
                                 }}>
                                     <LogOut className="mr-2 h-4 w-4" />
                                     <span>Log out</span>
+                                    <div className="ml-auto hidden md:flex items-center gap-1">
+                                        <Kbd variant="outline" size="xs">{getModifierKey('ctrl')}</Kbd>
+                                        <Kbd variant="outline" size="xs">Q</Kbd>
+                                    </div>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -186,27 +242,39 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
                         <h2 className="text-2xl font-semibold tracking-tight">Variables ({project.variables.length})</h2>
                     </div>
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-                        <Button variant="outline" onClick={handleDownloadEnv}>
+                        <Button id="download-env-btn" variant="outline" onClick={handleDownloadEnv}>
                             <Download className="w-4 h-4 mr-2" />
                             Download .env
+                            <div className="ml-2 hidden md:flex items-center gap-1">
+                                <Kbd variant="outline" size="xs">{getModifierKey('mod')}</Kbd>
+                                <Kbd variant="outline" size="xs">D</Kbd>
+                            </div>
                         </Button>
                         <ImportEnvDialog
                             projectId={projectId}
                             existingVariables={project.variables}
+                            open={isImportDialogOpen}
+                            onOpenChange={setIsImportDialogOpen}
                             trigger={
                                 <Button variant="outline">
                                     <Upload className="w-4 h-4 mr-2" />
                                     Import .env
+                                    <div className="ml-2 hidden md:flex items-center gap-1">
+                                        <Kbd variant="outline" size="xs">{getModifierKey('mod')}</Kbd>
+                                        <Kbd variant="outline" size="xs">I</Kbd>
+                                    </div>
                                 </Button>
                             }
                         />
                         <VariableDialog
                             projectId={projectId}
                             existingVariables={project.variables}
+                            open={isAddDialogOpen}
+                            onOpenChange={setIsAddDialogOpen}
                             trigger={
                                 <Button variant="default">
                                     <Plus className="w-4 h-4 mr-2" />
-                                    Add Variable
+                                    Add Variable<Kbd variant="primary" size="xs" className="ml-2">N</Kbd>
                                 </Button>
                             }
                         />
@@ -221,7 +289,7 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Delete Project</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Are you sure you want to delete "{project.name}"? This will permanently delete all environment variables in this project.
+                            Are you sure you want to delete &quot;{project.name}&quot;? This will permanently delete all environment variables in this project.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
 
@@ -243,9 +311,10 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
                         <AlertDialogAction
                             onClick={handleDeleteConfirm}
                             disabled={deleteConfirmation !== project.name}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                         >
                             Delete
+                            <Kbd variant="primary" size="xs"><CornerDownLeft className="h-3 w-3" /></Kbd>
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

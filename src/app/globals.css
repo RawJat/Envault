@@ -76,7 +76,6 @@
 
 @layer utilities {
 
-  /* Custom Scrollbar - Hidden as per user request */
   /* Global Scrollbar Hiding - Applied everywhere as per user request */
   html,
   body,
@@ -92,4 +91,13 @@
     width: 0 !important;
     height: 0 !important;
   }
+}
+
+/* OS Detection Utilities - Moved outside layer to ensure global application */
+:root[data-os="mac"] .non-mac-only {
+  display: none !important;
+}
+
+:root:not([data-os="mac"]) .mac-only {
+  display: none !important;
 }

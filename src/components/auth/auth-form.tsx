@@ -4,12 +4,11 @@ import * as React from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import { motion } from "framer-motion"
-import { Loader2, Lock } from "lucide-react"
+
+import { Loader2, Lock, Command } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 
-import { useEnvaultStore } from "@/lib/store"
 import { Button } from "@/components/ui/button"
 import { signInWithGoogle, signInWithGithub, signInWithPassword, signUp } from "@/app/actions"
 import {
@@ -25,6 +24,9 @@ import { PasswordInput } from "@/components/ui/password-input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
+import { useHotkeys } from "@/hooks/use-hotkeys"
+import { Kbd } from "@/components/ui/kbd"
+import { CornerDownLeft } from "lucide-react"
 
 const authSchema = z.object({
     email: z.string().email("Please enter a valid email address"),
@@ -33,11 +35,26 @@ const authSchema = z.object({
 
 type AuthValues = z.infer<typeof authSchema>
 
+const CtrlKey = () => (
+    <>
+        <span className="non-mac-only">Ctrl</span>
+        <span className="mac-only">⌃</span>
+    </>
+)
+
+const ModKey = () => (
+    <>
+        <span className="non-mac-only">Ctrl</span>
+        <Command className="w-3 h-3 mac-only" />
+    </>
+)
+
+
 export function AuthForm() {
     const [isLoading, setIsLoading] = React.useState(false)
     const [activeTab, setActiveTab] = React.useState("login")
     const router = useRouter()
-    const login = useEnvaultStore((state) => state.login)
+
     const searchParams = useSearchParams()
 
     React.useEffect(() => {
@@ -102,8 +119,20 @@ export function AuthForm() {
         }
     }
 
+    // Shortcuts
+    useHotkeys("l", () => setActiveTab("login"), { enableOnContentEditable: false, enableOnFormTags: false })
+    useHotkeys("u", () => setActiveTab("signup"), { enableOnContentEditable: false, enableOnFormTags: false })
+    useHotkeys("ctrl+g", () => {
+        const btn = document.getElementById('google-signin-btn')
+        if (btn) (btn as HTMLButtonElement).click()
+    })
+    useHotkeys("ctrl+h", () => {
+        const btn = document.getElementById('github-signin-btn')
+        if (btn) (btn as HTMLButtonElement).click()
+    })
+
     return (
-        <div className="w-full max-w-md mx-auto px-4">
+        <div className="w-[90vw] sm:w-full sm:max-w-md mx-auto px-0 md:px-4">
             <div className="w-full max-w-md mx-auto">
                 <div>
                     <Card className="border-muted/40 shadow-2xl backdrop-blur-sm bg-background/80">
@@ -118,26 +147,38 @@ export function AuthForm() {
                         <CardContent>
                             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                                 <TabsList className="grid w-full grid-cols-2 mb-4">
-                                    <TabsTrigger value="login">Login</TabsTrigger>
-                                    <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                                    <TabsTrigger value="login" className="flex items-center gap-2">
+                                        Login<Kbd variant="outline" size="xs">L</Kbd>
+                                    </TabsTrigger>
+                                    <TabsTrigger value="signup" className="flex items-center gap-2">
+                                        Sign Up<Kbd variant="outline" size="xs">U</Kbd>
+                                    </TabsTrigger>
                                 </TabsList>
 
                                 <form action={signInWithGoogle} className="mb-2">
                                     <input type="hidden" name="next" value={searchParams.get("next") || "/dashboard"} />
-                                    <Button variant="outline" type="submit" className="w-full">
-                                        <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
+                                    <Button id="google-signin-btn" variant="outline" type="submit" className="w-full flex items-center justify-center gap-2">
+                                        <svg className="h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
                                             <path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path>
                                         </svg>
                                         Sign in with Google
+                                        <div className="hidden md:flex items-center gap-1 ml-1">
+                                            <Kbd variant="outline" size="xs"><CtrlKey /></Kbd>
+                                            <Kbd variant="outline" size="xs">G</Kbd>
+                                        </div>
                                     </Button>
                                 </form>
                                 <form action={signInWithGithub} className="mb-4">
                                     <input type="hidden" name="next" value={searchParams.get("next") || "/dashboard"} />
-                                    <Button variant="outline" type="submit" className="w-full">
-                                        <svg className="mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                                    <Button id="github-signin-btn" variant="outline" type="submit" className="w-full flex items-center justify-center gap-2">
+                                        <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
                                             <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8" />
                                         </svg>
                                         Sign in with GitHub
+                                        <div className="hidden md:flex items-center gap-1 ml-1">
+                                            <Kbd variant="outline" size="xs"><CtrlKey /></Kbd>
+                                            <Kbd variant="outline" size="xs">H</Kbd>
+                                        </div>
                                     </Button>
                                 </form>
 
@@ -192,6 +233,10 @@ export function AuthForm() {
                                         <Button className="w-full" type="submit" disabled={isLoading}>
                                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                             Sign In
+                                            <div className="ml-2 hidden md:flex items-center gap-1">
+                                                <Kbd variant="primary" size="xs"><ModKey /></Kbd>
+                                                <Kbd variant="primary" size="xs"><CornerDownLeft className="h-3 w-3" /></Kbd>
+                                            </div>
                                         </Button>
                                     </form>
                                 </TabsContent>
@@ -228,6 +273,10 @@ export function AuthForm() {
                                         <Button className="w-full" type="submit" disabled={isLoading}>
                                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                             Create Account
+                                            <div className="ml-2 hidden md:flex items-center gap-1">
+                                                <Kbd variant="primary" size="xs"><ModKey /></Kbd>
+                                                <Kbd variant="primary" size="xs"><CornerDownLeft className="h-3 w-3" /></Kbd>
+                                            </div>
                                         </Button>
                                     </form>
                                 </TabsContent>

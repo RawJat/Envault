@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { v4 as uuidv4 } from 'uuid'
+
 import { cacheDel, CacheKeys, invalidateUserSecretAccess } from '@/lib/cache'
 
 export async function createAccessRequest(token: string) {
@@ -146,7 +146,7 @@ export async function approveRequest(requestId: string, role: 'viewer' | 'editor
     // Verify User is Owner of the Project
     // (projects.user_id check)
     // TypeScript might struggle with nested join typing, casting needed or check logic
-    const projectOwner = (request.projects as any).user_id
+    const projectOwner = (request.projects as unknown as { user_id: string }).user_id
     if (projectOwner !== user.id) {
         return { error: 'Unauthorized.' }
     }
@@ -185,7 +185,7 @@ export async function approveRequest(requestId: string, role: 'viewer' | 'editor
         const { data: requester } = await adminSupabase.auth.admin.getUserById(request.user_id)
 
         if (requester && requester.user && requester.user.email) {
-            const projectName = (request.projects as any).name
+            const projectName = (request.projects as unknown as { name: string }).name
 
             // Send email
             await sendAccessGrantedEmail(requester.user.email, projectName)
@@ -220,7 +220,7 @@ export async function rejectRequest(requestId: string) {
 
     if (!request) return { error: 'Request not found.' }
 
-    const projectOwner = (request.projects as any).user_id
+    const projectOwner = (request.projects as unknown as { user_id: string }).user_id
     if (projectOwner !== user.id) {
         return { error: 'Unauthorized.' }
     }
@@ -239,7 +239,7 @@ export async function rejectRequest(requestId: string) {
     if (fullRequest) {
         try {
             const { createAccessDeniedNotification } = await import('@/lib/notifications')
-            const projectName = (fullRequest.projects as any)?.name || 'Unknown Project'
+            const projectName = (fullRequest.projects as unknown as { name: string })?.name || 'Unknown Project'
             await createAccessDeniedNotification(
                 fullRequest.user_id,
                 projectName,
@@ -279,7 +279,7 @@ export async function removeMember(projectId: string, memberUserId: string) {
     await cacheDel(CacheKeys.userProjectRole(memberUserId, projectId))
     await cacheDel(CacheKeys.projectMembers(projectId))
     // Invalidate all secret access caches for this user in this project
-    await invalidateUserSecretAccess(memberUserId, projectId)
+    await invalidateUserSecretAccess(memberUserId)
 
     revalidatePath(`/project/${projectId}`)
     return { success: true }
@@ -308,7 +308,7 @@ export async function updateMemberRole(projectId: string, memberUserId: string, 
     // Invalidate caches for the member whose role changed
     await cacheDel(CacheKeys.userProjectRole(memberUserId, projectId))
     // Invalidate all secret access caches since permissions changed
-    await invalidateUserSecretAccess(memberUserId, projectId)
+    await invalidateUserSecretAccess(memberUserId)
 
     revalidatePath(`/project/${projectId}`)
     return { success: true }

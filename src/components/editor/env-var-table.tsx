@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Copy, Eye, EyeOff, MoreHorizontal, Pencil, Trash2, Share2, User } from "lucide-react"
+import { Copy, Eye, EyeOff, MoreHorizontal, Pencil, Trash2, Share2, User, CornerDownLeft } from "lucide-react"
 import { UserAvatar } from "@/components/ui/user-avatar"
 import { toast } from "sonner"
 import { ShareSecretModal } from "@/components/dashboard/share-secret-modal"
@@ -14,6 +14,8 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Kbd } from "@/components/ui/kbd"
+import { getModifierKey } from "@/lib/utils"
 import {
     Table,
     TableBody,
@@ -38,7 +40,7 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { EnvironmentVariable, useEnvaultStore } from "@/lib/store"
+import { EnvironmentVariable } from "@/lib/store"
 import { VariableDialog } from "./variable-dialog"
 import { deleteVariable as deleteVariableAction } from "@/app/project-actions"
 import { useRouter } from "next/navigation"
@@ -58,6 +60,29 @@ export function EnvVarTable({ projectId, variables }: EnvVarTableProps) {
     // Local state for visibility toggles map: variableId -> boolean (true = visible)
     const [visibleSecrets, setVisibleSecrets] = React.useState<Record<string, boolean>>({})
     const [sharingSecret, setSharingSecret] = React.useState<EnvironmentVariable | null>(null)
+    const [lastInteractedId, setLastInteractedId] = React.useState<string | null>(null)
+
+    // Listen for contextual shortcuts
+    React.useEffect(() => {
+        const handleUniversalShare = () => {
+            if (!lastInteractedId) return
+            const variable = variables.find(v => v.id === lastInteractedId)
+            if (variable && variable.isSecret) {
+                setSharingSecret(variable)
+            }
+        }
+        const handleUniversalDelete = () => {
+            if (!lastInteractedId) return
+            handleDeleteClick(lastInteractedId)
+        }
+
+        document.addEventListener('universal-share', handleUniversalShare)
+        document.addEventListener('universal-delete', handleUniversalDelete)
+        return () => {
+            document.removeEventListener('universal-share', handleUniversalShare)
+            document.removeEventListener('universal-delete', handleUniversalDelete)
+        }
+    }, [lastInteractedId, variables])
 
     const toggleVisibility = async (id: string, isCurrentlyVisible: boolean) => {
         if (!isCurrentlyVisible) {
@@ -136,9 +161,13 @@ export function EnvVarTable({ projectId, variables }: EnvVarTableProps) {
                                                     variant="ghost"
                                                     size="icon"
                                                     className="h-6 w-6"
-                                                    onClick={() =>
-                                                        variable.isSecret ? toggleVisibility(variable.id, !!visibleSecrets[variable.id]) : copyToClipboard(variable.value)
-                                                    }
+                                                    onClick={() => {
+                                                        if (variable.isSecret) {
+                                                            toggleVisibility(variable.id, !!visibleSecrets[variable.id])
+                                                        } else {
+                                                            copyToClipboard(variable.value)
+                                                        }
+                                                    }}
                                                 >
                                                     {variable.isSecret ? (
                                                         isVisible ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />
@@ -249,7 +278,7 @@ export function EnvVarTable({ projectId, variables }: EnvVarTableProps) {
                                         <TableCell className="text-right">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setLastInteractedId(variable.id)}>
                                                         <MoreHorizontal className="w-4 h-4" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
@@ -269,12 +298,16 @@ export function EnvVarTable({ projectId, variables }: EnvVarTableProps) {
                                                     {variable.isSecret && (
                                                         <DropdownMenuItem onClick={() => setSharingSecret(variable)}>
                                                             <Share2 className="w-4 h-4 mr-2" />
-                                                            Share
+                                                            Share<Kbd variant="outline" size="xs" className="ml-auto hidden md:inline-flex">A</Kbd>
                                                         </DropdownMenuItem>
                                                     )}
                                                     <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => handleDeleteClick(variable.id)}>
                                                         <Trash2 className="w-4 h-4 mr-2" />
                                                         Delete
+                                                        <div className="ml-auto hidden md:flex items-center gap-1">
+                                                            <Kbd variant="outline" size="xs">{getModifierKey('ctrl')}</Kbd>
+                                                            <Kbd variant="outline" size="xs">X</Kbd>
+                                                        </div>
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
@@ -390,9 +423,10 @@ export function EnvVarTable({ projectId, variables }: EnvVarTableProps) {
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={handleDeleteConfirm}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 flex items-center gap-2"
                         >
                             Delete
+                            <Kbd variant="primary" size="xs"><CornerDownLeft className="h-3 w-3" /></Kbd>
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -401,7 +435,7 @@ export function EnvVarTable({ projectId, variables }: EnvVarTableProps) {
             {
                 sharingSecret && (
                     <ShareSecretModal
-                        projectId={projectId}
+                        // projectId removed
                         secretId={sharingSecret.id}
                         secretKey={sharingSecret.key}
                         open={!!sharingSecret}

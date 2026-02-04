@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { formatDistanceToNow } from "date-fns"
-import { Folder, MoreVertical, Trash2 } from "lucide-react"
+import { Folder, MoreVertical, Trash2, CornerDownLeft } from "lucide-react"
 import * as React from "react"
 import { useRouter } from "next/navigation"
 
@@ -43,6 +43,8 @@ import { deleteProject as deleteProjectAction } from "@/app/project-actions"
 import { useReauthStore } from "@/lib/reauth-store"
 import { ShareProjectDialog } from "@/components/dashboard/share-project-dialog"
 import { Share2 } from "lucide-react"
+import { Kbd } from "@/components/ui/kbd"
+import { getModifierKey } from "@/lib/utils"
 
 interface ProjectCardProps {
     project: Project
@@ -55,12 +57,36 @@ export function ProjectCard({ project }: ProjectCardProps) {
     const [deleteConfirmation, setDeleteConfirmation] = React.useState("")
     const router = useRouter()
 
-    const handleDeleteClick = (e: React.MouseEvent) => {
-        e.preventDefault()
-        e.stopPropagation()
+    const handleDeleteClick = (e?: React.MouseEvent | React.KeyboardEvent) => {
+        if (e) {
+            e.preventDefault()
+            e.stopPropagation()
+        }
         setDeleteConfirmation("")
         setDeleteDialogOpen(true)
     }
+
+    // Listen for contextual shortcuts
+    React.useEffect(() => {
+        const handleUniversalShare = () => {
+            // If this card is focused or has a focused element within it
+            if (document.activeElement?.closest(`a[href="/project/${project.id}"]`)) {
+                setShareDialogOpen(true)
+            }
+        }
+        const handleUniversalDelete = () => {
+            if (document.activeElement?.closest(`a[href="/project/${project.id}"]`)) {
+                handleDeleteClick()
+            }
+        }
+
+        document.addEventListener('universal-share', handleUniversalShare)
+        document.addEventListener('universal-delete', handleUniversalDelete)
+        return () => {
+            document.removeEventListener('universal-share', handleUniversalShare)
+            document.removeEventListener('universal-delete', handleUniversalDelete)
+        }
+    }, [project.id])
 
     const handleDeleteConfirm = async () => {
         const result = await deleteProjectAction(project.id)
@@ -80,7 +106,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
 
     return (
         <>
-            <Link href={`/project/${project.id}`} className="block h-full">
+            <Link href={`/project/${project.id}`} className="block h-full outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl transition-all">
                 <Card className="h-full transition-all hover:border-primary/50 hover:shadow-md group relative overflow-hidden">
                     <CardHeader>
                         <div className="flex items-start justify-between">
@@ -104,11 +130,15 @@ export function ProjectCard({ project }: ProjectCardProps) {
                                             setShareDialogOpen(true)
                                         }}>
                                             <Share2 className="w-4 h-4 mr-2" />
-                                            Share
+                                            Share<Kbd variant="outline" size="xs" className="ml-auto hidden md:inline-flex">A</Kbd>
                                         </DropdownMenuItem>
                                         <DropdownMenuItem className="text-red-600 dark:text-red-500 focus:text-red-600 dark:focus:text-red-500" onClick={handleDeleteClick}>
                                             <Trash2 className="w-4 h-4 mr-2" />
                                             Delete
+                                            <div className="ml-auto hidden md:flex items-center gap-1">
+                                                <Kbd variant="outline" size="xs">{getModifierKey('ctrl')}</Kbd>
+                                                <Kbd variant="outline" size="xs">X</Kbd>
+                                            </div>
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
@@ -139,7 +169,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Delete Project</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Are you sure you want to delete "{project.name}"? This will permanently delete all environment variables in this project.
+                            Are you sure you want to delete &quot;{project.name}&quot;? This will permanently delete all environment variables in this project.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
 
@@ -161,9 +191,10 @@ export function ProjectCard({ project }: ProjectCardProps) {
                         <AlertDialogAction
                             onClick={handleDeleteConfirm}
                             disabled={deleteConfirmation !== project.name}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                         >
                             Delete
+                            <Kbd variant="primary" size="xs"><CornerDownLeft className="h-3 w-3" /></Kbd>
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

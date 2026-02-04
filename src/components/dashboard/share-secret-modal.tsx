@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,10 +8,19 @@ import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
-import { User, X, Plus } from "lucide-react"
+import { User, X, Plus, CornerDownLeft } from "lucide-react"
+import { Kbd } from "@/components/ui/kbd"
+
+// Define interface for shares
+interface SecretShare {
+    id: string
+    user_id: string
+    created_at: string
+}
 
 interface ShareSecretModalProps {
-    projectId?: string
+    // projectId unused
+    // projectId?: string
     secretId: string
     secretKey: string
     children?: React.ReactNode
@@ -19,7 +28,7 @@ interface ShareSecretModalProps {
     onOpenChange?: (open: boolean) => void
 }
 
-export function ShareSecretModal({ projectId, secretId, secretKey, children, open: controlledOpen, onOpenChange: controlledOnOpenChange }: ShareSecretModalProps) {
+export function ShareSecretModal({ secretId, secretKey, children, open: controlledOpen, onOpenChange: controlledOnOpenChange }: ShareSecretModalProps) {
     const [internalOpen, setInternalOpen] = useState(false)
 
     const isControlled = controlledOpen !== undefined
@@ -28,7 +37,7 @@ export function ShareSecretModal({ projectId, secretId, secretKey, children, ope
 
     const [email, setEmail] = useState("")
     const [loading, setLoading] = useState(false)
-    const [shares, setShares] = useState<any[]>([])
+    const [shares, setShares] = useState<SecretShare[]>([])
     const [fetchLoading, setFetchLoading] = useState(false)
 
     const fetchShares = async () => {
@@ -36,7 +45,7 @@ export function ShareSecretModal({ projectId, secretId, secretKey, children, ope
         const supabase = createClient()
 
         // Fetch shares
-        const { data, error } = await supabase
+        const { data } = await supabase
             .from('secret_shares')
             .select('id, user_id, created_at')
             .eq('secret_id', secretId)
@@ -107,7 +116,7 @@ export function ShareSecretModal({ projectId, secretId, secretKey, children, ope
                 </DialogHeader>
 
                 <div className="space-y-4 py-4">
-                    <div className="flex flex-col space-y-2">
+                    <form onSubmit={(e) => { e.preventDefault(); handleAddShare() }} className="flex flex-col space-y-2">
                         <Label className="text-sm">Add User by Email</Label>
                         <div className="flex flex-col sm:flex-row gap-2">
                             <Input
@@ -116,11 +125,11 @@ export function ShareSecretModal({ projectId, secretId, secretKey, children, ope
                                 onChange={(e) => setEmail(e.target.value)}
                                 className="flex-1"
                             />
-                            <Button onClick={handleAddShare} disabled={loading || !email} className="sm:w-auto">
-                                {loading ? "Adding..." : "Add"}
+                            <Button type="submit" disabled={loading || !email} className="sm:w-auto">
+                                {loading ? "Adding..." : <span className="flex items-center gap-2">Add <span className="flex items-center gap-1"><Kbd className="bg-primary-foreground/20 text-primary-foreground border-0">⌘</Kbd><Kbd className="bg-primary-foreground/20 text-primary-foreground border-0"><CornerDownLeft className="w-3 h-3" /></Kbd></span></span>}
                             </Button>
                         </div>
-                    </div>
+                    </form>
 
                     <div className="border-t my-2" />
 

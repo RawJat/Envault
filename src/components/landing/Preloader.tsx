@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Lock, Shield, Wifi, Zap } from "lucide-react"
-import { cn } from "@/lib/utils"
+
 
 // Module-level variable to track if loader has shown in this session
 // We use a simple variable so it persists across client-side navigations but resets on hard refresh.

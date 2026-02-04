@@ -7,7 +7,7 @@ import * as z from 'zod'
 import { Loader2, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { useRouter } from 'next/navigation'
+
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -31,7 +31,7 @@ type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>
 export function ForgotPasswordForm() {
     const [isLoading, setIsLoading] = useState(false)
     const [isSubmitted, setIsSubmitted] = useState(false)
-    const router = useRouter()
+
 
     const {
         register,
@@ -59,7 +59,7 @@ export function ForgotPasswordForm() {
     }
 
     return (
-        <div className="w-full max-w-md p-4">
+        <div className="w-[90vw] sm:w-full sm:max-w-md p-0 md:p-4 mx-auto">
             <Card className="border-muted/40 shadow-2xl backdrop-blur-sm bg-background/80">
                 <CardHeader className="space-y-1">
                     <CardTitle className="text-2xl font-bold tracking-tight text-center">

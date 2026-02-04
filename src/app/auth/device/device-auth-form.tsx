@@ -47,7 +47,7 @@ export function DeviceAuthForm() {
     const handleClose = () => {
         try {
             window.close()
-        } catch (e) {
+        } catch {
             // ignore
         }
 
@@ -88,7 +88,7 @@ export function DeviceAuthForm() {
     if (success) {
         return (
             <AuthLayout>
-                <div className="w-full max-w-md mx-auto px-4">
+                <div className="w-[90vw] sm:w-full sm:max-w-md mx-auto px-4">
                     <Card className="border-green-500/50 bg-green-500/10 dark:bg-green-500/5 shadow-2xl backdrop-blur-sm">
                         <CardHeader className="text-center">
                             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
@@ -122,7 +122,7 @@ export function DeviceAuthForm() {
 
     return (
         <AuthLayout>
-            <div className="w-full max-w-md mx-auto px-2">
+            <div className="w-[95vw] sm:w-full sm:max-w-md mx-auto px-4">
                 <Card className="border-muted/40 shadow-2xl backdrop-blur-sm bg-background/80">
                     <CardHeader className="text-center">
                         <CardTitle className="text-2xl font-bold tracking-tight">Connect CLI</CardTitle>

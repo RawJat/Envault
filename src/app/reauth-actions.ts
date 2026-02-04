@@ -24,7 +24,7 @@ export async function verifyReauthCode(email: string, token: string) {
     const supabase = await createClient()
 
     // Verify OTP
-    const { data, error } = await supabase.auth.verifyOtp({
+    const { error } = await supabase.auth.verifyOtp({
         email,
         token,
         type: 'email',

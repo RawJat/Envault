@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { signOut } from "@/app/actions"
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Settings as SettingsIcon, LogOut } from 'lucide-react'
 import { AnimatedThemeToggler } from '@/components/ui/animated-theme-toggler'
@@ -67,7 +68,6 @@ export default function NotificationsPage() {
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem className="text-red-600 dark:text-red-500 focus:text-red-600 dark:focus:text-red-500 cursor-pointer" onClick={() => {
                                     const { logout } = useEnvaultStore.getState()
-                                    const { signOut } = require("@/app/actions")
                                     logout()
                                     signOut()
                                 }}>

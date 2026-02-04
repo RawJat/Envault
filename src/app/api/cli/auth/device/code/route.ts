@@ -21,7 +21,7 @@ export async function POST(request: Request) {
             let result = '';
             const characters = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
             const charactersLength = characters.length;
-            for (var i = 0; i < length; i++) {
+            for (let i = 0; i < length; i++) {
                 const randomByte = crypto.randomBytes(1)[0]
                 result += characters.charAt(randomByte % charactersLength);
             }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from 'react'
+
 import { useNotificationSubscription } from '@/hooks/use-notification-subscription'
 
 /**

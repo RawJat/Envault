@@ -7,6 +7,7 @@ import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler"
 import { motion, useScroll, useMotionValueEvent, AnimatePresence } from "framer-motion"
 import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
+import { Kbd } from "@/components/ui/kbd"
 
 export function Navbar() {
     const { scrollY } = useScroll()
@@ -45,15 +46,15 @@ export function Navbar() {
                 <div className="flex items-center gap-4">
                     {/* Desktop Navigation */}
                     <nav className="hidden md:flex gap-6 text-sm font-medium items-center">
-                        <Link href="#features" className="text-muted-foreground hover:text-foreground transition-colors">
-                            Features
+                        <Link href="#features" className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
+                            Features<Kbd variant="ghost" size="xs" className="ml-2">F</Kbd>
                         </Link>
-                        <Link href="https://github.com/dinanathdash/envault" target="_blank" className="text-muted-foreground hover:text-foreground transition-colors">
-                            GitHub
+                        <Link href="https://github.com/dinanathdash/envault" target="_blank" className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
+                            GitHub<Kbd variant="ghost" size="xs" className="ml-2">H</Kbd>
                         </Link>
                         <Link href="/login">
-                            <Button variant={scrolled ? "default" : "secondary"} size="sm" className="font-semibold">
-                                Login
+                            <Button variant={scrolled ? "default" : "secondary"} size="sm" className="font-semibold flex items-center gap-2">
+                                Login<Kbd variant={scrolled ? "primary" : "outline"} size="xs" className="ml-2">L</Kbd>
                             </Button>
                         </Link>
                     </nav>

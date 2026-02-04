@@ -85,7 +85,7 @@ export async function canAccessSecret(
         return noAccess
     }
 
-    const projectOwnerId = (secret.projects as any).user_id
+    const projectOwnerId = (secret.projects as unknown as { user_id: string }).user_id
 
     // 2. Check Project Owner
     if (projectOwnerId === userId) {

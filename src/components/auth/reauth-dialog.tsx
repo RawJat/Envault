@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { Loader2, Lock, Mail, KeyRound, ArrowLeft } from 'lucide-react'
+import { Loader2, Lock, Mail, ArrowLeft } from 'lucide-react'
 import { toast } from 'sonner'
 import { useEnvaultStore } from '@/lib/store'
 
@@ -17,7 +17,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
+
 import { Label } from '@/components/ui/label'
 import { useReauthStore } from '@/lib/reauth-store'
 import { sendReauthCode, verifyReauthCode } from '@/app/reauth-actions'
@@ -45,7 +45,7 @@ export function ReauthDialog() {
     const email = user?.email || ""
 
     const {
-        register, // Not strictly needed for InputOTP but available if we switched fields
+        // register, // Not strictly needed for InputOTP but available if we switched fields
         handleSubmit,
         reset,
         setValue,
@@ -112,7 +112,7 @@ export function ReauthDialog() {
 
     return (
         <Dialog open={isOpen} onOpenChange={handleClose}>
-            <DialogContent className="sm:max-w-md p-4 sm:p-6">
+            <DialogContent className="w-[90vw] sm:w-full sm:max-w-md p-4 sm:p-6">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <Lock className="w-5 h-5 text-primary" />
@@ -138,7 +138,7 @@ export function ReauthDialog() {
                             <div className="space-y-1">
                                 <p className="text-sm font-medium">Email Verification</p>
                                 <p className="text-xs text-muted-foreground break-all">
-                                    We'll send a code to <span className="font-mono text-foreground">{email}</span>
+                                    We&apos;ll send a code to <span className="font-mono text-foreground">{email}</span>
                                 </p>
                             </div>
                         </div>
@@ -162,6 +162,7 @@ export function ReauthDialog() {
                             <Label htmlFor="code" className="sr-only">Verification Code</Label>
                             <InputOTP
                                 maxLength={8}
+                                // eslint-disable-next-line react-hooks/incompatible-library
                                 value={watch('code')}
                                 onChange={(value) => setValue('code', value)}
                                 containerClassName="gap-1 sm:gap-2"

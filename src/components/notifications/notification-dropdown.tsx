@@ -12,11 +12,17 @@ import {
 import { useNotificationStore } from '@/lib/stores/notification-store'
 import { Inbox, Trash2 } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useHotkeys } from "@/hooks/use-hotkeys"
 import { NotificationSkeleton } from './notification-skeleton'
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { Kbd } from "@/components/ui/kbd"
+
 
 export function NotificationDropdown() {
     const [open, setOpen] = useState(false)
     const { notifications, isLoading, markAllAsRead, deleteAllRead } = useNotificationStore()
+    const router = useRouter()
 
     const unreadNotifications = notifications.filter(n => !n.is_read)
     const recentNotifications = notifications.slice(0, 5)
@@ -40,11 +46,48 @@ export function NotificationDropdown() {
         return () => window.removeEventListener('resize', checkMobile)
     }, [])
 
+    // Listen for global shortcut event
+    useEffect(() => {
+        const handleToggle = () => setOpen(prev => !prev)
+        document.addEventListener("toggle-notifications", handleToggle)
+        return () => document.removeEventListener("toggle-notifications", handleToggle)
+    }, [])
+
+    useHotkeys("m", () => {
+        if (open && unreadNotifications.length > 0) {
+            handleMarkAllRead()
+        }
+    }, { enabled: open })
+
+    useHotkeys("c", () => {
+        if (open && notifications.some(n => n.is_read)) {
+            handleClearRead()
+        }
+    }, { enabled: open })
+
+    useHotkeys("v", () => {
+        if (open) {
+            router.push('/notifications')
+            setOpen(false)
+        }
+    }, { enabled: open })
+
     return (
         <DropdownMenu open={open} onOpenChange={setOpen}>
-            <DropdownMenuTrigger asChild>
-                <NotificationBell />
-            </DropdownMenuTrigger>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <DropdownMenuTrigger asChild>
+                        <NotificationBell
+                            data-notification-trigger
+                        />
+                    </DropdownMenuTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                    <p className="flex items-center gap-2">
+                        Notifications <span className="hidden md:flex items-center gap-1"><Kbd>Shift</Kbd><Kbd>B</Kbd></span>
+                    </p>
+                </TooltipContent>
+            </Tooltip>
 
             <DropdownMenuContent
                 align={isMobile ? "center" : "end"}
@@ -60,9 +103,9 @@ export function NotificationDropdown() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={handleMarkAllRead}
-                                className="h-7 text-xs flex-1 sm:flex-none"
+                                className="h-7 text-xs flex-1 sm:flex-none flex items-center gap-1.5"
                             >
-                                Mark all read
+                                Mark all read<Kbd variant="ghost" size="xs" className="ml-1.5">M</Kbd>
                             </Button>
                         )}
                         {notifications.some(n => n.is_read) && (
@@ -70,10 +113,10 @@ export function NotificationDropdown() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={handleClearRead}
-                                className="h-7 text-xs flex-1 sm:flex-none"
+                                className="h-7 text-xs flex-1 sm:flex-none flex items-center gap-1.5"
                             >
                                 <Trash2 className="h-3 w-3 mr-1" />
-                                Clear read
+                                Clear read<Kbd variant="ghost" size="xs" className="ml-1.5">C</Kbd>
                             </Button>
                         )}
                     </div>
@@ -108,7 +151,7 @@ export function NotificationDropdown() {
                     <div className="border-t p-2">
                         <Link href="/notifications" onClick={() => setOpen(false)}>
                             <Button variant="ghost" className="w-full text-sm">
-                                View all notifications
+                                View all notifications<Kbd variant="ghost" size="xs" className="ml-2">V</Kbd>
                             </Button>
                         </Link>
                     </div>

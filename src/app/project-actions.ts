@@ -49,7 +49,14 @@ export async function getProjects() {
     // Check cache first
     const { cacheGet, cacheSet, CacheKeys, CACHE_TTL } = await import('@/lib/cache')
     const cacheKey = CacheKeys.userProjects(user.id)
-    const cachedProjects = await cacheGet<any[]>(cacheKey)
+    interface ProjectWithRole {
+        id: string
+        user_id: string
+        name: string
+        role?: string
+        secrets: { count: number }[]
+    }
+    const cachedProjects = await cacheGet<ProjectWithRole[]>(cacheKey)
 
     if (cachedProjects !== null) {
         return { data: cachedProjects }
@@ -96,7 +103,7 @@ export async function getProjects() {
     const membershipMap = new Map(memberships?.map(m => [m.project_id, m.role]) || [])
 
     // Step 4: Enrich projects with the data
-    const enrichedProjects = projects.map((p: any) => {
+    const enrichedProjects = projects.map((p) => {
         let role = 'viewer' // Safe default
         if (p.user_id === user.id) {
             role = 'owner'
@@ -239,7 +246,7 @@ export async function updateVariable(id: string, projectId: string, updates: { k
     }
 
     // If updating the value, encrypt it first
-    let finalUpdates: any = {
+    const finalUpdates: Record<string, unknown> = {
         ...updates,
         last_updated_by: user.id,
         last_updated_at: new Date().toISOString()
@@ -249,7 +256,7 @@ export async function updateVariable(id: string, projectId: string, updates: { k
         const { encrypt } = await import('@/lib/encryption')
         finalUpdates.value = await encrypt(updates.value)
         // Extract key_id
-        finalUpdates.key_id = finalUpdates.value.split(':')[1]
+        finalUpdates.key_id = (finalUpdates.value as string).split(':')[1]
     }
 
     const { error } = await supabase
@@ -334,7 +341,7 @@ export async function addVariablesBulk(projectId: string, variables: BulkImportV
     }
 
     // Import encryption utility
-    const { encrypt, decrypt } = await import('@/lib/encryption')
+    const { encrypt } = await import('@/lib/encryption')
 
     // Fetch existing variables
     const { data: existingSecrets } = await supabase
@@ -347,10 +354,10 @@ export async function addVariablesBulk(projectId: string, variables: BulkImportV
         (existingSecrets || []).map(s => [s.key, s.id])
     )
 
-    const upsertPayload = []
+    // const upsertPayload = []
     let added = 0
     let updated = 0
-    let skipped = 0
+    const skipped = 0
 
     const processVariable = async (variable: BulkImportVariable) => {
         const encryptedValue = await encrypt(variable.value)

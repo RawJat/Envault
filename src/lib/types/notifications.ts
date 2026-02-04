@@ -7,7 +7,7 @@ export interface Notification {
     message: string
     icon: string
     variant: NotificationVariant
-    metadata: Record<string, any>
+    metadata: Record<string, unknown>
     action_url?: string
     action_type?: string
     is_read: boolean

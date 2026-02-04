@@ -52,14 +52,14 @@ export async function login() {
     try {
         clipboard.writeSync(userCode);
         console.log(chalk.dim('(Code copied to clipboard)'));
-    } catch (e) {
+    } catch {
         // Ignore errors if clipboard fails (headless etc)
     }
 
     // Open browser automatically
     try {
         await open(verificationUri);
-    } catch (e) {
+    } catch {
         // Ignore if fails (headless env)
     }
 
@@ -104,7 +104,7 @@ export async function login() {
             if (userData && userData.email) {
                 email = userData.email;
             }
-        } catch (e) {
+        } catch {
             // Ignore error if fetching user info fails, just show generic success
         }
 

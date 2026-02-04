@@ -32,7 +32,7 @@ export async function pull(options) {
             if (project) {
                 projectName = project.name;
             }
-        } catch (e) {
+        } catch {
             // Ignore
         }
 
@@ -82,11 +82,11 @@ export async function pull(options) {
         }
 
         const envContent = data.secrets
-            .map(s => `${s.key}="${s.value}"`) // Quote values to be safe
+            .map(s => `${s.key}=${s.value}`)
             .join('\n');
 
         fs.writeFileSync('.env', envContent);
-        spinner.succeed(chalk.green(`Pulled ${data.secrets.length} secrets to .env`));
+        spinner.succeed(chalk.green(`Pulled ${data.secrets.length} secrets from project.`));
 
     } catch (error) {
         spinner.fail('Pull failed.');

@@ -38,7 +38,7 @@ export default async function JoinPage({ params }: JoinPageProps) {
     if (!project) {
         return (
             <div className="flex min-h-screen items-center justify-center p-4">
-                <Card className="max-w-md w-full">
+                <Card className="w-[90vw] sm:w-full sm:max-w-md">
                     <CardHeader>
                         <CardTitle>Project Not Found</CardTitle>
                         <CardDescription>The project you are trying to join does not exist or has been deleted.</CardDescription>
@@ -55,7 +55,7 @@ export default async function JoinPage({ params }: JoinPageProps) {
 
     return (
         <div className="flex min-h-screen items-center justify-center p-4">
-            <Card className="max-w-md w-full">
+            <Card className="w-[90vw] sm:w-full sm:max-w-md">
                 <CardHeader>
                     <CardTitle>Join {project.name}</CardTitle>
                     <CardDescription>

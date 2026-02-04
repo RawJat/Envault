@@ -4,6 +4,7 @@ import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { ShieldCheck, ArrowRight, Star } from "lucide-react"
+import { Kbd } from "@/components/ui/kbd"
 
 export function Hero() {
     return (
@@ -49,15 +50,15 @@ export function Hero() {
                         className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto"
                     >
                         <Link href="/login">
-                            <Button size="lg" className="w-full sm:w-auto min-w-[160px] h-12 text-base shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-shadow">
-                                Get Started
-                                <ArrowRight className="w-4 h-4 ml-2" />
+                            <Button size="lg" className="w-full sm:w-auto min-w-[160px] h-12 text-base shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-shadow flex items-center gap-2">
+                                Get Started<Kbd variant="primary" className="ml-2">G</Kbd>
+                                <ArrowRight className="w-4 h-4 ml-0.5" />
                             </Button>
                         </Link>
                         <Link href="https://github.com/dinanathdash/envault" target="_blank">
-                            <Button variant="outline" size="lg" className="w-full sm:w-auto min-w-[160px] h-12 text-base backdrop-blur-sm bg-background/50">
+                            <Button variant="outline" size="lg" className="w-full sm:w-auto min-w-[160px] h-12 text-base backdrop-blur-sm bg-background/50 flex items-center gap-2">
                                 <Star className="w-4 h-4 mr-2" />
-                                Star on GitHub
+                                Star on GitHub<Kbd variant="outline" className="ml-2">S</Kbd>
                             </Button>
                         </Link>
                     </motion.div>

@@ -21,11 +21,7 @@ export async function GET(request: Request) {
     // Supabase JS "or" syntax with foreign table filters is tricky.
     // Easiest is to fetch both and combine, or usage "or" filter string.
 
-    const { data: projects, error } = await supabase
-        .from('projects')
-        .select('id, name, user_id, project_members!inner(user_id)')
-        .eq('project_members.user_id', userId)
-        .order('name')
+
 
     // Wait, the above only fetches SHARED projects where I am a member.
     // I also need my OWN projects. 
@@ -58,12 +54,22 @@ export async function GET(request: Request) {
     }))
 
     // Map shared projects with isOwner flag and role
-    const sharedProjects = (shared || []).map((m: any) => ({
-        id: m.projects.id,
-        name: m.projects.name,
-        isOwner: false,
-        role: m.role
-    }))
+    interface SharedProjectMember {
+        projects: { id: string; name: string; user_id: string } | { id: string; name: string; user_id: string }[] | null
+        role: "viewer" | "editor" | "owner"
+    }
+
+    const sharedProjects = (shared || []).map((m) => {
+        const member = m as unknown as SharedProjectMember
+        // Handle potential array or object from join
+        const project = Array.isArray(member.projects) ? member.projects[0] : member.projects
+        return {
+            id: project?.id,
+            name: project?.name,
+            isOwner: false,
+            role: member.role
+        }
+    })
 
     // Combine and dedupe
     const combined = [...ownedProjects, ...sharedProjects]
@@ -76,12 +82,12 @@ export async function GET(request: Request) {
         }
     })
 
-    const finalProjects = Array.from(uniqueMap.values()).sort((a, b) => a.name.localeCompare(b.name))
+    const finalProjects = Array.from(uniqueMap.values()).filter(p => p.name).sort((a, b) => (a.name || '').localeCompare(b.name || ''))
 
     return NextResponse.json({
         projects: finalProjects,
-        owned: ownedProjects.sort((a, b) => a.name.localeCompare(b.name)),
-        shared: sharedProjects.sort((a, b) => a.name.localeCompare(b.name))
+        owned: ownedProjects.sort((a, b) => (a.name || '').localeCompare(b.name || '')),
+        shared: sharedProjects.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
     })
 }
 

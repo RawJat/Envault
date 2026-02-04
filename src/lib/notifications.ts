@@ -7,7 +7,7 @@ interface CreateNotificationParams {
     title: string
     message: string
     variant?: NotificationVariant
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
     actionUrl?: string
     actionType?: string
 }
@@ -95,7 +95,7 @@ export async function createNotification({
     metadata = {},
     actionUrl,
     actionType
-}: CreateNotificationParams): Promise<{ data: Notification | null; error: any }> {
+}: CreateNotificationParams): Promise<{ data: Notification | null; error: unknown }> {
     // Check if user wants this notification
     const shouldCreate = await shouldCreateNotification(userId, type)
     if (!shouldCreate) {
@@ -131,8 +131,11 @@ export async function createNotification({
 
     // Atomically increment cached unread count
     try {
-        const { cacheIncr, CacheKeys, CACHE_TTL } = await import('./cache')
+        const { cacheIncr, cacheDel, CacheKeys, CACHE_TTL } = await import('./cache')
         await cacheIncr(CacheKeys.userUnreadCount(userId), CACHE_TTL.UNREAD_COUNT)
+
+        // Invalidate list cache so next fetch gets this new notification
+        await cacheDel(CacheKeys.userNotificationsList(userId))
     } catch (cacheError) {
         // Don't fail notification creation if cache update fails
         console.warn('Failed to update unread count cache:', cacheError)

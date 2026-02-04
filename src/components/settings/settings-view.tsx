@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { User, HelpCircle, Trash2, LogOut, ArrowLeft, Laptop, Shield, Bell } from "lucide-react"
+import { User, HelpCircle, Trash2, LogOut, ArrowLeft, Shield, Bell, Command, Option as OptionIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler"
@@ -32,6 +32,23 @@ import { createClient } from "@/lib/supabase/client"
 import { deleteAccountAction, signOut } from "@/app/actions"
 import { useReauthStore } from "@/lib/reauth-store"
 import { NotificationDropdown } from "@/components/notifications/notification-dropdown"
+import { useHotkeys } from "@/hooks/use-hotkeys"
+import { Kbd } from "@/components/ui/kbd"
+
+const ModKey = () => (
+    <>
+        <span className="non-mac-only">Ctrl</span>
+        <Command className="w-3 h-3 mac-only" />
+    </>
+)
+
+const AltKey = () => (
+    <>
+        <span className="non-mac-only">Alt</span>
+        <OptionIcon className="w-3 h-3 mac-only" />
+    </>
+)
+
 
 export default function SettingsView() {
     const router = useRouter()
@@ -40,24 +57,15 @@ export default function SettingsView() {
     // State for navigation
     const [activeTab, setActiveTab] = useState("profile")
 
-    // State for form fields
-    const [firstName, setFirstName] = useState("")
-    const [lastName, setLastName] = useState("")
-    const [username, setUsername] = useState("")
-    const [email, setEmail] = useState("")
+    // State for form fields - initialized from user
+    // We use key={user?.id} on the form fields container to reset state when user changes
+    const [firstName, setFirstName] = useState(user?.firstName || "")
+    const [lastName, setLastName] = useState(user?.lastName || "")
+    const [username, setUsername] = useState(user?.username || "")
+    const [email] = useState(user?.email || "")
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
     const [deleteConfirmation, setDeleteConfirmation] = useState("")
     const [isDeleteConfirmed, setIsDeleteConfirmed] = useState(false)
-
-    // Initialize state from user store
-    useEffect(() => {
-        if (user) {
-            setFirstName(user.firstName || "")
-            setLastName(user.lastName || "")
-            setUsername(user.username || "")
-            setEmail(user.email || "")
-        }
-    }, [user])
 
     const handleUpdateProfile = async () => {
         const supabase = createClient()
@@ -111,6 +119,55 @@ export default function SettingsView() {
         await signOut()
     }
 
+    // Shortcuts
+    useEffect(() => {
+        const tabs = ["profile", "security", "notifications", "support", "danger"]
+
+        const handleSwitch = (e: Event) => {
+            const customEvent = e as CustomEvent
+            const index = customEvent.detail.index
+            if (index >= 0 && index < tabs.length) {
+                setActiveTab(tabs[index])
+            }
+        }
+
+        const handlePrev = () => {
+            setActiveTab(prev => {
+                const idx = tabs.indexOf(prev)
+                return idx > 0 ? tabs[idx - 1] : tabs[tabs.length - 1]
+            })
+        }
+
+        const handleNext = () => {
+            setActiveTab(prev => {
+                const idx = tabs.indexOf(prev)
+                return idx < tabs.length - 1 ? tabs[idx + 1] : tabs[0]
+            })
+        }
+
+        document.addEventListener('switch-tab', handleSwitch)
+        document.addEventListener('prev-tab', handlePrev)
+        document.addEventListener('next-tab', handleNext)
+
+        return () => {
+            document.removeEventListener('switch-tab', handleSwitch)
+            document.removeEventListener('prev-tab', handlePrev)
+            document.removeEventListener('next-tab', handleNext)
+        }
+    }, [])
+
+    // Shortcut for saving profile
+    useHotkeys("mod+s", (e) => {
+        if (activeTab === "profile") {
+            e.preventDefault()
+            handleUpdateProfile()
+        }
+    }, { enableOnContentEditable: true, enableOnFormTags: true })
+
+    useHotkeys("alt+q", () => {
+        handleLogout()
+    })
+
     return (
         <div className="min-h-screen bg-background text-foreground">
             <header className="border-b sticky top-0 bg-background/95 backdrop-blur z-50">
@@ -132,7 +189,9 @@ export default function SettingsView() {
                                     </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                    <p>Log out</p>
+                                    <p className="flex items-center gap-2">
+                                        Log out <span className="flex gap-1"><Kbd><AltKey /></Kbd><Kbd>Q</Kbd></span>
+                                    </p>
                                 </TooltipContent>
                             </Tooltip>
                         </TooltipProvider>
@@ -146,43 +205,43 @@ export default function SettingsView() {
                         <nav className="flex md:flex-col space-x-2 md:space-x-0 md:space-y-1 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                             <Button
                                 variant={activeTab === "profile" ? "secondary" : "ghost"}
-                                className="justify-start w-full"
+                                className="justify-start w-full flex items-center gap-2"
                                 onClick={() => setActiveTab("profile")}
                             >
                                 <User className="mr-2 h-4 w-4" />
-                                Profile
+                                <span>Profile</span><Kbd className="ml-auto h-5 px-1.5 text-[10px] bg-muted/50 border-0">1</Kbd>
                             </Button>
                             <Button
                                 variant={activeTab === "security" ? "secondary" : "ghost"}
-                                className="justify-start w-full"
+                                className="justify-start w-full flex items-center gap-2"
                                 onClick={() => setActiveTab("security")}
                             >
                                 <Shield className="mr-2 h-4 w-4" />
-                                Security
+                                <span>Security</span><Kbd className="ml-auto h-5 px-1.5 text-[10px] bg-muted/50 border-0">2</Kbd>
                             </Button>
                             <Button
                                 variant={activeTab === "notifications" ? "secondary" : "ghost"}
-                                className="justify-start w-full"
+                                className="justify-start w-full flex items-center gap-2"
                                 onClick={() => setActiveTab("notifications")}
                             >
                                 <Bell className="mr-2 h-4 w-4" />
-                                Notifications
+                                <span>Notifications</span><Kbd className="ml-auto h-5 px-1.5 text-[10px] bg-muted/50 border-0">3</Kbd>
                             </Button>
                             <Button
                                 variant={activeTab === "support" ? "secondary" : "ghost"}
-                                className="justify-start w-full"
+                                className="justify-start w-full flex items-center gap-2"
                                 onClick={() => setActiveTab("support")}
                             >
                                 <HelpCircle className="mr-2 h-4 w-4" />
-                                Support
+                                <span>Support</span><Kbd className="ml-auto h-5 px-1.5 text-[10px] bg-muted/50 border-0">4</Kbd>
                             </Button>
                             <Button
                                 variant={activeTab === "danger" ? "secondary" : "ghost"}
-                                className="justify-start w-full text-red-600 dark:text-red-500 hover:text-red-700 dark:hover:text-red-400 hover:bg-destructive/10"
+                                className="justify-start w-full text-red-600 dark:text-red-500 hover:text-red-700 dark:hover:text-red-400 hover:bg-destructive/10 flex items-center gap-2"
                                 onClick={() => setActiveTab("danger")}
                             >
                                 <Trash2 className="mr-2 h-4 w-4" />
-                                Delete Account
+                                <span>Delete Account</span><Kbd className="ml-auto h-5 px-1.5 text-[10px] bg-muted/50 border-0">5</Kbd>
                             </Button>
                         </nav>
                     </aside>
@@ -195,7 +254,7 @@ export default function SettingsView() {
                                 </div>
 
                                 <Card>
-                                    <CardContent className="p-6 space-y-6">
+                                    <CardContent className="p-6 space-y-6" key={user?.email || 'loading'}>
                                         <div className="grid gap-2">
                                             <Label htmlFor="firstName">First name</Label>
                                             <Input
@@ -260,7 +319,7 @@ export default function SettingsView() {
                                                     username === (user?.username || "")
                                                 }
                                             >
-                                                Save Changes
+                                                Save Changes <span className="ml-2 flex items-center gap-1"><Kbd className="bg-primary-foreground/20 text-primary-foreground border-0"><ModKey /></Kbd><Kbd className="bg-primary-foreground/20 text-primary-foreground border-0">S</Kbd></span>
                                             </Button>
                                         </div>
                                     </CardContent>

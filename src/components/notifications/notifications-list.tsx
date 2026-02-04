@@ -5,11 +5,14 @@ import { useNotificationStore } from '@/lib/stores/notification-store'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Search, CheckCheck, Trash2, MoreHorizontal, Bell, Loader2 } from 'lucide-react'
+import { Search, CheckCheck, Trash2, MoreHorizontal, Bell } from 'lucide-react'
 import { Notification } from '@/lib/types/notifications'
 import { cn } from '@/lib/utils'
 import { formatDistanceToNow, isToday, isYesterday, isThisWeek, format } from 'date-fns'
 import { useRouter } from 'next/navigation'
+import { useHotkeys } from '@/hooks/use-hotkeys'
+import { Kbd } from '@/components/ui/kbd'
+
 import {
     Table,
     TableBody,
@@ -82,12 +85,12 @@ export function NotificationsList() {
         })
 
         // Remove empty groups and return as array of [groupName, items]
-        return Object.entries(groups).filter(([_, items]) => items.length > 0) as [DateGroup, Notification[]][]
+        return Object.entries(groups).filter((entry) => entry[1].length > 0) as [DateGroup, Notification[]][]
     }, [notifications, searchQuery])
 
     // Flatten for selection helpers
     const allFilteredNotifications = useMemo(() =>
-        groupedNotifications.flatMap(([_, items]) => items),
+        groupedNotifications.flatMap(([, items]) => items),
         [groupedNotifications]
     )
 
@@ -115,6 +118,21 @@ export function NotificationsList() {
         deleteMultiple(Array.from(selectedIds))
         setSelectedIds(new Set())
     }
+
+    // Shortcuts
+    useHotkeys("m", () => {
+        if (!selectedIds.size && !notifications.every(n => n.is_read)) markAllAsRead()
+    }, { enableOnContentEditable: false, enableOnFormTags: false })
+
+    useHotkeys("c", () => {
+        if (!selectedIds.size && notifications.some(n => n.is_read)) deleteAllRead()
+    }, { enableOnContentEditable: false, enableOnFormTags: false })
+
+    useHotkeys("backspace", () => {
+        if (selectedIds.size > 0) handleDeleteSelected()
+    }, { enableOnContentEditable: false, enableOnFormTags: false })
+
+
 
     const handleRowClick = (notification: Notification) => {
         if (!notification.is_read) {
@@ -146,7 +164,7 @@ export function NotificationsList() {
                 </div>
                 <h3 className="text-lg font-medium">No notifications</h3>
                 <p className="text-muted-foreground mt-1 max-w-sm">
-                    You're all caught up! When you receive notifications, they will appear here.
+                    You&apos;re all caught up! When you receive notifications, they will appear here.
                 </p>
             </div>
         )
@@ -172,10 +190,10 @@ export function NotificationsList() {
                             variant="destructive"
                             size="sm"
                             onClick={handleDeleteSelected}
-                            className="flex-1"
+                            className="flex-1 flex items-center gap-2"
                         >
                             <Trash2 className="h-4 w-4 mr-2" />
-                            Delete ({selectedIds.size})
+                            Delete ({selectedIds.size}) <span className="hidden md:inline-flex ml-2"><Kbd variant="primary" size="xs">⌫</Kbd></span>
                         </Button>
                     ) : (
                         <>
@@ -184,22 +202,24 @@ export function NotificationsList() {
                                 size="sm"
                                 onClick={() => markAllAsRead()}
                                 disabled={notifications.every(n => n.is_read)}
-                                className="flex-1"
+                                className="flex-1 flex items-center gap-2"
                             >
                                 <CheckCheck className="h-4 w-4 mr-2" />
                                 <span className="hidden sm:inline">Mark all read</span>
                                 <span className="sm:hidden">Mark all</span>
+                                <Kbd variant="outline" size="xs" className="ml-2">M</Kbd>
                             </Button>
                             <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => deleteAllRead()}
                                 disabled={!notifications.some(n => n.is_read)}
-                                className="flex-1"
+                                className="flex-1 flex items-center gap-2"
                             >
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 <span className="hidden sm:inline">Clear read</span>
                                 <span className="sm:hidden">Clear</span>
+                                <Kbd variant="outline" size="xs" className="ml-2">C</Kbd>
                             </Button>
                         </>
                     )}

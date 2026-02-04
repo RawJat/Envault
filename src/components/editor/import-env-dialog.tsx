@@ -35,10 +35,21 @@ interface ImportEnvDialogProps {
     projectId: string
     existingVariables: EnvironmentVariable[]
     trigger?: React.ReactNode
+    open?: boolean
+    onOpenChange?: (open: boolean) => void
 }
 
-export function ImportEnvDialog({ projectId, existingVariables, trigger }: ImportEnvDialogProps) {
-    const [open, setOpen] = React.useState(false)
+export function ImportEnvDialog({
+    projectId,
+    existingVariables,
+    trigger,
+    open: controlledOpen,
+    onOpenChange: controlledOnOpenChange
+}: ImportEnvDialogProps) {
+    const [internalOpen, setInternalOpen] = React.useState(false)
+    const open = controlledOpen !== undefined ? controlledOpen : internalOpen
+    const setOpen = controlledOnOpenChange || setInternalOpen
+
     const [activeTab, setActiveTab] = React.useState("upload")
     const [pastedContent, setPastedContent] = React.useState("")
     const [selectedFile, setSelectedFile] = React.useState<File | null>(null)
@@ -74,7 +85,8 @@ export function ImportEnvDialog({ projectId, existingVariables, trigger }: Impor
     }
 
     const getImportStats = () => {
-        const existingKeys = new Set(existingVariables.map(v => v.key))
+        // existingKeys unused
+        // const existingKeys = new Set(existingVariables.map(v => v.key))
         let willAdd = 0
         let willUpdate = 0
         let willSkip = 0

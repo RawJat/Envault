@@ -1,7 +1,7 @@
 
 import inquirer from 'inquirer';
 import fs from 'fs';
-import path from 'path';
+
 import chalk from 'chalk';
 import ora from 'ora';
 import { api, handleApiError } from '../lib/api.js';

@@ -93,7 +93,7 @@ export async function shareSecret(secretId: string, email: string) {
 
     const { data: userIdData, error: rpcError } = await admin.rpc('get_user_id_by_email', { email_input: email })
 
-    let targetUserId = userIdData
+    const targetUserId = userIdData
 
     if (rpcError || !targetUserId) {
         // Fallback: Check if we can find in project_members?
