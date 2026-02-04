@@ -1,3 +1,12 @@
+# [1.4.0](https://github.com/DinanathDash/Envault/compare/v1.3.0...v1.4.0) (2026-02-04)
+
+
+### Features
+
+* Implement comprehensive Redis caching for permissions and introduce notification skeleton loaders. ([c2d156f](https://github.com/DinanathDash/Envault/commit/c2d156fb45609db6cae29702cad343cb7c8775de))
+* Introduce a notification system with dedicated UI components, database schema, and dashboard integration, alongside database performance and security improvements. ([efe1bf4](https://github.com/DinanathDash/Envault/commit/efe1bf425c488cbc742dd0b0a8bc83098c8b1c4e))
+* Refactor CLI `init` command for interactive project selection, improve device authentication window closing, and add new notification types. ([37b1ec5](https://github.com/DinanathDash/Envault/commit/37b1ec56d1cad914b1e3c5132815ecc984a67257))
+
 # [1.3.0](https://github.com/DinanathDash/Envault/compare/v1.2.0...v1.3.0) (2026-02-03)
 
 
