@@ -127,6 +127,15 @@ export async function createNotification({
         return { data: null, error }
     }
 
+    // Atomically increment cached unread count
+    try {
+        const { cacheIncr, CacheKeys, CACHE_TTL } = await import('./cache')
+        await cacheIncr(CacheKeys.userUnreadCount(userId), CACHE_TTL.UNREAD_COUNT)
+    } catch (cacheError) {
+        // Don't fail notification creation if cache update fails
+        console.warn('Failed to update unread count cache:', cacheError)
+    }
+
     return { data: data as Notification, error: null }
 }
 

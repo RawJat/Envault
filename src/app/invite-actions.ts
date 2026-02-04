@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { v4 as uuidv4 } from 'uuid'
+import { cacheDel, CacheKeys, invalidateUserSecretAccess } from '@/lib/cache'
 
 export async function createAccessRequest(token: string) {
     const supabase = await createClient()
@@ -165,7 +166,12 @@ export async function approveRequest(requestId: string, role: 'viewer' | 'editor
     // 2. Delete Request (Data Hygiene)
     await supabase.from('access_requests').delete().eq('id', requestId)
 
-    // 3. Notify User via email and in-app notification
+    // 3. Invalidate caches for the new member
+    await cacheDel(CacheKeys.userProjects(request.user_id))
+    await cacheDel(CacheKeys.userProjectRole(request.user_id, request.project_id!))
+    await cacheDel(CacheKeys.projectMembers(request.project_id!))
+
+    // 4. Notify User via email and in-app notification
     if (notifyUser) {
         const { sendAccessGrantedEmail } = await import('@/lib/email')
         // We need requester email. 
@@ -268,6 +274,13 @@ export async function removeMember(projectId: string, memberUserId: string) {
 
     if (error) return { error: error.message }
 
+    // Invalidate caches for the removed member
+    await cacheDel(CacheKeys.userProjects(memberUserId))
+    await cacheDel(CacheKeys.userProjectRole(memberUserId, projectId))
+    await cacheDel(CacheKeys.projectMembers(projectId))
+    // Invalidate all secret access caches for this user in this project
+    await invalidateUserSecretAccess(memberUserId, projectId)
+
     revalidatePath(`/project/${projectId}`)
     return { success: true }
 }
@@ -291,6 +304,11 @@ export async function updateMemberRole(projectId: string, memberUserId: string, 
         .eq('user_id', memberUserId)
 
     if (error) return { error: error.message }
+
+    // Invalidate caches for the member whose role changed
+    await cacheDel(CacheKeys.userProjectRole(memberUserId, projectId))
+    // Invalidate all secret access caches since permissions changed
+    await invalidateUserSecretAccess(memberUserId, projectId)
 
     revalidatePath(`/project/${projectId}`)
     return { success: true }

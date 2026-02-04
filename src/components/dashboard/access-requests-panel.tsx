@@ -9,6 +9,7 @@ import { Check, X, Clock, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { approveRequest, rejectRequest } from "@/app/invite-actions"
 import { createClient } from "@/lib/supabase/client"
+import { AccessRequestSkeleton } from "@/components/notifications/notification-skeleton"
 
 interface AccessRequest {
     id: string
@@ -114,19 +115,7 @@ export function AccessRequestsPanel() {
     }
 
     if (loading) {
-        return (
-            <Card>
-                <CardHeader>
-                    <CardTitle>Pending Access Requests</CardTitle>
-                    <CardDescription>Review and manage access requests to your projects</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex items-center justify-center py-8">
-                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                    </div>
-                </CardContent>
-            </Card>
-        )
+        return <AccessRequestSkeleton />
     }
 
     if (requests.length === 0) {

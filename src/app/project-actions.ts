@@ -30,6 +30,10 @@ export async function createProject(name: string) {
         return { error: error.message }
     }
 
+    // Invalidate user's project list cache
+    const { cacheDel, CacheKeys } = await import('@/lib/cache')
+    await cacheDel(CacheKeys.userProjects(user.id))
+
     revalidatePath('/dashboard')
     return { data }
 }
@@ -40,6 +44,15 @@ export async function getProjects() {
 
     if (!user) {
         return { error: 'Not authenticated' }
+    }
+
+    // Check cache first
+    const { cacheGet, cacheSet, CacheKeys, CACHE_TTL } = await import('@/lib/cache')
+    const cacheKey = CacheKeys.userProjects(user.id)
+    const cachedProjects = await cacheGet<any[]>(cacheKey)
+
+    if (cachedProjects !== null) {
+        return { data: cachedProjects }
     }
 
     // Step 1: Fetch projects only (no joins to avoid RLS recursion)
@@ -54,6 +67,8 @@ export async function getProjects() {
     }
 
     if (!projects || projects.length === 0) {
+        // Cache empty result to avoid repeated queries
+        await cacheSet(cacheKey, [], CACHE_TTL.PROJECT_LIST)
         return { data: [] }
     }
 
@@ -97,6 +112,9 @@ export async function getProjects() {
         }
     })
 
+    // Cache the enriched projects
+    await cacheSet(cacheKey, enrichedProjects, CACHE_TTL.PROJECT_LIST)
+
     return { data: enrichedProjects }
 }
 
@@ -131,6 +149,11 @@ export async function deleteProject(id: string) {
     if (error) {
         return { error: error.message }
     }
+
+    // Invalidate caches for owner and all members
+    const { cacheDel, CacheKeys, invalidateProjectCaches } = await import('@/lib/cache')
+    await cacheDel(CacheKeys.userProjects(user.id))
+    await invalidateProjectCaches(id) // Clear all project-specific caches
 
     revalidatePath('/dashboard')
     return { success: true }

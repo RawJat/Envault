@@ -98,24 +98,25 @@ export function ShareSecretModal({ projectId, secretId, secretKey, children, ope
                     <Button variant="ghost" size="icon" className="h-6 w-6"><Plus className="h-3 w-3" /></Button>
                 </DialogTrigger>
             ) : null}
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="w-[95vw] max-w-md sm:w-full">
                 <DialogHeader>
-                    <DialogTitle>Share Variable: {secretKey}</DialogTitle>
-                    <DialogDescription>
+                    <DialogTitle className="text-lg sm:text-xl">Share Variable: {secretKey}</DialogTitle>
+                    <DialogDescription className="text-sm">
                         Grant read-only access to this specific variable.
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-4 py-4">
                     <div className="flex flex-col space-y-2">
-                        <Label>Add User by Email</Label>
-                        <div className="flex space-x-2">
+                        <Label className="text-sm">Add User by Email</Label>
+                        <div className="flex flex-col sm:flex-row gap-2">
                             <Input
                                 placeholder="colleague@example.com"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
+                                className="flex-1"
                             />
-                            <Button onClick={handleAddShare} disabled={loading || !email}>
+                            <Button onClick={handleAddShare} disabled={loading || !email} className="sm:w-auto">
                                 {loading ? "Adding..." : "Add"}
                             </Button>
                         </div>
@@ -132,17 +133,22 @@ export function ShareSecretModal({ projectId, secretId, secretKey, children, ope
                         ) : (
                             <div className="space-y-3">
                                 {shares.map(share => (
-                                    <div key={share.id} className="flex items-center justify-between">
-                                        <div className="flex items-center space-x-3">
-                                            <Avatar className="h-8 w-8">
+                                    <div key={share.id} className="flex items-center justify-between gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors">
+                                        <div className="flex items-center space-x-3 flex-1 min-w-0">
+                                            <Avatar className="h-8 w-8 shrink-0">
                                                 <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
                                             </Avatar>
-                                            <div className="space-y-1">
-                                                <p className="text-sm font-medium leading-none">User {share.user_id.slice(0, 4)}...</p>
+                                            <div className="space-y-1 min-w-0">
+                                                <p className="text-sm font-medium leading-none truncate">User {share.user_id.slice(0, 4)}...</p>
                                                 <p className="text-xs text-muted-foreground">Viewer</p>
                                             </div>
                                         </div>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleRemoveShare(share.user_id)}>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-8 w-8 text-destructive shrink-0"
+                                            onClick={() => handleRemoveShare(share.user_id)}
+                                        >
                                             <X className="h-4 w-4" />
                                         </Button>
                                     </div>

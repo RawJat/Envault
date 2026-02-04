@@ -41,26 +41,26 @@ export function ShareConfirmationDialog({
 
     return (
         <AlertDialog open={open} onOpenChange={onOpenChange}>
-            <AlertDialogContent>
+            <AlertDialogContent className="w-[95vw] max-w-lg sm:w-full">
                 <AlertDialogHeader>
-                    <AlertDialogTitle>Confirm Changes</AlertDialogTitle>
-                    <AlertDialogDescription>
+                    <AlertDialogTitle className="text-lg sm:text-xl">Confirm Changes</AlertDialogTitle>
+                    <AlertDialogDescription className="text-sm">
                         Review and confirm the following changes to project access:
                     </AlertDialogDescription>
                 </AlertDialogHeader>
 
-                <div className="space-y-4 py-4">
+                <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
                     {/* Approvals */}
                     {approvals.length > 0 && (
                         <div className="space-y-2">
                             <h4 className="text-sm font-medium flex items-center gap-2">
-                                <Check className="h-4 w-4 text-green-600" />
+                                <Check className="h-4 w-4 text-green-600 shrink-0" />
                                 Approve Access ({approvals.length})
                             </h4>
                             <div className="space-y-1 pl-6">
                                 {approvals.map((change) => (
-                                    <p key={change.userId} className="text-sm text-muted-foreground">
-                                        {change.email || 'User'} as <span className="font-medium capitalize">{change.newRole || 'viewer'}</span>
+                                    <p key={change.userId} className="text-sm text-muted-foreground truncate">
+                                        <span className="truncate">{change.email || 'User'}</span> as <span className="font-medium capitalize">{change.newRole || 'viewer'}</span>
                                     </p>
                                 ))}
                             </div>

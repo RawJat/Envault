@@ -75,7 +75,7 @@ export function NotificationItem({ notification, onClose }: NotificationItemProp
                     <Button
                         variant="ghost"
                         size="sm"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                        className="sm:opacity-0 sm:group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
                         onClick={handleDelete}
                     >
                         <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />

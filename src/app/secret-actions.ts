@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { cacheDel, CacheKeys } from '@/lib/cache'
 
 export async function shareSecret(secretId: string, email: string) {
     const supabase = await createClient()
@@ -115,6 +116,9 @@ export async function shareSecret(secretId: string, email: string) {
         return { error: insertError.message }
     }
 
+    // Invalidate secret access cache for the user who was granted access
+    await cacheDel(CacheKeys.userSecretAccess(targetUserId, secretId))
+
     // Notify
     const { sendAccessGrantedEmail } = await import('@/lib/email')
     await sendAccessGrantedEmail(email, `${project.name} (Single Variable)`)
@@ -153,6 +157,9 @@ export async function unshareSecret(secretId: string, userId: string) {
         .eq('user_id', userId)
 
     if (error) return { error: error.message }
+
+    // Invalidate secret access cache for the user who lost access
+    await cacheDel(CacheKeys.userSecretAccess(userId, secretId))
 
     revalidatePath(`/project/${secret.project_id}`)
     return { success: true }

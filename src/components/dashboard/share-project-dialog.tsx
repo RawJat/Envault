@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
 import { Copy, Share2, Check, Loader2 } from "lucide-react"
+import { MemberSkeleton } from "@/components/notifications/notification-skeleton"
 import { inviteUser, approveRequest, rejectRequest, updateMemberRole, removeMember } from "@/app/invite-actions"
 import { Project } from "@/lib/store"
 import { ShareConfirmationDialog, PendingChange } from "./share-confirmation-dialog"
@@ -261,10 +262,10 @@ export function ShareProjectDialog({ project, children, open: controlledOpen, on
                         <Button variant="outline" size="sm"><Share2 className="w-4 h-4 mr-2" /> Share</Button>
                     </DialogTrigger>
                 ) : null}
-                <DialogContent className="sm:max-w-md">
+                <DialogContent className="w-[95vw] max-w-md sm:w-full">
                     <DialogHeader>
-                        <DialogTitle>Share {project.name}</DialogTitle>
-                        <DialogDescription>
+                        <DialogTitle className="text-lg sm:text-xl">Share {project.name}</DialogTitle>
+                        <DialogDescription className="text-sm">
                             Invite collaborators to this project.
                         </DialogDescription>
                     </DialogHeader>
@@ -281,12 +282,17 @@ export function ShareProjectDialog({ project, children, open: controlledOpen, on
                         </TabsList>
 
                         <TabsContent value="invite" className="space-y-4 pt-4">
-                            <div className="flex space-x-2">
+                            <div className="flex flex-row gap-2">
                                 <div className="grid flex-1 gap-2">
                                     <Label htmlFor="link" className="sr-only">Link</Label>
-                                    <Input id="link" defaultValue={`${typeof window !== 'undefined' ? window.location.origin : ''}/join/${project.id}`} readOnly />
+                                    <Input
+                                        id="link"
+                                        defaultValue={`${typeof window !== 'undefined' ? window.location.origin : ''}/join/${project.id}`}
+                                        readOnly
+                                        className="text-xs sm:text-sm"
+                                    />
                                 </div>
-                                <Button size="icon" variant="secondary" onClick={handleCopyLink}>
+                                <Button size="icon" variant="secondary" onClick={handleCopyLink} className="shrink-0">
                                     {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
                                 </Button>
                             </div>
@@ -294,27 +300,25 @@ export function ShareProjectDialog({ project, children, open: controlledOpen, on
                             <div className="border-t my-4" />
 
                             <div className="flex flex-col space-y-2">
-                                <Label>Invite by Email</Label>
-                                <div className="flex space-x-2">
+                                <Label className="text-sm">Invite by Email</Label>
+                                <div className="flex flex-col sm:flex-row gap-2">
                                     <Input
                                         placeholder="colleague@example.com"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
+                                        className="flex-1"
                                     />
+                                    <Button onClick={handleInvite} disabled={loading || !email} className="sm:w-auto">
+                                        {loading ? "Sending..." : "Send Invitation"}
+                                    </Button>
                                 </div>
                             </div>
-
-                            <Button className="w-full" onClick={handleInvite} disabled={loading || !email}>
-                                {loading ? "Sending..." : "Send Invitation"}
-                            </Button>
                         </TabsContent>
 
                         <TabsContent value="members" className="pt-4 space-y-4">
                             <div className="space-y-4">
                                 {membersLoading ? (
-                                    <div className="flex items-center justify-center py-8">
-                                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                                    </div>
+                                    <MemberSkeleton />
                                 ) : (members.length === 0 && pendingRequests.length === 0) ? (
                                     <div className="text-sm text-muted-foreground text-center py-8">No members yet.</div>
                                 ) : (
@@ -325,10 +329,10 @@ export function ShareProjectDialog({ project, children, open: controlledOpen, on
                                                 <h4 className="text-sm font-medium">Pending Requests</h4>
                                                 <div className="grid gap-2">
                                                     {pendingRequests.map((request) => (
-                                                        <div key={request.id} className="flex items-center justify-between space-x-4 p-2 border rounded-lg bg-muted/30">
+                                                        <div key={request.id} className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 border rounded-lg bg-muted/30">
                                                             <div className="flex items-center space-x-3 flex-1 min-w-0">
                                                                 <UserAvatar
-                                                                    className="h-8 w-8"
+                                                                    className="h-8 w-8 shrink-0"
                                                                     user={{ email: request.email || "unknown" }}
                                                                     avatarSeed={request.user_id}
                                                                 />
@@ -345,7 +349,7 @@ export function ShareProjectDialog({ project, children, open: controlledOpen, on
                                                                         handleRequestAction(request, value as any)
                                                                     }
                                                                 >
-                                                                    <SelectTrigger className="w-28">
+                                                                    <SelectTrigger className="w-full sm:w-32">
                                                                         <SelectValue />
                                                                     </SelectTrigger>
                                                                     <SelectContent>
@@ -367,10 +371,10 @@ export function ShareProjectDialog({ project, children, open: controlledOpen, on
                                                 <h4 className="text-sm font-medium">Active Members</h4>
                                                 <div className="grid gap-2">
                                                     {members.map((member) => (
-                                                        <div key={member.id} className="flex items-center justify-between space-x-4">
+                                                        <div key={member.id} className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 border rounded-lg">
                                                             <div className="flex items-center space-x-3 flex-1 min-w-0">
                                                                 <UserAvatar
-                                                                    className="h-8 w-8"
+                                                                    className="h-8 w-8 shrink-0"
                                                                     user={{ email: member.email || "unknown" }}
                                                                     avatarSeed={member.user_id}
                                                                 />
@@ -387,7 +391,7 @@ export function ShareProjectDialog({ project, children, open: controlledOpen, on
                                                                         handleMemberRoleChange(member, value)
                                                                     }
                                                                 >
-                                                                    <SelectTrigger className="w-28">
+                                                                    <SelectTrigger className="w-full sm:w-32">
                                                                         <SelectValue />
                                                                     </SelectTrigger>
                                                                     <SelectContent>

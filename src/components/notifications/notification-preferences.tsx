@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
+import { PreferencesSkeleton } from './notification-skeleton'
 
 interface NotificationPreferences {
     // Email notifications
@@ -123,11 +124,9 @@ export function NotificationPreferences() {
     const hasChanges = JSON.stringify(preferences) !== JSON.stringify(initialPreferences)
 
     if (isLoading) {
-        return (
-            <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-        )
+        if (isLoading) {
+            return <PreferencesSkeleton />
+        }
     }
 
     return (

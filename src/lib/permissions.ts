@@ -1,4 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js'
+import { cacheGet, cacheSet, CacheKeys, CACHE_TTL } from './cache'
 
 export type ProjectRole = 'owner' | 'editor' | 'viewer' | null
 
@@ -11,6 +12,14 @@ export async function getProjectRole(
     projectId: string,
     userId: string
 ): Promise<ProjectRole> {
+    // Check cache first
+    const cacheKey = CacheKeys.userProjectRole(userId, projectId)
+    const cachedRole = await cacheGet<ProjectRole>(cacheKey)
+
+    if (cachedRole !== null) {
+        return cachedRole
+    }
+
     // 1. Check if Owner
     const { data: project } = await supabase
         .from('projects')
@@ -19,6 +28,7 @@ export async function getProjectRole(
         .single()
 
     if (project && project.user_id === userId) {
+        await cacheSet(cacheKey, 'owner', CACHE_TTL.PROJECT_ROLE)
         return 'owner'
     }
 
@@ -31,9 +41,13 @@ export async function getProjectRole(
         .single()
 
     if (member) {
-        return member.role as ProjectRole
+        const role = member.role as ProjectRole
+        await cacheSet(cacheKey, role, CACHE_TTL.PROJECT_ROLE)
+        return role
     }
 
+    // Cache null result to avoid repeated DB queries for non-members
+    await cacheSet(cacheKey, null, CACHE_TTL.PROJECT_ROLE)
     return null
 }
 
@@ -46,6 +60,14 @@ export async function canAccessSecret(
     secretId: string,
     userId: string
 ): Promise<{ hasAccess: boolean; role: ProjectRole }> {
+    // Check cache first
+    const cacheKey = CacheKeys.userSecretAccess(userId, secretId)
+    const cachedAccess = await cacheGet<{ hasAccess: boolean; role: ProjectRole }>(cacheKey)
+
+    if (cachedAccess !== null) {
+        return cachedAccess
+    }
+
     // 1. Fetch Secret & Project info
     const { data: secret } = await supabase
         .from('secrets')
@@ -57,13 +79,19 @@ export async function canAccessSecret(
         .eq('id', secretId)
         .single()
 
-    if (!secret) return { hasAccess: false, role: null }
+    if (!secret) {
+        const noAccess = { hasAccess: false, role: null }
+        await cacheSet(cacheKey, noAccess, CACHE_TTL.SECRET_ACCESS)
+        return noAccess
+    }
 
     const projectOwnerId = (secret.projects as any).user_id
 
     // 2. Check Project Owner
     if (projectOwnerId === userId) {
-        return { hasAccess: true, role: 'owner' }
+        const ownerAccess = { hasAccess: true, role: 'owner' as ProjectRole }
+        await cacheSet(cacheKey, ownerAccess, CACHE_TTL.SECRET_ACCESS)
+        return ownerAccess
     }
 
     // 3. Check Project Member
@@ -75,7 +103,9 @@ export async function canAccessSecret(
         .single()
 
     if (member) {
-        return { hasAccess: true, role: member.role as ProjectRole }
+        const memberAccess = { hasAccess: true, role: member.role as ProjectRole }
+        await cacheSet(cacheKey, memberAccess, CACHE_TTL.SECRET_ACCESS)
+        return memberAccess
     }
 
     // 4. Check Granular Secret Share
@@ -88,8 +118,12 @@ export async function canAccessSecret(
 
     if (share) {
         // Map granular 'viewer' to general viewer role or distinct type if needed
-        return { hasAccess: true, role: 'viewer' }
+        const shareAccess = { hasAccess: true, role: 'viewer' as ProjectRole }
+        await cacheSet(cacheKey, shareAccess, CACHE_TTL.SECRET_ACCESS)
+        return shareAccess
     }
 
-    return { hasAccess: false, role: null }
+    const noAccess = { hasAccess: false, role: null }
+    await cacheSet(cacheKey, noAccess, CACHE_TTL.SECRET_ACCESS)
+    return noAccess
 }

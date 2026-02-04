@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useParams, useRouter } from "next/navigation"
-import { ArrowLeft, Plus, Upload, Download, Settings, Share2, Trash2 } from "lucide-react"
+import { ArrowLeft, Plus, Upload, Download, Settings, Share2, Trash2, Settings as SettingsIcon, LogOut } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 
@@ -13,10 +13,13 @@ import { ImportEnvDialog } from "@/components/editor/import-env-dialog"
 import { Project, useEnvaultStore } from "@/lib/store"
 import { useReauthStore } from "@/lib/reauth-store"
 import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler"
+import { UserAvatar } from "@/components/ui/user-avatar"
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
@@ -46,7 +49,7 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
     const router = useRouter()
 
     // Delete Logic
-    const deleteProject = useEnvaultStore((state) => state.deleteProject)
+    const { deleteProject, user } = useEnvaultStore()
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
     const [shareDialogOpen, setShareDialogOpen] = useState(false)
     const [deleteConfirmation, setDeleteConfirmation] = useState("")
@@ -113,6 +116,8 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
+                        <AnimatedThemeToggler />
+
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon">
@@ -130,8 +135,47 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
-                        <AnimatedThemeToggler />
                         <NotificationDropdown />
+
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="rounded-full ml-2">
+                                    <UserAvatar
+                                        user={{
+                                            email: user?.email,
+                                            avatar: user?.avatar,
+                                            firstName: user?.firstName
+                                        }}
+                                        className="h-8 w-8"
+                                    />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-56">
+                                <DropdownMenuLabel>
+                                    <div className="flex flex-col space-y-1">
+                                        <p className="text-sm font-medium leading-none">{user?.firstName || "User"}</p>
+                                        <p className="text-xs leading-none text-muted-foreground">{user?.email || "user@example.com"}</p>
+                                    </div>
+                                </DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem asChild>
+                                    <Link href="/settings" className="cursor-pointer flex w-full items-center">
+                                        <SettingsIcon className="mr-2 h-4 w-4" />
+                                        <span>Settings</span>
+                                    </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem className="text-red-600 dark:text-red-500 focus:text-red-600 dark:focus:text-red-500 cursor-pointer" onClick={() => {
+                                    const { logout } = useEnvaultStore.getState()
+                                    const { signOut } = require("@/app/actions")
+                                    logout()
+                                    signOut()
+                                }}>
+                                    <LogOut className="mr-2 h-4 w-4" />
+                                    <span>Log out</span>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                 </div>
             </header>

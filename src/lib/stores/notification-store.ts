@@ -37,6 +37,7 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
                 return
             }
 
+            // Fetch notifications (always fresh - real-time requirement)
             const { data, error } = await supabase
                 .from('notifications')
                 .select('*')
