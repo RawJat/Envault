@@ -147,14 +147,19 @@ export function ProjectCard({ project }: ProjectCardProps) {
                     </CardHeader>
                     <CardFooter className="absolute bottom-0 w-full bg-muted/20 border-t p-3">
                         <div className="flex items-center justify-between w-full text-xs text-muted-foreground">
-                            <span>{project.secretCount ?? project.variables.length} variables</span>
+                            <span>{project.secretCount ?? 0} variables</span>
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <span className="cursor-help">{formatDistanceToNow(new Date(project.createdAt), { addSuffix: true })}</span>
+                                        <span className="cursor-help">
+                                            {project.createdAt ? (() => {
+                                                const date = new Date(project.createdAt);
+                                                return isNaN(date.getTime()) ? "Invalid date" : formatDistanceToNow(date, { addSuffix: true });
+                                            })() : "No date"}
+                                        </span>
                                     </TooltipTrigger>
                                     <TooltipContent>
-                                        <p>{new Date(project.createdAt).toLocaleString()}</p>
+                                        <p>{project.createdAt ? new Date(project.createdAt).toLocaleString() : "No date"}</p>
                                     </TooltipContent>
                                 </Tooltip>
                             </TooltipProvider>

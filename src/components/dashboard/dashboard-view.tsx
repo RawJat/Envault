@@ -23,12 +23,49 @@ import { signOut } from "@/app/actions"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { NotificationDropdown } from "@/components/notifications/notification-dropdown"
 import { useState, useEffect } from "react"
+import { useSearchParams, useRouter } from "next/navigation"
+import { toast } from "sonner"
 
 export default function DashboardPage() {
     const projects = useEnvaultStore((state) => state.projects)
     const { user, logout, isLoading } = useEnvaultStore()
     const [activeTab, setActiveTab] = useState("my-projects")
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+    const [mounted, setMounted] = useState(false)
+    const searchParams = useSearchParams()
+    const router = useRouter()
+    const requested = searchParams.get('requested')
+    const approved = searchParams.get('approved')
+    const denied = searchParams.get('denied')
+
+    useEffect(() => {
+        setMounted(true)
+        if (requested === 'true') {
+            toast.success("Access request sent!", {
+                description: "The project owner will be notified of your request.",
+                duration: 5000,
+            })
+        } else if (approved === 'true') {
+            toast.success("Access request approved!", {
+                description: "The user has been added to the project.",
+                duration: 5000,
+            })
+        } else if (denied === 'true') {
+            toast.info("Access request denied.", {
+                description: "The request has been removed.",
+                duration: 5000,
+            })
+        }
+
+        if (requested || approved || denied) {
+            // Clear the params from URL
+            const url = new URL(window.location.href)
+            url.searchParams.delete('requested')
+            url.searchParams.delete('approved')
+            url.searchParams.delete('denied')
+            router.replace(url.pathname + url.search)
+        }
+    }, [requested, approved, denied, router])
 
     // Shortcuts
     useEffect(() => {
@@ -65,6 +102,10 @@ export default function DashboardPage() {
     const handleLogout = async () => {
         logout()
         await signOut()
+    }
+
+    if (!mounted) {
+        return null // Or a more elaborate skeleton if desired
     }
 
     // Filter Projects

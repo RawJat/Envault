@@ -2,8 +2,21 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import * as fs from 'fs'
+import * as path from 'path'
 
 import { cacheDel, CacheKeys, invalidateUserSecretAccess } from '@/lib/cache'
+
+const LOG_FILE = path.join(process.cwd(), 'envault_debug.log')
+
+function logToFile(msg: string) {
+    const timestamp = new Date().toISOString()
+    try {
+        fs.appendFileSync(LOG_FILE, `[${timestamp}] [InviteActions] ${msg}\n`)
+    } catch (e) {
+        console.error('Failed to log to file:', e)
+    }
+}
 
 export async function createAccessRequest(token: string) {
     const supabase = await createClient()
@@ -40,9 +53,12 @@ export async function createAccessRequest(token: string) {
     const projectId = token // Assuming simplified flow where link ID = Project ID for now to start.
 
     // Check if project exists
-    const { data: project } = await supabase
+    // We use Admin Client here because RLS blocks non-members from seeing project details
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    const admin = createAdminClient()
+    const { data: project } = await admin
         .from('projects')
-        .select('id, user_id')
+        .select('id, user_id, name') // Added name here
         .eq('id', projectId)
         .single()
 
@@ -85,40 +101,44 @@ export async function createAccessRequest(token: string) {
 
     // Notify Owner via email and in-app notification
     try {
-        const { createAdminClient } = await import('@/lib/supabase/admin')
-        const adminSupabase = createAdminClient()
-
         // Get owner email
-        const { data: owner } = await adminSupabase.auth.admin.getUserById(project.user_id)
+        const { data: owner } = await admin.auth.admin.getUserById(project.user_id)
 
         // Get requester email
-        const { data: requester } = await adminSupabase.auth.admin.getUserById(user.id)
+        const { data: requester } = await admin.auth.admin.getUserById(user.id)
 
-        // Get project name
-        const { data: projectData } = await supabase
-            .from('projects')
-            .select('name')
-            .eq('id', projectId)
-            .single()
+        if (owner?.user?.email && requester?.user?.email) {
+            // We need to get the requestId. 
+            // If it was already pending, we might not have the ID from the insert.
+            // But if it's new, we get it from data.
+            const { data: requestData } = await supabase
+                .from('access_requests')
+                .select('id')
+                .eq('project_id', projectId)
+                .eq('user_id', user.id)
+                .single()
 
-        if (owner?.user?.email && requester?.user?.email && projectData) {
-            // Send email notification
-            const { sendAccessRequestEmail } = await import('@/lib/email')
-            await sendAccessRequestEmail(
-                owner.user.email,
-                requester.user.email,
-                projectData.name
-            )
+            if (requestData) {
+                // Send email notification
+                const { sendAccessRequestEmail } = await import('@/lib/email')
+                await sendAccessRequestEmail(
+                    owner.user.email,
+                    requester.user.email,
+                    project.name,
+                    requestData.id
+                )
 
-            // Create in-app notification
-            const { createAccessRequestNotification } = await import('@/lib/notifications')
-            await createAccessRequestNotification(
-                project.user_id,
-                requester.user.email,
-                projectData.name,
-                projectId,
-                user.id
-            )
+                // Create in-app notification
+                const { createAccessRequestNotification } = await import('@/lib/notifications')
+                await createAccessRequestNotification(
+                    project.user_id,
+                    requester.user.email,
+                    project.name,
+                    projectId,
+                    user.id,
+                    requestData.id
+                )
+            }
         }
     } catch (emailError) {
         // Don't fail the request if email/notification fails
@@ -132,27 +152,38 @@ export async function approveRequest(requestId: string, role: 'viewer' | 'editor
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
-    if (!user) return { error: 'Not authenticated' }
+    if (!user) {
+        logToFile(`Approve denied: Not authenticated`)
+        return { error: 'Not authenticated' }
+    }
+
+    logToFile(`[approveRequest] User ${user.email} approving request ${requestId} with role ${role}`)
+
+    // Use Admin client for verification and modifications to bypass RLS issues during approval
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    const admin = createAdminClient()
 
     // Fetch request details
-    const { data: request } = await supabase
+    const { data: request, error: requestError } = await admin
         .from('access_requests')
-        .select('*, projects!inner(user_id, name), auth_users:user_id(email)') // Fetch project owner & requester email
+        .select('*, projects!inner(user_id, name)')
         .eq('id', requestId)
         .single()
 
-    if (!request) return { error: 'Request not found.' }
+    if (requestError || !request) {
+        logToFile(`[approveRequest] Request not found or error: ${JSON.stringify(requestError)}`)
+        return { error: 'Request not found.' }
+    }
 
     // Verify User is Owner of the Project
-    // (projects.user_id check)
-    // TypeScript might struggle with nested join typing, casting needed or check logic
-    const projectOwner = (request.projects as unknown as { user_id: string }).user_id
+    const projectOwner = (request.projects as any).user_id
     if (projectOwner !== user.id) {
+        logToFile(`[approveRequest] Unauthorized: ${user.id} is not owner ${projectOwner}`)
         return { error: 'Unauthorized.' }
     }
 
-    // 1. Add to Project Members
-    const { error: memberError } = await supabase
+    // 1. Add to Project Members (Use Admin for reliability)
+    const { error: memberError } = await admin
         .from('project_members')
         .insert({
             project_id: request.project_id!,
@@ -161,10 +192,16 @@ export async function approveRequest(requestId: string, role: 'viewer' | 'editor
             added_by: user.id
         })
 
-    if (memberError) return { error: memberError.message }
+    if (memberError) {
+        logToFile(`[approveRequest] Member insert error: ${JSON.stringify(memberError)}`)
+        return { error: memberError.message }
+    }
 
-    // 2. Delete Request (Data Hygiene)
-    await supabase.from('access_requests').delete().eq('id', requestId)
+    // 2. Delete Request (Use Admin to ensure it's removed)
+    const { error: deleteError } = await admin.from('access_requests').delete().eq('id', requestId)
+    if (deleteError) {
+        logToFile(`[approveRequest] Warning: Delete request failed: ${JSON.stringify(deleteError)}`)
+    }
 
     // 3. Invalidate caches for the new member
     await cacheDel(CacheKeys.userProjects(request.user_id))
@@ -202,6 +239,8 @@ export async function approveRequest(requestId: string, role: 'viewer' | 'editor
     }
 
     revalidatePath('/dashboard') // Refresh owner dashboard
+    revalidatePath(`/project/${request.project_id}`) // Refresh project page
+    logToFile(`[approveRequest] Success: User ${request.user_id} added to ${request.project_id}`)
     return { success: true }
 }
 
@@ -211,29 +250,43 @@ export async function rejectRequest(requestId: string) {
 
     if (!user) return { error: 'Not authenticated' }
 
+    // Use Admin client
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    const admin = createAdminClient()
+
     // Fetch request to verify ownership
-    const { data: request } = await supabase
+    const { data: request, error: fetchError } = await admin
         .from('access_requests')
-        .select('projects!inner(user_id)')
+        .select('projects!inner(user_id, name)')
         .eq('id', requestId)
         .single()
 
-    if (!request) return { error: 'Request not found.' }
+    if (fetchError || !request) {
+        logToFile(`[rejectRequest] Request not found or error: ${JSON.stringify(fetchError)}`)
+        return { error: 'Request not found.' }
+    }
 
-    const projectOwner = (request.projects as unknown as { user_id: string }).user_id
+    const projectOwner = (request.projects as any).user_id
     if (projectOwner !== user.id) {
+        logToFile(`[rejectRequest] Unauthorized: ${user.id} vs owner ${projectOwner}`)
         return { error: 'Unauthorized.' }
     }
 
     // Get project details and requester info for notification
-    const { data: fullRequest } = await supabase
+    const { data: fullRequest } = await admin
         .from('access_requests')
         .select('user_id, project_id, projects(name)')
         .eq('id', requestId)
         .single()
 
     // Hard Delete
-    await supabase.from('access_requests').delete().eq('id', requestId)
+    const { error: deleteError } = await admin.from('access_requests').delete().eq('id', requestId)
+    if (deleteError) {
+        logToFile(`[rejectRequest] Delete error: ${JSON.stringify(deleteError)}`)
+        return { error: deleteError.message }
+    }
+
+    logToFile(`[rejectRequest] Success: Request ${requestId} rejected`)
 
     // Notify requester that their request was denied
     if (fullRequest) {

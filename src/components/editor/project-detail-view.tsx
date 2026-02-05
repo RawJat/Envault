@@ -59,6 +59,12 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
     const [isImportDialogOpen, setIsImportDialogOpen] = useState(false)
     const [deleteConfirmation, setDeleteConfirmation] = useState("")
+    const [mounted, setMounted] = useState(false)
+
+    useEffect(() => {
+        setMounted(true)
+    }, [])
+
     // Listen for global command context
     useEffect(() => {
         const handleOpenAdd = () => setIsAddDialogOpen(true)
@@ -134,6 +140,10 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
         a.click()
         window.URL.revokeObjectURL(url)
         document.body.removeChild(a)
+    }
+
+    if (!mounted) {
+        return null
     }
 
     return (

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -39,6 +39,11 @@ export function ReauthDialog() {
     const { user } = useEnvaultStore()
     const [step, setStep] = useState<'send' | 'verify'>('send')
     const [isSending, setIsSending] = useState(false)
+    const [mounted, setMounted] = useState(false)
+
+    useEffect(() => {
+        setMounted(true)
+    }, [])
 
     // Ensure we have an email. If for some reason we don't, we can't really re-auth this way.
     // In a real app, you might want to handle this edge case better.
@@ -57,6 +62,8 @@ export function ReauthDialog() {
             code: "",
         },
     })
+
+    if (!mounted) return null
 
     const handleSendCode = async () => {
         setIsSending(true)

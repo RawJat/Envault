@@ -30,7 +30,7 @@ interface ShareProjectDialogProps {
 interface Member {
     id: string
     user_id: string
-    role: 'viewer' | 'editor'
+    role: 'owner' | 'viewer' | 'editor'
     created_at: string
     email?: string
 }
@@ -83,8 +83,9 @@ export function ShareProjectDialog({ project, children, open: controlledOpen, on
             .eq('status', 'pending')
 
         // Fetch emails
+        let allMembers: Member[] = []
         if (membersData) {
-            const membersWithEmails = await Promise.all(
+            allMembers = await Promise.all(
                 membersData.map(async (member) => {
                     try {
                         const response = await fetch('/api/user-email', {
@@ -99,8 +100,31 @@ export function ShareProjectDialog({ project, children, open: controlledOpen, on
                     }
                 })
             )
-            setMembers(membersWithEmails)
         }
+
+        // Add owner to the members list if not already present
+        try {
+            const hasOwner = allMembers.some(m => m.user_id === project.user_id)
+            if (!hasOwner) {
+                const response = await fetch('/api/user-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: project.user_id })
+                })
+                const { email } = await response.json()
+                allMembers.unshift({
+                    id: 'owner',
+                    user_id: project.user_id,
+                    role: 'owner' as any, // Cast for owner display
+                    created_at: new Date().toISOString(),
+                    email
+                })
+            }
+        } catch (error) {
+            console.error('Failed to fetch owner email:', error)
+        }
+
+        setMembers(allMembers)
 
         if (requestsData) {
             const requestsWithEmails = await Promise.all(
@@ -168,6 +192,7 @@ export function ShareProjectDialog({ project, children, open: controlledOpen, on
     }
 
     const handleMemberRoleChange = (member: Member, newValue: 'viewer' | 'editor' | 'revoke') => {
+        if (member.role === 'owner') return // Secure guard
         const newChanges = new Map(pendingChanges)
 
         if (newValue === member.role) {
@@ -238,16 +263,16 @@ export function ShareProjectDialog({ project, children, open: controlledOpen, on
         await fetchMembersAndRequests()
     }
 
-    const getCurrentValue = (userId: string, originalValue: string): string => {
+    const getCurrentValue = (userId: string, originalValue: string | undefined): string => {
         const change = pendingChanges.get(userId)
-        if (!change) return originalValue
+        if (!change) return originalValue || ""
 
         if (change.type === 'approve') return 'approve'
         if (change.type === 'deny') return 'deny'
         if (change.type === 'revoke') return 'revoke'
         if (change.type === 'role_change') return change.newRole!
 
-        return originalValue
+        return originalValue || ""
     }
 
     // Shortcut for saving changes
@@ -395,7 +420,7 @@ export function ShareProjectDialog({ project, children, open: controlledOpen, on
                                                                     </p>
                                                                 </div>
                                                             </div>
-                                                            {isOwner && (
+                                                            {isOwner && member.role !== 'owner' ? (
                                                                 <Select
                                                                     value={getCurrentValue(member.user_id, member.role)}
                                                                     onValueChange={(value: 'viewer' | 'editor' | 'revoke') =>
@@ -411,6 +436,10 @@ export function ShareProjectDialog({ project, children, open: controlledOpen, on
                                                                         <SelectItem value="revoke">Revoke</SelectItem>
                                                                     </SelectContent>
                                                                 </Select>
+                                                            ) : (
+                                                                <Badge variant="outline" className="capitalize">
+                                                                    {member.role}
+                                                                </Badge>
                                                             )}
                                                         </div>
                                                     ))}

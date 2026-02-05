@@ -13,7 +13,7 @@ import { Loader2, Check, X, ArrowRight } from "lucide-react"
 export interface PendingChange {
     userId: string
     type: 'approve' | 'deny' | 'role_change' | 'revoke'
-    currentRole?: 'viewer' | 'editor' | 'pending'
+    currentRole?: 'owner' | 'viewer' | 'editor' | 'pending'
     newRole?: 'viewer' | 'editor'
     email?: string
     requestId?: string

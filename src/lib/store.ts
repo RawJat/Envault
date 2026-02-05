@@ -17,6 +17,7 @@ export type EnvironmentVariable = {
 export type Project = {
     id: string
     name: string
+    user_id: string
     variables: EnvironmentVariable[]
     secretCount: number
     createdAt: string
@@ -50,7 +51,7 @@ export type User = {
 }
 
 export const useEnvaultStore = create<EnvaultState>()(
-    (set) => ({
+    (set, get) => ({
         projects: [],
         isLoading: true,
         user: null,
@@ -65,9 +66,11 @@ export const useEnvaultStore = create<EnvaultState>()(
         setLoading: (loading) => set({ isLoading: loading }),
 
         addProject: (name) => {
+            const userId = get().user?.email || 'local' // Fallback for local
             const newProject: Project = {
                 id: uuidv4(),
                 name,
+                user_id: userId,
                 variables: [],
                 secretCount: 0,
                 createdAt: new Date().toISOString(),

@@ -20,9 +20,14 @@ import { Kbd } from "@/components/ui/kbd"
 
 
 export function NotificationDropdown() {
+    const [mounted, setMounted] = useState(false)
     const [open, setOpen] = useState(false)
     const { notifications, isLoading, markAllAsRead, deleteAllRead } = useNotificationStore()
     const router = useRouter()
+
+    useEffect(() => {
+        setMounted(true)
+    }, [])
 
     const unreadNotifications = notifications.filter(n => !n.is_read)
     const recentNotifications = notifications.slice(0, 5)
@@ -71,6 +76,12 @@ export function NotificationDropdown() {
             setOpen(false)
         }
     }, { enabled: open })
+
+    if (!mounted) {
+        return (
+            <NotificationBell />
+        )
+    }
 
     return (
         <DropdownMenu open={open} onOpenChange={setOpen}>

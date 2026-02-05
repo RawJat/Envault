@@ -36,6 +36,11 @@ export const AnimatedThemeToggler = ({
     return () => observer.disconnect()
   }, [])
 
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   const toggleTheme = useCallback(async () => {
     if (!buttonRef.current) return
 
@@ -71,6 +76,21 @@ export const AnimatedThemeToggler = ({
       }
     )
   }, [isDark, duration])
+
+  if (!mounted) {
+    return (
+      <button
+        ref={buttonRef}
+        onClick={toggleTheme}
+        className={cn(className)}
+        data-theme-toggle
+        {...props}
+      >
+        {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+        <span className="sr-only">Toggle theme (t)</span>
+      </button>
+    )
+  }
 
   return (
     <Tooltip>

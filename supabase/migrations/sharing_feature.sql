@@ -57,66 +57,148 @@ alter table project_members enable row level security;
 alter table secret_shares enable row level security;
 alter table access_requests enable row level security;
 
+-- SECURITY DEFINER FUNCTIONS --
+-- These bypass RLS to prevent recursion loops
+
+CREATE OR REPLACE FUNCTION public.user_owns_project(project_id uuid, user_id uuid)
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.projects
+    WHERE id = project_id AND projects.user_id = user_id
+  );
+$$;
+
+GRANT EXECUTE ON FUNCTION public.user_owns_project TO authenticated;
+
 -- POLICIES --
 
 -- 1. Project Members Policies
--- Owners can view/manage members of their projects
-create policy "Owners can manage members"
-  on project_members
+-- Consolidated SELECT: Users can see themselves OR Owners can see everyone in their project
+drop policy if exists "Owners can manage members" on project_members;
+drop policy if exists "Members can view themselves" on project_members;
+drop policy if exists "project_members_owner_policy" on project_members;
+drop policy if exists "project_members_self_policy" on project_members;
+drop policy if exists "project_members_select_policy" on project_members;
+
+create policy "project_members_select_policy"
+  on project_members for select
   using (
+    user_id = (select auth.uid())
+    or
+    public.user_owns_project(project_id, (select auth.uid()))
+  );
+
+-- Consolidated Modifications: Only Project Owners can manage memberships
+drop policy if exists "project_members_insert_policy" on project_members;
+create policy "project_members_insert_policy"
+  on project_members for insert
+  with check (public.user_owns_project(project_id, (select auth.uid())));
+
+drop policy if exists "project_members_update_policy" on project_members;
+create policy "project_members_update_policy"
+  on project_members for update
+  using (public.user_owns_project(project_id, (select auth.uid())));
+
+drop policy if exists "project_members_delete_policy" on project_members;
+create policy "project_members_delete_policy"
+  on project_members for delete
+  using (public.user_owns_project(project_id, (select auth.uid())));
+
+-- 2. Secret Shares Policies
+-- Consolidated SELECT: Users can see their own shares OR Project Owners can see all shares in their project
+drop policy if exists "Owners can manage secret shares" on secret_shares;
+drop policy if exists "Users view their own secret shares" on secret_shares;
+drop policy if exists "secret_shares_owner_policy" on secret_shares;
+drop policy if exists "secret_shares_self_policy" on secret_shares;
+drop policy if exists "secret_shares_select_policy" on secret_shares;
+
+create policy "secret_shares_select_policy"
+  on secret_shares for select
+  using (
+    user_id = (select auth.uid())
+    or
     exists (
-      select 1 from projects 
-      where projects.id = project_members.project_id 
-      and projects.user_id = auth.uid()
+      select 1 from secrets
+      where secrets.id = secret_shares.secret_id
+      and public.user_owns_project(secrets.project_id, (select auth.uid()))
     )
   );
 
--- Members can view themselves
-create policy "Members can view themselves"
-  on project_members for select
-  using (user_id = auth.uid());
+-- Consolidated Modifications: Only Project Owners can manage secret shares
+drop policy if exists "secret_shares_insert_policy" on secret_shares;
+create policy "secret_shares_insert_policy"
+  on secret_shares for insert
+  with check (
+    exists (
+      select 1 from secrets
+      where secrets.id = secret_shares.secret_id
+      and public.user_owns_project(secrets.project_id, (select auth.uid()))
+    )
+  );
 
--- 2. Secret Shares Policies
--- Owners/Editors can manage shares? (Editors might need permission logic in app layer, simplified here to Owners or Self)
-create policy "Owners can manage secret shares"
-  on secret_shares
+drop policy if exists "secret_shares_update_policy" on secret_shares;
+create policy "secret_shares_update_policy"
+  on secret_shares for update
   using (
     exists (
       select 1 from secrets
-      join projects on projects.id = secrets.project_id
       where secrets.id = secret_shares.secret_id
-      and projects.user_id = auth.uid()
+      and public.user_owns_project(secrets.project_id, (select auth.uid()))
     )
   );
 
-create policy "Users view their own secret shares"
-  on secret_shares for select
-  using (user_id = auth.uid());
+drop policy if exists "secret_shares_delete_policy" on secret_shares;
+create policy "secret_shares_delete_policy"
+  on secret_shares for delete
+  using (
+    exists (
+      select 1 from secrets
+      where secrets.id = secret_shares.secret_id
+      and public.user_owns_project(secrets.project_id, (select auth.uid()))
+    )
+  );
 
 -- 3. Access Requests Policies
--- Users can see/create their own requests
-create policy "Users manage own requests"
-  on access_requests
-  using (user_id = auth.uid());
+-- Consolidated SELECT policy for access_requests
+drop policy if exists "Users manage own requests" on access_requests;
+drop policy if exists "Owners view project requests" on access_requests;
+drop policy if exists "Owners view secret requests" on access_requests;
+drop policy if exists "access_requests_select_policy" on access_requests;
 
--- Owners can view requests for their projects
-create policy "Owners view project requests"
+create policy "access_requests_select_policy"
   on access_requests for select
   using (
-    project_id in (
-      select id from projects where user_id = auth.uid()
+    user_id = (select auth.uid())
+    or
+    public.user_owns_project(project_id, (select auth.uid()))
+    or
+    exists (
+      select 1 from secrets s
+      where s.id = access_requests.secret_id
+      and public.user_owns_project(s.project_id, (select auth.uid()))
     )
   );
--- (And for secrets, owner of the project containing the secret)
-create policy "Owners view secret requests"
-  on access_requests for select
-  using (
-    secret_id in (
-      select s.id from secrets s
-      join projects p on p.id = s.project_id
-      where p.user_id = auth.uid()
-    )
-  );
+
+-- Separate policies for modification
+drop policy if exists "access_requests_insert_policy" on access_requests;
+create policy "access_requests_insert_policy"
+  on access_requests for insert
+  with check (user_id = (select auth.uid()));
+
+drop policy if exists "access_requests_update_policy" on access_requests;
+create policy "access_requests_update_policy"
+  on access_requests for update
+  using (user_id = (select auth.uid()));
+
+drop policy if exists "access_requests_delete_policy" on access_requests;
+create policy "access_requests_delete_policy"
+  on access_requests for delete
+  using (user_id = (select auth.uid()));
 
 -- 4. UPDATE EXISTING POLICIES (Secrets & Projects)
 -- We need to drop existing simple policies and replace with "Member Aware" policies
@@ -126,98 +208,85 @@ create policy "Owners view secret requests"
 
 -- PROJECTS: Select
 drop policy if exists "Users can view their own projects" on projects;
-create policy "Users view owned or shared projects"
+drop policy if exists "Users view owned or shared projects" on projects;
+drop policy if exists "projects_select_policy" on projects;
+create policy "projects_select_policy"
   on projects for select
   using (
-    user_id = auth.uid() -- Owner
+    user_id = (select auth.uid()) -- Owner
     or 
-    exists ( -- Member
-      select 1 from project_members 
-      where project_members.project_id = projects.id 
-      and project_members.user_id = auth.uid()
+    id in ( -- Member (Simple IN to avoid recursion)
+      select project_id from project_members 
+      where user_id = (select auth.uid())
     )
   );
 
 -- SECRETS: Select
 drop policy if exists "Users can view their own secrets" on secrets;
-create policy "Users view allowed secrets"
+drop policy if exists "Users view allowed secrets" on secrets;
+create policy "secrets_select_policy"
   on secrets for select
   using (
     -- 1. Owner of project
-    exists (
-        select 1 from projects 
-        where projects.id = secrets.project_id 
-        and projects.user_id = auth.uid()
-    )
+    public.user_owns_project(project_id, (select auth.uid()))
     or
     -- 2. Member of project
     exists (
         select 1 from project_members
         where project_members.project_id = secrets.project_id
-        and project_members.user_id = auth.uid()
+        and project_members.user_id = (select auth.uid())
     )
     or
     -- 3. Granular Share
     exists (
         select 1 from secret_shares
         where secret_shares.secret_id = secrets.id
-        and secret_shares.user_id = auth.uid()
+        and secret_shares.user_id = (select auth.uid())
     )
   );
 
 -- SECRETS: Update/Delete/Insert
--- Handled STRICTLY in Application Layer? 
--- Or RLS: Update allowed if Owner OR Editor.
 drop policy if exists "Users can update their own secrets" on secrets;
-create policy "Users update allowed secrets"
+drop policy if exists "Users update allowed secrets" on secrets;
+create policy "secrets_update_policy"
   on secrets for update
   using (
-    exists (
-        select 1 from projects 
-        where projects.id = secrets.project_id 
-        and projects.user_id = auth.uid()
-    )
+    public.user_owns_project(project_id, (select auth.uid()))
     or
     exists (
         select 1 from project_members
         where project_members.project_id = secrets.project_id
-        and project_members.user_id = auth.uid()
+        and project_members.user_id = (select auth.uid())
         and project_members.role = 'editor'
     )
   );
   
 drop policy if exists "Users can insert their own secrets" on secrets;
-create policy "Users insert allowed secrets"
+drop policy if exists "Users insert allowed secrets" on secrets;
+create policy "secrets_insert_policy"
   on secrets for insert
   with check (
-    exists (
-        select 1 from projects 
-        where projects.id = secrets.project_id 
-        and projects.user_id = auth.uid()
-    )
+    public.user_owns_project(project_id, (select auth.uid()))
     or
     exists (
         select 1 from project_members
         where project_members.project_id = secrets.project_id
-        and project_members.user_id = auth.uid()
+        and project_members.user_id = (select auth.uid())
         and project_members.role = 'editor'
     )
   );
   
 drop policy if exists "Users can delete their own secrets" on secrets;
-create policy "Users delete allowed secrets"
+drop policy if exists "Users delete allowed secrets" on secrets;
+create policy "secrets_delete_policy"
   on secrets for delete
   using (
-    exists (
-        select 1 from projects 
-        where projects.id = secrets.project_id 
-        and projects.user_id = auth.uid()
-    )
+    public.user_owns_project(project_id, (select auth.uid()))
     or
     exists (
         select 1 from project_members
         where project_members.project_id = secrets.project_id
-        and project_members.user_id = auth.uid()
+        and project_members.user_id = (select auth.uid())
         and project_members.role = 'editor'
     )
   );

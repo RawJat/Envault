@@ -56,6 +56,11 @@ export default function SettingsView() {
 
     // State for navigation
     const [activeTab, setActiveTab] = useState("profile")
+    const [mounted, setMounted] = useState(false)
+
+    useEffect(() => {
+        setMounted(true)
+    }, [])
 
     // State for form fields - initialized from user
     // We use key={user?.id} on the form fields container to reset state when user changes
@@ -167,6 +172,10 @@ export default function SettingsView() {
     useHotkeys("alt+shift+q", () => {
         handleLogout()
     })
+
+    if (!mounted) {
+        return null
+    }
 
     return (
         <div className="min-h-screen bg-background text-foreground">

@@ -2,6 +2,19 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import * as fs from 'fs'
+import * as path from 'path'
+
+const LOG_FILE = path.join(process.cwd(), 'envault_debug.log')
+
+function logToFile(msg: string) {
+    const timestamp = new Date().toISOString()
+    try {
+        fs.appendFileSync(LOG_FILE, `[${timestamp}] ${msg}\n`)
+    } catch (e) {
+        console.error('Failed to log to file:', e)
+    }
+}
 
 export async function createProject(name: string) {
     const supabase = await createClient()
@@ -38,7 +51,7 @@ export async function createProject(name: string) {
     return { data }
 }
 
-export async function getProjects() {
+export async function getProjects(bypassCache: boolean = false) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -46,45 +59,58 @@ export async function getProjects() {
         return { error: 'Not authenticated' }
     }
 
+    logToFile(`[getProjects] Fetching for user: ${user.email} (${user.id})`)
+
     // Check cache first
     const { cacheGet, cacheSet, CacheKeys, CACHE_TTL } = await import('@/lib/cache')
     const cacheKey = CacheKeys.userProjects(user.id)
-    interface ProjectWithRole {
-        id: string
-        user_id: string
-        name: string
-        role?: string
-        secrets: { count: number }[]
-    }
-    const cachedProjects = await cacheGet<ProjectWithRole[]>(cacheKey)
 
-    if (cachedProjects !== null) {
-        return { data: cachedProjects }
+    if (!bypassCache) {
+        const cachedProjects = await cacheGet<any[]>(cacheKey)
+        if (cachedProjects !== null) {
+            // Stale check: if first project uses old snake_case or missing createdAt
+            const isStale = cachedProjects.length > 0 && (!cachedProjects[0].createdAt || 'created_at' in cachedProjects[0] || 'secrets' in cachedProjects[0]);
+            if (!isStale) {
+                logToFile(`[getProjects] Returning ${cachedProjects.length} cached projects`)
+                return { data: cachedProjects }
+            }
+            logToFile(`[getProjects] Cache format is stale, forcing refresh...`)
+        }
+    } else {
+        logToFile(`[getProjects] Bypassing cache`)
     }
 
-    // Step 1: Fetch projects only (no joins to avoid RLS recursion)
+    // Step 1: Fetch projects only
     const { data: projects, error } = await supabase
         .from('projects')
         .select('*')
         .order('created_at', { ascending: false })
 
     if (error) {
-        console.error('Error fetching projects:', error)
+        logToFile(`[getProjects] Error fetching projects: ${JSON.stringify(error)}`)
         return { error: error.message }
     }
 
     if (!projects || projects.length === 0) {
-        // Cache empty result to avoid repeated queries
+        logToFile('[getProjects] No projects found in DB')
         await cacheSet(cacheKey, [], CACHE_TTL.PROJECT_LIST)
         return { data: [] }
     }
 
+    logToFile(`[getProjects] Found ${projects.length} projects. IDs: ${projects.map(p => p.id).join(', ')}`)
+
     // Step 2: Fetch secrets count for each project
     const projectIds = projects.map(p => p.id)
-    const { data: secretCounts } = await supabase
+    const { data: secretCounts, error: countError } = await supabase
         .from('secrets')
         .select('id, project_id')
         .in('project_id', projectIds)
+
+    if (countError) {
+        logToFile(`[getProjects] Error fetching secret counts: ${JSON.stringify(countError)}`)
+    } else {
+        logToFile(`[getProjects] Fetched ${secretCounts?.length || 0} secret rows for count mapping.`)
+    }
 
     // Create a count map
     const secretCountMap = new Map<string, number>()
@@ -93,29 +119,39 @@ export async function getProjects() {
     })
 
     // Step 3: Fetch project members for current user
-    const { data: memberships } = await supabase
+    const { data: memberships, error: memberError } = await supabase
         .from('project_members')
         .select('project_id, role')
         .in('project_id', projectIds)
         .eq('user_id', user.id)
+
+    if (memberError) {
+        logToFile(`[getProjects] Error fetching project memberships: ${JSON.stringify(memberError)}`)
+    }
 
     // Create membership map
     const membershipMap = new Map(memberships?.map(m => [m.project_id, m.role]) || [])
 
     // Step 4: Enrich projects with the data
     const enrichedProjects = projects.map((p) => {
-        let role = 'viewer' // Safe default
+        let role: 'owner' | 'editor' | 'viewer' = 'viewer'
         if (p.user_id === user.id) {
             role = 'owner'
         } else if (membershipMap.has(p.id)) {
-            role = membershipMap.get(p.id)
+            role = (membershipMap.get(p.id) as 'owner' | 'editor' | 'viewer') || 'viewer'
         }
 
+        const count = secretCountMap.get(p.id) || 0
+        logToFile(`[getProjects] Project "${p.name}" (${p.id}) has ${count} secrets`)
+
         return {
-            ...p,
-            secrets: [{ count: secretCountMap.get(p.id) || 0 }],
-            role,
-            isStart: false // UI Helper
+            id: p.id,
+            name: p.name,
+            user_id: p.user_id,
+            createdAt: p.created_at || new Date().toISOString(), // Fallback for safety
+            secretCount: count,
+            variables: [],
+            role
         }
     })
 

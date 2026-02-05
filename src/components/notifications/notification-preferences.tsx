@@ -5,6 +5,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Button } from '@/components/ui/button'
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
@@ -142,13 +149,28 @@ export function NotificationPreferences() {
                             onCheckedChange={(checked) => updatePreference('email_access_requests', checked)}
                         />
                     </div>
-                    {/* Simplified for brevity while keeping core functionality */}
                     <div className="flex items-center justify-between">
                         <Label htmlFor="email-access-granted">Access Granted</Label>
                         <Switch
                             id="email-access-granted"
                             checked={preferences.email_access_granted}
                             onCheckedChange={(checked) => updatePreference('email_access_granted', checked)}
+                        />
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <Label htmlFor="email-errors">Critical Errors</Label>
+                        <Switch
+                            id="email-errors"
+                            checked={preferences.email_errors}
+                            onCheckedChange={(checked) => updatePreference('email_errors', checked)}
+                        />
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <Label htmlFor="email-activity">Security Activity</Label>
+                        <Switch
+                            id="email-activity"
+                            checked={preferences.email_activity}
+                            onCheckedChange={(checked) => updatePreference('email_activity', checked)}
                         />
                     </div>
                 </CardContent>
@@ -177,6 +199,49 @@ export function NotificationPreferences() {
                             checked={preferences.app_access_granted}
                             onCheckedChange={(checked) => updatePreference('app_access_granted', checked)}
                         />
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <Label htmlFor="app-errors">Critical Errors</Label>
+                        <Switch
+                            id="app-errors"
+                            checked={preferences.app_errors}
+                            onCheckedChange={(checked) => updatePreference('app_errors', checked)}
+                        />
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <Label htmlFor="app-activity">Security Activity</Label>
+                        <Switch
+                            id="app-activity"
+                            checked={preferences.app_activity}
+                            onCheckedChange={(checked) => updatePreference('app_activity', checked)}
+                        />
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Email Digest</CardTitle>
+                    <CardDescription>
+                        Receive a periodic summary of your activity
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex items-center justify-between">
+                        <Label htmlFor="digest-frequency">Frequency</Label>
+                        <Select
+                            value={preferences.digest_frequency}
+                            onValueChange={(value: 'none' | 'daily' | 'weekly') => updatePreference('digest_frequency', value)}
+                        >
+                            <SelectTrigger id="digest-frequency" className="w-[180px]">
+                                <SelectValue placeholder="Select frequency" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="none">None</SelectItem>
+                                <SelectItem value="daily">Daily</SelectItem>
+                                <SelectItem value="weekly">Weekly</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
                 </CardContent>
             </Card>

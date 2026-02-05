@@ -222,7 +222,10 @@ export function EnvVarTable({ projectId, variables }: EnvVarTableProps) {
                                                                             : "Former Member"}
                                                                     </span>
                                                                     <span className="text-xs text-muted-foreground">
-                                                                        {formatDistanceToNow(new Date(variable.lastUpdatedAt), { addSuffix: true })}
+                                                                        {variable.lastUpdatedAt ? (() => {
+                                                                            const date = new Date(variable.lastUpdatedAt);
+                                                                            return isNaN(date.getTime()) ? "Invalid date" : formatDistanceToNow(date, { addSuffix: true });
+                                                                        })() : "-"}
                                                                     </span>
                                                                 </div>
                                                             </div>
@@ -266,7 +269,7 @@ export function EnvVarTable({ projectId, variables }: EnvVarTableProps) {
                                                             </div>
                                                             <div className="grid grid-cols-[80px_1fr] gap-2">
                                                                 <span className="text-muted-foreground">Time:</span>
-                                                                <span>{new Date(variable.lastUpdatedAt).toLocaleString()}</span>
+                                                                <span>{variable.lastUpdatedAt ? new Date(variable.lastUpdatedAt).toLocaleString() : "-"}</span>
                                                             </div>
                                                         </TooltipContent>
                                                     </Tooltip>
@@ -392,9 +395,10 @@ export function EnvVarTable({ projectId, variables }: EnvVarTableProps) {
                                         </Button>
                                     </div>
                                     <div className="text-xs text-muted-foreground pt-1">
-                                        {variable.lastUpdatedAt && (
-                                            <span>Updated {formatDistanceToNow(new Date(variable.lastUpdatedAt), { addSuffix: true })}</span>
-                                        )}
+                                        {variable.lastUpdatedAt && (() => {
+                                            const date = new Date(variable.lastUpdatedAt);
+                                            return isNaN(date.getTime()) ? <span>Invalid date</span> : <span>Updated {formatDistanceToNow(date, { addSuffix: true })}</span>;
+                                        })()}
                                     </div>
                                 </div>
                             )

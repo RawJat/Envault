@@ -19,10 +19,11 @@ async function shouldCreateNotification(
     userId: string,
     type: NotificationType
 ): Promise<boolean> {
-    const supabase = await createClient()
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    const admin = createAdminClient()
 
-    // Get user preferences
-    const { data: prefs } = await supabase
+    // Get user preferences using admin client to bypass RLS
+    const { data: prefs } = await admin
         .from('notification_preferences')
         .select('*')
         .eq('user_id', userId)
@@ -102,12 +103,14 @@ export async function createNotification({
         return { data: null, error: null } // Silently skip
     }
 
-    const supabase = await createClient()
+    // Use admin client to bypass RLS for system-generated notifications
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    const admin = createAdminClient()
 
     // Get the icon for this notification type
     const icon = NOTIFICATION_ICONS[type] || 'Bell'
 
-    const { data, error } = await supabase
+    const { data, error } = await admin
         .from('notifications')
         .insert({
             user_id: userId,
@@ -152,7 +155,8 @@ export async function createAccessRequestNotification(
     requesterEmail: string,
     projectName: string,
     projectId: string,
-    requesterId: string
+    requesterId: string,
+    requestId: string
 ) {
     return createNotification({
         userId: ownerId,
@@ -163,9 +167,10 @@ export async function createAccessRequestNotification(
         metadata: {
             projectId,
             requesterId,
-            requesterEmail
+            requesterEmail,
+            requestId
         },
-        actionUrl: '/dashboard?tab=requests',
+        actionUrl: `/approve/${requestId}`,
         actionType: 'approve_request'
     })
 }

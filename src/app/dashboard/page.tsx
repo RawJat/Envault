@@ -1,5 +1,31 @@
 import DashboardLogic from "@/components/dashboard/dashboard-view";
+import { Suspense } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Dashboard() {
-    return <DashboardLogic />;
+    return (
+        <Suspense fallback={
+            <div className="container mx-auto py-8 px-4 space-y-8">
+                <div className="flex items-center justify-between">
+                    <div className="space-y-2">
+                        <Skeleton className="h-10 w-48" />
+                        <Skeleton className="h-4 w-64" />
+                    </div>
+                </div>
+                <div className="space-y-4">
+                    <div className="flex gap-4">
+                        <Skeleton className="h-10 w-32" />
+                        <Skeleton className="h-10 w-32" />
+                    </div>
+                    <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6">
+                        <Skeleton className="h-48 w-full rounded-xl" />
+                        <Skeleton className="h-48 w-full rounded-xl" />
+                        <Skeleton className="h-48 w-full rounded-xl" />
+                    </div>
+                </div>
+            </div>
+        }>
+            <DashboardLogic />
+        </Suspense>
+    );
 }

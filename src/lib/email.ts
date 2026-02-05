@@ -48,7 +48,8 @@ export async function sendTestEmail(to: string) {
 export async function sendAccessRequestEmail(
   to: string,              // Owner's email
   requesterEmail: string,  // Who requested access
-  projectName: string
+  projectName: string,
+  requestId: string
 ) {
   if (process.env.NODE_ENV === 'development' && !process.env.RESEND_API_KEY) {
     console.log('Skipping Access Request email in DEV (No API Key).')
@@ -63,8 +64,8 @@ export async function sendAccessRequestEmail(
         <p>Review and approve or reject this request from your dashboard.</p>
       `,
       action: {
-        text: 'Review Requests',
-        url: `${APP_URL}/dashboard?tab=requests`
+        text: 'Review Request',
+        url: `${APP_URL}/approve/${requestId}`
       },
       logoUrl: LOGO_URL
     })

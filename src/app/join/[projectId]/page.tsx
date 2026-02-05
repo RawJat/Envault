@@ -1,9 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { createAccessRequest } from '@/app/invite-actions'
 import Link from 'next/link'
+import { AuthLayout } from '@/components/auth/auth-layout'
+import { ShieldAlert, CheckCircle2, Clock, Lock } from 'lucide-react'
 
 interface JoinPageProps {
     params: Promise<{ projectId: string }>
@@ -16,19 +18,26 @@ export default async function JoinPage({ params }: JoinPageProps) {
 
     if (!user) {
         // Redirect to login with return path
-        redirect(`/auth?next=/join/${projectId}`)
+        redirect(`/login?next=/join/${projectId}`)
     }
 
-    // Check project details (public info only if possible, or verify existence)
-    // RLS might block reading project if not member.
-    // Ideally we fetch just the name if we can, or we rely on server actions to tell us.
-    // Since we are Server Component, we can use Service Role if needed or just try to fetch.
+    // Check if user is already a member (owner, editor, or viewer)
+    const { getProjectRole } = await import('@/lib/permissions')
+    const role = await getProjectRole(supabase, projectId, user.id)
 
-    // For "Join" page, usually we want to show "Join [Project Name]".
-    // But standard user cannot read project name if they are not a member yet (depending on RLS).
-    // If RLS says "view if member", then non-member sees nothing.
-    // We might need a `getPublicProjectInfo` action or use admin client here for specific metadata.
-    // Let's assume we use a safe query or just show generic if RLS blocks.
+    if (role) {
+        // Already has access, redirect to project page
+        redirect(`/project/${projectId}`)
+    }
+
+    // Check if there is already a pending request
+    const { data: existingRequest } = await supabase
+        .from('access_requests')
+        .select('id')
+        .eq('project_id', projectId)
+        .eq('user_id', user.id)
+        .eq('status', 'pending')
+        .single()
 
     // Using Admin Client for this specific read to show name
     const { createAdminClient } = await import('@/lib/supabase/admin')
@@ -37,47 +46,87 @@ export default async function JoinPage({ params }: JoinPageProps) {
 
     if (!project) {
         return (
-            <div className="flex min-h-screen items-center justify-center p-4">
-                <Card className="w-[90vw] sm:w-full sm:max-w-md">
-                    <CardHeader>
-                        <CardTitle>Project Not Found</CardTitle>
-                        <CardDescription>The project you are trying to join does not exist or has been deleted.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Button asChild className="w-full">
-                            <Link href="/dashboard">Go to Dashboard</Link>
-                        </Button>
-                    </CardContent>
-                </Card>
-            </div>
+            <AuthLayout>
+                <div className="w-[90vw] sm:w-full sm:max-w-md mx-auto">
+                    <Card className="border-muted/40 shadow-2xl backdrop-blur-sm bg-background/80">
+                        <CardHeader className="text-center space-y-2">
+                            <div className="flex justify-center mb-2">
+                                <div className="p-3 bg-destructive/10 rounded-full">
+                                    <ShieldAlert className="w-10 h-10 text-destructive" />
+                                </div>
+                            </div>
+                            <CardTitle className="text-2xl font-bold tracking-tight">Project Not Found</CardTitle>
+                            <CardDescription>
+                                The project you are trying to join does not exist or has been deleted.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <Button asChild className="w-full h-11" variant="outline">
+                                <Link href="/dashboard">Return to Dashboard</Link>
+                            </Button>
+                        </CardContent>
+                        <CardFooter className="justify-center text-xs text-muted-foreground">
+                            <Lock className="w-3 h-3 mr-1" />
+                            End-to-end encrypted environment
+                        </CardFooter>
+                    </Card>
+                </div>
+            </AuthLayout>
         )
     }
 
     return (
-        <div className="flex min-h-screen items-center justify-center p-4">
-            <Card className="w-[90vw] sm:w-full sm:max-w-md">
-                <CardHeader>
-                    <CardTitle>Join {project.name}</CardTitle>
-                    <CardDescription>
-                        You have been invited to collaborate on this project.
-                        Click below to request access from the owner.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <form action={async () => {
-                        'use server'
-                        await createAccessRequest(projectId)
-                        redirect('/dashboard?requested=true')
-                    }}>
-                        <Button type="submit" className="w-full">
-                            Request Access
+        <AuthLayout>
+            <div className="w-[90vw] sm:w-full sm:max-w-md mx-auto">
+                <Card className="border-muted/40 shadow-2xl backdrop-blur-sm bg-background/80">
+                    <CardHeader className="text-center space-y-2">
+                        <div className="flex justify-center mb-2">
+                            <div className="p-3 bg-primary/10 rounded-full">
+                                {existingRequest ? (
+                                    <Clock className="w-10 h-10 text-amber-500" />
+                                ) : (
+                                    <CheckCircle2 className="w-10 h-10 text-primary" />
+                                )}
+                            </div>
+                        </div>
+                        <CardTitle className="text-2xl font-bold tracking-tight">Join {project.name}</CardTitle>
+                        <CardDescription>
+                            {existingRequest ? (
+                                "Your request to join this project is currently pending approval from the owner."
+                            ) : (
+                                "You have been invited to collaborate on this project. Request access to start working together."
+                            )}
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {!existingRequest ? (
+                            <form action={async () => {
+                                'use server'
+                                const result = await createAccessRequest(projectId)
+                                if (result?.error) {
+                                    console.error('Failed to create access request:', result.error)
+                                }
+                                redirect('/dashboard?requested=true')
+                            }}>
+                                <Button type="submit" className="w-full h-11 text-base">
+                                    Request Access
+                                </Button>
+                            </form>
+                        ) : (
+                            <Button disabled className="w-full h-11 opacity-50 cursor-not-allowed">
+                                Request Pending
+                            </Button>
+                        )}
+                        <Button variant="ghost" asChild className="w-full h-11">
+                            <Link href="/dashboard">Cancel and Return</Link>
                         </Button>
-                    </form>
-                    <Button variant="ghost" asChild className="w-full mt-2">
-                        <Link href="/dashboard">Cancel</Link>
-                    </Button>
-                </CardContent>
-            </Card>
-        </div>
+                    </CardContent>
+                    <CardFooter className="justify-center text-xs text-muted-foreground">
+                        <Lock className="w-3 h-3 mr-1" />
+                        End-to-end encrypted environment
+                    </CardFooter>
+                </Card>
+            </div>
+        </AuthLayout>
     )
 }
