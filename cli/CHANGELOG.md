@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/DinanathDash/Envault/compare/v1.5.0...v1.6.0) (2026-02-05)
+
+
+### Features
+
+* implement strict hotkey modifier checking, update hotkeys, add CLI version API, and refine UI components. ([2046870](https://github.com/DinanathDash/Envault/commit/2046870a560f02a7b3b91e811623ffe0d7fba2d8))
+
 # [1.5.0](https://github.com/DinanathDash/Envault/compare/v1.4.0...v1.5.0) (2026-02-04)
 
 
