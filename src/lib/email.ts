@@ -4,9 +4,10 @@ import { getEmailHtml } from './email-html'
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 // Helper to determine sender email
-const SENDER = process.env.EMAIL_SENDER || 'Envault <onboarding@resend.dev>'
+const SENDER_VAR = process.env.EMAIL_SENDER || 'onboarding@resend.dev'
+const SENDER = SENDER_VAR.includes('<') ? SENDER_VAR : `Envault <${SENDER_VAR}>`
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://envault.tech'
-const LOGO_URL = `${APP_URL}/favicon.svg`
+const LOGO_URL = `https://envault.tech/favicon.svg`
 
 /**
  * Send a test email to verify Resend configuration
