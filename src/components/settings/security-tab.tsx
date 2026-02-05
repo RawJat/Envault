@@ -224,7 +224,7 @@ export function SecurityTab({ user }: { user: User | null }) {
                                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive -mt-1 -mr-1">
                                                     <Trash2 className="w-4 h-4" />
                                                     {tokens.indexOf(token) === 0 && (
-                                                        <Kbd variant="outline" size="xs" className="absolute -top-4 -right-2 scale-75 opacity-0 group-hover:opacity-100 transition-opacity hidden md:inline-flex">
+                                                        <Kbd size="xs" className="absolute -top-4 -right-2 scale-75 opacity-0 group-hover:opacity-100 transition-opacity hidden md:inline-flex">
                                                             {getModifierKey('ctrl')}X
                                                         </Kbd>
                                                     )}

@@ -130,14 +130,14 @@ export function ProjectCard({ project }: ProjectCardProps) {
                                             setShareDialogOpen(true)
                                         }}>
                                             <Share2 className="w-4 h-4 mr-2" />
-                                            Share<Kbd variant="outline" size="xs" className="ml-auto hidden md:inline-flex">A</Kbd>
+                                            Share<Kbd size="xs" className="ml-auto hidden md:inline-flex">A</Kbd>
                                         </DropdownMenuItem>
                                         <DropdownMenuItem className="text-red-600 dark:text-red-500 focus:text-red-600 dark:focus:text-red-500" onClick={handleDeleteClick}>
                                             <Trash2 className="w-4 h-4 mr-2" />
                                             Delete
                                             <div className="ml-auto hidden md:flex items-center gap-1">
-                                                <Kbd variant="outline" size="xs">{getModifierKey('ctrl')}</Kbd>
-                                                <Kbd variant="outline" size="xs">X</Kbd>
+                                                <Kbd size="xs">{getModifierKey('alt')}</Kbd>
+                                                <Kbd size="xs">Backspace</Kbd>
                                             </div>
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>

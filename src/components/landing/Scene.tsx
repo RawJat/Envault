@@ -231,7 +231,7 @@ export function Scene() {
                         <meshBasicMaterial color="#fca5a5" opacity={0.1} transparent />
                     </mesh>
                 }>
-                    <Environment preset="city" />
+                    <Environment files="/potsdamer_platz_1k.hdr" />
 
                     <ambientLight intensity={0.5} />
                     <pointLight position={[10, 10, 10]} intensity={1.5} color="#fbbf24" />

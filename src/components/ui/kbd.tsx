@@ -19,7 +19,7 @@ function Kbd({ className, variant = 'default', size = 'sm', showOnMobile = false
         size === 'xs' ? "rounded-[3px]" : "rounded-[5px]",
 
         // Variants with more depth/contrast - Matching the premium 'squircle' look
-        variant === 'default' && "bg-muted text-foreground border border-muted-foreground/20 shadow-[0_1px_0_0_rgba(0,0,0,0.05)]",
+        variant === 'default' && "bg-muted text-muted-foreground border-0",
         variant === 'outline' && "bg-transparent border border-muted-foreground/40 text-muted-foreground",
         variant === 'primary' && "bg-primary-foreground/30 text-primary-foreground border-0 shadow-[0_1px_0_0_rgba(255,255,255,0.1)]",
         variant === 'ghost' && "bg-muted/80 text-muted-foreground border-0",

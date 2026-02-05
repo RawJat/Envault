@@ -14,6 +14,7 @@
 
 - 🔒 **End-to-End Encryption**: Secrets are encrypted before they leave your machine.
 - 🔑 **Device Flow Authentication**: Secure, browser-based login mechanism.
+- 🛡️ **Role-Based Access**: Enforces project permissions (Editor/Viewer) on deploy and pull operations.
 - 🚀 **Zero-Config**: Works with your existing `.env` files.
 - ⚡ **Framework Agnostic**: Works with Next.js, Node.js, Python, Go, etc.
 

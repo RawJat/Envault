@@ -51,7 +51,7 @@ export function ShortcutHelpModal({ open, onOpenChange }: ShortcutHelpModalProps
                 { label: "Search / Command palette", keys: [mod, "K"] },
                 { label: "Switch Theme", keys: ["T"] },
                 { label: "Show Shortcuts", keys: ["Shift", "?"] },
-                { label: "Log Out", keys: [ctrl, "Q"] },
+                { label: "Log Out", keys: [alt, "Shift", "Q"] },
                 { label: "Back to Dashboard", keys: ["Esc"] },
             ],
         },
@@ -68,15 +68,15 @@ export function ShortcutHelpModal({ open, onOpenChange }: ShortcutHelpModalProps
             items: [
                 { label: "Universal New / Variable", keys: ["N"] },
                 { label: "Share / Access", keys: ["A"] },
-                { label: "Delete", keys: [ctrl, "X"] },
+                { label: "Delete", keys: [alt, "Backspace"] },
                 { label: "Submit Form / Dialog", keys: [mod, <CornerDownLeft className="w-3 h-3" key="enter" />] },
             ],
         },
         {
             category: "Project & Lists",
             items: [
-                { label: "Download .env", keys: [mod, "D"] },
-                { label: "Import .env", keys: [mod, "I"] },
+                { label: "Export .env", keys: [alt, "Shift", "E"] },
+                { label: "Import .env", keys: [alt, "Shift", "I"] },
                 { label: "Save Changes", keys: [mod, "S"] },
                 { label: "Mark All Read / Clear", keys: ["M", "/", "C"] },
                 { label: "Delete Selected", keys: [<Delete className="w-3 h-3" key="delete" />] },

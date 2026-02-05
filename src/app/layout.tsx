@@ -53,15 +53,6 @@ export const metadata: Metadata = {
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { getServerOS } from "@/lib/os";
-import { Google_Sans } from "next/font/google";
-
-const googleSans = Google_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "700"],
-  variable: "--font-google-sans",
-  display: "swap",
-});
-
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -76,7 +67,15 @@ export default async function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning data-os={os}>
-      <body className={`min-h-screen bg-background font-sans antialiased ${googleSans.variable}`}>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="min-h-screen bg-background font-sans antialiased">
         <ThemeProvider
           attribute="class"
           defaultTheme="light"

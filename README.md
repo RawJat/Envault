@@ -6,9 +6,11 @@
 
 - **Bank-Grade Security**: AES-256-GCM encryption with master/data key hierarchy and automatic key rotation.
 - **Project Workspaces**: Organize secrets into distinct projects for better management.
+- **Team Collaboration**: Secure project sharing with role-based access control (Owner, Editor, Viewer).
 - **Secure Authentication**: Powered by Supabase Auth for robust user management.
 - **Modern UI/UX**: Built with Tailwind CSS, Shadcn UI, and Framer Motion for a premium experience.
 - **Interactive 3D Elements**: High-performance 3D visuals powered by React Three Fiber.
+- **Keyboard First**: Navigate efficiently with fully customizable, conflict-free hotkeys.
 - **Responsive Design**: Fully responsive layout that works seamlessly on desktop and mobile.
 - **Dark Mode Support**: Built-in support for light and dark themes.
 - **CLI Support**: Manage your secrets directly from your terminal.

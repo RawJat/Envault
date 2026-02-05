@@ -53,11 +53,77 @@ export function useHotkeys(
             const requiredModifiers = keys.slice(0, -1) as Modifier[]
 
             // Check modifiers
-            const modifiersMatch = requiredModifiers.every((mod) => {
-                const check = MODIFIERS[mod]
-                if (!check) return false
-                return check(e)
-            })
+            // Check modifiers - STRICT MODE
+            // We want to ensure that ONLY the required modifiers are pressed.
+            const pressedModifiers: Modifier[] = []
+            if (e.ctrlKey) pressedModifiers.push('ctrl')
+            if (e.shiftKey) pressedModifiers.push('shift')
+            if (e.altKey) pressedModifiers.push('alt')
+            if (e.metaKey) pressedModifiers.push('meta')
+
+            // Special handling for 'mod' which maps to meta or ctrl depending on OS, 
+            // but in the parsed 'requiredModifiers', it appears as 'mod'.
+            // We need to match what the user defined.
+
+            // Actually, simpler approach:
+            // 1. Check if all required modifiers are present.
+            // 2. Check if NO other modifiers are present.
+
+            const requiredSet = new Set(requiredModifiers)
+
+            // Handle 'mod' alias: if 'mod' is required, we check for meta OR ctrl (platform dependent usually, but we define mod as meta||ctrl)
+            // But for strict checking we need to know WHICH one was pressed to count it as "handled" and not "extra".
+
+            const hasCtrl = e.ctrlKey
+            const hasShift = e.shiftKey
+            const hasAlt = e.altKey
+            const hasMeta = e.metaKey
+
+            // Check if required matches
+            for (const req of requiredModifiers) {
+                if (req === 'shift' && !hasShift) return
+                if (req === 'alt' && !hasAlt) return
+                if (req === 'ctrl' && !hasCtrl) return
+                if (req === 'meta' && !hasMeta) return
+                if (req === 'mod') {
+                    if (!hasMeta && !hasCtrl) return
+                }
+            }
+
+            // Check for extras
+            // We need to map 'mod' back to the actual key pressed for the "extra" check.
+            const allowedModifiers = new Set(['shift', 'alt', 'ctrl', 'meta'])
+
+            // If strict, we shouldn't allow extra modifiers.
+            // E.g. if hotkey is 'k', and we press 'cmd+k', it should NOT match.
+            // Currently our requiredModifiers for 'k' is empty.
+            // So we just check if any modifier is pressed.
+
+            // The only complexity is 'mod'. If 'mod' is required, then EITHER ctrl OR meta is allowed, but not both unless specified?
+            // Usually 'mod' means primary modifier.
+
+            const isModRequired = requiredSet.has('mod')
+
+            if (hasShift && !requiredSet.has('shift')) return
+            if (hasAlt && !requiredSet.has('alt')) return
+
+            // For Ctrl and Meta, we need to be careful about 'mod'
+            if (isModRequired) {
+                // If mod is required, we expect either meta or ctrl.
+                // If we have meta, ctrl is extra (unless ctrl is ALSO required explicitly, which is weird but possible)
+                // If we have ctrl, meta is extra (unless meta is ALSO required)
+                // Let's assume 'mod' covers the primary, and specific 'ctrl'/'meta' covers specific needs.
+
+                // If keys has 'mod', we are good if hasMeta OR hasCtrl.
+                // But if hasMeta AND hasCtrl, is that allowed? 'mod' matches one. The other is extra?
+                // Standard behavior: 'mod+k' usually matches cmd+k. cmd+ctrl+k is usually NOT matched unless 'mod+ctrl+k'.
+
+                if (hasMeta && hasCtrl && !requiredSet.has('ctrl') && !requiredSet.has('meta')) return // Both pressed but only mod required? questionable.
+                // Let's keep it simple: if 'mod' is used, we treat the active one as "allowed".
+            } else {
+                if (hasCtrl && !requiredSet.has('ctrl')) return
+                if (hasMeta && !requiredSet.has('meta')) return
+            }
 
             // Check exact modifiers (ensure no EXTRA modifiers are pressed)
             // This is a simple implementation; complex one would check all possible modifiers
@@ -66,7 +132,7 @@ export function useHotkeys(
             // but stricter checks might be needed for conflicts. 
             // Let's stick to "required match" for now.
 
-            if (!modifiersMatch) return
+
 
             // Check the main key
             // e.key is case sensitive (K vs k). We lower case everything for comparison.

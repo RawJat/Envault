@@ -148,10 +148,10 @@ export function AuthForm() {
                             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                                 <TabsList className="grid w-full grid-cols-2 mb-4">
                                     <TabsTrigger value="login" className="flex items-center gap-2">
-                                        Login<Kbd variant="outline" size="xs">L</Kbd>
+                                        Login<Kbd size="xs">L</Kbd>
                                     </TabsTrigger>
                                     <TabsTrigger value="signup" className="flex items-center gap-2">
-                                        Sign Up<Kbd variant="outline" size="xs">U</Kbd>
+                                        Sign Up<Kbd size="xs">U</Kbd>
                                     </TabsTrigger>
                                 </TabsList>
 
@@ -163,8 +163,8 @@ export function AuthForm() {
                                         </svg>
                                         Sign in with Google
                                         <div className="hidden md:flex items-center gap-1 ml-1">
-                                            <Kbd variant="outline" size="xs"><CtrlKey /></Kbd>
-                                            <Kbd variant="outline" size="xs">G</Kbd>
+                                            <Kbd size="xs"><CtrlKey /></Kbd>
+                                            <Kbd size="xs">G</Kbd>
                                         </div>
                                     </Button>
                                 </form>
@@ -176,8 +176,8 @@ export function AuthForm() {
                                         </svg>
                                         Sign in with GitHub
                                         <div className="hidden md:flex items-center gap-1 ml-1">
-                                            <Kbd variant="outline" size="xs"><CtrlKey /></Kbd>
-                                            <Kbd variant="outline" size="xs">H</Kbd>
+                                            <Kbd size="xs"><CtrlKey /></Kbd>
+                                            <Kbd size="xs">H</Kbd>
                                         </div>
                                     </Button>
                                 </form>

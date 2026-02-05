@@ -54,7 +54,7 @@ export function Navbar() {
                         </Link>
                         <Link href="/login">
                             <Button variant={scrolled ? "default" : "secondary"} size="sm" className="font-semibold flex items-center gap-2">
-                                Login<Kbd variant={scrolled ? "primary" : "outline"} size="xs" className="ml-2">L</Kbd>
+                                Login<Kbd variant={scrolled ? "primary" : "default"} size="xs" className="ml-2">L</Kbd>
                             </Button>
                         </Link>
                     </nav>

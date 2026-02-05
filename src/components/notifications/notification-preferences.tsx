@@ -186,8 +186,8 @@ export function NotificationPreferences() {
                     {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Save Preferences
                     <span className="ml-2 flex items-center gap-1 text-xs opacity-70">
-                        <Kbd variant="outline" size="xs">{modKey}</Kbd>
-                        <Kbd variant="outline" size="xs">S</Kbd>
+                        <Kbd size="xs">{modKey}</Kbd>
+                        <Kbd size="xs">S</Kbd>
                     </span>
                 </Button>
             </div>

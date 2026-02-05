@@ -99,13 +99,15 @@ export function ShortcutProvider({ children }: { children: React.ReactNode }) {
         document.dispatchEvent(new CustomEvent("universal-new"))
     }, { enableOnContentEditable: false, enableOnFormTags: false })
 
-    // 7. Project Operations: 'Cmd+D', 'Cmd+I'
-    useHotkeys("mod+d", (e) => {
+    // 7. Project Operations:
+    // Download: 'Alt+Shift+E' (Export) - was mod+d (Bookmark conflict)
+    useHotkeys("alt+shift+e", (e) => {
         e.preventDefault()
         document.dispatchEvent(new CustomEvent("universal-download"))
     }, { enableOnContentEditable: false, enableOnFormTags: false })
 
-    useHotkeys("mod+i", (e) => {
+    // Import: 'Alt+Shift+I' - was mod+i (Page Info/Italics conflict)
+    useHotkeys("alt+shift+i", (e) => {
         e.preventDefault()
         document.dispatchEvent(new CustomEvent("universal-import"))
     }, { enableOnContentEditable: false, enableOnFormTags: false })
@@ -130,12 +132,12 @@ export function ShortcutProvider({ children }: { children: React.ReactNode }) {
         document.dispatchEvent(new CustomEvent("next-tab"))
     }, { enableOnContentEditable: false, enableOnFormTags: false })
 
-    // 9. Sharing & Deleting: 'a', 'alt+x' (Contextual)
+    // 9. Sharing & Deleting: 'a', 'Alt+Backspace' (Contextual)
     useHotkeys("a", () => {
         document.dispatchEvent(new CustomEvent("universal-share"))
     }, { enableOnContentEditable: false, enableOnFormTags: false })
 
-    useHotkeys("ctrl+x", (e) => {
+    useHotkeys("alt+backspace", (e) => {
         e.preventDefault()
         document.dispatchEvent(new CustomEvent("universal-delete"))
     }, { enableOnContentEditable: false, enableOnFormTags: false })
@@ -190,8 +192,8 @@ export function ShortcutProvider({ children }: { children: React.ReactNode }) {
         }
     })
 
-    // 13. Global Logout: 'Ctrl+Q'
-    useHotkeys("ctrl+q", (e) => {
+    // 13. Global Logout: 'Alt+Shift+Q' - was Ctrl+Q (System conflict)
+    useHotkeys("alt+shift+q", (e) => {
         e.preventDefault()
         document.dispatchEvent(new CustomEvent("universal-logout"))
     })

@@ -58,7 +58,7 @@ export function Hero() {
                         <Link href="https://github.com/dinanathdash/envault" target="_blank">
                             <Button variant="outline" size="lg" className="w-full sm:w-auto min-w-[160px] h-12 text-base backdrop-blur-sm bg-background/50 flex items-center gap-2">
                                 <Star className="w-4 h-4 mr-2" />
-                                Star on GitHub<Kbd variant="outline" className="ml-2">S</Kbd>
+                                Star on GitHub<Kbd className="ml-2">S</Kbd>
                             </Button>
                         </Link>
                     </motion.div>

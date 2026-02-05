@@ -34,8 +34,8 @@ export function CliSection() {
         for (let i = 0; i < 4; i++) code += chars.charAt(Math.floor(Math.random() * chars.length))
         setAuthCode(code)
 
-        // Fetch latest version from GitHub
-        fetch('https://raw.githubusercontent.com/DinanathDash/Envault/main/cli/package.json')
+        // Fetch latest version from internal API
+        fetch('/api/cli-version')
             .then(res => res.json())
             .then(data => {
                 if (data.version) {

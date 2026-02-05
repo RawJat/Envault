@@ -164,7 +164,7 @@ export default function SettingsView() {
         }
     }, { enableOnContentEditable: true, enableOnFormTags: true })
 
-    useHotkeys("alt+q", () => {
+    useHotkeys("alt+shift+q", () => {
         handleLogout()
     })
 
@@ -190,7 +190,7 @@ export default function SettingsView() {
                                 </TooltipTrigger>
                                 <TooltipContent>
                                     <p className="flex items-center gap-2">
-                                        Log out <span className="flex gap-1"><Kbd><AltKey /></Kbd><Kbd>Q</Kbd></span>
+                                        Log out <span className="flex gap-1"><Kbd><AltKey /></Kbd><Kbd>Shift</Kbd><Kbd>Q</Kbd></span>
                                     </p>
                                 </TooltipContent>
                             </Tooltip>

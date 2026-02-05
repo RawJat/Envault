@@ -207,7 +207,7 @@ export function NotificationsList() {
                                 <CheckCheck className="h-4 w-4 mr-2" />
                                 <span className="hidden sm:inline">Mark all read</span>
                                 <span className="sm:hidden">Mark all</span>
-                                <Kbd variant="outline" size="xs" className="ml-2">M</Kbd>
+                                <Kbd size="xs" className="ml-2">M</Kbd>
                             </Button>
                             <Button
                                 variant="outline"
@@ -219,7 +219,7 @@ export function NotificationsList() {
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 <span className="hidden sm:inline">Clear read</span>
                                 <span className="sm:hidden">Clear</span>
-                                <Kbd variant="outline" size="xs" className="ml-2">C</Kbd>
+                                <Kbd size="xs" className="ml-2">C</Kbd>
                             </Button>
                         </>
                     )}

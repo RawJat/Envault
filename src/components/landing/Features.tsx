@@ -1,7 +1,7 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Shield, Lock, Smartphone, Zap, Code, Globe } from "lucide-react"
+import { Shield, Lock, Users, Zap, Code, Globe, Keyboard } from "lucide-react"
 
 const features = [
     {
@@ -15,9 +15,9 @@ const features = [
         icon: Shield,
     },
     {
-        title: "Modern Architecture",
-        description: "Built with Next.js App Router and React Server Components for optimal performance.",
-        icon: Zap,
+        title: "Keyboard First",
+        description: "Navigate efficiently with fully customizable keyboard shortcuts for every action.",
+        icon: Keyboard,
     },
     {
         title: "Developer First",
@@ -25,9 +25,9 @@ const features = [
         icon: Code,
     },
     {
-        title: "Responsive Design",
-        description: "Manage your environment variables from any device with our fully responsive UI.",
-        icon: Smartphone,
+        title: "Team Collaboration",
+        description: "Share projects with your team securely using granular permissions (Owner, Editor, Viewer).",
+        icon: Users,
     },
     {
         title: "Global Edge Network",

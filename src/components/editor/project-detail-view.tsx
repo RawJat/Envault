@@ -162,13 +162,13 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuItem onClick={() => setShareDialogOpen(true)}>
-                                    <Share2 className="w-4 h-4 mr-2" /> Share<Kbd variant="outline" size="xs" className="ml-auto hidden md:inline-flex">A</Kbd>
+                                    <Share2 className="w-4 h-4 mr-2" /> Share<Kbd size="xs" className="ml-auto hidden md:inline-flex">A</Kbd>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={handleDeleteClick}>
                                     <Trash2 className="w-4 h-4 mr-2" /> Delete
                                     <div className="ml-auto hidden md:flex items-center gap-1">
-                                        <Kbd variant="outline" size="xs">{getModifierKey('ctrl')}</Kbd>
-                                        <Kbd variant="outline" size="xs">X</Kbd>
+                                        <Kbd size="xs">{getModifierKey('alt')}</Kbd>
+                                        <Kbd size="xs">Backspace</Kbd>
                                     </div>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -201,8 +201,8 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
                                         <SettingsIcon className="mr-2 h-4 w-4" />
                                         <span>Settings</span>
                                         <div className="ml-auto hidden md:flex items-center gap-1">
-                                            <Kbd variant="outline" size="xs">G</Kbd>
-                                            <Kbd variant="outline" size="xs">O</Kbd>
+                                            <Kbd size="xs">G</Kbd>
+                                            <Kbd size="xs">O</Kbd>
                                         </div>
                                     </Link>
                                 </DropdownMenuItem>
@@ -213,8 +213,8 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
                                     <Keyboard className="mr-2 h-4 w-4" />
                                     <span>Keyboard Shortcuts</span>
                                     <div className="ml-auto hidden md:flex items-center gap-1">
-                                        <Kbd variant="outline" size="xs">Shift</Kbd>
-                                        <Kbd variant="outline" size="xs">?</Kbd>
+                                        <Kbd size="xs">Shift</Kbd>
+                                        <Kbd size="xs">?</Kbd>
                                     </div>
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
@@ -226,8 +226,9 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
                                     <LogOut className="mr-2 h-4 w-4" />
                                     <span>Log out</span>
                                     <div className="ml-auto hidden md:flex items-center gap-1">
-                                        <Kbd variant="outline" size="xs">{getModifierKey('ctrl')}</Kbd>
-                                        <Kbd variant="outline" size="xs">Q</Kbd>
+                                        <Kbd size="xs">{getModifierKey('alt')}</Kbd>
+                                        <Kbd size="xs">Shift</Kbd>
+                                        <Kbd size="xs">Q</Kbd>
                                     </div>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -246,8 +247,9 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
                             <Download className="w-4 h-4 mr-2" />
                             Download .env
                             <div className="ml-2 hidden md:flex items-center gap-1">
-                                <Kbd variant="outline" size="xs">{getModifierKey('mod')}</Kbd>
-                                <Kbd variant="outline" size="xs">D</Kbd>
+                                <Kbd size="xs">{getModifierKey('alt')}</Kbd>
+                                <Kbd size="xs">Shift</Kbd>
+                                <Kbd size="xs">E</Kbd>
                             </div>
                         </Button>
                         <ImportEnvDialog
@@ -260,8 +262,9 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
                                     <Upload className="w-4 h-4 mr-2" />
                                     Import .env
                                     <div className="ml-2 hidden md:flex items-center gap-1">
-                                        <Kbd variant="outline" size="xs">{getModifierKey('mod')}</Kbd>
-                                        <Kbd variant="outline" size="xs">I</Kbd>
+                                        <Kbd size="xs">{getModifierKey('alt')}</Kbd>
+                                        <Kbd size="xs">Shift</Kbd>
+                                        <Kbd size="xs">I</Kbd>
                                     </div>
                                 </Button>
                             }

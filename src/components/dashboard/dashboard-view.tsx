@@ -95,8 +95,8 @@ export default function DashboardPage() {
                             <Search className="w-4 h-4" />
                             Search...
                             <div className="ml-2 hidden md:flex items-center gap-1">
-                                <Kbd variant="outline" size="xs">{getModifierKey('mod')}</Kbd>
-                                <Kbd variant="outline" size="xs">K</Kbd>
+                                <Kbd size="xs">{getModifierKey('mod')}</Kbd>
+                                <Kbd size="xs">K</Kbd>
                             </div>
                         </Button>
                         <AnimatedThemeToggler />
@@ -128,8 +128,8 @@ export default function DashboardPage() {
                                         <SettingsIcon className="mr-2 h-4 w-4" />
                                         <span>Settings</span>
                                         <div className="ml-auto hidden md:flex items-center gap-1">
-                                            <Kbd variant="outline" size="xs">G</Kbd>
-                                            <Kbd variant="outline" size="xs">O</Kbd>
+                                            <Kbd size="xs">G</Kbd>
+                                            <Kbd size="xs">O</Kbd>
                                         </div>
                                     </Link>
                                 </DropdownMenuItem>
@@ -140,8 +140,8 @@ export default function DashboardPage() {
                                     <Keyboard className="mr-2 h-4 w-4" />
                                     <span>Keyboard Shortcuts</span>
                                     <div className="ml-auto hidden md:flex items-center gap-1">
-                                        <Kbd variant="outline" size="xs">Shift</Kbd>
-                                        <Kbd variant="outline" size="xs">?</Kbd>
+                                        <Kbd size="xs">Shift</Kbd>
+                                        <Kbd size="xs">?</Kbd>
                                     </div>
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
@@ -149,8 +149,9 @@ export default function DashboardPage() {
                                     <LogOut className="mr-2 h-4 w-4" />
                                     <span>Log out</span>
                                     <div className="ml-auto hidden md:flex items-center gap-1">
-                                        <Kbd variant="outline" size="xs">{getModifierKey('ctrl')}</Kbd>
-                                        <Kbd variant="outline" size="xs">Q</Kbd>
+                                        <Kbd size="xs">{getModifierKey('alt')}</Kbd>
+                                        <Kbd size="xs">Shift</Kbd>
+                                        <Kbd size="xs">Q</Kbd>
                                     </div>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -171,10 +172,10 @@ export default function DashboardPage() {
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                     <TabsList className="mb-6">
                         <TabsTrigger value="my-projects" className="flex items-center gap-2">
-                            My Projects<Kbd variant="outline" size="xs">1</Kbd>
+                            My Projects<Kbd size="xs">1</Kbd>
                         </TabsTrigger>
                         <TabsTrigger value="shared-with-me" className="flex items-center gap-2">
-                            Shared with Me<Kbd variant="outline" size="xs">2</Kbd>
+                            Shared with Me<Kbd size="xs">2</Kbd>
                         </TabsTrigger>
                     </TabsList>
 

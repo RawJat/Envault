@@ -18,6 +18,7 @@ import { Project } from "@/lib/store"
 import { ShareConfirmationDialog, PendingChange } from "./share-confirmation-dialog"
 import { useHotkeys } from "@/hooks/use-hotkeys"
 import { Kbd } from "@/components/ui/kbd"
+import { getModifierKey } from "@/lib/utils"
 
 interface ShareProjectDialogProps {
     project: Project
@@ -319,7 +320,7 @@ export function ShareProjectDialog({ project, children, open: controlledOpen, on
                                         className="flex-1"
                                     />
                                     <Button type="submit" disabled={loading || !email} className="sm:w-auto">
-                                        {loading ? "Sending..." : <span className="flex items-center gap-2">Send Invitation <span className="flex items-center gap-1"><Kbd className="bg-primary-foreground/20 text-primary-foreground border-0">⌘</Kbd><Kbd className="bg-primary-foreground/20 text-primary-foreground border-0"><CornerDownLeft className="w-3 h-3" /></Kbd></span></span>}
+                                        {loading ? "Sending..." : <span className="flex items-center gap-2">Send Invitation <span className="flex items-center gap-1"><Kbd className="bg-primary-foreground/20 text-primary-foreground border-0">{getModifierKey('mod')}</Kbd><Kbd className="bg-primary-foreground/20 text-primary-foreground border-0"><CornerDownLeft className="w-3 h-3" /></Kbd></span></span>}
                                     </Button>
                                 </div>
                             </form>
@@ -424,7 +425,7 @@ export function ShareProjectDialog({ project, children, open: controlledOpen, on
                                                 onClick={handleSave}
                                                 disabled={!hasChanges}
                                             >
-                                                Save Changes <span className="ml-2 flex items-center gap-1"><Kbd className="bg-primary-foreground/20 text-primary-foreground border-0">⌘</Kbd><Kbd className="bg-primary-foreground/20 text-primary-foreground border-0">S</Kbd></span>
+                                                Save Changes <span className="ml-2 flex items-center gap-1"><Kbd className="bg-primary-foreground/20 text-primary-foreground border-0">{getModifierKey('mod')}</Kbd><Kbd className="bg-primary-foreground/20 text-primary-foreground border-0">S</Kbd></span>
                                             </Button>
                                         )}
                                     </>
