@@ -61,20 +61,33 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
     const [deleteConfirmation, setDeleteConfirmation] = useState("")
     const [mounted, setMounted] = useState(false)
 
+    const isViewer = project.role === 'viewer'
+    const canEdit = project.role === 'owner' || project.role === 'editor'
+
     useEffect(() => {
         setMounted(true)
     }, [])
 
     // Listen for global command context
     useEffect(() => {
-        const handleOpenAdd = () => setIsAddDialogOpen(true)
+        const handleOpenAdd = () => {
+            if (!canEdit) return
+            setIsAddDialogOpen(true)
+        }
         const handleDownload = () => {
             const btn = document.getElementById('download-env-btn')
             if (btn) btn.click()
         }
-        const handleOpenImport = () => setIsImportDialogOpen(true)
-        const handleOpenShare = () => setShareDialogOpen(true)
+        const handleOpenImport = () => {
+            if (!canEdit) return
+            setIsImportDialogOpen(true)
+        }
+        const handleOpenShare = () => {
+            if (!canEdit) return
+            setShareDialogOpen(true)
+        }
         const handleUniversalDelete = () => {
+            if (project.role !== 'owner') return
             // Trigger project delete if specifically requested, or suggest selection
             setDeleteDialogOpen(true)
         }
@@ -171,10 +184,10 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => setShareDialogOpen(true)}>
+                                <DropdownMenuItem onClick={() => setShareDialogOpen(true)} disabled={!canEdit}>
                                     <Share2 className="w-4 h-4 mr-2" /> Share<Kbd size="xs" className="ml-auto hidden md:inline-flex">A</Kbd>
                                 </DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={handleDeleteClick}>
+                                <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={handleDeleteClick} disabled={project.role !== 'owner'}>
                                     <Trash2 className="w-4 h-4 mr-2" /> Delete
                                     <div className="ml-auto hidden md:flex items-center gap-1">
                                         <Kbd size="xs">{getModifierKey('alt')}</Kbd>
@@ -268,7 +281,7 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
                             open={isImportDialogOpen}
                             onOpenChange={setIsImportDialogOpen}
                             trigger={
-                                <Button variant="outline">
+                                <Button variant="outline" disabled={!canEdit}>
                                     <Upload className="w-4 h-4 mr-2" />
                                     Import .env
                                     <div className="ml-2 hidden md:flex items-center gap-1">
@@ -285,7 +298,7 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
                             open={isAddDialogOpen}
                             onOpenChange={setIsAddDialogOpen}
                             trigger={
-                                <Button variant="default">
+                                <Button variant="default" disabled={!canEdit}>
                                     <Plus className="w-4 h-4 mr-2" />
                                     Add Variable<Kbd variant="primary" size="xs" className="ml-2">N</Kbd>
                                 </Button>
@@ -294,7 +307,7 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
                     </div>
                 </div>
 
-                <EnvVarTable projectId={projectId} variables={project.variables} />
+                <EnvVarTable projectId={projectId} variables={project.variables} userRole={project.role} />
             </main>
 
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

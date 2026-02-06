@@ -102,12 +102,26 @@ export async function shareSecret(secretId: string, email: string) {
         return { error: 'User not found. Please ensure the user has an Envault account.' }
     }
 
+    // Check if the user is already a project member
+    // If they are, they already have access to all secrets, so no need for individual shares
+    const { data: existingMember } = await supabase
+        .from('project_members')
+        .select('id')
+        .eq('project_id', projectId)
+        .eq('user_id', targetUserId)
+        .single()
+
+    if (existingMember) {
+        return { error: 'User is already a member of this project and has access to all secrets.' }
+    }
+
     // Insert Share
     const { error: insertError } = await supabase
         .from('secret_shares')
         .insert({
             secret_id: secretId,
             user_id: targetUserId,
+            role: 'viewer',
             // added_by? Schema didn't have it, but useful.
         })
 
@@ -118,6 +132,12 @@ export async function shareSecret(secretId: string, email: string) {
 
     // Invalidate secret access cache for the user who was granted access
     await cacheDel(CacheKeys.userSecretAccess(targetUserId, secretId))
+
+    // Invalidate project list cache for the user who was granted access
+    await cacheDel(CacheKeys.userProjects(targetUserId))
+
+    // Invalidate project role cache for the shared project
+    await cacheDel(CacheKeys.userProjectRole(targetUserId, projectId))
 
     // Notify
     const { sendAccessGrantedEmail } = await import('@/lib/email')
@@ -164,4 +184,55 @@ export async function unshareSecret(secretId: string, userId: string) {
     revalidatePath(`/project/${secret.project_id}`)
     return { success: true }
 
+}
+
+export async function getSecretSharesWithEmails(secretId: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return { error: 'Not authenticated' }
+
+    // Check if user has access to the secret's project
+    const { data: secret } = await supabase
+        .from('secrets')
+        .select('project_id')
+        .eq('id', secretId)
+        .single()
+
+    if (!secret) return { error: 'Secret not found' }
+
+    const { getProjectRole } = await import('@/lib/permissions')
+    const role = await getProjectRole(supabase, secret.project_id, user.id)
+
+    if (!role) return { error: 'Unauthorized' }
+
+    // Fetch shares
+    const { data: shares } = await supabase
+        .from('secret_shares')
+        .select('id, user_id, created_at')
+        .eq('secret_id', secretId)
+
+    if (!shares) return { shares: [] }
+
+    // Get emails and avatars using admin client
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    const admin = createAdminClient()
+
+    const sharesWithDetails = await Promise.all(
+        shares.map(async (share) => {
+            const { data: userData } = await admin.auth.admin.getUserById(share.user_id)
+            const email = userData?.user?.email || ''
+            const username = userData?.user?.user_metadata?.username || userData?.user?.user_metadata?.name || undefined
+            const avatar = userData?.user?.user_metadata?.avatar_url || userData?.user?.user_metadata?.picture || undefined
+            
+            return {
+                ...share,
+                email,
+                username,
+                avatar
+            }
+        })
+    )
+
+    return { shares: sharesWithDetails }
 }

@@ -2,8 +2,6 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import ProjectDetailView from '@/components/editor/project-detail-view'
-import * as fs from 'fs'
-import * as path from 'path'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -21,12 +19,6 @@ export default async function ProjectPage({ params }: PageProps) {
         redirect('/')
     }
 
-    const timestamp = new Date().toISOString()
-    const LOG_FILE = path.join(process.cwd(), 'envault_debug.log')
-    const logToFile = (msg: string) => {
-        fs.appendFileSync(LOG_FILE, `[${timestamp}] [ProjectPage] ${msg}\n`)
-    }
-
     // Fetch the project first (no joins to avoid RLS recursion)
     const { data: project, error: _projectError } = await supabase
         .from('projects')
@@ -35,7 +27,6 @@ export default async function ProjectPage({ params }: PageProps) {
         .single()
 
     if (_projectError || !project) {
-        logToFile(`Project fetch failed for ID: ${id}. Error: ${JSON.stringify(_projectError)}`)
         redirect('/dashboard')
     }
 
@@ -45,7 +36,6 @@ export default async function ProjectPage({ params }: PageProps) {
 
     if (!role) {
         // User has no access to this project
-        logToFile(`Access denied for user ${user.id} to project ${id}`)
         redirect('/dashboard')
     }
 
@@ -56,12 +46,55 @@ export default async function ProjectPage({ params }: PageProps) {
         .eq('project_id', id)
         .order('created_at', { ascending: true })
 
-    console.log(`[ProjectPage] Fetching secrets for project: ${id}`)
     if (secretsError) {
         console.error(`[ProjectPage] Error fetching secrets:`, secretsError)
-    } else {
-        console.log(`[ProjectPage] Fetched ${secrets?.length || 0} secrets`)
     }
+
+    // Fetch shared secrets for this user
+    const { data: sharedSecrets, error: sharedSecretsError } = await supabase
+        .from('secret_shares')
+        .select(`
+            id,
+            created_at,
+            secrets (
+                *
+            )
+        `)
+        .eq('user_id', user.id)
+
+    if (sharedSecretsError) {
+        console.error(`[ProjectPage] Error fetching shared secrets:`, sharedSecretsError)
+    }
+
+    // Filter shared secrets for this project
+    const filteredSharedSecrets = sharedSecrets?.filter(share => (share.secrets as any).project_id === id) || []
+
+    // Combine secrets and shared secrets, deduplicating by id
+    const secretsMap = new Map()
+
+    // Add owned secrets
+    secrets?.forEach(secret => secretsMap.set(secret.id, secret))
+
+    // Add shared secrets, marking as shared
+    filteredSharedSecrets?.forEach(share => {
+        const secret = share.secrets as any
+        if (!secretsMap.has(secret.id)) {
+            secretsMap.set(secret.id, {
+                ...secret,
+                isShared: true,
+                sharedAt: share.created_at
+            })
+        } else {
+            // If already exists, mark as shared if not already
+            const existing = secretsMap.get(secret.id)
+            if (!existing.isShared) {
+                existing.isShared = true
+                existing.sharedAt = share.created_at
+            }
+        }
+    })
+
+    const allSecrets = Array.from(secretsMap.values())
 
     // Transform to match local store format and decrypt values
     const { decrypt } = await import('@/lib/encryption')
@@ -77,7 +110,7 @@ export default async function ProjectPage({ params }: PageProps) {
 
     // Fetch user details for creators and updaters
     const userIds = new Set<string>()
-    secrets?.forEach((s) => {
+    allSecrets?.forEach((s) => {
         if (s.user_id) userIds.add(s.user_id)
         if (s.last_updated_by) userIds.add(s.last_updated_by)
     })
@@ -102,7 +135,8 @@ export default async function ProjectPage({ params }: PageProps) {
         name: project.name,
         user_id: project.user_id,
         createdAt: project.created_at,
-        variables: await Promise.all((secrets || []).map(async (secret) => {
+        role: role,
+        variables: await Promise.all((allSecrets || []).map(async (secret) => {
             let decryptedValue = secret.value
 
             // Only try to decrypt if it looks like encrypted data
@@ -125,17 +159,16 @@ export default async function ProjectPage({ params }: PageProps) {
                 isSecret: secret.is_secret,
                 lastUpdatedBy: secret.last_updated_by,
                 lastUpdatedAt: secret.last_updated_at,
+                isShared: secret.isShared || false,
+                sharedAt: secret.sharedAt,
                 userInfo: {
                     creator,
                     updater
                 }
             }
         })),
-        secretCount: secrets?.length || 0,
+        secretCount: allSecrets?.length || 0,
     }
-
-    // Diagnostics: log to the same file we can see
-    logToFile(`Project: ${project.name} (${id}) - Fetched ${secrets?.length || 0} secrets`)
 
     return <ProjectDetailView project={transformedProject} />
 }

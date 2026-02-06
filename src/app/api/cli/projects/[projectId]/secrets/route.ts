@@ -23,21 +23,41 @@ export async function GET(
 
     const { projectId } = await params
 
+    // 1. Determine Access Level
+    // For CLI secret access, we need to distinguish between:
+    // - Full project access (owner/member) -> all secrets
+    // - Granular access (secret shares only) -> only shared secrets
+    
     const supabase = createAdminClient()
 
-    // 1. Determine Access Level
-    // We can't use `getProjectRole` from `@/lib/permissions` easily if it relies on RLS-enforced client 
-    // BUT `createAdminClient` bypasses RLS, so manual checks are needed, which `getProjectRole` does 
-    // (it checks DB records manually). So we CAN use it.
+    // Check if user has full project access (owner or member)
+    const { data: project } = await supabase
+        .from('projects')
+        .select('user_id')
+        .eq('id', projectId)
+        .single()
 
-    // However, importing from `@/lib/permissions` in API route is fine.
-    const { getProjectRole } = await import('@/lib/permissions')
-    const role = await getProjectRole(supabase, projectId, userId)
+    let hasFullProjectAccess = false
+    if (project && project.user_id === userId) {
+        hasFullProjectAccess = true // Owner
+    } else {
+        // Check if member
+        const { data: member } = await supabase
+            .from('project_members')
+            .select('role')
+            .eq('project_id', projectId)
+            .eq('user_id', userId)
+            .single()
+        
+        if (member) {
+            hasFullProjectAccess = true // Member
+        }
+    }
 
     let targetSecrets = []
 
-    if (role) {
-        // Has Project-Level Access (Owner/Editor/Viewer)
+    if (hasFullProjectAccess) {
+        // Has Project-Level Access (Owner/Member)
         // Fetch ALL secrets for project
         const { data: secrets, error } = await supabase
             .from('secrets')
@@ -49,14 +69,7 @@ export async function GET(
 
     } else {
         // Check for Granular Secret Shares
-        // Fetch secrets where id IN (select secret_id from secret_shares where user_id = me)
-        // Check for Granular Secret Shares
-        // Fetch secrets where id IN (select secret_id from secret_shares where user_id = me) AND project_id matches
-
-
-        // Actually, with `!inner` on join it works as filter.
-        // .select('..., secrets!inner(...)')
-
+        // Fetch only the secrets specifically shared with this user
         const { data: sharesFiltered } = await supabase
             .from('secret_shares')
             .select('secret_id, secrets!inner(key, value, project_id)')

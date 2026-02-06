@@ -49,9 +49,10 @@ import { useReauthStore } from "@/lib/reauth-store"
 interface EnvVarTableProps {
     projectId: string
     variables: EnvironmentVariable[]
+    userRole?: 'owner' | 'editor' | 'viewer'
 }
 
-export function EnvVarTable({ projectId, variables }: EnvVarTableProps) {
+export function EnvVarTable({ projectId, variables, userRole }: EnvVarTableProps) {
     const [editingVariable, setEditingVariable] = React.useState<EnvironmentVariable | null>(null)
     const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false)
     const [variableToDelete, setVariableToDelete] = React.useState<string | null>(null)
@@ -65,14 +66,14 @@ export function EnvVarTable({ projectId, variables }: EnvVarTableProps) {
     // Listen for contextual shortcuts
     React.useEffect(() => {
         const handleUniversalShare = () => {
-            if (!lastInteractedId) return
+            if (!lastInteractedId || userRole === 'viewer') return
             const variable = variables.find(v => v.id === lastInteractedId)
             if (variable && variable.isSecret) {
                 setSharingSecret(variable)
             }
         }
         const handleUniversalDelete = () => {
-            if (!lastInteractedId) return
+            if (!lastInteractedId || userRole === 'viewer') return
             handleDeleteClick(lastInteractedId)
         }
 
@@ -294,17 +295,17 @@ export function EnvVarTable({ projectId, variables }: EnvVarTableProps) {
                                                         <Copy className="w-4 h-4 mr-2" />
                                                         Copy Value
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => setEditingVariable(variable)}>
+                                                    <DropdownMenuItem onClick={() => setEditingVariable(variable)} disabled={userRole === 'viewer'}>
                                                         <Pencil className="w-4 h-4 mr-2" />
                                                         Edit
                                                     </DropdownMenuItem>
                                                     {variable.isSecret && (
-                                                        <DropdownMenuItem onClick={() => setSharingSecret(variable)}>
+                                                        <DropdownMenuItem onClick={() => setSharingSecret(variable)} disabled={userRole === 'viewer'}>
                                                             <Share2 className="w-4 h-4 mr-2" />
                                                             Share<Kbd size="xs" className="ml-auto hidden md:inline-flex">A</Kbd>
                                                         </DropdownMenuItem>
                                                     )}
-                                                    <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => handleDeleteClick(variable.id)}>
+                                                    <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => handleDeleteClick(variable.id)} disabled={userRole === 'viewer'}>
                                                         <Trash2 className="w-4 h-4 mr-2" />
                                                         Delete
                                                         <div className="ml-auto hidden md:flex items-center gap-1">

@@ -21,6 +21,7 @@ interface AccessRequest {
     created_at: string
     projects: { name: string, user_id: string } | { name: string, user_id: string }[]
     requester_email?: string
+    requester_username?: string
 }
 
 export function AccessRequestsPanel() {
@@ -61,8 +62,8 @@ export function AccessRequestsPanel() {
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ userId: request.user_id })
                         })
-                        const { email } = await response.json()
-                        return { ...request, requester_email: email }
+                        const { email, username } = await response.json()
+                        return { ...request, requester_email: email, requester_username: username }
                     } catch {
                         return request
                     }
@@ -179,12 +180,14 @@ export function AccessRequestsPanel() {
                                 <div className="flex items-center gap-4 flex-1">
                                     <UserAvatar
                                         className="h-10 w-10"
-                                        user={{ email: request.requester_email || "unknown" }}
-                                        avatarSeed={request.user_id}
+                                        user={{ 
+                                            email: request.requester_email, 
+                                            username: request.requester_username 
+                                        }}
                                     />
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm font-medium truncate">
-                                            {request.requester_email || `User ${request.user_id.slice(0, 8)}...`}
+                                            {request.requester_username || request.requester_email || 'User'}
                                         </p>
                                         <p className="text-xs text-muted-foreground">
                                             Requesting access to <span className="font-medium">{projectName}</span>

@@ -45,6 +45,12 @@ export async function GET(request: Request) {
         .select('projects(id, name, user_id), role')
         .eq('user_id', userId)
 
+    // 3. Projects with shared secrets (where user has individual secret access)
+    const { data: secretShared } = await supabase
+        .from('secret_shares')
+        .select('secrets!inner(project_id, projects(id, name, user_id))')
+        .eq('user_id', userId)
+
     // Map owned projects with isOwner flag
     const ownedProjects = (owned || []).map(p => ({
         id: p.id,
@@ -71,8 +77,20 @@ export async function GET(request: Request) {
         }
     })
 
+    // Map secret-shared projects (viewer access only)
+    const secretSharedProjects = (secretShared || []).map((s) => {
+        const secret = s as any
+        const project = secret.secrets?.projects
+        return {
+            id: project?.id,
+            name: project?.name,
+            isOwner: false,
+            role: 'viewer' as const
+        }
+    })
+
     // Combine and dedupe
-    const combined = [...ownedProjects, ...sharedProjects]
+    const combined = [...ownedProjects, ...sharedProjects, ...secretSharedProjects]
 
     // Dedupe just in case (shouldn't happen if logic is correct: owner can't be member)
     const uniqueMap = new Map()
@@ -87,7 +105,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
         projects: finalProjects,
         owned: ownedProjects.sort((a, b) => (a.name || '').localeCompare(b.name || '')),
-        shared: sharedProjects.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+        shared: [...sharedProjects, ...secretSharedProjects].sort((a, b) => (a.name || '').localeCompare(b.name || ''))
     })
 }
 

@@ -11,6 +11,7 @@ export function AuthSync({ user }: { user: User }) {
         if (user) {
             const meta = user.user_metadata || {}
             login({
+                id: user.id,
                 firstName: meta.first_name || meta.full_name?.split(' ')[0] || user.email?.split('@')[0] || '',
                 lastName: meta.last_name || meta.full_name?.split(' ').slice(1).join(' ') || '',
                 username: meta.username || user.email?.split('@')[0] || '',

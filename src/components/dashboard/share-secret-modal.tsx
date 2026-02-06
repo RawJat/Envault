@@ -1,21 +1,36 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { UserAvatar } from "@/components/ui/user-avatar"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
 import { User, X, Plus, CornerDownLeft } from "lucide-react"
 import { Kbd } from "@/components/ui/kbd"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { Skeleton } from "@/components/ui/skeleton"
 
 // Define interface for shares
 interface SecretShare {
     id: string
-    user_id: string
+    user_id: string // Keep for API calls, but don't display
     created_at: string
+    email?: string
+    username?: string
+    avatar?: string
 }
 
 interface ShareSecretModalProps {
@@ -40,18 +55,27 @@ export function ShareSecretModal({ secretId, secretKey, children, open: controll
     const [shares, setShares] = useState<SecretShare[]>([])
     const [fetchLoading, setFetchLoading] = useState(false)
 
+    useEffect(() => {
+        if (open) {
+            fetchShares()
+        }
+    }, [open])
+
     const fetchShares = async () => {
         setFetchLoading(true)
-        const supabase = createClient()
 
-        // Fetch shares
-        const { data } = await supabase
-            .from('secret_shares')
-            .select('id, user_id, created_at')
-            .eq('secret_id', secretId)
+        try {
+            const { getSecretSharesWithEmails } = await import('@/app/secret-actions')
+            const result = await getSecretSharesWithEmails(secretId)
 
-        if (data) {
-            setShares(data)
+            if (result.error) {
+                toast.error(result.error)
+            } else {
+                setShares(result.shares || [])
+            }
+        } catch (e) {
+            console.error(e)
+            toast.error("Failed to fetch shares")
         }
         setFetchLoading(false)
     }
@@ -94,10 +118,7 @@ export function ShareSecretModal({ secretId, secretKey, children, open: controll
     }
 
     return (
-        <Dialog open={open} onOpenChange={(val) => {
-            setOpen(val)
-            if (val) fetchShares()
-        }}>
+        <Dialog open={open} onOpenChange={setOpen}>
             {children ? (
                 <DialogTrigger asChild>
                     {children}
@@ -136,7 +157,28 @@ export function ShareSecretModal({ secretId, secretKey, children, open: controll
                     <div>
                         <h4 className="text-sm font-medium mb-3">Who has access</h4>
                         {fetchLoading ? (
-                            <div className="text-sm text-muted-foreground">Loading...</div>
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between gap-3 p-2">
+                                    <div className="flex items-center space-x-3 flex-1">
+                                        <Skeleton className="h-8 w-8 rounded-full" />
+                                        <div className="space-y-1">
+                                            <Skeleton className="h-4 w-24" />
+                                            <Skeleton className="h-3 w-32" />
+                                        </div>
+                                    </div>
+                                    <Skeleton className="h-8 w-16" />
+                                </div>
+                                <div className="flex items-center justify-between gap-3 p-2">
+                                    <div className="flex items-center space-x-3 flex-1">
+                                        <Skeleton className="h-8 w-8 rounded-full" />
+                                        <div className="space-y-1">
+                                            <Skeleton className="h-4 w-20" />
+                                            <Skeleton className="h-3 w-28" />
+                                        </div>
+                                    </div>
+                                    <Skeleton className="h-8 w-16" />
+                                </div>
+                            </div>
                         ) : shares.length === 0 ? (
                             <div className="text-sm text-muted-foreground">No specific shares. Project members still have access.</div>
                         ) : (
@@ -144,22 +186,45 @@ export function ShareSecretModal({ secretId, secretKey, children, open: controll
                                 {shares.map(share => (
                                     <div key={share.id} className="flex items-center justify-between gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors">
                                         <div className="flex items-center space-x-3 flex-1 min-w-0">
-                                            <Avatar className="h-8 w-8 shrink-0">
-                                                <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
-                                            </Avatar>
+                                            <UserAvatar 
+                                                email={share.email}
+                                                avatar={share.avatar}
+                                                className="h-8 w-8 shrink-0"
+                                            />
                                             <div className="space-y-1 min-w-0">
-                                                <p className="text-sm font-medium leading-none truncate">User {share.user_id.slice(0, 4)}...</p>
+                                                <p className="text-sm font-medium leading-none truncate">{share.username || share.email || 'User'}</p>
                                                 <p className="text-xs text-muted-foreground">Viewer</p>
                                             </div>
                                         </div>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-8 w-8 text-destructive shrink-0"
-                                            onClick={() => handleRemoveShare(share.user_id)}
-                                        >
-                                            <X className="h-4 w-4" />
-                                        </Button>
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 text-destructive hover:text-destructive"
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Remove Access</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        Are you sure you want to revoke access to this secret for {share.username || share.email || 'this user'}?
+                                                        They will no longer be able to view this variable.
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                    <AlertDialogAction
+                                                        onClick={() => handleRemoveShare(share.user_id)}
+                                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                                    >
+                                                        Remove Access
+                                                    </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
                                     </div>
                                 ))}
                             </div>

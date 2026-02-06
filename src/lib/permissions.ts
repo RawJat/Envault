@@ -46,6 +46,26 @@ export async function getProjectRole(
         return role
     }
 
+    // 3. Check if user has shared secrets from this project
+    const { data: sharedSecrets } = await supabase
+        .from('secret_shares')
+        .select(`
+            id,
+            secrets!inner (
+                project_id
+            )
+        `)
+        .eq('user_id', userId)
+
+    const hasSharedSecret = sharedSecrets?.some(share => 
+        (share.secrets as any)?.project_id === projectId
+    )
+
+    if (hasSharedSecret) {
+        await cacheSet(cacheKey, 'viewer', CACHE_TTL.PROJECT_ROLE)
+        return 'viewer'
+    }
+
     // Cache null result to avoid repeated DB queries for non-members
     await cacheSet(cacheKey, null, CACHE_TTL.PROJECT_ROLE)
     return null

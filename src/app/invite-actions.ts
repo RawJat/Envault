@@ -2,21 +2,8 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import * as fs from 'fs'
-import * as path from 'path'
 
 import { cacheDel, CacheKeys, invalidateUserSecretAccess } from '@/lib/cache'
-
-const LOG_FILE = path.join(process.cwd(), 'envault_debug.log')
-
-function logToFile(msg: string) {
-    const timestamp = new Date().toISOString()
-    try {
-        fs.appendFileSync(LOG_FILE, `[${timestamp}] [InviteActions] ${msg}\n`)
-    } catch (e) {
-        console.error('Failed to log to file:', e)
-    }
-}
 
 export async function createAccessRequest(token: string) {
     const supabase = await createClient()
@@ -153,11 +140,8 @@ export async function approveRequest(requestId: string, role: 'viewer' | 'editor
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
-        logToFile(`Approve denied: Not authenticated`)
         return { error: 'Not authenticated' }
     }
-
-    logToFile(`[approveRequest] User ${user.email} approving request ${requestId} with role ${role}`)
 
     // Use Admin client for verification and modifications to bypass RLS issues during approval
     const { createAdminClient } = await import('@/lib/supabase/admin')
@@ -171,15 +155,27 @@ export async function approveRequest(requestId: string, role: 'viewer' | 'editor
         .single()
 
     if (requestError || !request) {
-        logToFile(`[approveRequest] Request not found or error: ${JSON.stringify(requestError)}`)
         return { error: 'Request not found.' }
     }
 
     // Verify User is Owner of the Project
     const projectOwner = (request.projects as any).user_id
     if (projectOwner !== user.id) {
-        logToFile(`[approveRequest] Unauthorized: ${user.id} is not owner ${projectOwner}`)
         return { error: 'Unauthorized.' }
+    }
+
+    // Check if user is already a member
+    const { data: existingMember } = await admin
+        .from('project_members')
+        .select('id')
+        .eq('project_id', request.project_id!)
+        .eq('user_id', request.user_id)
+        .single()
+
+    if (existingMember) {
+        // Delete the request since they are already a member
+        await admin.from('access_requests').delete().eq('id', requestId)
+        return { success: true }
     }
 
     // 1. Add to Project Members (Use Admin for reliability)
@@ -193,14 +189,33 @@ export async function approveRequest(requestId: string, role: 'viewer' | 'editor
         })
 
     if (memberError) {
-        logToFile(`[approveRequest] Member insert error: ${JSON.stringify(memberError)}`)
         return { error: memberError.message }
+    }
+
+    // 1.5. Clean up any existing secret_shares for this user in this project
+    // Since they now have full project access, individual secret shares are redundant
+    const { data: projectSecrets } = await admin
+        .from('secrets')
+        .select('id')
+        .eq('project_id', request.project_id!)
+
+    if (projectSecrets && projectSecrets.length > 0) {
+        const secretIds = projectSecrets.map(s => s.id)
+        const { error: cleanupError } = await admin
+            .from('secret_shares')
+            .delete()
+            .eq('user_id', request.user_id)
+            .in('secret_id', secretIds)
+
+        if (cleanupError) {
+            // Don't fail the request for this, just log it
+        }
     }
 
     // 2. Delete Request (Use Admin to ensure it's removed)
     const { error: deleteError } = await admin.from('access_requests').delete().eq('id', requestId)
     if (deleteError) {
-        logToFile(`[approveRequest] Warning: Delete request failed: ${JSON.stringify(deleteError)}`)
+        // Warning logged
     }
 
     // 3. Invalidate caches for the new member
@@ -240,7 +255,6 @@ export async function approveRequest(requestId: string, role: 'viewer' | 'editor
 
     revalidatePath('/dashboard') // Refresh owner dashboard
     revalidatePath(`/project/${request.project_id}`) // Refresh project page
-    logToFile(`[approveRequest] Success: User ${request.user_id} added to ${request.project_id}`)
     return { success: true }
 }
 
@@ -262,13 +276,11 @@ export async function rejectRequest(requestId: string) {
         .single()
 
     if (fetchError || !request) {
-        logToFile(`[rejectRequest] Request not found or error: ${JSON.stringify(fetchError)}`)
         return { error: 'Request not found.' }
     }
 
     const projectOwner = (request.projects as any).user_id
     if (projectOwner !== user.id) {
-        logToFile(`[rejectRequest] Unauthorized: ${user.id} vs owner ${projectOwner}`)
         return { error: 'Unauthorized.' }
     }
 
@@ -282,11 +294,8 @@ export async function rejectRequest(requestId: string) {
     // Hard Delete
     const { error: deleteError } = await admin.from('access_requests').delete().eq('id', requestId)
     if (deleteError) {
-        logToFile(`[rejectRequest] Delete error: ${JSON.stringify(deleteError)}`)
         return { error: deleteError.message }
     }
-
-    logToFile(`[rejectRequest] Success: Request ${requestId} rejected`)
 
     // Notify requester that their request was denied
     if (fullRequest) {
@@ -382,11 +391,36 @@ export async function inviteUser(projectId: string, email: string) {
     // Check project name for email
     const { data: project } = await supabase
         .from('projects')
-        .select('name')
+        .select('name, user_id')
         .eq('id', projectId)
         .single()
 
     if (!project) return { error: 'Project not found' }
+
+    // Check if the email belongs to a user who is already a member
+    const { createAdminClient } = await import('@/lib/supabase/admin')
+    const admin = createAdminClient()
+    const { data: users } = await admin.auth.admin.listUsers()
+    const invitedUser = users.users.find(u => u.email === email)
+
+    if (invitedUser) {
+        // Check if it's the project owner
+        if (invitedUser.id === project.user_id) {
+            return { error: 'Cannot invite the project owner.' }
+        }
+
+        // Check if already a member
+        const { data: existingMember } = await supabase
+            .from('project_members')
+            .select('id')
+            .eq('project_id', projectId)
+            .eq('user_id', invitedUser.id)
+            .single()
+
+        if (existingMember) {
+            return { error: 'User is already a member of this project.' }
+        }
+    }
 
     // Send Email
     const { sendInviteEmail } = await import('@/lib/email')

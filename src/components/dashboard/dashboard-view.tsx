@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { formatDistanceToNow } from "date-fns"
 import { useEnvaultStore } from "@/lib/store"
 import { CreateProjectDialog } from "@/components/dashboard/create-project-dialog"
 import { ProjectCard } from "@/components/dashboard/project-card"
@@ -22,7 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { signOut } from "@/app/actions"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { NotificationDropdown } from "@/components/notifications/notification-dropdown"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { toast } from "sonner"
 
@@ -38,6 +39,16 @@ export default function DashboardPage() {
     const approved = searchParams.get('approved')
     const denied = searchParams.get('denied')
 
+    // Function to refresh projects
+    const refreshProjects = useCallback(async () => {
+        const { getProjects } = await import('@/app/project-actions')
+        const result = await getProjects(true) // bypass cache
+        if (result.data) {
+            const setProjects = useEnvaultStore.getState().setProjects
+            setProjects(result.data as any)
+        }
+    }, [])
+
     useEffect(() => {
         setMounted(true)
         if (requested === 'true') {
@@ -50,6 +61,8 @@ export default function DashboardPage() {
                 description: "The user has been added to the project.",
                 duration: 5000,
             })
+            // Refresh projects to update roles after approval
+            refreshProjects()
         } else if (denied === 'true') {
             toast.info("Access request denied.", {
                 description: "The request has been removed.",
@@ -64,6 +77,25 @@ export default function DashboardPage() {
             url.searchParams.delete('approved')
             url.searchParams.delete('denied')
             router.replace(url.pathname + url.search)
+        }
+
+        // Listen for project role changes
+        const handleProjectRoleChanged = () => {
+            // Refresh projects with updated roles
+            refreshProjects()
+        }
+
+        // Refresh projects when window regains focus (in case permissions changed elsewhere)
+        const handleWindowFocus = () => {
+            refreshProjects()
+        }
+
+        document.addEventListener('project-role-changed', handleProjectRoleChanged)
+        window.addEventListener('focus', handleWindowFocus)
+
+        return () => {
+            document.removeEventListener('project-role-changed', handleProjectRoleChanged)
+            window.removeEventListener('focus', handleWindowFocus)
         }
     }, [requested, approved, denied, router])
 
@@ -109,8 +141,8 @@ export default function DashboardPage() {
     }
 
     // Filter Projects
-    const myProjects = projects.filter(p => !p.role || p.role === 'owner')
-    const sharedProjects = projects.filter(p => p.role && p.role !== 'owner')
+    const myProjects = projects.filter(p => p.role === 'owner' || p.role === 'editor')
+    const sharedProjects = projects.filter(p => p.role === 'viewer' && p.user_id !== user?.id)
 
     return (
         <div className="min-h-screen bg-background">

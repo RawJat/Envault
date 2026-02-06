@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -33,6 +33,7 @@ interface Member {
     role: 'owner' | 'viewer' | 'editor'
     created_at: string
     email?: string
+    avatar?: string
 }
 
 interface PendingRequest {
@@ -42,6 +43,7 @@ interface PendingRequest {
     status: string
     created_at: string
     email?: string
+    avatar?: string
 }
 
 export function ShareProjectDialog({ project, children, open: controlledOpen, onOpenChange: controlledOnOpenChange }: ShareProjectDialogProps) {
@@ -65,88 +67,28 @@ export function ShareProjectDialog({ project, children, open: controlledOpen, on
     const isOwner = project.role === 'owner' || !project.role
     const hasChanges = pendingChanges.size > 0
 
+    useEffect(() => {
+        if (open) {
+            fetchMembersAndRequests()
+        }
+    }, [open])
+
     const fetchMembersAndRequests = async () => {
         setMembersLoading(true)
-        const supabase = createClient()
-
-        // Fetch members
-        const { data: membersData } = await supabase
-            .from('project_members')
-            .select('id, user_id, role, created_at')
-            .eq('project_id', project.id)
-
-        // Fetch pending requests
-        const { data: requestsData } = await supabase
-            .from('access_requests')
-            .select('id, user_id, project_id, status, created_at')
-            .eq('project_id', project.id)
-            .eq('status', 'pending')
-
-        // Fetch emails
-        let allMembers: Member[] = []
-        if (membersData) {
-            allMembers = await Promise.all(
-                membersData.map(async (member) => {
-                    try {
-                        const response = await fetch('/api/user-email', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ userId: member.user_id })
-                        })
-                        const { email } = await response.json()
-                        return { ...member, email }
-                    } catch {
-                        return member
-                    }
-                })
-            )
-        }
-
-        // Add owner to the members list if not already present
         try {
-            const hasOwner = allMembers.some(m => m.user_id === project.user_id)
-            if (!hasOwner) {
-                const response = await fetch('/api/user-email', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: project.user_id })
-                })
-                const { email } = await response.json()
-                allMembers.unshift({
-                    id: 'owner',
-                    user_id: project.user_id,
-                    role: 'owner' as any, // Cast for owner display
-                    created_at: new Date().toISOString(),
-                    email
-                })
+            const response = await fetch(`/api/project-members?projectId=${project.id}`)
+            if (!response.ok) {
+                throw new Error('Failed to fetch members')
             }
+            const { members, requests } = await response.json()
+            setMembers(members)
+            setPendingRequests(requests)
         } catch (error) {
-            console.error('Failed to fetch owner email:', error)
+            console.error('Failed to fetch members and requests:', error)
+        } finally {
+            setMembersLoading(false)
+            setPendingChanges(new Map()) // Reset changes on refresh
         }
-
-        setMembers(allMembers)
-
-        if (requestsData) {
-            const requestsWithEmails = await Promise.all(
-                requestsData.map(async (request) => {
-                    try {
-                        const response = await fetch('/api/user-email', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ userId: request.user_id })
-                        })
-                        const { email } = await response.json()
-                        return { ...request, email }
-                    } catch {
-                        return request
-                    }
-                })
-            )
-            setPendingRequests(requestsWithEmails)
-        }
-
-        setMembersLoading(false)
-        setPendingChanges(new Map()) // Reset changes on refresh
     }
 
     const handleInvite = async () => {
@@ -184,6 +126,7 @@ export function ShareProjectDialog({ project, children, open: controlledOpen, on
                 currentRole: 'pending',
                 newRole: action === 'approve' ? 'viewer' : undefined,
                 email: request.email,
+                avatar: request.avatar,
                 requestId: request.id
             })
         }
@@ -203,7 +146,8 @@ export function ShareProjectDialog({ project, children, open: controlledOpen, on
                 userId: member.user_id,
                 type: 'revoke',
                 currentRole: member.role,
-                email: member.email
+                email: member.email,
+                avatar: member.avatar
             })
         } else {
             newChanges.set(member.user_id, {
@@ -211,7 +155,8 @@ export function ShareProjectDialog({ project, children, open: controlledOpen, on
                 type: 'role_change',
                 currentRole: member.role,
                 newRole: newValue,
-                email: member.email
+                email: member.email,
+                avatar: member.avatar
             })
         }
 
@@ -261,6 +206,9 @@ export function ShareProjectDialog({ project, children, open: controlledOpen, on
         }
 
         await fetchMembersAndRequests()
+
+        // Notify dashboard to refresh projects
+        document.dispatchEvent(new CustomEvent('project-role-changed'))
     }
 
     const getCurrentValue = (userId: string, originalValue: string | undefined): string => {
@@ -285,10 +233,7 @@ export function ShareProjectDialog({ project, children, open: controlledOpen, on
 
     return (
         <>
-            <Dialog open={open} onOpenChange={(val) => {
-                setOpen(val)
-                if (val) fetchMembersAndRequests()
-            }}>
+            <Dialog open={open} onOpenChange={setOpen}>
                 {children ? (
                     <DialogTrigger asChild>
                         {children}
@@ -369,12 +314,11 @@ export function ShareProjectDialog({ project, children, open: controlledOpen, on
                                                             <div className="flex items-center space-x-3 flex-1 min-w-0">
                                                                 <UserAvatar
                                                                     className="h-8 w-8 shrink-0"
-                                                                    user={{ email: request.email || "unknown" }}
-                                                                    avatarSeed={request.user_id}
+                                                                    user={{ email: request.email || "unknown", avatar: request.avatar }}
                                                                 />
                                                                 <div className="flex-1 min-w-0">
                                                                     <p className="text-sm font-medium leading-none truncate">
-                                                                        {request.email || `User ${request.user_id.slice(0, 8)}...`}
+                                                                        {request.email || 'Unknown User'}
                                                                     </p>
                                                                 </div>
                                                             </div>
@@ -411,12 +355,11 @@ export function ShareProjectDialog({ project, children, open: controlledOpen, on
                                                             <div className="flex items-center space-x-3 flex-1 min-w-0">
                                                                 <UserAvatar
                                                                     className="h-8 w-8 shrink-0"
-                                                                    user={{ email: member.email || "unknown" }}
-                                                                    avatarSeed={member.user_id}
+                                                                    user={{ email: member.email || "unknown", avatar: member.avatar }}
                                                                 />
                                                                 <div className="flex-1 min-w-0">
                                                                     <p className="text-sm font-medium leading-none truncate">
-                                                                        {member.email || `User ${member.user_id.slice(0, 8)}...`}
+                                                                        {member.email || 'Unknown User'}
                                                                     </p>
                                                                 </div>
                                                             </div>

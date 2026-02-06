@@ -16,6 +16,7 @@ export interface PendingChange {
     currentRole?: 'owner' | 'viewer' | 'editor' | 'pending'
     newRole?: 'viewer' | 'editor'
     email?: string
+    avatar?: string
     requestId?: string
 }
 

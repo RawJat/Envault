@@ -8,6 +8,8 @@ export type EnvironmentVariable = {
     isSecret: boolean
     lastUpdatedBy?: string
     lastUpdatedAt?: string
+    isShared?: boolean
+    sharedAt?: string
     userInfo?: {
         creator?: { email: string; id: string; avatar?: string }
         updater?: { email: string; id: string; avatar?: string }
@@ -42,6 +44,7 @@ interface EnvaultState {
 }
 
 export type User = {
+    id: string
     firstName: string
     lastName: string
     username: string

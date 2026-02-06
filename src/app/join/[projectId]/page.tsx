@@ -21,12 +21,34 @@ export default async function JoinPage({ params }: JoinPageProps) {
         redirect(`/login?next=/join/${projectId}`)
     }
 
-    // Check if user is already a member (owner, editor, or viewer)
-    const { getProjectRole } = await import('@/lib/permissions')
-    const role = await getProjectRole(supabase, projectId, user.id)
+    // Check if user is already a full member (owner or project member)
+    // Note: We check for actual membership, not secret shares, because users with secret shares
+    // should still be able to request full project access
+    const { data: projectData } = await supabase
+        .from('projects')
+        .select('user_id, name')
+        .eq('id', projectId)
+        .single()
 
-    if (role) {
-        // Already has access, redirect to project page
+    let isFullMember = false
+    if (projectData && projectData.user_id === user.id) {
+        isFullMember = true // Owner
+    } else {
+        // Check if member
+        const { data: member } = await supabase
+            .from('project_members')
+            .select('role')
+            .eq('project_id', projectId)
+            .eq('user_id', user.id)
+            .single()
+        
+        if (member) {
+            isFullMember = true // Member
+        }
+    }
+
+    if (isFullMember) {
+        // Already has full access, redirect to project page
         redirect(`/project/${projectId}`)
     }
 
@@ -39,12 +61,11 @@ export default async function JoinPage({ params }: JoinPageProps) {
         .eq('status', 'pending')
         .single()
 
-    // Using Admin Client for this specific read to show name
+    // Using Admin Client for additional data if needed
     const { createAdminClient } = await import('@/lib/supabase/admin')
     const admin = createAdminClient()
-    const { data: project } = await admin.from('projects').select('name').eq('id', projectId).single()
 
-    if (!project) {
+    if (!projectData) {
         return (
             <AuthLayout>
                 <div className="w-[90vw] sm:w-full sm:max-w-md mx-auto">
@@ -89,7 +110,7 @@ export default async function JoinPage({ params }: JoinPageProps) {
                                 )}
                             </div>
                         </div>
-                        <CardTitle className="text-2xl font-bold tracking-tight">Join {project.name}</CardTitle>
+                        <CardTitle className="text-2xl font-bold tracking-tight">Join {projectData.name}</CardTitle>
                         <CardDescription>
                             {existingRequest ? (
                                 "Your request to join this project is currently pending approval from the owner."
@@ -105,6 +126,8 @@ export default async function JoinPage({ params }: JoinPageProps) {
                                 const result = await createAccessRequest(projectId)
                                 if (result?.error) {
                                     console.error('Failed to create access request:', result.error)
+                                    // Instead of redirect, perhaps redirect with error
+                                    redirect(`/dashboard?error=${encodeURIComponent(result.error)}`)
                                 }
                                 redirect('/dashboard?requested=true')
                             }}>

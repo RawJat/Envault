@@ -23,10 +23,13 @@ export async function POST(request: NextRequest) {
         const { data: userData, error } = await adminSupabase.auth.admin.getUserById(userId)
 
         if (error || !userData.user) {
-            return NextResponse.json({ email: null })
+            return NextResponse.json({ email: null, username: null })
         }
 
-        return NextResponse.json({ email: userData.user.email })
+        const email = userData.user.email
+        const username = userData.user.user_metadata?.username || userData.user.user_metadata?.name
+
+        return NextResponse.json({ email, username })
     } catch (error) {
         console.error('Error fetching user email:', error)
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

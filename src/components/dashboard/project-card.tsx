@@ -69,12 +69,14 @@ export function ProjectCard({ project }: ProjectCardProps) {
     // Listen for contextual shortcuts
     React.useEffect(() => {
         const handleUniversalShare = () => {
+            if (project.role === 'viewer') return
             // If this card is focused or has a focused element within it
             if (document.activeElement?.closest(`a[href="/project/${project.id}"]`)) {
                 setShareDialogOpen(true)
             }
         }
         const handleUniversalDelete = () => {
+            if (project.role !== 'owner') return
             if (document.activeElement?.closest(`a[href="/project/${project.id}"]`)) {
                 handleDeleteClick()
             }
@@ -128,11 +130,11 @@ export function ProjectCard({ project }: ProjectCardProps) {
                                         <DropdownMenuItem onClick={(e) => {
                                             e.stopPropagation()
                                             setShareDialogOpen(true)
-                                        }}>
+                                        }} disabled={project.role === 'viewer'}>
                                             <Share2 className="w-4 h-4 mr-2" />
                                             Share<Kbd size="xs" className="ml-auto hidden md:inline-flex">A</Kbd>
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem className="text-red-600 dark:text-red-500 focus:text-red-600 dark:focus:text-red-500" onClick={handleDeleteClick}>
+                                        <DropdownMenuItem className="text-red-600 dark:text-red-500 focus:text-red-600 dark:focus:text-red-500" onClick={handleDeleteClick} disabled={project.role !== 'owner'}>
                                             <Trash2 className="w-4 h-4 mr-2" />
                                             Delete
                                             <div className="ml-auto hidden md:flex items-center gap-1">
