@@ -69,28 +69,38 @@ export default async function ProjectPage({ params }: PageProps) {
     // Filter shared secrets for this project
     const filteredSharedSecrets = sharedSecrets?.filter(share => (share.secrets as any).project_id === id) || []
 
+    // For owners/editors, we need to check which secrets are actually shared with others
+    let sharedSecretIds = new Set<string>()
+    if (role === 'owner' || role === 'editor') {
+        // Fetch all shares for secrets in this project to see which ones are shared
+        const { data: allShares } = await supabase
+            .from('secret_shares')
+            .select('secret_id')
+            .in('secret_id', secrets?.map(s => s.id) || [])
+
+        sharedSecretIds = new Set(allShares?.map(s => s.secret_id) || [])
+    }
+
     // Combine secrets and shared secrets, deduplicating by id
     const secretsMap = new Map()
 
     // Add owned secrets
-    secrets?.forEach(secret => secretsMap.set(secret.id, secret))
+    secrets?.forEach(secret => {
+        secretsMap.set(secret.id, {
+            ...secret,
+            isShared: sharedSecretIds.has(secret.id)
+        })
+    })
 
-    // Add shared secrets, marking as shared
+    // Add shared secrets (for viewers), marking as not shared from their perspective
     filteredSharedSecrets?.forEach(share => {
         const secret = share.secrets as any
         if (!secretsMap.has(secret.id)) {
             secretsMap.set(secret.id, {
                 ...secret,
-                isShared: true,
+                isShared: false, // Viewers don't see "shared" indicator
                 sharedAt: share.created_at
             })
-        } else {
-            // If already exists, mark as shared if not already
-            const existing = secretsMap.get(secret.id)
-            if (!existing.isShared) {
-                existing.isShared = true
-                existing.sharedAt = share.created_at
-            }
         }
     })
 

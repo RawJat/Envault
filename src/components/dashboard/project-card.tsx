@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { formatDistanceToNow } from "date-fns"
-import { Folder, MoreVertical, Trash2, CornerDownLeft } from "lucide-react"
+import { Folder, MoreVertical, Trash2, CornerDownLeft, Users, Copy } from "lucide-react"
 import * as React from "react"
 import { useRouter } from "next/navigation"
 
@@ -106,6 +106,15 @@ export function ProjectCard({ project }: ProjectCardProps) {
         router.refresh()
     }
 
+    const handleCopyProjectName = async () => {
+        try {
+            await navigator.clipboard.writeText(project.name)
+            toast.success("Project name copied to clipboard")
+        } catch (err) {
+            toast.error("Failed to copy project name")
+        }
+    }
+
     return (
         <>
             <Link href={`/project/${project.id}`} className="block h-full outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl transition-all">
@@ -116,7 +125,21 @@ export function ProjectCard({ project }: ProjectCardProps) {
                                 <div className="p-2 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
                                     <Folder className="w-5 h-5 text-primary" />
                                 </div>
-                                <CardTitle className="line-clamp-1">{project.name}</CardTitle>
+                                <div className="flex items-center space-x-2 flex-1 min-w-0">
+                                    <CardTitle className="line-clamp-1">{project.name}</CardTitle>
+                                    {project.isShared && (
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <div className="flex-shrink-0">
+                                                    <Users className="w-4 h-4 text-muted-foreground" />
+                                                </div>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>This project is shared with others</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    )}
+                                </div>
                             </div>
                             <div className="flex items-center" onClick={(e) => e.preventDefault()}>
 
@@ -182,7 +205,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
 
                     <div className="space-y-2">
                         <Label htmlFor="project-delete-confirmation" className="text-sm font-normal">
-                            To confirm, type <span className="font-bold">{project.name}</span> below:
+                            To confirm, type <span className="inline-flex items-center gap-1 font-bold">"{project.name}" <Copy className="h-4 w-4 cursor-pointer hover:text-primary" onClick={handleCopyProjectName} /></span> below:
                         </Label>
                         <Input
                             id="project-delete-confirmation"

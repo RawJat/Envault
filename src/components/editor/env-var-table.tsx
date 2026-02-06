@@ -152,7 +152,21 @@ export function EnvVarTable({ projectId, variables, userRole }: EnvVarTableProps
                                 const isVisible = !variable.isSecret || visibleSecrets[variable.id];
                                 return (
                                     <TableRow key={variable.id}>
-                                        <TableCell className="font-mono font-medium">{variable.key}</TableCell>
+                                        <TableCell className="font-mono font-medium">
+                                            <div className="flex items-center space-x-2">
+                                                <span>{variable.key}</span>
+                                                {variable.isShared && (
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <User className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            <p>This secret is shared with others</p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                )}
+                                            </div>
+                                        </TableCell>
                                         <TableCell>
                                             <div className="flex items-center space-x-2 container-type-normal">
                                                 <div className="font-mono text-sm break-all line-clamp-1 max-w-[400px]">
@@ -336,7 +350,19 @@ export function EnvVarTable({ projectId, variables, userRole }: EnvVarTableProps
                             return (
                                 <div key={variable.id} className="bg-card text-card-foreground p-4 rounded-xl border shadow-sm space-y-3">
                                     <div className="flex justify-between items-start">
-                                        <div className="font-mono font-medium break-all">{variable.key}</div>
+                                        <div className="flex items-center space-x-2 flex-1 min-w-0">
+                                            <div className="font-mono font-medium break-all">{variable.key}</div>
+                                            {variable.isShared && (
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <User className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>This secret is shared with others</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            )}
+                                        </div>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
                                                 <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2">

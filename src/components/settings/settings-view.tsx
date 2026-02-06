@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { User, HelpCircle, Trash2, LogOut, ArrowLeft, Shield, Bell, Command, Option as OptionIcon } from "lucide-react"
+import { User, HelpCircle, Trash2, LogOut, ArrowLeft, Shield, Bell, Command, Option as OptionIcon, Copy } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler"
@@ -117,6 +117,16 @@ export default function SettingsView() {
         deleteAccount() // Clear local store
         toast.success("Account deleted")
         setDeleteDialogOpen(false)
+    }
+
+    const handleCopyUserIdentifier = async () => {
+        const identifier = user?.username || user?.email || ""
+        try {
+            await navigator.clipboard.writeText(identifier)
+            toast.success("Identifier copied to clipboard")
+        } catch (err) {
+            toast.error("Failed to copy identifier")
+        }
     }
 
     const handleLogout = async () => {
@@ -436,7 +446,7 @@ export default function SettingsView() {
 
                         <div className="space-y-2">
                             <Label htmlFor="delete-confirmation" className="text-sm font-normal">
-                                To confirm, type <span className="font-bold">{user?.username || user?.email}</span> below:
+                                To confirm, type <span className="inline-flex items-center gap-1 font-bold">"{user?.username || user?.email}" <Copy className="h-4 w-4 cursor-pointer hover:text-primary" onClick={handleCopyUserIdentifier} /></span> below:
                             </Label>
                             <Input
                                 id="delete-confirmation"

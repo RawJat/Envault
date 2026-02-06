@@ -25,6 +25,7 @@ interface ShareProjectDialogProps {
     children?: React.ReactNode
     open?: boolean
     onOpenChange?: (open: boolean) => void
+    onMembersChanged?: () => void
 }
 
 interface Member {
@@ -46,7 +47,7 @@ interface PendingRequest {
     avatar?: string
 }
 
-export function ShareProjectDialog({ project, children, open: controlledOpen, onOpenChange: controlledOnOpenChange }: ShareProjectDialogProps) {
+export function ShareProjectDialog({ project, children, open: controlledOpen, onOpenChange: controlledOnOpenChange, onMembersChanged }: ShareProjectDialogProps) {
     const [internalOpen, setInternalOpen] = useState(false)
     const isControlled = controlledOpen !== undefined
     const open = isControlled ? controlledOpen : internalOpen

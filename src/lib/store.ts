@@ -24,6 +24,7 @@ export type Project = {
     secretCount: number
     createdAt: string
     role?: 'owner' | 'editor' | 'viewer'
+    isShared?: boolean
 }
 
 interface EnvaultState {

@@ -98,6 +98,8 @@ export function ShareSecretModal({ secretId, secretKey, children, open: controll
                 toast.success(`Shared ${secretKey} with ${email}`)
                 setEmail("")
                 fetchShares()
+                // Notify dashboard to refresh projects (sharing a secret makes project shared)
+                document.dispatchEvent(new CustomEvent('project-role-changed'))
             }
         } catch (e) {
             console.error(e)
@@ -114,6 +116,8 @@ export function ShareSecretModal({ secretId, secretKey, children, open: controll
         } else {
             toast.success("Access revoked")
             fetchShares()
+            // Notify dashboard to refresh projects (unsharing might change shared status)
+            document.dispatchEvent(new CustomEvent('project-role-changed'))
         }
     }
 

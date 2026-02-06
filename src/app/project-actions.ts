@@ -126,6 +126,32 @@ export async function getProjects(bypassCache: boolean = false) {
     // Create membership map
     const membershipMap = new Map(memberships?.map(m => [m.project_id, m.role]) || [])
 
+    // Step 3.5: Check if projects are shared (for owners)
+    // Fetch all members for owned projects
+    const ownedProjectIds = allProjects.filter(p => p.user_id === user.id).map(p => p.id)
+    let sharedStatusMap = new Map<string, boolean>()
+
+    if (ownedProjectIds.length > 0) {
+        // Check for project members
+        const { data: allMembers } = await supabase
+            .from('project_members')
+            .select('project_id')
+            .in('project_id', ownedProjectIds)
+
+        // Check for shared secrets
+        const { data: sharedSecrets } = await supabase
+            .from('secret_shares')
+            .select('secrets!inner(project_id)')
+            .in('secrets.project_id', ownedProjectIds)
+
+        // Mark projects as shared if they have members or shared secrets
+        ownedProjectIds.forEach(projectId => {
+            const hasMembers = allMembers?.some(m => m.project_id === projectId) || false
+            const hasSharedSecrets = sharedSecrets?.some(s => (s.secrets as any).project_id === projectId) || false
+            sharedStatusMap.set(projectId, hasMembers || hasSharedSecrets)
+        })
+    }
+
     // Step 4: Enrich projects with the data
     const enrichedProjects = allProjects.map((p) => {
         let role: 'owner' | 'editor' | 'viewer' = 'viewer'
@@ -136,6 +162,7 @@ export async function getProjects(bypassCache: boolean = false) {
         }
 
         const count = secretCountMap.get(p.id) || 0
+        const isShared = sharedStatusMap.get(p.id) || false
 
         return {
             id: p.id,
@@ -144,7 +171,8 @@ export async function getProjects(bypassCache: boolean = false) {
             createdAt: p.created_at || new Date().toISOString(), // Fallback for safety
             secretCount: count,
             variables: [],
-            role
+            role,
+            isShared
         }
     })
 

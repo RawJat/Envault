@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useParams, useRouter } from "next/navigation"
-import { ArrowLeft, Plus, Upload, Download, Settings, Share2, Trash2, Settings as SettingsIcon, LogOut, CornerDownLeft, Keyboard } from "lucide-react"
+import { ArrowLeft, Plus, Upload, Download, Settings, Share2, Trash2, Settings as SettingsIcon, LogOut, CornerDownLeft, Keyboard, Copy } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 
@@ -129,6 +129,15 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
         toast.success("Project deleted")
         setDeleteDialogOpen(false)
         router.push("/dashboard")
+    }
+
+    const handleCopyProjectName = async () => {
+        try {
+            await navigator.clipboard.writeText(project.name)
+            toast.success("Project name copied to clipboard")
+        } catch (err) {
+            toast.error("Failed to copy project name")
+        }
     }
 
     const handleDownloadEnv = async () => {
@@ -321,7 +330,7 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
 
                     <div className="space-y-2">
                         <Label htmlFor="project-delete-confirmation" className="text-sm font-normal">
-                            To confirm, type <span className="font-bold">{project.name}</span> below:
+                            To confirm, type <span className="inline-flex items-center gap-1 font-bold">"{project.name}" <Copy className="h-4 w-4 cursor-pointer hover:text-primary" onClick={handleCopyProjectName} /></span> below:
                         </Label>
                         <Input
                             id="project-delete-confirmation"
