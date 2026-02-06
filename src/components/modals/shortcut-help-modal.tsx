@@ -41,7 +41,6 @@ export function ShortcutHelpModal({ open, onOpenChange }: ShortcutHelpModalProps
     // Usage in shortcuts array
     const mod = <ModKey key="mod" />
     const alt = <AltKey key="alt" />
-    const ctrl = <CtrlKey key="ctrl" />
 
 
     const shortcuts = [

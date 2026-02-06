@@ -39,7 +39,7 @@ export function Navbar() {
         >
             <div className="container h-full flex items-center justify-between px-4 md:px-6 relative z-50">
                 <Link href="/" className="flex items-center gap-2 font-bold text-xl" onClick={() => setIsOpen(false)}>
-                    <ShieldCheck className="w-6 h-6 text-amber-500" />
+                    <ShieldCheck className="w-6 h-6 text-primary" />
                     <span>Envault</span>
                 </Link>
 
@@ -53,7 +53,7 @@ export function Navbar() {
                             GitHub<Kbd variant="ghost" size="xs" className="ml-2">H</Kbd>
                         </Link>
                         <Link href="/login">
-                            <Button variant={scrolled ? "default" : "secondary"} size="sm" className="font-semibold flex items-center gap-2">
+                            <Button variant={scrolled ? "default" : "secondary"} size="sm" className="font-semibold flex items-center gap-2 rounded-none">
                                 Login<Kbd variant={scrolled ? "primary" : "default"} size="xs" className="ml-2">L</Kbd>
                             </Button>
                         </Link>

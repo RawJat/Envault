@@ -61,10 +61,6 @@ export default async function JoinPage({ params }: JoinPageProps) {
         .eq('status', 'pending')
         .single()
 
-    // Using Admin Client for additional data if needed
-    const { createAdminClient } = await import('@/lib/supabase/admin')
-    const admin = createAdminClient()
-
     if (!projectData) {
         return (
             <AuthLayout>

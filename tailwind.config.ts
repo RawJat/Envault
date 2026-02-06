@@ -19,8 +19,12 @@ const config: Config = {
         extend: {
             fontFamily: {
                 sans: ['"Google Sans"', "sans-serif"],
+                serif: ['"Instrument Serif"', "serif"],
+                mono: ['"JetBrains Mono"', "monospace"],
             },
             colors: {
+                bone: "#F2F2F0",
+                void: "#050505",
                 border: "hsl(var(--border))",
                 input: "hsl(var(--input))",
                 ring: "hsl(var(--ring))",
@@ -56,9 +60,14 @@ const config: Config = {
                 },
             },
             borderRadius: {
-                lg: "var(--radius)",
-                md: "calc(var(--radius) - 2px)",
-                sm: "calc(var(--radius) - 4px)",
+                none: "0px",
+                sm: "0.5rem",
+                md: "0.625rem",
+                lg: "0.75rem",
+                xl: "1rem",
+                "2xl": "1.5rem",
+                "3xl": "2rem",
+                full: "9999px",
             },
             keyframes: {
                 "accordion-down": {

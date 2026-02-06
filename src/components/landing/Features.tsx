@@ -1,67 +1,95 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Shield, Lock, Users, Zap, Code, Globe, Keyboard } from "lucide-react"
+import { Shield, Lock, Users, Code, Globe, Keyboard } from "lucide-react"
 
 const features = [
     {
-        title: "End-to-End Encryption",
-        description: "Your secrets are encrypted before they leave your device using AES-256-GCM encryption.",
+        spec: "SPEC_01",
+        title: "END-TO-END ENCRYPTION",
+        value: "AES-256-GCM",
+        description: "Your secrets are encrypted before they leave your device using military-grade encryption.",
         icon: Lock,
     },
     {
-        title: "Secure Authentication",
+        spec: "SPEC_02",
+        title: "AUTHENTICATION",
+        value: "SUPABASE_AUTH",
         description: "Powered by Supabase Auth, ensuring industry-standard security for user management.",
         icon: Shield,
     },
     {
-        title: "Keyboard First",
+        spec: "SPEC_03",
+        title: "INTERFACE_MODE",
+        value: "KEYBOARD_FIRST",
         description: "Navigate efficiently with fully customizable keyboard shortcuts for every action.",
         icon: Keyboard,
     },
     {
-        title: "Developer First",
+        spec: "SPEC_04",
+        title: "DEVELOPER_TOOLS",
+        value: "CLI + API",
         description: "Powerful CLI and simple API to manage secrets directly from your terminal workflow.",
         icon: Code,
     },
     {
-        title: "Team Collaboration",
+        spec: "SPEC_05",
+        title: "COLLABORATION",
+        value: "TEAM_ACCESS",
         description: "Share projects with your team securely using granular permissions (Owner, Editor, Viewer).",
         icon: Users,
     },
     {
-        title: "Global Edge Network",
-        description: "Low-latency access to your secrets from anywhere in the world.",
+        spec: "SPEC_06",
+        title: "NETWORK",
+        value: "GLOBAL_EDGE",
+        description: "Low-latency access to your secrets from anywhere in the world via edge network.",
         icon: Globe,
     },
 ]
 
 export function Features() {
     return (
-        <section className="py-24 bg-background/50 relative overflow-hidden">
+        <section className="py-24 bg-bone dark:bg-void relative overflow-hidden">
             <div className="container px-4 md:px-6">
                 <div className="text-center mb-16 space-y-4">
-                    <h2 className="text-3xl md:text-5xl font-bold tracking-tighter">
-                        Why Choose Envault?
+                    <h2 className="text-4xl md:text-6xl font-serif font-bold tracking-tight text-void dark:text-bone">
+                        Technical Specifications
                     </h2>
-                    <p className="max-w-[700px] mx-auto text-muted-foreground md:text-xl">
-                        Built for developers who care about security and experience.
+                    <p className="max-w-[700px] mx-auto font-mono text-sm uppercase tracking-wider text-void/60 dark:text-bone/60">
+                        INDUSTRIAL-GRADE SECURITY / DEVELOPER-CENTRIC DESIGN
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* 3-Column Industrial Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-0 border border-black/20 dark:border-white/20">
                     {features.map((feature, index) => (
-                        <Card key={index} className="bg-card/50 backdrop-blur-sm border-muted/20 hover:border-amber-500/50 transition-colors">
-                            <CardHeader>
-                                <feature.icon className="w-10 h-10 text-amber-500 mb-2" />
-                                <CardTitle>{feature.title}</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-muted-foreground">
-                                    {feature.description}
-                                </p>
-                            </CardContent>
-                        </Card>
+                        <div 
+                            key={index} 
+                            className="border-r border-b border-black/20 dark:border-white/20 last:border-r-0 p-8 bg-bone dark:bg-void hover:bg-void/5 dark:hover:bg-bone/5 transition-colors relative group"
+                        >
+                            {/* Spec Label */}
+                            <div className="absolute top-3 right-3 font-mono text-[10px] text-void/30 dark:text-bone/30 tracking-wider">
+                                [{feature.spec}]
+                            </div>
+                            
+                            {/* Icon */}
+                            <feature.icon className="w-8 h-8 text-void dark:text-bone mb-4" strokeWidth={1.5} />
+                            
+                            {/* Title */}
+                            <h3 className="font-mono text-sm uppercase tracking-wider mb-2 text-void dark:text-bone">
+                                {feature.title}
+                            </h3>
+                            
+                            {/* Value Badge */}
+                            <div className="inline-block bg-void dark:bg-bone text-bone dark:text-void px-3 py-1 rounded-none font-mono text-xs mb-4">
+                                {feature.value}
+                            </div>
+                            
+                            {/* Description */}
+                            <p className="text-sm text-void/70 dark:text-bone/70 leading-relaxed font-sans">
+                                {feature.description}
+                            </p>
+                        </div>
                     ))}
                 </div>
             </div>

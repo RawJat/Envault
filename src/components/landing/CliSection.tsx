@@ -95,8 +95,8 @@ export function CliSection() {
             icon: Zap,
             title: "Zero Configuration",
             desc: "Works instantly with your existing .env files. Auto-detection built-in.",
-            color: "text-amber-500",
-            bg: "bg-amber-500/10"
+            color: "text-primary",
+            bg: "bg-primary/10"
         },
         {
             icon: Shield,
@@ -119,19 +119,16 @@ export function CliSection() {
                                 initial={{ opacity: 0, y: 20 }}
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}
-                                className="inline-flex items-center space-x-2 bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium"
+                                className="inline-flex items-center space-x-2 bg-primary/10 text-primary px-3 py-1 text-sm font-medium"
                             >
                                 <Terminal className="w-4 h-4" />
                                 <span>Command Line Interface</span>
                             </motion.div>
 
-                            <h2 className="text-3xl md:text-5xl lg:text-6xl font-black tracking-tight leading-[1.1]">
-                                Manage Secrets from your{" "}
-                                <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-amber-500">
-                                    Terminal
-                                </span>
+                            <h2 className="text-3xl md:text-5xl lg:text-6xl font-serif font-bold tracking-tight leading-[1.1] text-void dark:text-bone">
+                                Manage Secrets from your Terminal.
                             </h2>
-                            <p className="text-muted-foreground text-base md:text-xl leading-relaxed max-w-lg">
+                            <p className="max-w-lg font-mono text-sm uppercase tracking-wider text-void/60 dark:text-bone/60">
                                 Experience the speed of command-line secret management. Push, pull, and sync your environment variables without leaving your workflow.
                             </p>
                         </div>
@@ -144,14 +141,14 @@ export function CliSection() {
                                     whileInView={{ opacity: 1, x: 0 }}
                                     transition={{ delay: i * 0.15 }}
                                     viewport={{ once: true }}
-                                    className="group flex items-start space-x-4 p-4 rounded-xl bg-card/50 backdrop-blur-sm border border-muted/20 hover:border-amber-500/50 transition-colors shadow-sm"
+                                    className="group flex items-start space-x-4 p-4 rounded-none bg-card/50 backdrop-blur-sm border border-muted/20 hover:border-primary/50 transition-colors shadow-sm"
                                 >
-                                    <div className={`mt-1 p-3 rounded-xl ${item.bg} ${item.color} group-hover:scale-110 transition-transform`}>
+                                    <div className={`mt-1 p-3 rounded-none ${item.bg} ${item.color} group-hover:scale-110 transition-transform`}>
                                         <item.icon className="w-6 h-6" />
                                     </div>
                                     <div>
-                                        <h3 className="font-bold text-lg mb-1">{item.title}</h3>
-                                        <p className="text-muted-foreground leading-relaxed">{item.desc}</p>
+                                        <h3 className="font-bold text-lg mb-1 text-void dark:text-bone">{item.title}</h3>
+                                        <p className="text-void/70 dark:text-bone/70 leading-relaxed">{item.desc}</p>
                                     </div>
                                 </motion.div>
                             ))}
@@ -159,7 +156,7 @@ export function CliSection() {
 
                         <div className="pt-4 flex items-center gap-4">
                             <Link href="https://github.com/DinanathDash/Envault" target="_blank">
-                                <Button size="lg" className="h-12 px-8 text-base shadow-lg shadow-primary/20">
+                                <Button size="lg" className="h-12 px-8 text-base shadow-lg shadow-primary/20 rounded-none">
                                     Read the Docs
                                     <ArrowRight className="w-4 h-4 -rotate-45" />
                                 </Button>
@@ -184,7 +181,7 @@ export function CliSection() {
                             <motion.div
                                 layout
                                 transition={{ duration: 0.3, ease: "easeOut" }}
-                                className="relative rounded-xl overflow-hidden bg-[#0c0c0c] border border-white/10 shadow-2xl z-30"
+                                className="relative rounded-none overflow-hidden bg-[#0c0c0c] border border-white/10 shadow-2xl z-30"
                             >
                                 {/* Terminal Header */}
                                 <div className="flex items-center justify-between px-4 py-3 bg-[#18181b] border-b border-white/5">
@@ -217,7 +214,7 @@ export function CliSection() {
                                             <span className="text-blue-400">~</span>
                                             <span className="text-muted-foreground mr-1">$</span>
                                             <span>
-                                                <span className="text-yellow-400">{typedCommand.split(' ')[0]}</span> {typedCommand.split(' ').slice(1).join(' ')}
+                                                <span className="text-purple-400">{typedCommand.split(' ')[0]}</span> {typedCommand.split(' ').slice(1).join(' ')}
                                                 {step === 0 && (
                                                     <span className={`w-2 h-4 bg-white/50 inline-block align-middle ml-1 ${cursorVisible ? 'opacity-100' : 'opacity-0'}`} />
                                                 )}
@@ -275,8 +272,8 @@ export function CliSection() {
                                                     <span>Device code generated.</span>
                                                 </div>
 
-                                                <div className="py-2 text-yellow-400">
-                                                    Please visit: <a href="http://envault.tech/auth/device" className="text-yellow-400 hover:underline">http://envault.tech/auth/device</a>
+                                                <div className="py-2 text-blue-400">
+                                                    Please visit: <a href="http://envault.tech/auth/device" className="text-blue-400 hover:underline">http://envault.tech/auth/device</a>
                                                 </div>
 
                                                 <div className="py-1">

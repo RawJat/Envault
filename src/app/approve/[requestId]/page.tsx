@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { approveRequest, rejectRequest } from '@/app/invite-actions'
 import { AuthLayout } from '@/components/auth/auth-layout'
-import { ShieldCheck, UserPlus, XCircle, CheckCircle2, Lock } from 'lucide-react'
+import { UserPlus, XCircle, Lock } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'

@@ -88,26 +88,26 @@ export function Preloader() {
                         <div className="relative w-64 h-64 mb-12 flex items-center justify-center">
                             {/* Outer Ring */}
                             <motion.div
-                                className="absolute inset-0 border-[1px] border-primary/20 dark:border-amber-500/30 rounded-full"
+                                className="absolute inset-0 border-[1px] border-primary/20 dark:border-primary/30 rounded-full"
                                 style={{ borderStyle: "dashed", borderWidth: "1px" }}
                                 animate={{ rotate: 360 }}
                                 transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
                             />
                             <motion.div
-                                className="absolute inset-2 border-[1px] border-primary/10 dark:border-amber-500/10 rounded-full"
+                                className="absolute inset-2 border-[1px] border-primary/10 dark:border-primary/10 rounded-full"
                                 animate={{ rotate: -360 }}
                                 transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
                             />
 
                             {/* Scanning Radar */}
                             <motion.div
-                                className="absolute inset-0 rounded-full bg-gradient-to-t from-transparent via-primary/5 dark:via-amber-500/5 to-transparent"
+                                className="absolute inset-0 rounded-full bg-gradient-to-t from-transparent via-primary/5 dark:via-primary/5 to-transparent"
                                 animate={{ rotate: 360 }}
                                 transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
                             />
 
                             {/* Core Lock Icon */}
-                            <div className="relative z-20 p-6 bg-background/80 backdrop-blur-sm rounded-2xl border border-primary/20 dark:border-amber-500/30 shadow-lg dark:shadow-[0_0_30px_-5px_rgba(245,158,11,0.3)]">
+                            <div className="relative z-20 p-6 bg-background/80 backdrop-blur-sm rounded-none border border-primary/20 dark:border-primary/30 shadow-lg dark:shadow-[0_0_30px_-5px_rgba(0,0,0,0.3)]">
                                 <AnimatePresence mode="wait">
                                     <motion.div
                                         key={currentState}
@@ -118,7 +118,7 @@ export function Preloader() {
                                     >
                                         {(() => {
                                             const Icon = loadingStates[currentState].icon
-                                            return <Icon className="w-12 h-12 text-primary dark:text-amber-500" />
+                                            return <Icon className="w-12 h-12 text-primary dark:text-primary" />
                                         })()}
                                     </motion.div>
                                 </AnimatePresence>
@@ -130,7 +130,7 @@ export function Preloader() {
                                 animate={{ rotate: 360 }}
                                 transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
                             >
-                                <div className="absolute top-0 left-1/2 w-2 h-2 bg-primary dark:bg-amber-500 rounded-full shadow-md dark:shadow-[0_0_10px_rgba(245,158,11,0.8)] -translate-x-1/2 -translate-y-1/2" />
+                                <div className="absolute top-0 left-1/2 w-2 h-2 bg-primary dark:bg-primary rounded-full shadow-md dark:shadow-[0_0_10px_rgba(0,0,0,0.8)] -translate-x-1/2 -translate-y-1/2" />
                             </motion.div>
                         </div>
 
@@ -158,7 +158,7 @@ export function Preloader() {
                             {/* Progress Line */}
                             <div className="w-64 h-[2px] bg-muted/20 rounded-full mt-2 overflow-hidden">
                                 <motion.div
-                                    className="h-full bg-primary dark:bg-amber-500"
+                                    className="h-full bg-primary dark:bg-primary"
                                     initial={{ width: "0%" }}
                                     animate={{ width: "100%" }}
                                     transition={{ duration: 2.2, ease: "easeInOut" }}
