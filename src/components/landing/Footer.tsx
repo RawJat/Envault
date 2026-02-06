@@ -1,14 +1,50 @@
 import Link from "next/link"
-import { ShieldCheck } from "lucide-react"
+import { ShieldCheck, Github, Twitter, Mail } from "lucide-react"
 
 export function Footer() {
     return (
         <footer className="border-t bg-background/80 backdrop-blur-sm">
-            <div className="container flex flex-col items-center justify-between gap-4 py-10 md:h-24 md:flex-row md:py-0">
-                <div className="flex flex-col items-center gap-4 px-8 md:flex-row md:gap-2 md:px-0">
-                    <ShieldCheck className="w-6 h-6 text-primary" />
-                    <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
-                        Built by{" "}
+            <div className="container py-12">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+                    <div className="md:col-span-2">
+                        <div className="flex items-center gap-2 mb-4">
+                            <span className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl">Envault</span>
+                        </div>
+                        <p className="font-mono text-sm text-muted-foreground mb-4 max-w-md">
+                            Secure, zero-knowledge environment variable management for modern development teams.
+                            Built with military-grade encryption and developer-first design.
+                        </p>
+                        <div className="flex gap-4">
+                            <Link href="https://github.com/dinanathdash/envault" target="_blank" className="text-muted-foreground hover:text-foreground transition-colors">
+                                <Github className="w-5 h-5" />
+                            </Link>
+                            <Link href="https://twitter.com/dinanathdash" target="_blank" className="text-muted-foreground hover:text-foreground transition-colors">
+                                <Twitter className="w-5 h-5" />
+                            </Link>
+                            <Link href="mailto:dinanath@example.com" className="text-muted-foreground hover:text-foreground transition-colors">
+                                <Mail className="w-5 h-5" />
+                            </Link>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 className="font-semibold mb-4">Product</h3>
+                        <ul className="space-y-2 text-sm text-muted-foreground">
+                            <li><Link href="#features" className="hover:text-foreground transition-colors">Features</Link></li>
+                            <li><Link href="https://github.com/dinanathdash/envault" target="_blank" className="hover:text-foreground transition-colors">Documentation</Link></li>
+                            <li><Link href="/login" className="hover:text-foreground transition-colors">Login</Link></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 className="font-semibold mb-4">Legal</h3>
+                        <ul className="space-y-2 text-sm text-muted-foreground">
+                            <li><Link href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link></li>
+                            <li><Link href="/terms" className="hover:text-foreground transition-colors">Terms of Service</Link></li>
+                        </ul>
+                    </div>
+                </div>
+                <div className="border-t mt-8 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+                    <p className="text-sm text-muted-foreground">
+                        Built for Developers by{" "}
                         <a
                             href="https://github.com/dinanathdash"
                             target="_blank"
@@ -17,7 +53,7 @@ export function Footer() {
                         >
                             Dinanath Dash
                         </a>
-                        . The source code is available on{" "}
+                        . Open source on{" "}
                         <a
                             href="https://github.com/dinanathdash/envault"
                             target="_blank"
@@ -28,14 +64,9 @@ export function Footer() {
                         </a>
                         .
                     </p>
-                </div>
-                <div className="flex gap-4 items-center">
-                    <Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground underline-offset-4 hover:underline">
-                        Privacy
-                    </Link>
-                    <Link href="/terms" className="text-sm text-muted-foreground hover:text-foreground underline-offset-4 hover:underline">
-                        Terms
-                    </Link>
+                    <p className="text-sm text-muted-foreground">
+                        © 2026 Envault. All rights reserved.
+                    </p>
                 </div>
             </div>
         </footer>

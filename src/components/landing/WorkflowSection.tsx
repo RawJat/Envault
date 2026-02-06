@@ -60,7 +60,7 @@ export function WorkflowSection() {
                         initial={{ opacity: 0, x: -30 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
-                        className="relative h-full min-h-[400px]"
+                        className="relative h-full min-h-[300px] md:min-h-[400px]"
                     >
                         <div className="absolute inset-0 bg-secondary/30 border border-border rounded-none flex items-center justify-center">
                             <div className="text-center space-y-4">
@@ -83,17 +83,17 @@ export function WorkflowSection() {
                                 whileInView={{ opacity: 1, y: 0 }}
                                 transition={{ delay: index * 0.15 }}
                                 viewport={{ once: true }}
-                                className="group border border-border p-8 rounded-none bg-background hover:bg-secondary/30 transition-colors"
+                                className="group border border-border p-4 md:p-8 rounded-none bg-background hover:bg-secondary/30 transition-colors"
                             >
-                                <div className="flex items-start space-x-6">
-                                    <div className={`p-4 rounded-none ${step.bg} ${step.color} flex-shrink-0 border border-black/5 dark:border-white/5`}>
+                                <div className="flex items-start space-x-4 md:space-x-6">
+                                    <div className={`p-3 md:p-4 rounded-none ${step.bg} ${step.color} flex-shrink-0 border border-black/5 dark:border-white/5`}>
                                         <step.icon className="w-6 h-6" />
                                     </div>
                                     <div className="space-y-3">
                                         <h3 className="font-mono text-sm uppercase tracking-wider font-bold text-foreground">
                                             {step.title}
                                         </h3>
-                                        <p className="text-muted-foreground leading-relaxed text-base">
+                                        <p className="text-muted-foreground leading-relaxed text-sm md:text-base">
                                             {step.description}
                                         </p>
                                     </div>
