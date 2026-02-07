@@ -3,15 +3,17 @@
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { ShieldCheck, ArrowRight, Terminal, Copy, Check } from "lucide-react"
+import { ShieldCheck, ArrowRight, Terminal, Clipboard, Check } from "lucide-react"
 import { useState } from "react"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { toast } from "sonner"
 
 export function Hero() {
     const [copied, setCopied] = useState(false)
 
     const copyToClipboard = () => {
         navigator.clipboard.writeText("npx @dinanathdash/envault login")
+        toast.success("Command copied to clipboard")
         setCopied(true)
         setTimeout(() => setCopied(false), 2000)
     }
@@ -67,7 +69,7 @@ export function Hero() {
                                             onClick={copyToClipboard}
                                             className="text-primary-foreground/60 hover:text-primary-foreground transition-colors"
                                         >
-                                            {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                                            {copied ? <Check className="w-4 h-4 text-green-500" /> : <Clipboard className="w-4 h-4" />}
                                         </button>
                                     </TooltipTrigger>
                                     <TooltipContent>

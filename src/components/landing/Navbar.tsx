@@ -8,6 +8,7 @@ import { motion, useScroll, useMotionValueEvent, AnimatePresence } from "framer-
 import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import { Kbd } from "@/components/ui/kbd"
+import { useHotkeys } from "@/hooks/use-hotkeys"
 import { usePathname, useRouter } from "next/navigation"
 
 export function Navbar() {
@@ -22,6 +23,18 @@ export function Navbar() {
     useMotionValueEvent(scrollY, "change", (latest) => {
         setScrolled(latest > 50)
     })
+
+    // Hotkey handlers
+    useHotkeys("d", () => router.push("/docs"))
+    useHotkeys("f", () => {
+        if (pathname === '/') {
+            document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })
+        } else {
+            router.push('/#features')
+        }
+    })
+    useHotkeys("h", () => window.open("https://github.com/dinanathdash/envault", "_blank"))
+    useHotkeys("l", () => router.push("/login"))
 
     // Prevent scrolling when menu is open
     useEffect(() => {
@@ -51,6 +64,9 @@ export function Navbar() {
                 <div className="flex items-center gap-4">
                     {/* Desktop Navigation */}
                     <nav className="hidden md:flex gap-6 text-sm font-medium items-center">
+                        <Link href="/docs" className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
+                            Docs<Kbd variant="ghost" size="xs" className="ml-2">D</Kbd>
+                        </Link>
                         <Link href={getHref('features')} className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
                             Features<Kbd variant="ghost" size="xs" className="ml-2">F</Kbd>
                         </Link>
@@ -124,6 +140,13 @@ export function Navbar() {
                             onClick={(e) => e.stopPropagation()}
                         >
                             <nav className="flex flex-col gap-6 text-lg font-medium">
+                                <Link
+                                    href="/docs"
+                                    className="text-muted-foreground hover:text-foreground transition-colors py-2 border-b border-muted/20"
+                                    onClick={() => setIsOpen(false)}
+                                >
+                                    Docs
+                                </Link>
                                 <Link
                                     href={getHref('features')}
                                     className="text-muted-foreground hover:text-foreground transition-colors py-2 border-b border-muted/20"

@@ -1,10 +1,11 @@
 "use client"
 
 import { motion, useInView } from "framer-motion"
-import { Terminal, Copy, Check, GitBranch, Zap, Shield, ArrowRight } from "lucide-react"
+import { Terminal, Clipboard, Check, GitBranch, Zap, Shield, ArrowRight } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { toast } from "sonner"
 
 export function CliSection() {
     const [copied, setCopied] = useState(false)
@@ -79,6 +80,7 @@ export function CliSection() {
 
     const copyToClipboard = () => {
         navigator.clipboard.writeText(fullCommand)
+        toast.success("Command copied to clipboard")
         setCopied(true)
         setTimeout(() => setCopied(false), 2000)
     }
@@ -198,7 +200,7 @@ export function CliSection() {
                                         onClick={copyToClipboard}
                                         className="text-white/40 hover:text-white transition-colors"
                                     >
-                                        {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                                        {copied ? <Check className="w-4 h-4 text-green-500" /> : <Clipboard className="w-4 h-4" />}
                                     </button>
                                 </div>
 

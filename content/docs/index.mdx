@@ -1,0 +1,58 @@
+---
+title: Introduction
+description: Welcome to the Envault documentation
+---
+
+import { NotebookPen, Terminal, Shield } from 'lucide-react';
+import { Card, Cards } from 'fumadocs-ui/components/card';
+
+**Envault** is a secure, modern vault application built with Next.js, Supabase, and Tailwind CSS. It provides a robust authentication system and a sleek user interface for storing and managing sensitive information.
+
+<Cards>
+  <Card
+    title="Getting Started"
+    href="/docs/getting-started"
+    icon={<NotebookPen />}
+    description="Learn how to install and set up Envault locally."
+  />
+  <Card
+    title="Core Concepts"
+    href="/docs/core-concepts"
+    icon={<Shield />}
+    description="Understand the security architecture and encryption model."
+  />
+  <Card
+    title="CLI Reference"
+    href="/docs/cli-reference"
+    icon={<Terminal />}
+    description="Manage your secrets directly from your terminal."
+  />
+</Cards>
+
+## Vision and Mission
+
+Envault makes it easy to manage environments across teams and projects, ensuring that your sensitive data is always encrypted and secure while remaining accessible to the right people.
+
+## Features
+
+- **Bank-Grade Security**: AES-256-GCM encryption with master/data key hierarchy and automatic key rotation.
+- **Project Workspaces**: Organize secrets into distinct projects for better management.
+- **Team Collaboration**: Secure project sharing with role-based access control (Owner, Editor, Viewer).
+- **Secure Authentication**: Powered by Supabase Auth for robust user management.
+- **Modern UI/UX**: Built with Tailwind CSS, Shadcn UI, and Framer Motion for a premium experience.
+- **Interactive 3D Elements**: High-performance 3D visuals powered by React Three Fiber.
+- **Keyboard First**: Navigate efficiently with fully customizable, conflict-free hotkeys.
+- **Responsive Design**: Fully responsive layout that works seamlessly on desktop and mobile.
+- **Dark Mode Support**: Built-in support for light and dark themes.
+- **CLI Support**: Manage your secrets directly from your terminal.
+
+## Tech Stack
+
+<Cards>
+  <Card title="Next.js" href="https://nextjs.org/" description="Framework (App Router)" />
+  <Card title="Supabase" href="https://supabase.com/" description="Database & Auth" />
+  <Card title="Upstash Redis" href="https://upstash.com/" description="KV Store" />
+  <Card title="Tailwind CSS" href="https://tailwindcss.com/" description="Styling" />
+  <Card title="Shadcn UI" href="https://ui.shadcn.com/" description="UI Components" />
+  <Card title="React Three Fiber" href="https://r3f.docs.pmnd.rs/" description="3D & Graphics" />
+</Cards>

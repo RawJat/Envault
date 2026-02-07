@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Search, Folder, Settings, LogOut, Sun, Moon, Home, CornerDownLeft, ArrowUp, ArrowDown, Bell, Star, Github, User } from "lucide-react"
+import { Search, Folder, Settings, LogOut, Sun, Moon, Home, CornerDownLeft, ArrowUp, ArrowDown, Bell, Star, Github, User, FilesIcon } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Kbd } from "@/components/ui/kbd"
@@ -86,6 +86,13 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
                     icon: <Home className="w-4 h-4" />,
                     label: 'Go to Home',
                     action: () => router.push('/')
+                },
+                {
+                    id: 'nav-docs',
+                    type: 'command',
+                    icon: <FilesIcon className="w-4 h-4" />,
+                    label: 'Go to Docs',
+                    action: () => router.push('/docs')
                 },
                 {
                     id: 'nav-features',
