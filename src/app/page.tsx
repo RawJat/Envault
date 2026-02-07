@@ -9,8 +9,6 @@ import { RegMark } from "@/components/landing/RegMark"
 import { CliSection } from "@/components/landing/CliSection"
 import { Testimonials } from "@/components/landing/Testimonials"
 
-import { Preloader } from "@/components/landing/Preloader"
-
 export default function LandingPage() {
     return (
         <div className="flex min-h-screen flex-col font-sans selection:bg-primary/20 relative blueprint-grid sharp">

@@ -7,7 +7,7 @@ import {
     useTransform 
 } from "framer-motion"
 import { Star, Quote } from "lucide-react"
-import { useRef, useState } from "react"
+import { useRef } from "react"
 
 const testimonials = [
     {
@@ -63,7 +63,7 @@ export function Testimonials() {
     // We move -0.05% per frame (adjust this number to change speed)
     useAnimationFrame((t, delta) => {
         if (!isHovered.current) {
-            let moveBy = 0.04 * (delta / 24) // Normalized speed
+            const moveBy = 0.04 * (delta / 24) // Normalized speed
             // If the value goes beyond -50% (the end of the first set), snap back to 0
             if (baseX.get() <= -50) {
                 baseX.set(0)
@@ -110,7 +110,8 @@ export function Testimonials() {
                                     ))}
                                 </div>
                                 <p className="text-muted-foreground mb-6 leading-relaxed text-sm">
-                                    "{testimonial.content}"
+                                    {/* eslint-disable-next-line react/no-unescaped-entities */}
+                                    &quot;{testimonial.content}&quot;
                                 </p>
                             </div>
                             <div className="flex items-center gap-3">

@@ -14,6 +14,7 @@
 - **Responsive Design**: Fully responsive layout that works seamlessly on desktop and mobile.
 - **Dark Mode Support**: Built-in support for light and dark themes.
 - **CLI Support**: Manage your secrets directly from your terminal.
+- **Comprehensive Documentation**: Integrated docs site with guides, API reference, and CLI documentation.
 
 ## CLI
 

@@ -6,9 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { UserAvatar } from "@/components/ui/user-avatar"
-import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
-import { User, X, Plus, CornerDownLeft } from "lucide-react"
+import { X, Plus, CornerDownLeft } from "lucide-react"
 import { Kbd } from "@/components/ui/kbd"
 import {
     AlertDialog,

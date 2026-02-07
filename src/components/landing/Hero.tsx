@@ -115,9 +115,9 @@ export function Hero() {
                         transition={{ duration: 0.8, delay: 1.0, ease: "easeOut" }}
                         className="flex flex-col sm:flex-row items-center gap-6 mt-8"
                     >
-                        <div className="text-center sm:text-left">
+                        <div className="text-left">
                             <p className="text-xs font-mono text-muted-foreground mb-1">TRUSTED BY DEVELOPERS</p>
-                            <p className="text-sm font-medium">"Game-changer for our team's secret management!"</p>
+                            <p className="text-sm font-medium">&quot;Game-changer for our team&apos;s secret management!&quot;</p>
                             <p className="text-xs text-muted-foreground">- Senior Dev at TechCorp</p>
                         </div>
                     </motion.div>

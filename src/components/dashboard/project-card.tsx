@@ -110,7 +110,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
         try {
             await navigator.clipboard.writeText(project.name)
             toast.success("Project name copied to clipboard")
-        } catch (err) {
+        } catch {
             toast.error("Failed to copy project name")
         }
     }
@@ -205,7 +205,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
 
                     <div className="space-y-2">
                         <Label htmlFor="project-delete-confirmation" className="text-sm font-normal">
-                            To confirm, type <span className="inline-flex items-center gap-1 font-bold">"{project.name}" <Copy className="h-4 w-4 cursor-pointer hover:text-primary" onClick={handleCopyProjectName} /></span> below:
+                            To confirm, type <span className="inline-flex items-center gap-1 font-bold">&quot;{project.name}&quot; <Copy className="h-4 w-4 cursor-pointer hover:text-primary" onClick={handleCopyProjectName} /></span> below:
                         </Label>
                         <Input
                             id="project-delete-confirmation"

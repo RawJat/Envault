@@ -13,11 +13,9 @@ export default async function Page({
 
   if (!page) notFound();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const MDX = (page.data as any).body;
 
   return (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     <DocsPage 
       toc={(page.data as any).toc} 
       full={(page.data as any).full}

@@ -146,7 +146,7 @@ export function Preloader() {
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: 20 }}
                             >
-                                {bootLogs.slice(0, currentLogIndex + 1).map((log, i) => (
+                                {bootLogs.slice(0, currentLogIndex + 1).map((log) => (
                                     <motion.div 
                                         key={log.id}
                                         initial={{ opacity: 0, x: -10 }}

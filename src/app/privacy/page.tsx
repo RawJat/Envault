@@ -110,7 +110,7 @@ export default function PrivacyPage() {
                         <strong>Collaboration Activity</strong>: Logs of team activities such as secret modifications, project sharing, and member management (for audit purposes).
                     </li>
                     <li className="leading-relaxed">
-                        <strong>Shared Projects</strong>: Metadata about projects you've been invited to, including project names and your access level.
+                        <strong>Shared Projects</strong>: Metadata about projects you&apos;ve been invited to, including project names and your access level.
                     </li>
                 </ul>
                 <p className="text-muted-foreground leading-relaxed mt-4">

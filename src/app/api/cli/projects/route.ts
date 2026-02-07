@@ -13,26 +13,6 @@ export async function GET(request: Request) {
 
     const supabase = createAdminClient()
 
-    // Query both owned and shared projects
-    // We rely on RLS logic ideally, but admin client bypasses RLS.
-    // So we need explicit query: 
-    // Projects where (user_id = me) OR (id IN (select project_id from project_members where user_id = me))
-
-    // Supabase JS "or" syntax with foreign table filters is tricky.
-    // Easiest is to fetch both and combine, or usage "or" filter string.
-
-
-
-    // Wait, the above only fetches SHARED projects where I am a member.
-    // I also need my OWN projects. 
-    // Composing a single query for "Owned OR Member" without RLS (since we use Admin for CLI usually to bypass some auth defaults or using a service role) 
-    // actually, `validateCliToken` validates the user but doesn't set `auth.uid()` for RLS context unless we use `supabase.auth.setSession` or standard client with token.
-    // The current CLI implementation uses `createAdminClient()` which is SERVICE ROLE. 
-    // Service Role BYPASSES RLS. So we MUST write the filter manually.
-
-    // Fetch owned and shared projects separately, then merge
-    // This is safer than using .or() with joined tables which doesn't work in PostgREST
-
     // 1. Owned projects
     const { data: owned } = await supabase
         .from('projects')

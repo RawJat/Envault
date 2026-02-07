@@ -1,7 +1,6 @@
 "use client"
 
 import Link from "next/link"
-import { formatDistanceToNow } from "date-fns"
 import { useEnvaultStore } from "@/lib/store"
 import { CreateProjectDialog } from "@/components/dashboard/create-project-dialog"
 import { ProjectCard } from "@/components/dashboard/project-card"
