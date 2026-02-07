@@ -1,0 +1,79 @@
+---
+title: Installation
+description: How to install and run Envault locally
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+Envault is a self-hostable application. You can run it locally or deploy it to your own infrastructure.
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- **Node.js 18+** (LTS recommended)
+- **Supabase** project (or a local Supabase instance)
+- **Redis** (optional, for caching)
+
+## Quick Start
+
+<Steps>
+<Step>
+ 
+### Clone the repository
+
+```bash
+git clone https://github.com/dinanathdash/envault.git
+cd envault
+```
+
+</Step>
+<Step>
+ 
+### Install dependencies
+
+We recommend using `pnpm` for faster installation, but `npm` or `yarn` work just as well.
+
+<Tabs items={['npm', 'pnpm', 'yarn', 'bun']}>
+  <Tab value="npm">
+  ```bash
+  npm install
+  ```
+  </Tab>
+  <Tab value="pnpm">
+  ```bash
+  pnpm install
+  ```
+  </Tab>
+  <Tab value="yarn">
+  ```bash
+  yarn install
+  ```
+  </Tab>
+  <Tab value="bun">
+  ```bash
+  bun install
+  ```
+  </Tab>
+</Tabs>
+
+</Step>
+<Step>
+ 
+### Environment Setup
+
+Copy the example environment file to get started.
+
+```bash
+cp .env.example .env.local
+```
+
+You will need to populate `.env.local` with your Supabase credentials.
+
+</Step>
+</Steps>
+
+## Next Steps
+
+Once installed, proceed to the [Initial Setup](/docs/guides/initial-setup) guide to configure your database and encryption keys.

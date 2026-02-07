@@ -55,6 +55,7 @@ export async function middleware(request: NextRequest) {
     '/privacy',
     '/terms',
     '/auth',
+    '/docs',
     '/robots.txt',
     '/sitemap.xml'
   ]
@@ -64,7 +65,8 @@ export async function middleware(request: NextRequest) {
   // Define public API routes
   const publicApiRoutes = [
     '/api/cli-version',
-    '/api/cli/auth'
+    '/api/cli/auth',
+    '/api/search'
   ]
 
   const isPublicApi = publicApiRoutes.some(route => pathname.startsWith(route))

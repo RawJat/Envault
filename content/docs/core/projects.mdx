@@ -1,0 +1,36 @@
+---
+title: Projects & Roles
+description: organizing your secrets
+---
+
+import { Mermaid } from '@/components/mermaid';
+
+# Project Structure
+
+Envault organizes secrets into **Projects**. Each project typically corresponds to a specific application or service (e.g., "Main Website", "Backend API", "IOS App").
+
+## Hierarchy
+
+<Mermaid chart={`
+graph TD
+    User -->|Member of| Workspace
+    Workspace -->|Contains| ProjectA[Project A]
+    Workspace -->|Contains| ProjectB[Project B]
+    ProjectA -->|Contains| SecretsA[Secrets]
+    ProjectB -->|Contains| SecretsB[Secrets]
+`} />
+
+
+## Roles and Permissions
+
+Envault implements a Role-Based Access Control (RBAC) system.
+
+| Role | Description | Capabilities |
+| :--- | :--- | :--- |
+| **Owner** | Full administrative access | Manage settings, manage members, delete project, Read/Write secrets. |
+| **Editor** | Active contributor | Read and Write secrets. Cannot manage members or delete project. |
+| **Viewer** | Read-only access | Can only Read (pull) secrets. Cannot modify them. |
+
+## Sharing Projects
+
+You can invite team members to your project via email. They will receive an invitation link to join.

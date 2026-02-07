@@ -18,7 +18,13 @@ export default async function Page({
 
   return (
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    <DocsPage toc={(page.data as any).toc} full={(page.data as any).full}>
+    <DocsPage 
+      toc={(page.data as any).toc} 
+      full={(page.data as any).full}
+      tableOfContent={{
+        style: 'clerk',
+      }}
+    >
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription>{page.data.description}</DocsDescription>
       <DocsBody>

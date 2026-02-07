@@ -1,0 +1,37 @@
+---
+title: API Overview
+description: Programmatic access to Envault
+---
+
+# API Access
+
+Envault provides a REST API for programmatic access to secrets. This is useful for CI/CD pipelines or custom integrations.
+
+<Callout type="warn">
+  Direct API access requires a Service Token. Do not use your user JWT for automated scripts.
+</Callout>
+
+## Authentication
+
+All API requests must include the `Authorization` header:
+
+```http
+Authorization: Bearer <your_token>
+```
+
+## Endpoints
+
+### `GET /api/v1/projects/:id/secrets`
+
+Retrieve secrets for a specific project.
+
+**Response:**
+
+```json
+{
+  "secrets": {
+    "DATABASE_URL": "postgres://...",
+    "API_KEY": "sk_test_..."
+  }
+}
+```

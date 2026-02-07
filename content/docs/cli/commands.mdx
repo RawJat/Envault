@@ -1,0 +1,67 @@
+---
+title: Commands
+description: Detailed CLI command reference
+---
+
+# CLI Commands
+
+## `login`
+
+Authenticates the CLI with your Envault instance.
+
+```bash
+envault login
+```
+
+**Options**:
+- `--url <url>`: Specify a custom Envault instance URL (default: `https://envault.dev`).
+
+**Behavior**:
+This opens a browser window to complete the device authorization flow. Once confirmed, an access token is stored securely on your machine.
+
+---
+
+## `init`
+
+Initializes a new project association in the current directory.
+
+```bash
+envault init
+```
+
+**Behavior**:
+- Prompts you to select an existing project or create a new one.
+- Creates a `envault.json` (or similar config) mapping the current directory to the project ID.
+
+---
+
+## `pull`
+
+Downloads secrets from the cloud to your local environment file.
+
+```bash
+envault pull [filename]
+```
+
+**Arguments**:
+- `filename`: (Optional) The file to write to. Defaults to `.env`.
+
+**Options**:
+- `--environment <env>`: Specify which environment to pull (e.g., `production`, `development`). Defaults to `development`.
+- `--force`: Overwrite local changes without asking.
+
+---
+
+## `push`
+
+Uploads local secrets to the cloud.
+
+```bash
+envault push [filename]
+```
+
+**Arguments**:
+- `filename`: (Optional) The file to read from. Defaults to `.env`.
+
+**Behavior**:
+Parses your `.env` file and encrypts the values before sending them to the API.

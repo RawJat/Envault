@@ -1,0 +1,46 @@
+---
+title: Architecture
+description: Understanding Envault's security model
+---
+
+import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
+
+# Security Architecture
+
+Envault prioritizes security above all else. Our architecture is designed to ensure that your secrets remain confidential, even in the event of a database compromise.
+
+## Hybrid Encryption Model
+
+We use a multi-tiered encryption strategy (Envelope Encryption).
+
+<Accordions>
+<Accordion title="1. Master Key (KEK)">
+A **32-byte key** stored in environment variables (`ENCRYPTION_KEY`) on the server.
+- Used **only** to encrypt/decrypt Data Keys.
+- Never stored in the database.
+- Should be rotated periodically (requires re-encrypting Data Keys).
+</Accordion>
+<Accordion title="2. Data Keys (DEK)">
+Unique keys generated for each project or secret bundle.
+- Stored in the database, **encrypted by the Master Key**.
+- When needed, the app fetches the encrypted DEK, decrypts it with the Master Key in memory, and then uses it to decrypt the actual secret.
+</Accordion>
+<Accordion title="3. Secret Payload">
+The actual environment variables.
+- Encrypted using **AES-256-GCM** with the Data Key.
+- Authenticated encryption (GCM) ensures data integrity.
+</Accordion>
+</Accordions>
+
+## Request Flow
+
+When a user requests a secret (e.g., via `envault pull`):
+
+1. **Auth**: CLI authenticates via Device Flow.
+2. **Permission Check**: Server verifies user has `Viewer` or `Editor` role.
+3. **Key Retrieval**: Server fetches the encrypted Data Key for the project.
+4. **Decryption**: Server decrypts the Data Key using the Master Key.
+5. **Secret Decryption**: Server uses the Data Key to decrypt the secrets.
+6. **Transmission**: Secrets are sent over TLS to the CLI.
+
+This ensures that the plaintext secrets never reside on disk on the server side (except potentially in swap, which should be disabled or encrypted in production).

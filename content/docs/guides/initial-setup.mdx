@@ -1,0 +1,56 @@
+---
+title: Initial Setup
+description: Configuring your Envault instance
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+After installing the dependencies, you need to configure the core services.
+
+## Database Setup (Supabase)
+
+Envault relies on Supabase for authentication and database storage.
+
+1. Create a new project in the [Supabase Dashboard](https://supabase.com/dashboard).
+2. Go to **Project Settings > API** and copy your:
+    - Project URL
+    - `anon` public key
+    - `service_role` secret key (keep this safe!)
+
+Update your `.env.local` file:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=your_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_key
+```
+
+## Encryption Keys
+
+Envault uses a master key to encrypt the database keys. This is critical for security.
+
+<Callout type="warn" title="Critical Security Warning">
+  You must generate a strong random string for your `ENCRYPTION_KEY`. If you lose this key, **all data encrypted with it will be irretrievable.**
+</Callout>
+
+Generate a secure key (e.g., using openssl):
+
+```bash
+openssl rand -hex 32
+```
+
+Add this to your `.env.local`:
+
+```bash
+ENCRYPTION_KEY=your_generated_hex_key
+```
+
+## Running the Development Server
+
+Now you are ready to start the application.
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.

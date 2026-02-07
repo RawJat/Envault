@@ -3,7 +3,7 @@ title: Introduction
 description: Welcome to the Envault documentation
 ---
 
-import { NotebookPen, Terminal, Shield } from 'lucide-react';
+import { NotebookPen, Terminal, Shield, Settings, Server } from 'lucide-react';
 import { Card, Cards } from 'fumadocs-ui/components/card';
 
 **Envault** is a secure, modern vault application built with Next.js, Supabase, and Tailwind CSS. It provides a robust authentication system and a sleek user interface for storing and managing sensitive information.
@@ -11,21 +11,33 @@ import { Card, Cards } from 'fumadocs-ui/components/card';
 <Cards>
   <Card
     title="Getting Started"
-    href="/docs/getting-started"
+    href="/docs/guides/installation"
     icon={<NotebookPen />}
     description="Learn how to install and set up Envault locally."
   />
   <Card
     title="Core Concepts"
-    href="/docs/core-concepts"
+    href="/docs/core/architecture"
     icon={<Shield />}
     description="Understand the security architecture and encryption model."
   />
   <Card
     title="CLI Reference"
-    href="/docs/cli-reference"
+    href="/docs/cli/reference"
     icon={<Terminal />}
     description="Manage your secrets directly from your terminal."
+  />
+   <Card
+    title="Configuration"
+    href="/docs/configuration/environment-variables"
+    icon={<Settings />}
+    description="Configure your server environment."
+  />
+   <Card
+    title="API"
+    href="/docs/api/overview"
+    icon={<Server />}
+    description="Integrate seamlessly."
   />
 </Cards>
 

@@ -1,0 +1,34 @@
+---
+title: CLI Overview
+description: Managing secrets from the terminal
+---
+
+import { Terminal } from 'lucide-react';
+
+# Envault CLI
+
+The Envault CLI is the primary way developers interact with secrets in their daily workflow. It allows you to push and pull secrets without leaving your terminal.
+
+## Installation
+
+```bash
+npm install -g @dinanathdash/envault
+```
+
+Or run via `npx`:
+
+```bash
+npx @dinanathdash/envault <command>
+```
+
+## Workflow
+
+The typical developer workflow looks like this:
+
+1. **Login**: Authenticate your machine.
+2. **Init**: Link a folder to an Envault project.
+3. **Pull**: Get the latest secrets.
+4. **Dev**: Work on your code.
+5. **Push**: Upload new secrets if you added any.
+
+See the [Commands Reference](/docs/cli/commands) for details on each command.

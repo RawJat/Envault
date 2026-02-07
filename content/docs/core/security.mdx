@@ -1,0 +1,30 @@
+---
+title: Security
+description: Security practices and standards
+---
+
+# Security Best Practices
+
+## Master Key Management
+
+The `ENCRYPTION_KEY` is the crown jewel of your Envault instance.
+
+- **Storage**: Never commit this to version control. Use a secret manager (like AWS Secrets Manager, Vercel Env Vars, or Infisical) to inject it at runtime.
+- **Rotation**: If you suspect the Master Key is compromised, you must immediately rotate it. This involves:
+    1. Generating a new key.
+    2. Decrypting all Data Keys with the old Master Key.
+    3. Re-encrypting all Data Keys with the new Master Key.
+    4. Updating the environment variable.
+
+## Key Rotation Policies
+
+Envault supports key rotation for Data Keys. This limits the "blast radius" if a single Data Key is compromised. Only the secrets encrypted with that specific Data Key would be at risk, not the entire database.
+
+## Transport Security
+
+- All communication between the CLI and the Server occurs over **HTTPS**.
+- We recommend using **HSTS** (HTTP Strict Transport Security) on your production deployment.
+
+## Database Security
+
+- **RLS (Row Level Security)**: We use Supabase RLS to ensure that users can only access data rows they are explicitly permitted to see. Even if the application logic fails, the database layer attempts to prevent unauthorized access.
