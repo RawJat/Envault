@@ -101,7 +101,7 @@ export function Hero() {
                                 <ArrowRight className="w-4 h-4" />
                             </Button>
                         </Link>
-                        <Link href="https://github.com/dinanathdash/envault" target="_blank">
+                        <Link href="/docs">
                             <Button variant="outline" size="lg" className="w-full sm:w-auto min-w-[180px] h-12 text-base font-mono uppercase tracking-wider rounded-none border-primary/20 hover:bg-primary/5 flex items-center gap-2">
                                 DOCUMENTATION
                             </Button>

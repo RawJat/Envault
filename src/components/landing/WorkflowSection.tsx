@@ -3,6 +3,7 @@
 import { motion } from "framer-motion"
 import { Database, Shield, GitBranch, Users } from "lucide-react"
 import { AnimatedStat } from "./AnimatedStat"
+import { AnimatedWorkflow } from "@/components/landing/AnimatedWorkflow"
 
 const workflowSteps = [
     {
@@ -60,18 +61,9 @@ export function WorkflowSection() {
                         initial={{ opacity: 0, x: -30 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
-                        className="relative h-full min-h-[300px] md:min-h-[400px]"
+                        className="relative border border-border min-h-[250px] sm:min-h-[300px] md:min-h-[350px] aspect-square sm:aspect-[5/4] lg:aspect-auto max-h-[500px] lg:max-h-none"
                     >
-                        <div className="absolute inset-0 bg-secondary/30 border border-border rounded-none flex items-center justify-center">
-                            <div className="text-center space-y-4">
-                                <div className="w-20 h-20 mx-auto bg-secondary rounded-none flex items-center justify-center border border-border">
-                                    <Database className="w-10 h-10 text-muted-foreground" />
-                                </div>
-                                <div className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
-                                    [ENVIRONMENT WORKFLOW]
-                                </div>
-                            </div>
-                        </div>
+                        <AnimatedWorkflow />
                     </motion.div>
 
                     {/* Right Column: Workflow Steps */}
@@ -83,7 +75,7 @@ export function WorkflowSection() {
                                 whileInView={{ opacity: 1, y: 0 }}
                                 transition={{ delay: index * 0.15 }}
                                 viewport={{ once: true }}
-                                className="group border border-border p-4 md:p-8 rounded-none bg-background hover:bg-secondary/30 transition-colors"
+                                className="group border border-border p-3 md:p-6 rounded-none bg-background hover:bg-secondary/30 transition-colors"
                             >
                                 <div className="flex items-start space-x-4 md:space-x-6">
                                     <div className={`p-3 md:p-4 rounded-none ${step.bg} ${step.color} flex-shrink-0 border border-black/5 dark:border-white/5`}>

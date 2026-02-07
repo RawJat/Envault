@@ -25,10 +25,10 @@ export default function LandingPage() {
                 <CliSection />
                 <div id="features" className="relative">
                     <Features />
-                    <RegMark position="bottom-left" />
-                    <RegMark position="bottom-right" />
                 </div>
                 <Testimonials />
+                <RegMark position="bottom-left" />
+                <RegMark position="bottom-right" />
             </main>
             <Footer />
         </div>

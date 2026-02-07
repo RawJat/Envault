@@ -157,7 +157,7 @@ export function CliSection() {
                         </div>
 
                         <div className="pt-4 flex items-center gap-4">
-                            <Link href="https://github.com/DinanathDash/Envault" target="_blank">
+                            <Link href="/docs/cli/commands">
                                 <Button size="lg" className="h-12 px-8 text-base shadow-lg shadow-primary/20 rounded-none">
                                     Read the Docs
                                     <ArrowRight className="w-4 h-4 -rotate-45" />
