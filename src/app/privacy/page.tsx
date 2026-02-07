@@ -1,17 +1,13 @@
 import { Footer } from "@/components/landing/Footer"
+import { Navbar } from "@/components/landing/Navbar"
 import { ShieldCheck } from "lucide-react"
 import Link from "next/link"
 
 export default function PrivacyPage() {
     return (
         <div className="flex min-h-screen flex-col">
-            <header className="container h-14 flex items-center px-4 lg:px-6 mt-4">
-                <Link href="/" className="flex items-center gap-2 font-bold text-xl">
-                    <ShieldCheck className="w-6 h-6 text-primary" />
-                    Envault
-                </Link>
-            </header>
-            <main className="flex-1 container max-w-3xl py-12 px-4 md:px-6">
+            <Navbar />
+            <main className="flex-1 container max-w-3xl py-12 px-4 md:px-6 pt-24">
                 <h1 className="text-3xl font-bold tracking-tight mb-8">Privacy Policy</h1>
                 <div className="prose prose-stone dark:prose-invert max-w-none space-y-8">
                     <p className="lead">Last updated: 05 February 2026</p>

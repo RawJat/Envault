@@ -13,11 +13,23 @@ import { ShortcutProvider } from "@/components/providers/shortcut-provider";
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.envault.tech"),
   title: {
-    default: "Envault - Secure Environment Variables",
+    default: "Envault - Secure Secrets Management & Environment Variable Vault",
     template: "%s | Envault",
   },
-  description: "Envault is a premium, secure vault for your environment variables. Share and manage secrets with confidence using end-to-end encryption.",
-  keywords: ["environment variables", "security", "secrets management", "developer tools", "encryption"],
+  description: "Envault is a secure vault for your environment variables featuring end-to-end encryption. Manage secrets with confidence using AES-256-GCM and simplify team collaboration for developers.",
+  keywords: [
+    "secrets management",
+    "environment variables",
+    "secure vault",
+    "end-to-end encryption",
+    "developer CLI",
+    "AES-256-GCM",
+    "team collaboration security",
+    "developer tools"
+  ],
+  alternates: {
+    canonical: '/',
+  },
   authors: [{ name: "Envault Team" }],
   creator: "Envault",
   verification: {
@@ -76,6 +88,25 @@ export default async function RootLayout({
         />
       </head>
       <body className="min-h-screen bg-background font-sans antialiased">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "SoftwareApplication",
+              "name": "Envault",
+              "applicationCategory": "DeveloperApplication",
+              "operatingSystem": "Any",
+              "description": "Envault is a secure vault for your environment variables featuring end-to-end encryption.",
+              "featureList": "Secure Secret Storage, End-to-End Encryption, Team Collaboration, CLI Integration, AES-256-GCM",
+              "offers": {
+                "@type": "Offer",
+                "price": "0",
+                "priceCurrency": "USD"
+              }
+            })
+          }}
+        />
         <ThemeProvider
           attribute="class"
           defaultTheme="light"

@@ -8,11 +8,16 @@ import { motion, useScroll, useMotionValueEvent, AnimatePresence } from "framer-
 import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import { Kbd } from "@/components/ui/kbd"
+import { usePathname, useRouter } from "next/navigation"
 
 export function Navbar() {
     const { scrollY } = useScroll()
     const [scrolled, setScrolled] = useState(false)
     const [isOpen, setIsOpen] = useState(false)
+    const pathname = usePathname()
+    const router = useRouter()
+
+    const getHref = (hash: string) => pathname === '/' ? `#${hash}` : `/#${hash}`
 
     useMotionValueEvent(scrollY, "change", (latest) => {
         setScrolled(latest > 50)
@@ -38,15 +43,15 @@ export function Navbar() {
             )}
         >
             <div className="container h-full flex items-center justify-between px-4 md:px-6 relative z-50">
-                <Link href="/" className="flex items-center gap-2 font-bold text-xl" onClick={() => setIsOpen(false)}>
+                <Link href="/" className="flex items-center gap-2 font-bold text-2xl font-serif" onClick={() => setIsOpen(false)}>
                     <ShieldCheck className="w-6 h-6 text-primary" />
-                    <span>Envault</span>
+                    Envault
                 </Link>
 
                 <div className="flex items-center gap-4">
                     {/* Desktop Navigation */}
                     <nav className="hidden md:flex gap-6 text-sm font-medium items-center">
-                        <Link href="#features" className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
+                        <Link href={getHref('features')} className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
                             Features<Kbd variant="ghost" size="xs" className="ml-2">F</Kbd>
                         </Link>
                         <Link href="https://github.com/dinanathdash/envault" target="_blank" className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
@@ -120,14 +125,19 @@ export function Navbar() {
                         >
                             <nav className="flex flex-col gap-6 text-lg font-medium">
                                 <Link
-                                    href="#features"
+                                    href={getHref('features')}
                                     className="text-muted-foreground hover:text-foreground transition-colors py-2 border-b border-muted/20"
                                     onClick={(e) => {
-                                        e.preventDefault()
-                                        setIsOpen(false)
-                                        setTimeout(() => {
-                                            document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })
-                                        }, 300)
+                                        if (pathname === '/') {
+                                            e.preventDefault()
+                                            setIsOpen(false)
+                                            setTimeout(() => {
+                                                document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })
+                                            }, 300)
+                                        } else {
+                                            setIsOpen(false)
+                                            router.push('/#features')
+                                        }
                                     }}
                                 >
                                     Features

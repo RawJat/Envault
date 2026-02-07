@@ -81,6 +81,7 @@ export function getEmailHtml({ previewText, heading, content, action, footerText
     .logo { 
       font-size: 26px; 
       font-weight: 700; 
+      font-family: serif;
       color: ${textColor}; 
       text-decoration: none; 
       letter-spacing: -0.75px; 

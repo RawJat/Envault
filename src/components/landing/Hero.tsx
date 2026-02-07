@@ -36,6 +36,7 @@ export function Hero() {
                         className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-serif font-bold tracking-tight leading-[0.95] text-foreground"
                     >
                         Envault.
+                        <span className="sr-only">Secure Environment Variable Management</span>
                     </motion.h1>
 
                     <motion.p

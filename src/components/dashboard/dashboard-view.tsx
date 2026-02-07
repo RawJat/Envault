@@ -150,7 +150,7 @@ export default function DashboardPage() {
                 <div className="container mx-auto py-4 px-4 flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                         <ShieldCheck className="w-6 h-6 text-primary" />
-                        <span className="font-bold text-lg">Envault</span>
+                        <span className="font-bold text-2xl font-serif">Envault</span>
                     </div>
                     <div className="flex items-center gap-4">
                         <Button

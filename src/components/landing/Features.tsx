@@ -53,7 +53,7 @@ export function Features() {
             <div className="container px-4 md:px-6">
                 <div className="text-center mb-16 space-y-4">
                     <h2 className="text-4xl md:text-6xl font-serif font-bold tracking-tight text-void dark:text-bone">
-                        Technical Specifications
+                        Technical Specifications & Security Features
                     </h2>
                     <p className="max-w-[700px] mx-auto font-mono text-sm uppercase tracking-wider text-void/60 dark:text-bone/60">
                         INDUSTRIAL-GRADE SECURITY / DEVELOPER-CENTRIC DESIGN

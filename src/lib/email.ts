@@ -7,7 +7,7 @@ const resend = new Resend(process.env.RESEND_API_KEY)
 const SENDER_VAR = process.env.EMAIL_SENDER || 'onboarding@resend.dev'
 const SENDER = SENDER_VAR.includes('<') ? SENDER_VAR : `Envault <${SENDER_VAR}>`
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://envault.tech'
-const LOGO_URL = `https://envault.tech/favicon.svg`
+const LOGO_URL = `https://www.envault.tech/logo-bimi.svg`
 
 /**
  * Send a test email to verify Resend configuration

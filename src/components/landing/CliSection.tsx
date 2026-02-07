@@ -126,7 +126,7 @@ export function CliSection() {
                             </motion.div>
 
                             <h2 className="text-3xl md:text-5xl lg:text-6xl font-serif font-bold tracking-tight leading-[1.1] text-void dark:text-bone">
-                                Manage Secrets from your Terminal.
+                                Manage Environment Variables from your Terminal.
                             </h2>
                             <p className="max-w-lg font-mono text-sm uppercase tracking-wider text-void/60 dark:text-bone/60">
                                 Experience the speed of command-line secret management. Push, pull, and sync your environment variables without leaving your workflow.
