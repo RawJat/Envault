@@ -142,8 +142,8 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
     const handleDownloadEnv = async () => {
         // Check re-auth
         const { checkReauthRequiredAction } = await import("@/app/reauth-actions")
-        const reauthRequired = await checkReauthRequiredAction()
-        if (reauthRequired) {
+        const status = await checkReauthRequiredAction()
+        if (status.required) {
             useReauthStore.getState().openReauth(() => handleDownloadEnv())
             return
         }
@@ -179,7 +179,6 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
                         </Link>
                         <div className="flex flex-col">
                             <h1 className="font-bold text-lg">{project.name}</h1>
-                            <span className="text-xs text-muted-foreground">Environment Variables</span>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -187,7 +186,7 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
 
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
+                                <Button variant="ghost" size="icon" className="[&_svg]:size-5">
                                     <Settings className="h-5 w-5" />
                                 </Button>
                             </DropdownMenuTrigger>

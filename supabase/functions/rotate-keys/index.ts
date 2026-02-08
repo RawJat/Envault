@@ -55,9 +55,19 @@ Deno.serve(async (req: Request) => {
     }
 
     try {
+        const authHeader = req.headers.get('Authorization')
+        let serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            serviceRoleKey = authHeader.split(' ')[1]
+            console.log("Using propagated Authorization header for client init")
+        } else {
+            console.log("Using env var for client init (Auth header missing or invalid)")
+        }
+
         const supabaseClient = createClient(
             Deno.env.get('SUPABASE_URL') ?? '',
-            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+            serviceRoleKey
         )
 
         // Parse Request
@@ -70,11 +80,11 @@ Deno.serve(async (req: Request) => {
 
         // Mode 1: Initialization (No job_id provided)
         if (!job_id) {
-            return await initializeRotationJob(supabaseClient)
+            return await initializeRotationJob(supabaseClient, authHeader)
         }
 
         // Mode 2: Processing Loop (job_id provided)
-        return await processRotationChunk(supabaseClient, job_id)
+        return await processRotationChunk(supabaseClient, job_id, authHeader)
 
     } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error'
@@ -86,7 +96,7 @@ Deno.serve(async (req: Request) => {
 })
 
 
-async function initializeRotationJob(supabase: SupabaseClient) {
+async function initializeRotationJob(supabase: SupabaseClient, authHeader: string | null) {
     // 1. Create NEW Data Key
     const newKeyBuffer = nodeCrypto.randomBytes(32)
     const masterKey = getMasterKey()
@@ -127,22 +137,32 @@ async function initializeRotationJob(supabase: SupabaseClient) {
     if (jobError) throw new Error(`Failed to create job: ${jobError.message}`)
 
     // 5. Trigger Async Processing (Recursion Start)
-    // We invoke the SAME function, but pass the job_id
-    // Supabase Functions can invoke themselves via `functions.invoke` or raw fetch.
-    // We'll use raw fetch to the PUBLIC URL if possible, or just re-invoke via client?
-    // Using `supabase.functions.invoke` is cleaner if available in this client version, 
-    // but `supabase-js` in Edge environment sometimes restricts this.
-    // Secure way: We rely on the client (Dashboard) to trigger? No, that's brittle.
-    // We must self-trigger. 
-    // We will attempt to use `functions.invoke`.
-
+    // We use raw fetch to ensure we explicitly use the Service Role Key for the Authorization header.
+    // supabase.functions.invoke can sometimes result in 401s if the client config isn't propagated perfectly.
     try {
-        await supabase.functions.invoke('rotate-keys', {
-            body: { job_id: jobData.id }
-        })
+        const functionUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/rotate-keys`
+        // Fallback to env var if header is missing (e.g. direct invocation from Dashboard without header?)
+        // But honestly, the header is the most reliable source if we trust the caller (cron/script).
+        const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+        const authValue = authHeader ?? `Bearer ${serviceKey}`
+
+        console.log("Triggering self-invocation (init)...")
+
+        // We do not await this fetch if we can avoid it, but Deno processing limits might kill generic background tasks.
+        // However, we want to return the response to the user quickly. 
+        // Ideally, we use EdgeChain or just fire-and-forget (but without await it might be cancelled).
+        // We will await it but ignore the result content to keep it simple.
+        fetch(functionUrl, {
+            method: 'POST',
+            headers: {
+                'Authorization': authValue,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ job_id: jobData.id })
+        }).catch(err => console.error("Self-invocation (init) failed:", err))
+
     } catch (e) {
-        console.error("Failed to trigger self-invocation:", e)
-        // If we fail to trigger, we return the job ID and hope the user/caller retries.
+        console.error("Failed to setup self-invocation:", e)
     }
 
     return new Response(
@@ -156,13 +176,18 @@ async function initializeRotationJob(supabase: SupabaseClient) {
 }
 
 
-async function processRotationChunk(supabase: SupabaseClient, job_id: string) {
+async function processRotationChunk(supabase: SupabaseClient, job_id: string, authHeader: string | null) {
+    console.log(`Processing chunk for job ${job_id}`)
+
     // 1. Fetch Job State
     const { data: job, error: jobFetchError } = await supabase
         .from('key_rotation_jobs')
         .select('*')
         .eq('id', job_id)
         .single()
+
+    if (jobFetchError) console.error("Job fetch error:", jobFetchError)
+    if (!job) console.error("Job not found (null data)")
 
     if (jobFetchError || !job) throw new Error(`Job not found: ${jobFetchError?.message}`)
 
@@ -174,12 +199,13 @@ async function processRotationChunk(supabase: SupabaseClient, job_id: string) {
     }
 
     // 2. Fetch Helper: New Key
-    const { data: newKeyData } = await supabase
+    const { data: newKeyData, error: newKeyError } = await supabase
         .from('encryption_keys')
         .select('encrypted_key')
         .eq('id', job.new_key_id)
         .single()
 
+    if (newKeyError) console.error("New key fetch error:", newKeyError)
     if (!newKeyData) throw new Error("New key data missing")
 
     const masterKey = getMasterKey()
@@ -306,9 +332,18 @@ async function processRotationChunk(supabase: SupabaseClient, job_id: string) {
     }).eq('id', job_id)
 
     // 6. Recurse (Trigger Next Chunk)
-    await supabase.functions.invoke('rotate-keys', {
-        body: { job_id: job_id }
-    })
+    const functionUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/rotate-keys`
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    const authValue = authHeader ?? `Bearer ${serviceKey}`
+
+    fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+            'Authorization': authValue,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ job_id: job.id })
+    }).catch(err => console.error("Self-invocation (recurse) failed:", err))
 
     return new Response(
         JSON.stringify({
@@ -332,8 +367,8 @@ async function performCleanup(supabase: SupabaseClient) {
         .eq('status', 'completed')
         .order('created_at', { ascending: false })
 
-    if (!jobsError && completedJobs && completedJobs.length > 3) {
-        const jobsToDelete = completedJobs.slice(3).map((j: { id: string }) => j.id)
+    if (!jobsError && completedJobs && completedJobs.length > 2) {
+        const jobsToDelete = completedJobs.slice(2).map((j: { id: string }) => j.id)
         if (jobsToDelete.length > 0) {
             const { error: delJobError } = await supabase
                 .from('key_rotation_jobs')
@@ -352,8 +387,8 @@ async function performCleanup(supabase: SupabaseClient) {
         .eq('status', 'retired')
         .order('created_at', { ascending: false })
 
-    if (!keysError && retiredKeys && retiredKeys.length > 3) {
-        const keysToDelete = retiredKeys.slice(3).map((k: { id: string }) => k.id)
+    if (!keysError && retiredKeys && retiredKeys.length > 2) {
+        const keysToDelete = retiredKeys.slice(2).map((k: { id: string }) => k.id)
         if (keysToDelete.length > 0) {
             const { error: delKeyError } = await supabase
                 .from('encryption_keys')

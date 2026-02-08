@@ -68,15 +68,28 @@ export function EnvVarTable({ projectId, variables, userRole }: EnvVarTableProps
         }
     }, [])
 
+    const reauthExpiresAt = React.useRef<number>(0)
+
     const toggleVisibility = async (id: string, isCurrentlyVisible: boolean) => {
         if (!isCurrentlyVisible) {
+            // Check client-side cache first
+            if (Date.now() < reauthExpiresAt.current) {
+                setVisibleSecrets(prev => ({ ...prev, [id]: !prev[id] }))
+                return
+            }
+
             // We are about to show it. Check re-auth
             const { checkReauthRequiredAction } = await import("@/app/reauth-actions")
-            const reauthRequired = await checkReauthRequiredAction()
+            const status = await checkReauthRequiredAction()
 
-            if (reauthRequired) {
+            if (status.required) {
                 useReauthStore.getState().openReauth(() => toggleVisibility(id, isCurrentlyVisible))
                 return
+            }
+
+            // Update cache
+            if (status.expiresAt) {
+                reauthExpiresAt.current = status.expiresAt
             }
         }
         setVisibleSecrets(prev => ({ ...prev, [id]: !prev[id] }))

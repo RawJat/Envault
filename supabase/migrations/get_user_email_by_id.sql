@@ -3,6 +3,7 @@ create or replace function get_user_email_by_id(user_id_input uuid)
 returns text
 language plpgsql
 security definer
+set search_path = ''
 as $$
 declare
   user_email text;

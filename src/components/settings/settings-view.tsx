@@ -207,8 +207,8 @@ export default function SettingsView() {
             </header>
 
             <main className="container mx-auto py-8 px-4">
-                <div className="flex flex-col md:flex-row gap-8">
-                    <aside className="w-full md:w-64 space-y-2">
+                <div className="flex flex-col md:flex-row gap-8 relative">
+                    <aside className="w-full md:w-64 space-y-2 md:sticky md:top-28 md:h-fit">
                         <nav className="flex md:flex-col space-x-2 md:space-x-0 md:space-y-1 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                             <Button
                                 variant={activeTab === "profile" ? "secondary" : "ghost"}

@@ -46,5 +46,6 @@ export async function verifyReauthCode(email: string, token: string) {
 // New action for client-side checks
 export async function checkReauthRequiredAction() {
     const supabase = await createClient()
-    return await checkReauthRequired(supabase)
+    const { getReauthStatus } = await import('@/lib/auth-check')
+    return await getReauthStatus(supabase)
 }

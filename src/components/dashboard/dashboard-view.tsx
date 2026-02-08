@@ -265,23 +265,29 @@ export default function DashboardPage() {
     )
 }
 
-function ProjectSkeletonGrid() {
+export function ProjectSkeletonGrid() {
     return (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-6">
             {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="flex flex-col rounded-xl border bg-card text-card-foreground shadow h-48 relative overflow-hidden">
+                <div key={i} className="flex flex-col rounded-xl border bg-card text-card-foreground shadow h-full min-h-[12rem] relative overflow-hidden">
                     <div className="p-6">
-                        <div className="flex items-center space-x-2">
-                            <Skeleton className="h-9 w-9 rounded-lg" />
-                            <Skeleton className="h-6 w-32" />
+                        <div className="flex items-start justify-between">
+                            <div className="flex items-center space-x-2">
+                                <Skeleton className="h-9 w-9 rounded-lg" />
+                                <div className="space-y-2">
+                                    <Skeleton className="h-5 w-32" />
+                                </div>
+                            </div>
+                            <Skeleton className="h-8 w-8 rounded-md" />
                         </div>
                     </div>
-                    <div className="mt-auto p-3 border-t bg-muted/20">
+                    <div className="absolute bottom-0 w-full bg-muted/20 border-t p-3">
                         <div className="flex items-center justify-between">
-                            <Skeleton className="h-4 w-20" />
+                            <Skeleton className="h-4 w-16" />
                             <Skeleton className="h-4 w-24" />
                         </div>
                     </div>
+                    <div className="h-12" /> {/* Spacer for footer */}
                 </div>
             ))}
         </div>
