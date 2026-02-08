@@ -34,6 +34,18 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
+  // Bypass middleware for static files and images immediately
+  if (
+    pathname.startsWith('/_next') ||
+    pathname.includes('/static') ||
+    pathname.endsWith('.svg') ||
+    pathname.endsWith('.png') ||
+    pathname.endsWith('.jpg') ||
+    pathname.endsWith('.ico')
+  ) {
+    return NextResponse.next()
+  }
+
   // Define protected routes
   const protectedRoutes = [
     '/dashboard',
@@ -47,6 +59,7 @@ export async function middleware(request: NextRequest) {
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
 
   // Define public routes that don't require auth
+  // Note: /join is public to allow non-members to view the join page (which handles its own redirect if needed)
   const publicRoutes = [
     '/',
     '/login',
@@ -65,7 +78,7 @@ export async function middleware(request: NextRequest) {
   // Define public API routes
   const publicApiRoutes = [
     '/api/cli-version',
-    '/api/cli/auth',
+    '/api/cli',
     '/api/search'
   ]
 
@@ -75,6 +88,7 @@ export async function middleware(request: NextRequest) {
   if (isProtectedRoute && !user) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
+    url.searchParams.set('next', pathname)
     return NextResponse.redirect(url)
   }
 

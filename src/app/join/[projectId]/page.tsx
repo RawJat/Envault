@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -21,10 +22,13 @@ export default async function JoinPage({ params }: JoinPageProps) {
         redirect(`/login?next=/join/${projectId}`)
     }
 
+    const adminSupabase = createAdminClient()
+
     // Check if user is already a full member (owner or project member)
     // Note: We check for actual membership, not secret shares, because users with secret shares
     // should still be able to request full project access
-    const { data: projectData } = await supabase
+    // Use Admin Client to bypass RLS so we can see the project name even if we aren't a member yet
+    const { data: projectData } = await adminSupabase
         .from('projects')
         .select('user_id, name')
         .eq('id', projectId)

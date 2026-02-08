@@ -114,6 +114,38 @@ export async function deleteAccountAction() {
     const { createAdminClient } = await import('@/lib/supabase/admin')
     const adminSupabase = createAdminClient()
 
+    // 0. Clean up user memberships and shared access
+    // We must clean these up explicitly because they might be on projects/secrets NOT owned by the user,
+    // or the foreign keys might not be set to CASCADE for these specific relationships.
+
+    // Access Requests (where user is requesting access)
+    const { error: reqError } = await adminSupabase.from('access_requests').delete().eq('user_id', user.id)
+    if (reqError) console.error('Error deleting access requests:', reqError)
+
+    // Secret Shares (where user is a viewer)
+    const { error: shareError } = await adminSupabase.from('secret_shares').delete().eq('user_id', user.id)
+    if (shareError) console.error('Error deleting secret shares:', shareError)
+
+    // Project Members (where user is a member)
+    const { error: memberError } = await adminSupabase.from('project_members').delete().eq('user_id', user.id)
+    if (memberError) console.error('Error deleting project memberships:', memberError)
+
+    // Project Members (where user added someone else)
+    // If we don't delete these, the 'added_by' foreign key constraint will fail.
+    // Ideally we would transfer these to the owner, but deleting is acceptable for account deletion.
+    const { error: addedByError } = await adminSupabase.from('project_members').delete().eq('added_by', user.id)
+    if (addedByError) console.error('Error deleting members added by user:', addedByError)
+
+    // Secrets (where user updated them but doesn't own them)
+    // We must NULL out the reference, otherwise we can't delete the user.
+    // We do NOT want to delete the secret itself as it belongs to someone else.
+    const { error: updatedByError } = await adminSupabase
+        .from('secrets')
+        .update({ last_updated_by: null })
+        .eq('last_updated_by', user.id)
+
+    if (updatedByError) console.error('Error nullifying updated_by:', updatedByError)
+
     // 1. Delete user's secrets
     const { error: secretsError } = await adminSupabase
         .from('secrets')

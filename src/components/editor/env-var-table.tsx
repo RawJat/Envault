@@ -209,9 +209,11 @@ export function EnvVarTable({ projectId, variables, userRole }: EnvVarTableProps
                                                                         }}
                                                                     />
                                                                 ) : (
-                                                                    <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center">
-                                                                        <User className="h-3 w-3 text-muted-foreground" />
-                                                                    </div>
+                                                                    <UserAvatar
+                                                                        className="h-6 w-6"
+                                                                        avatarSeed="Former Member"
+                                                                        fallbackType="dicebear"
+                                                                    />
                                                                 )}
                                                                 <div className="flex flex-col">
                                                                     <span className="text-sm font-medium leading-none">
