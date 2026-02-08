@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Upload, FileText, Loader2, AlertCircle, CheckCircle2, Info } from "lucide-react"
+import { Upload, FileText, Loader2, AlertCircle, CheckCircle2, Info, CornerDownLeft, Command } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -30,6 +30,7 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { EnvironmentVariable } from "@/lib/store"
+import { Kbd } from "@/components/ui/kbd"
 
 interface ImportEnvDialogProps {
     projectId: string
@@ -38,6 +39,13 @@ interface ImportEnvDialogProps {
     open?: boolean
     onOpenChange?: (open: boolean) => void
 }
+
+const ModKey = () => (
+    <>
+        <Command className="w-3 h-3 mac-only" />
+        <span className="non-mac-only">Ctrl</span>
+    </>
+)
 
 export function ImportEnvDialog({
     projectId,
@@ -377,6 +385,10 @@ export function ImportEnvDialog({
                         >
                             {isImporting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Import
+                            <div className="ml-2 hidden md:flex items-center gap-1">
+                                <Kbd variant="primary" size="xs"><ModKey /></Kbd>
+                                <Kbd variant="primary" size="xs"><CornerDownLeft className="h-3 w-3" /></Kbd>
+                            </div>
                         </Button>
                     </DialogFooter>
                 </div>

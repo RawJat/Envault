@@ -59,10 +59,6 @@ export function ShortcutProvider({ children }: { children: React.ReactNode }) {
 
     // 4. Navigation 'g' + ...
     useHotkeys("g", () => {
-        if (isLanding) {
-            router.push("/login")
-            return
-        }
         setLastKeyWasG(true)
         setTimeout(() => setLastKeyWasG(false), 500) // 500ms window
     })
@@ -99,21 +95,7 @@ export function ShortcutProvider({ children }: { children: React.ReactNode }) {
         document.dispatchEvent(new CustomEvent("universal-new"))
     }, { enableOnContentEditable: false, enableOnFormTags: false })
 
-    // 7. Project Operations:
-    // Download: 'Alt+Shift+E' (Export) - was mod+d (Bookmark conflict)
-    useHotkeys("alt+shift+e", (e) => {
-        e.preventDefault()
-        document.dispatchEvent(new CustomEvent("universal-download"))
-    }, { enableOnContentEditable: false, enableOnFormTags: false })
-
-    // Import: 'Alt+Shift+I' - was mod+i (Page Info/Italics conflict)
-    useHotkeys("alt+shift+i", (e) => {
-        e.preventDefault()
-        document.dispatchEvent(new CustomEvent("universal-import"))
-    }, { enableOnContentEditable: false, enableOnFormTags: false })
-
-    // 8. Tab Switching: '1'-'9', '[', ']'
-    // 8. Tab Switching: '1'-'9', '[', ']'
+    // 7. Tab Switching: '1'-'9'
     useHotkeys("1", () => document.dispatchEvent(new CustomEvent("switch-tab", { detail: { index: 0 } })), { enableOnContentEditable: false, enableOnFormTags: false })
     useHotkeys("2", () => document.dispatchEvent(new CustomEvent("switch-tab", { detail: { index: 1 } })), { enableOnContentEditable: false, enableOnFormTags: false })
     useHotkeys("3", () => document.dispatchEvent(new CustomEvent("switch-tab", { detail: { index: 2 } })), { enableOnContentEditable: false, enableOnFormTags: false })
@@ -124,43 +106,7 @@ export function ShortcutProvider({ children }: { children: React.ReactNode }) {
     useHotkeys("8", () => document.dispatchEvent(new CustomEvent("switch-tab", { detail: { index: 7 } })), { enableOnContentEditable: false, enableOnFormTags: false })
     useHotkeys("9", () => document.dispatchEvent(new CustomEvent("switch-tab", { detail: { index: 8 } })), { enableOnContentEditable: false, enableOnFormTags: false })
 
-    useHotkeys("[", () => {
-        document.dispatchEvent(new CustomEvent("prev-tab"))
-    }, { enableOnContentEditable: false, enableOnFormTags: false })
-
-    useHotkeys("]", () => {
-        document.dispatchEvent(new CustomEvent("next-tab"))
-    }, { enableOnContentEditable: false, enableOnFormTags: false })
-
-    // 9. Sharing & Deleting: 'a', 'Alt+Backspace' (Contextual)
-    useHotkeys("a", () => {
-        document.dispatchEvent(new CustomEvent("universal-share"))
-    }, { enableOnContentEditable: false, enableOnFormTags: false })
-
-    useHotkeys("alt+backspace", (e) => {
-        e.preventDefault()
-        document.dispatchEvent(new CustomEvent("universal-delete"))
-    }, { enableOnContentEditable: false, enableOnFormTags: false })
-
-    // 10. Landing Page Specifics
-    const isLanding = typeof window !== 'undefined' && window.location.pathname === '/'
-
-    useHotkeys("f", () => {
-        if (isLanding) {
-            document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })
-        }
-    }, { enableOnContentEditable: false, enableOnFormTags: false })
-
-    useHotkeys("h", () => {
-        if (isLanding && !lastKeyWasG) window.open("https://github.com/dinanathdash/envault", "_blank")
-    }, { enableOnContentEditable: false, enableOnFormTags: false })
-
-
-    useHotkeys("s", () => {
-        if (isLanding) window.open("https://github.com/dinanathdash/envault", "_blank")
-    }, { enableOnContentEditable: false, enableOnFormTags: false })
-
-    // 11. Submit Form: 'Cmd+Enter'
+    // 8. Submit Form: 'Cmd+Enter'
     useHotkeys("mod+enter", (e) => {
         const target = e.target as HTMLElement
         // 1. Try finding closest form to the target (focused element)
@@ -181,7 +127,7 @@ export function ShortcutProvider({ children }: { children: React.ReactNode }) {
         }
     }, { enableOnContentEditable: true, enableOnFormTags: true })
 
-    // 12. Global Back: 'Esc' (safely)
+    // 9. Global Back: 'Esc' (safely)
     useHotkeys("esc", () => {
         // Only navigate back if no dialog/menu is open (Radix handles closing them)
         const isOverlayOpen = !!document.querySelector('[role="dialog"], [role="menu"]')
@@ -190,12 +136,6 @@ export function ShortcutProvider({ children }: { children: React.ReactNode }) {
         if (!isOverlayOpen && isProjectView) {
             router.push('/dashboard')
         }
-    })
-
-    // 13. Global Logout: 'Alt+Shift+Q' - was Ctrl+Q (System conflict)
-    useHotkeys("alt+shift+q", (e) => {
-        e.preventDefault()
-        document.dispatchEvent(new CustomEvent("universal-logout"))
     })
 
     return (

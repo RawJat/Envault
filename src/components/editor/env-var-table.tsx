@@ -15,7 +15,6 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Kbd } from "@/components/ui/kbd"
-import { getModifierKey } from "@/lib/utils"
 import {
     Table,
     TableBody,
@@ -65,25 +64,9 @@ export function EnvVarTable({ projectId, variables, userRole }: EnvVarTableProps
 
     // Listen for contextual shortcuts
     React.useEffect(() => {
-        const handleUniversalShare = () => {
-            if (!lastInteractedId || userRole === 'viewer') return
-            const variable = variables.find(v => v.id === lastInteractedId)
-            if (variable && variable.isSecret) {
-                setSharingSecret(variable)
-            }
-        }
-        const handleUniversalDelete = () => {
-            if (!lastInteractedId || userRole === 'viewer') return
-            handleDeleteClick(lastInteractedId)
-        }
-
-        document.addEventListener('universal-share', handleUniversalShare)
-        document.addEventListener('universal-delete', handleUniversalDelete)
         return () => {
-            document.removeEventListener('universal-share', handleUniversalShare)
-            document.removeEventListener('universal-delete', handleUniversalDelete)
         }
-    }, [lastInteractedId, variables])
+    }, [])
 
     const toggleVisibility = async (id: string, isCurrentlyVisible: boolean) => {
         if (!isCurrentlyVisible) {
@@ -316,16 +299,12 @@ export function EnvVarTable({ projectId, variables, userRole }: EnvVarTableProps
                                                     {variable.isSecret && (
                                                         <DropdownMenuItem onClick={() => setSharingSecret(variable)} disabled={userRole === 'viewer'}>
                                                             <Share2 className="w-4 h-4 mr-2" />
-                                                            Share<Kbd size="xs" className="ml-auto hidden md:inline-flex">A</Kbd>
+                                                            Share
                                                         </DropdownMenuItem>
                                                     )}
                                                     <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => handleDeleteClick(variable.id)} disabled={userRole === 'viewer'}>
                                                         <Trash2 className="w-4 h-4 mr-2" />
                                                         Delete
-                                                        <div className="ml-auto hidden md:flex items-center gap-1">
-                                                            <Kbd size="xs">{getModifierKey('alt')}</Kbd>
-                                                            <Kbd size="xs">Backspace</Kbd>
-                                                        </div>
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>

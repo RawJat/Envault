@@ -7,8 +7,6 @@ import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler"
 import { motion, useScroll, useMotionValueEvent, AnimatePresence } from "framer-motion"
 import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
-import { Kbd } from "@/components/ui/kbd"
-import { useHotkeys } from "@/hooks/use-hotkeys"
 import { usePathname, useRouter } from "next/navigation"
 
 export function Navbar() {
@@ -23,18 +21,6 @@ export function Navbar() {
     useMotionValueEvent(scrollY, "change", (latest) => {
         setScrolled(latest > 50)
     })
-
-    // Hotkey handlers
-    useHotkeys("d", () => router.push("/docs"))
-    useHotkeys("f", () => {
-        if (pathname === '/') {
-            document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })
-        } else {
-            router.push('/#features')
-        }
-    })
-    useHotkeys("h", () => window.open("https://github.com/dinanathdash/envault", "_blank"))
-    useHotkeys("l", () => router.push("/login"))
 
     // Prevent scrolling when menu is open
     useEffect(() => {
@@ -65,17 +51,17 @@ export function Navbar() {
                     {/* Desktop Navigation */}
                     <nav className="hidden md:flex gap-6 text-sm font-medium items-center">
                         <Link href="/docs" className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
-                            Docs<Kbd variant="ghost" size="xs" className="ml-2">D</Kbd>
+                            Docs
                         </Link>
                         <Link href={getHref('features')} className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
-                            Features<Kbd variant="ghost" size="xs" className="ml-2">F</Kbd>
+                            Features
                         </Link>
                         <Link href="https://github.com/dinanathdash/envault" target="_blank" className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
-                            GitHub<Kbd variant="ghost" size="xs" className="ml-2">H</Kbd>
+                            GitHub
                         </Link>
                         <Link href="/login">
                             <Button variant={scrolled ? "default" : "secondary"} size="sm" className="font-semibold flex items-center gap-2 rounded-none">
-                                Login<Kbd variant={scrolled ? "primary" : "default"} size="xs" className="ml-2">L</Kbd>
+                                Login
                             </Button>
                         </Link>
                     </nav>

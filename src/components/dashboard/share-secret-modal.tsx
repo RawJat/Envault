@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { UserAvatar } from "@/components/ui/user-avatar"
 import { toast } from "sonner"
-import { X, Plus, CornerDownLeft } from "lucide-react"
+import { X, Plus, CornerDownLeft, Command } from "lucide-react"
 import { Kbd } from "@/components/ui/kbd"
 import {
     AlertDialog,
@@ -41,6 +41,13 @@ interface ShareSecretModalProps {
     open?: boolean
     onOpenChange?: (open: boolean) => void
 }
+
+const ModKey = () => (
+    <>
+        <Command className="w-3 h-3 mac-only" />
+        <span className="non-mac-only">Ctrl</span>
+    </>
+)
 
 export function ShareSecretModal({ secretId, secretKey, children, open: controlledOpen, onOpenChange: controlledOnOpenChange }: ShareSecretModalProps) {
     const [internalOpen, setInternalOpen] = useState(false)
@@ -150,7 +157,7 @@ export function ShareSecretModal({ secretId, secretKey, children, open: controll
                                 className="flex-1"
                             />
                             <Button type="submit" disabled={loading || !email} className="sm:w-auto">
-                                {loading ? "Adding..." : <span className="flex items-center gap-2">Add <span className="flex items-center gap-1"><Kbd className="bg-primary-foreground/20 text-primary-foreground border-0">⌘</Kbd><Kbd className="bg-primary-foreground/20 text-primary-foreground border-0"><CornerDownLeft className="w-3 h-3" /></Kbd></span></span>}
+                                {loading ? "Adding..." : <span className="flex items-center gap-2">Add <span className="flex items-center gap-1"><Kbd className="bg-primary-foreground/20 text-primary-foreground border-0"><ModKey /></Kbd><Kbd className="bg-primary-foreground/20 text-primary-foreground border-0"><CornerDownLeft className="w-3 h-3" /></Kbd></span></span>}
                             </Button>
                         </div>
                     </form>

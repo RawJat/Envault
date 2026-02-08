@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { UserAvatar } from "@/components/ui/user-avatar"
-import { Check, X, Clock, Loader2 } from "lucide-react"
+import { Check, X, Clock, Loader2, CornerDownLeft, Command } from "lucide-react"
 import { toast } from "sonner"
 import { approveRequest, rejectRequest } from "@/app/invite-actions"
 import { createClient } from "@/lib/supabase/client"
@@ -23,6 +23,13 @@ interface AccessRequest {
     requester_email?: string
     requester_username?: string
 }
+
+const ModKey = () => (
+    <>
+        <Command className="w-3 h-3 mac-only" />
+        <span className="non-mac-only">Ctrl</span>
+    </>
+)
 
 export function AccessRequestsPanel() {
     const [requests, setRequests] = useState<AccessRequest[]>([])
@@ -119,19 +126,11 @@ export function AccessRequestsPanel() {
     }
 
     // Shortcuts for the first request
-    useHotkeys("y", () => {
+    useHotkeys("mod+enter", () => {
         if (requests.length > 0 && !processingIds.has(requests[0].id)) {
             const first = requests[0]
             const project = Array.isArray(first.projects) ? first.projects[0] : first.projects
             handleApprove(first.id, project?.name || 'Project')
-        }
-    })
-
-    useHotkeys("x", () => {
-        if (requests.length > 0 && !processingIds.has(requests[0].id)) {
-            const first = requests[0]
-            const project = Array.isArray(first.projects) ? first.projects[0] : first.projects
-            handleReject(first.id, project?.name || 'Project')
         }
     })
 
@@ -210,7 +209,12 @@ export function AccessRequestsPanel() {
                                         ) : (
                                             <>
                                                 <Check className="h-4 w-4 mr-1" />
-                                                Approve{index === 0 && <Kbd variant="primary" size="xs" className="ml-2">Y</Kbd>}
+                                                Approve{index === 0 && (
+                                                    <div className="ml-2 hidden md:flex items-center gap-1">
+                                                        <Kbd variant="primary" size="xs"><ModKey /></Kbd>
+                                                        <Kbd variant="primary" size="xs"><CornerDownLeft className="h-3 w-3" /></Kbd>
+                                                    </div>
+                                                )}
                                             </>
                                         )}
                                     </Button>
@@ -225,7 +229,7 @@ export function AccessRequestsPanel() {
                                         ) : (
                                             <>
                                                 <X className="h-4 w-4 mr-1" />
-                                                Reject{index === 0 && <Kbd variant="ghost" size="xs" className="ml-2">X</Kbd>}
+                                                Reject
                                             </>
                                         )}
                                     </Button>

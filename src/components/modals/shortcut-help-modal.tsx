@@ -8,7 +8,7 @@ import {
     DialogDescription,
 } from "@/components/ui/dialog"
 import { Kbd } from "@/components/ui/kbd"
-import { CornerDownLeft, Delete, Command, Option as OptionIcon } from "lucide-react"
+import { CornerDownLeft, Command, Option as OptionIcon } from "lucide-react"
 
 interface ShortcutHelpModalProps {
     open: boolean
@@ -29,14 +29,6 @@ const AltKey = () => (
     </>
 )
 
-const CtrlKey = () => (
-    <>
-        <span className="mac-only">⌃</span>
-        <span className="non-mac-only">Ctrl</span>
-    </>
-)
-
-
 export function ShortcutHelpModal({ open, onOpenChange }: ShortcutHelpModalProps) {
     // Usage in shortcuts array
     const mod = <ModKey key="mod" />
@@ -50,45 +42,31 @@ export function ShortcutHelpModal({ open, onOpenChange }: ShortcutHelpModalProps
                 { label: "Search / Command palette", keys: [mod, "K"] },
                 { label: "Switch Theme", keys: ["T"] },
                 { label: "Show Shortcuts", keys: ["Shift", "?"] },
-                { label: "Log Out", keys: [alt, "Shift", "Q"] },
+                { label: "Toggle Notifications", keys: ["Shift", "B"] },
                 { label: "Back to Dashboard", keys: ["Esc"] },
             ],
         },
         {
-            category: "Navigation (G-Chords)",
+            category: "Navigation",
             items: [
                 { label: "Go to Dashboard", keys: ["G", "H"] },
                 { label: "Go to Settings", keys: ["G", "O"] },
-                { label: "Go to Notifications Page", keys: ["G", "L"] },
+                { label: "Go to Notifications", keys: ["G", "L"] },
+                { label: "View Notification (in dialog)", keys: ["V"] },
             ],
         },
         {
-            category: "Contextual Actions",
+            category: "Actions",
             items: [
-                { label: "Universal New / Variable", keys: ["N"] },
-                { label: "Share / Access", keys: ["A"] },
-                { label: "Delete", keys: [alt, "Backspace"] },
+                { label: "New Project / Variable", keys: ["N"] },
                 { label: "Submit Form / Dialog", keys: [mod, <CornerDownLeft className="w-3 h-3" key="enter" />] },
-            ],
-        },
-        {
-            category: "Project & Lists",
-            items: [
-                { label: "Export .env", keys: [alt, "Shift", "E"] },
-                { label: "Import .env", keys: [alt, "Shift", "I"] },
                 { label: "Save Changes", keys: [mod, "S"] },
-                { label: "Mark All Read / Clear", keys: ["M", "/", "C"] },
-                { label: "Delete Selected", keys: [<Delete className="w-3 h-3" key="delete" />] },
-                { label: "Switch Tabs (1-5)", keys: ["1", "-", "5"] },
             ],
         },
         {
-            category: "Landing & Auth",
+            category: "Tabs",
             items: [
-                { label: "Get Started / Features", keys: ["G", "/", "F"] },
-                { label: "Star / GitHub", keys: ["S", "/", "H"] },
-                { label: "Auth Tabs (Login / Sign Up)", keys: ["L", "/", "U"] },
-                { label: "Social Login (Google / GitHub)", keys: [alt, "G/H"] },
+                { label: "Switch Tabs", keys: ["1", "-", "9"] },
             ],
         },
     ]

@@ -42,14 +42,6 @@ const ModKey = () => (
     </>
 )
 
-const AltKey = () => (
-    <>
-        <span className="non-mac-only">Alt</span>
-        <OptionIcon className="w-3 h-3 mac-only" />
-    </>
-)
-
-
 export default function SettingsView() {
     const router = useRouter()
     const { user, updateUser, deleteAccount, logout, projects } = useEnvaultStore()
@@ -179,10 +171,6 @@ export default function SettingsView() {
         }
     }, { enableOnContentEditable: true, enableOnFormTags: true })
 
-    useHotkeys("alt+shift+q", () => {
-        handleLogout()
-    })
-
     if (!mounted) {
         return null
     }
@@ -209,7 +197,7 @@ export default function SettingsView() {
                                 </TooltipTrigger>
                                 <TooltipContent>
                                     <p className="flex items-center gap-2">
-                                        Log out <span className="flex gap-1"><Kbd><AltKey /></Kbd><Kbd>Shift</Kbd><Kbd>Q</Kbd></span>
+                                        Log out
                                     </p>
                                 </TooltipContent>
                             </Tooltip>

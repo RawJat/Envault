@@ -24,7 +24,6 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Kbd } from "@/components/ui/kbd"
-import { getModifierKey } from "@/lib/utils"
 import {
     AlertDialog,
     AlertDialogAction,
@@ -194,13 +193,11 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuItem onClick={() => setShareDialogOpen(true)} disabled={!canEdit}>
-                                    <Share2 className="w-4 h-4 mr-2" /> Share<Kbd size="xs" className="ml-auto hidden md:inline-flex">A</Kbd>
+                                    <Share2 className="w-4 h-4 mr-2" /> Share
                                 </DropdownMenuItem>
                                 <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={handleDeleteClick} disabled={project.role !== 'owner'}>
                                     <Trash2 className="w-4 h-4 mr-2" /> Delete
                                     <div className="ml-auto hidden md:flex items-center gap-1">
-                                        <Kbd size="xs">{getModifierKey('alt')}</Kbd>
-                                        <Kbd size="xs">Backspace</Kbd>
                                     </div>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -257,11 +254,6 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
                                 }}>
                                     <LogOut className="mr-2 h-4 w-4" />
                                     <span>Log out</span>
-                                    <div className="ml-auto hidden md:flex items-center gap-1">
-                                        <Kbd size="xs">{getModifierKey('alt')}</Kbd>
-                                        <Kbd size="xs">Shift</Kbd>
-                                        <Kbd size="xs">Q</Kbd>
-                                    </div>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -278,11 +270,6 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
                         <Button id="download-env-btn" variant="outline" onClick={handleDownloadEnv}>
                             <Download className="w-4 h-4 mr-2" />
                             Download .env
-                            <div className="ml-2 hidden md:flex items-center gap-1">
-                                <Kbd size="xs">{getModifierKey('alt')}</Kbd>
-                                <Kbd size="xs">Shift</Kbd>
-                                <Kbd size="xs">E</Kbd>
-                            </div>
                         </Button>
                         <ImportEnvDialog
                             projectId={projectId}
@@ -293,11 +280,6 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
                                 <Button variant="outline" disabled={!canEdit}>
                                     <Upload className="w-4 h-4 mr-2" />
                                     Import .env
-                                    <div className="ml-2 hidden md:flex items-center gap-1">
-                                        <Kbd size="xs">{getModifierKey('alt')}</Kbd>
-                                        <Kbd size="xs">Shift</Kbd>
-                                        <Kbd size="xs">I</Kbd>
-                                    </div>
                                 </Button>
                             }
                         />

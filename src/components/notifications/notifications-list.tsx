@@ -5,7 +5,7 @@ import { useNotificationStore } from '@/lib/stores/notification-store'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Search, CheckCheck, Trash2, MoreHorizontal, Bell } from 'lucide-react'
+import { Search, CheckCheck, Trash2, MoreHorizontal, Bell, CornerDownLeft } from 'lucide-react'
 import { Notification } from '@/lib/types/notifications'
 import { cn } from '@/lib/utils'
 import { formatDistanceToNow, isToday, isYesterday, isThisWeek, format } from 'date-fns'
@@ -128,7 +128,7 @@ export function NotificationsList() {
         if (!selectedIds.size && notifications.some(n => n.is_read)) deleteAllRead()
     }, { enableOnContentEditable: false, enableOnFormTags: false })
 
-    useHotkeys("backspace", () => {
+    useHotkeys("enter", () => {
         if (selectedIds.size > 0) handleDeleteSelected()
     }, { enableOnContentEditable: false, enableOnFormTags: false })
 
@@ -193,7 +193,7 @@ export function NotificationsList() {
                             className="flex-1 flex items-center gap-2"
                         >
                             <Trash2 className="h-4 w-4 mr-2" />
-                            Delete ({selectedIds.size}) <span className="hidden md:inline-flex ml-2"><Kbd variant="primary" size="xs">⌫</Kbd></span>
+                            Delete ({selectedIds.size}) <span className="hidden md:inline-flex ml-2"><Kbd variant="primary" size="xs"><CornerDownLeft className="w-3 h-3" /></Kbd></span>
                         </Button>
                     ) : (
                         <>

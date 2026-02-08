@@ -44,7 +44,6 @@ import { useReauthStore } from "@/lib/reauth-store"
 import { ShareProjectDialog } from "@/components/dashboard/share-project-dialog"
 import { Share2 } from "lucide-react"
 import { Kbd } from "@/components/ui/kbd"
-import { getModifierKey } from "@/lib/utils"
 
 interface ProjectCardProps {
     project: Project
@@ -155,15 +154,11 @@ export function ProjectCard({ project }: ProjectCardProps) {
                                             setShareDialogOpen(true)
                                         }} disabled={project.role === 'viewer'}>
                                             <Share2 className="w-4 h-4 mr-2" />
-                                            Share<Kbd size="xs" className="ml-auto hidden md:inline-flex">A</Kbd>
+                                            Share
                                         </DropdownMenuItem>
                                         <DropdownMenuItem className="text-red-600 dark:text-red-500 focus:text-red-600 dark:focus:text-red-500" onClick={handleDeleteClick} disabled={project.role !== 'owner'}>
                                             <Trash2 className="w-4 h-4 mr-2" />
                                             Delete
-                                            <div className="ml-auto hidden md:flex items-center gap-1">
-                                                <Kbd size="xs">{getModifierKey('alt')}</Kbd>
-                                                <Kbd size="xs">Backspace</Kbd>
-                                            </div>
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>

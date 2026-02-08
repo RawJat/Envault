@@ -106,27 +106,13 @@ export default function DashboardPage() {
             if (index === 0) setActiveTab("my-projects")
             if (index === 1) setActiveTab("shared-with-me")
         }
-        const handlePrev = () => setActiveTab("my-projects")
-        const handleNext = () => setActiveTab("shared-with-me")
-        const handleShare = () => {
-            // Ideally we'd share the "focused" project, but as a shortcut:
-            // Find first project card or do something global.
-            // For now, let's just toast or do nothing if ambiguous.
-            console.log("Global share triggered on dashboard")
-        }
 
         document.addEventListener('universal-new', handleNew)
         document.addEventListener('switch-tab', handleSwitch)
-        document.addEventListener('prev-tab', handlePrev)
-        document.addEventListener('next-tab', handleNext)
-        document.addEventListener('universal-share', handleShare)
 
         return () => {
             document.removeEventListener('universal-new', handleNew)
             document.removeEventListener('switch-tab', handleSwitch)
-            document.removeEventListener('prev-tab', handlePrev)
-            document.removeEventListener('next-tab', handleNext)
-            document.removeEventListener('universal-share', handleShare)
         }
     }, [])
 
@@ -157,10 +143,6 @@ export default function DashboardPage() {
                             size="sm"
                             className="text-muted-foreground hidden md:flex items-center gap-2 h-9"
                             onClick={() => {
-                                // Now handled globally by Cmd+K, but we keep button for clickability
-                                // We can either dispatch an event or just let ShortcutProvider handle it.
-                                // Simplest: dispatch a custom event that ShortcutProvider can listen to OR 
-                                // Since we want it to be global, let's just use the same event pattern.
                                 document.dispatchEvent(new CustomEvent('open-global-search'))
                             }}
                         >
@@ -220,11 +202,6 @@ export default function DashboardPage() {
                                 <DropdownMenuItem className="text-red-600 dark:text-red-500 focus:text-red-600 dark:focus:text-red-500 cursor-pointer" onClick={handleLogout}>
                                     <LogOut className="mr-2 h-4 w-4" />
                                     <span>Log out</span>
-                                    <div className="ml-auto hidden md:flex items-center gap-1">
-                                        <Kbd size="xs">{getModifierKey('alt')}</Kbd>
-                                        <Kbd size="xs">Shift</Kbd>
-                                        <Kbd size="xs">Q</Kbd>
-                                    </div>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>

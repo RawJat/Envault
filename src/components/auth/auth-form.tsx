@@ -24,7 +24,6 @@ import { PasswordInput } from "@/components/ui/password-input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
-import { useHotkeys } from "@/hooks/use-hotkeys"
 import { Kbd } from "@/components/ui/kbd"
 import { CornerDownLeft } from "lucide-react"
 
@@ -34,13 +33,6 @@ const authSchema = z.object({
 })
 
 type AuthValues = z.infer<typeof authSchema>
-
-const CtrlKey = () => (
-    <>
-        <span className="non-mac-only">Ctrl</span>
-        <span className="mac-only">⌃</span>
-    </>
-)
 
 const ModKey = () => (
     <>
@@ -119,18 +111,6 @@ export function AuthForm() {
         }
     }
 
-    // Shortcuts
-    useHotkeys("l", () => setActiveTab("login"), { enableOnContentEditable: false, enableOnFormTags: false })
-    useHotkeys("u", () => setActiveTab("signup"), { enableOnContentEditable: false, enableOnFormTags: false })
-    useHotkeys("ctrl+g", () => {
-        const btn = document.getElementById('google-signin-btn')
-        if (btn) (btn as HTMLButtonElement).click()
-    })
-    useHotkeys("ctrl+h", () => {
-        const btn = document.getElementById('github-signin-btn')
-        if (btn) (btn as HTMLButtonElement).click()
-    })
-
     return (
         <div className="w-[90vw] sm:w-full sm:max-w-md mx-auto px-0 md:px-4">
             <div className="w-full max-w-md mx-auto">
@@ -147,11 +127,11 @@ export function AuthForm() {
                         <CardContent>
                             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                                 <TabsList className="grid w-full grid-cols-2 mb-4">
-                                    <TabsTrigger value="login" className="flex items-center gap-2">
-                                        Login<Kbd size="xs">L</Kbd>
+                                    <TabsTrigger value="login">
+                                        Login
                                     </TabsTrigger>
-                                    <TabsTrigger value="signup" className="flex items-center gap-2">
-                                        Sign Up<Kbd size="xs">U</Kbd>
+                                    <TabsTrigger value="signup">
+                                        Sign Up
                                     </TabsTrigger>
                                 </TabsList>
 
@@ -162,10 +142,6 @@ export function AuthForm() {
                                             <path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path>
                                         </svg>
                                         Sign in with Google
-                                        <div className="hidden md:flex items-center gap-1 ml-1">
-                                            <Kbd size="xs"><CtrlKey /></Kbd>
-                                            <Kbd size="xs">G</Kbd>
-                                        </div>
                                     </Button>
                                 </form>
                                 <form action={signInWithGithub} className="mb-4">
@@ -175,10 +151,6 @@ export function AuthForm() {
                                             <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8" />
                                         </svg>
                                         Sign in with GitHub
-                                        <div className="hidden md:flex items-center gap-1 ml-1">
-                                            <Kbd size="xs"><CtrlKey /></Kbd>
-                                            <Kbd size="xs">H</Kbd>
-                                        </div>
                                     </Button>
                                 </form>
 
