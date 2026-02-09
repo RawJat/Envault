@@ -41,6 +41,7 @@ Envault uses a hybrid encryption model to ensure maximum security:
 - **Framework**: [Next.js](https://nextjs.org/) (App Router)
 - **Database & Auth**: [Supabase](https://supabase.com/)
 - **KV Store**: [Upstash Redis](https://upstash.com/)
+- **Documentation**: [Fumadocs](https://www.fumadocs.dev/)
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/)
 - **UI Components**: [Shadcn UI](https://ui.shadcn.com/) / [Radix UI](https://www.radix-ui.com/)
 - **3D & Graphics**: [React Three Fiber](https://r3f.docs.pmnd.rs/) / [Three.js](https://threejs.org/)
