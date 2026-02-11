@@ -10,32 +10,39 @@ on:
       - '.github/workflows/publish.yml'
       - 'release.config.js'
 
+permissions:
+  contents: write # Required to commit version bumps
+  issues: write
+  pull-requests: write
+  id-token: write # Required for NPM OIDC publishing
+  packages: write
+
 jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
-    permissions:
-      contents: write # Required to commit version bumps and create releases
-      issues: write
-      pull-requests: write
-      id-token: write # Required for OIDC publishing
-
+    
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0 # Required for commit analysis
 
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - name: Install GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          install-only: true
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
           registry-url: 'https://registry.npmjs.org'
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.25'
 
       - name: Install dependencies
         run: |
