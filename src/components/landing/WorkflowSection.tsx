@@ -105,7 +105,7 @@ export function WorkflowSection() {
                 >
                     {[
                         { label: "Enterprise Teams", value: "10+" },
-                        { label: "Secrets Managed", value: "1K+" }, 
+                        { label: "Secrets Managed", value: "1K+" },
                         { label: "Global Deployments", value: "5K+" },
                         { label: "Uptime SLA", value: "99.9%" }
                     ].map((stat, index) => (

@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 export async function GET() {
     try {
         const res = await fetch(
-            "https://raw.githubusercontent.com/DinanathDash/Envault/main/cli/package.json",
+            "https://raw.githubusercontent.com/DinanathDash/Envault/main/cli-wrapper/package.json",
             { next: { revalidate: 3600 } }
         );
 

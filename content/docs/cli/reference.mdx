@@ -4,6 +4,8 @@ description: Managing secrets from the terminal
 ---
 
 import { Terminal } from 'lucide-react';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+import { Step, Steps } from 'fumadocs-ui/components/steps';
 
 # Envault CLI
 
@@ -11,15 +13,69 @@ The Envault CLI is the primary way developers interact with secrets in their dai
 
 ## Installation
 
+### Universal Script (Recommended)
+
+The easiest way to install Envault on macOS and Linux.
+
 ```bash
-npm install -g @dinanathdash/envault
+curl -fsSL https://raw.githubusercontent.com/DinanathDash/Envault/main/install.sh | sh
 ```
 
-Or run via `npx`:
+### Homebrew (macOS & Linux)
+
+If you use Homebrew, you can install Envault via our official tap.
+
+```bash
+brew tap DinanathDash/envault
+brew install envault
+```
+
+### JS Package Managers
+
+Envault is available as an NPM package, allowing you to use it with any Node.js package manager.
+
+<Tabs items={['npm', 'pnpm', 'yarn', 'bun']}>
+  <Tab value="npm">
+  ```bash
+  npm install -g @dinanathdash/envault
+  ```
+  </Tab>
+  <Tab value="pnpm">
+  ```bash
+  pnpm add -g @dinanathdash/envault
+  ```
+  </Tab>
+  <Tab value="yarn">
+  ```bash
+  yarn global add @dinanathdash/envault
+  ```
+  </Tab>
+  <Tab value="bun">
+  ```bash
+  bun add -g @dinanathdash/envault
+  ```
+  </Tab>
+</Tabs>
+
+Or run instantly via `npx`:
 
 ```bash
 npx @dinanathdash/envault <command>
 ```
+
+### Go Developers
+
+If you have Go installed, you can install the CLI directly from source.
+
+```bash
+go install github.com/DinanathDash/Envault/cli-go@latest
+```
+
+### Manual Installation
+
+Follow these steps to install the binary manually.
+
+<ManualInstallSelector />
 
 ## Workflow
 

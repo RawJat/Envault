@@ -2,6 +2,7 @@ import { loadedSource } from '@/lib/source';
 import { DocsPage, DocsBody, DocsTitle, DocsDescription } from 'fumadocs-ui/page';
 import { notFound } from 'next/navigation';
 import defaultMdxComponents from 'fumadocs-ui/mdx';
+import { ManualInstallSelector } from '@/components/docs/ManualInstallSelector';
 
 export default async function Page({
   params,
@@ -16,8 +17,8 @@ export default async function Page({
   const MDX = (page.data as any).body;
 
   return (
-    <DocsPage 
-      toc={(page.data as any).toc} 
+    <DocsPage
+      toc={(page.data as any).toc}
       full={(page.data as any).full}
       tableOfContent={{
         style: 'clerk',
@@ -26,7 +27,7 @@ export default async function Page({
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription>{page.data.description}</DocsDescription>
       <DocsBody>
-        <MDX components={{ ...defaultMdxComponents }} />
+        <MDX components={{ ...defaultMdxComponents, ManualInstallSelector }} />
       </DocsBody>
     </DocsPage>
   );

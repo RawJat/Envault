@@ -19,7 +19,7 @@ export function CliSection() {
     const containerRef = useRef(null)
     const isInView = useInView(containerRef, { once: true, margin: "-100px" })
 
-    const fullCommand = "npx @dinanathdash/envault login"
+    const fullCommand = "envault login"
 
     useEffect(() => {
         // Blinking cursor

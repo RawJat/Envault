@@ -63,28 +63,28 @@ export function Features() {
                 {/* 3-Column Industrial Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-0 border border-black/20 dark:border-white/20">
                     {features.map((feature, index) => (
-                        <div 
-                            key={index} 
+                        <div
+                            key={index}
                             className="border-r border-b border-black/20 dark:border-white/20 last:border-r-0 p-8 bg-bone dark:bg-void hover:bg-void/5 dark:hover:bg-bone/5 transition-colors relative group"
                         >
                             {/* Spec Label */}
                             <div className="absolute top-3 right-3 font-mono text-[10px] text-void/30 dark:text-bone/30 tracking-wider">
                                 [{feature.spec}]
                             </div>
-                            
+
                             {/* Icon */}
                             <feature.icon className="w-8 h-8 text-void dark:text-bone mb-4" strokeWidth={1.5} />
-                            
+
                             {/* Title */}
                             <h3 className="font-mono text-sm uppercase tracking-wider mb-2 text-void dark:text-bone">
                                 {feature.title}
                             </h3>
-                            
+
                             {/* Value Badge */}
                             <div className="inline-block bg-void dark:bg-bone text-bone dark:text-void px-3 py-1 rounded-none font-mono text-xs mb-4">
                                 {feature.value}
                             </div>
-                            
+
                             {/* Description */}
                             <p className="text-sm text-void/70 dark:text-bone/70 leading-relaxed font-sans">
                                 {feature.description}

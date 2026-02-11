@@ -18,14 +18,22 @@
 
 ## CLI
 
-Envault comes with a powerful CLI to manage your secrets without leaving your terminal.
+Envault comes with a high-performance Go CLI to manage your secrets without leaving your terminal.
 
+### Installation
+
+**macOS & Linux (Universal)**
 ```bash
-# Login securely
-npx @dinanathdash/envault login
+curl -fsSL https://raw.githubusercontent.com/DinanathDash/Envault/main/install.sh | sh
 ```
 
-For more details, check out the [CLI Documentation](./cli/README.md).
+**macOS (Homebrew)**
+```bash
+brew tap DinanathDash/envault
+brew install envault
+```
+
+For more details, check out the [CLI Documentation](./cli-go/README.md).
 
 ## Security Architecture
 

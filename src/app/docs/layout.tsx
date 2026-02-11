@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { loadedSource } from '@/lib/source';
 import DocsLayoutClient from '@/components/docs/docs-layout-client';
 import { getServerOS } from '@/lib/os';
+import './docs.css';
 
 export default async function Layout({ children }: { children: ReactNode }) {
   const os = await getServerOS();

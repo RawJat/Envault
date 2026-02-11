@@ -6,20 +6,60 @@ import Link from "next/link"
 import { ShieldCheck, ArrowRight, Terminal, Clipboard, Check } from "lucide-react"
 import { useState } from "react"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
+import { Scene } from "./Scene"
 
-export function Hero() {
+function InstallTerminal({ command, label }: { command: string; label: string }) {
     const [copied, setCopied] = useState(false)
 
     const copyToClipboard = () => {
-        navigator.clipboard.writeText("npx @dinanathdash/envault login")
+        navigator.clipboard.writeText(command)
         toast.success("Command copied to clipboard")
         setCopied(true)
         setTimeout(() => setCopied(false), 2000)
     }
+
+    return (
+        <div className="border border-primary/20 bg-background/50 backdrop-blur-sm rounded-none overflow-hidden">
+            <div className="bg-primary text-primary-foreground px-4 py-2 font-mono text-xs flex items-center justify-between">
+                <span>[{label.toUpperCase()}]</span>
+                <div className="flex items-center gap-2">
+                    <Terminal className="w-4 h-4" />
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <button
+                                onClick={copyToClipboard}
+                                className="text-primary-foreground/60 hover:text-primary-foreground transition-colors"
+                            >
+                                {copied ? <Check className="w-4 h-4 text-green-500" /> : <Clipboard className="w-4 h-4" />}
+                            </button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Copy and run this command</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </div>
+            </div>
+            <div className="p-4 font-mono text-sm space-y-2">
+                <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground/60">$</span>
+                    <span className="text-foreground break-all">{command}</span>
+                </div>
+                <div className="text-muted-foreground/60 text-xs mt-2">
+                    {`>> INSTALL | SECURE | READY`}
+                </div>
+            </div>
+        </div>
+    )
+}
+
+
+export function Hero() {
     return (
         <section className="relative h-screen w-full flex items-center justify-center overflow-hidden">
-            <div className="container relative z-10 px-4 md:px-6 grid md:grid-cols-2 gap-12 items-center">
+            <Scene />
+            <div className="container relative z-20 px-4 md:px-6 grid md:grid-cols-2 gap-12 items-center pt-16">
                 <div className="flex flex-col items-start text-left space-y-8 max-w-2xl">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
@@ -47,46 +87,52 @@ export function Hero() {
                         transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
                         className="text-sm md:text-base lg:text-lg font-mono text-muted-foreground max-w-lg leading-relaxed border-l-2 border-primary/20 pl-4"
                     >
-                        STOP MANUAL .ENV SHUFFLING.<br/>
-                        SYNC SECRETS ACROSS YOUR TEAM IN &lt; 2 MINUTES.<br/>
+                        STOP MANUAL. ENV SHUFFLING.<br />
+                        SYNC SECRETS ACROSS YOUR TEAM IN &lt; 2 MINUTES.<br />
                         ZERO-KNOWLEDGE ARCHITECTURE.
                     </motion.p>
 
-                    {/* Terminal Layer */}
+                    {/* Tabbed Installation UI */}
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.8, delay: 0.6, ease: "easeOut" }}
-                        className="w-full max-w-sm md:max-w-lg border border-primary/20 bg-background/50 backdrop-blur-sm rounded-none overflow-hidden"
+                        className="w-full max-w-sm md:max-w-lg"
                     >
-                        <div className="bg-primary text-primary-foreground px-4 py-2 font-mono text-xs flex items-center justify-between">
-                            <span>[TERMINAL]</span>
-                            <div className="flex items-center gap-2">
-                                <Terminal className="w-4 h-4" />
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <button
-                                            onClick={copyToClipboard}
-                                            className="text-primary-foreground/60 hover:text-primary-foreground transition-colors"
-                                        >
-                                            {copied ? <Check className="w-4 h-4 text-green-500" /> : <Clipboard className="w-4 h-4" />}
-                                        </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p>Copy and run this command</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                            </div>
-                        </div>
-                        <div className="p-4 font-mono text-sm space-y-2">
-                            <div className="flex items-center gap-2">
-                                <span className="text-muted-foreground/60">$</span>
-                                <span className="text-foreground">npx @dinanathdash/envault login</span>
-                            </div>
-                            <div className="text-muted-foreground/60 text-xs mt-2">
-                                {`>> AUTHENTICATE | SECURE | READY`}
-                            </div>
-                        </div>
+                        <Tabs defaultValue="script" className="w-full">
+                            <TabsList className="grid w-full grid-cols-3 bg-background/50 backdrop-blur-sm border border-primary/20 rounded-none h-auto p-1">
+                                <TabsTrigger value="script" className="font-mono text-xs rounded-none data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                                    SCRIPT
+                                </TabsTrigger>
+                                <TabsTrigger value="brew" className="font-mono text-xs rounded-none data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                                    BREW
+                                </TabsTrigger>
+                                <TabsTrigger value="npm" className="font-mono text-xs rounded-none data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                                    NPM
+                                </TabsTrigger>
+                            </TabsList>
+
+                            <TabsContent value="script" className="mt-0">
+                                <InstallTerminal
+                                    command="curl -fsSL https://raw.githubusercontent.com/DinanathDash/Envault/main/install.sh | sh"
+                                    label="Universal Installer"
+                                />
+                            </TabsContent>
+
+                            <TabsContent value="brew" className="mt-0">
+                                <InstallTerminal
+                                    command="brew tap DinanathDash/envault && brew install envault"
+                                    label="Homebrew"
+                                />
+                            </TabsContent>
+
+                            <TabsContent value="npm" className="mt-0">
+                                <InstallTerminal
+                                    command="npm install -g @dinanathdash/envault"
+                                    label="NPM"
+                                />
+                            </TabsContent>
+                        </Tabs>
                     </motion.div>
 
                     <motion.div

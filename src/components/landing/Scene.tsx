@@ -174,7 +174,7 @@ function StonePlanet() {
         window.addEventListener('mousemove', handleMouseMove)
         return () => window.removeEventListener('mousemove', handleMouseMove)
     }, [])
-    
+
     // Planet stays light-colored in both themes
     useEffect(() => {
         if (materialRef.current) {
@@ -232,7 +232,7 @@ function OrbitingDebris() {
     const { viewport } = useThree()
     const { resolvedTheme } = useTheme()
     const particleCount = 2000  // Increased for denser compressed tube
-    
+
     // Update material color based on theme
     useEffect(() => {
         if (materialRef.current) {
@@ -241,23 +241,23 @@ function OrbitingDebris() {
             materialRef.current.opacity = isDark ? 0.7 : 0.8
         }
     }, [resolvedTheme])
-    
+
     const particles = useMemo(() => {
         const temp = []
         for (let i = 0; i < particleCount; i++) {
             // Create narrow compressed tube-like ring
             const angle = (i / particleCount) * Math.PI * 2
-            
+
             // Very tight radial distribution - compressed into narrow band
             const radiusBase = 3.0 + Math.random() * 0.5  // Closer to planet, narrow band
-            
+
             // Very narrow thickness for tight tube - only local Y displacement
             const localY = (Math.random() - 0.5) * 0.8  // Even tighter tube vertically
-            
+
             // Varied particle sizes (some large chunks, mostly small)
             const sizeRandom = Math.random()
             const scale = sizeRandom > 0.9 ? 0.06 + Math.random() * 0.08 : 0.015 + Math.random() * 0.035
-            
+
             temp.push({
                 angle: angle,
                 radius: radiusBase,
@@ -290,7 +290,7 @@ function OrbitingDebris() {
             const velocity = Math.abs(currentScroll - lastScroll.current) * 0.001
             setScrollVelocity(velocity)
             lastScroll.current = currentScroll
-            
+
             setTimeout(() => setScrollVelocity(0), 150)
         }
 
@@ -311,7 +311,7 @@ function OrbitingDebris() {
             // Calculate position in orbital plane - maintain consistent ring structure
             const localX = Math.cos(particle.angle) * particle.radius
             const localZ = Math.sin(particle.angle) * particle.radius
-            
+
             // Apply ring tilt transformation properly - single transformation
             const x = planetX + localX
             const y = particle.localY * Math.cos(ringTilt) - localZ * Math.sin(ringTilt)
@@ -329,7 +329,7 @@ function OrbitingDebris() {
 
             instancedMeshRef.current!.setMatrixAt(i, dummy.matrix)
         })
-        
+
         instancedMeshRef.current.instanceMatrix.needsUpdate = true
     })
 
@@ -339,11 +339,11 @@ function OrbitingDebris() {
         <instancedMesh ref={instancedMeshRef} args={[undefined, undefined, particleCount]}>
             {/* Very small icosahedron for varied particle shapes */}
             <icosahedronGeometry args={[1, 0]} />
-            <meshBasicMaterial 
+            <meshBasicMaterial
                 ref={materialRef}
-                color={isDark ? "#ffffff" : "#000000"} 
-                transparent 
-                opacity={isDark ? 0.7 : 0.8} 
+                color={isDark ? "#ffffff" : "#000000"}
+                transparent
+                opacity={isDark ? 0.7 : 0.8}
             />
         </instancedMesh>
     )
@@ -378,11 +378,9 @@ export function Scene() {
         return () => window.removeEventListener('scroll', handleScroll)
     }, [])
 
-    if (opacity === 0) return null
-
     return (
-        <div 
-            className="fixed inset-0 pointer-events-none z-0 hidden md:block" 
+        <div
+            className="absolute inset-0 pointer-events-none z-0 hidden md:block"
             style={{ opacity }}
         >
             <Canvas>

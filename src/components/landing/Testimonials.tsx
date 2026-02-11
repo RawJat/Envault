@@ -1,10 +1,10 @@
 "use client"
 
-import { 
-    motion, 
-    useAnimationFrame, 
-    useMotionValue, 
-    useTransform 
+import {
+    motion,
+    useAnimationFrame,
+    useMotionValue,
+    useTransform
 } from "framer-motion"
 import { Star, Quote } from "lucide-react"
 import { useRef } from "react"
@@ -58,7 +58,7 @@ export function Testimonials() {
     // 1. Setup Motion Values
     const baseX = useMotionValue(0)
     const isHovered = useRef(false)
-    
+
     // 2. The loop logic
     // We move -0.05% per frame (adjust this number to change speed)
     useAnimationFrame((t, delta) => {
@@ -129,12 +129,12 @@ export function Testimonials() {
 
                 {/* Scrolling Testimonials for Desktop */}
                 {/* We use a mask-image to fade the edges for a smoother look */}
-                <div 
+                <div
                     className="hidden md:flex relative overflow-hidden w-full [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]"
                     onMouseEnter={() => isHovered.current = true}
                     onMouseLeave={() => isHovered.current = false}
                 >
-                    <motion.div 
+                    <motion.div
                         className="flex gap-8"
                         style={{ x: useTransform(baseX, (v) => `${v}%`) }}
                     >

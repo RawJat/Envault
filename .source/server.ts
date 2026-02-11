@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { default as __fd_glob_15 } from "../content/docs/core/meta.json?collection=meta"
-import { default as __fd_glob_14 } from "../content/docs/guides/meta.json?collection=meta"
+import { default as __fd_glob_15 } from "../content/docs/guides/meta.json?collection=meta"
+import { default as __fd_glob_14 } from "../content/docs/core/meta.json?collection=meta"
 import { default as __fd_glob_13 } from "../content/docs/configuration/meta.json?collection=meta"
 import { default as __fd_glob_12 } from "../content/docs/cli/meta.json?collection=meta"
 import { default as __fd_glob_11 } from "../content/docs/api/meta.json?collection=meta"
@@ -25,4 +25,4 @@ const create = server<typeof Config, import("fumadocs-mdx/runtime/types").Intern
 
 export const docs = await create.doc("docs", "content/docs", {"index.mdx": __fd_glob_0, "api/overview.mdx": __fd_glob_1, "cli/commands.mdx": __fd_glob_2, "cli/reference.mdx": __fd_glob_3, "configuration/environment-variables.mdx": __fd_glob_4, "core/architecture.mdx": __fd_glob_5, "core/projects.mdx": __fd_glob_6, "core/security.mdx": __fd_glob_7, "guides/initial-setup.mdx": __fd_glob_8, "guides/installation.mdx": __fd_glob_9, });
 
-export const meta = await create.meta("meta", "content/docs", {"meta.json": __fd_glob_10, "api/meta.json": __fd_glob_11, "cli/meta.json": __fd_glob_12, "configuration/meta.json": __fd_glob_13, "guides/meta.json": __fd_glob_14, "core/meta.json": __fd_glob_15, });
+export const meta = await create.meta("meta", "content/docs", {"meta.json": __fd_glob_10, "api/meta.json": __fd_glob_11, "cli/meta.json": __fd_glob_12, "configuration/meta.json": __fd_glob_13, "core/meta.json": __fd_glob_14, "guides/meta.json": __fd_glob_15, });
