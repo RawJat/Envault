@@ -37,50 +37,42 @@ function getPlatform() {
 function downloadBinary() {
     const { osName, archName } = getPlatform();
     const extension = os.platform() === 'win32' ? '.zip' : '.tar.gz';
-
-    // Naming convention from GoReleaser template:
-    // envault_Darwin_x86_64.tar.gz
-    // envault_Darwin_arm64.tar.gz
-    // envault_Linux_x86_64.tar.gz
     const fileName = `envault_${osName}_${archName}${extension}`;
     const url = `https://github.com/${REPO}/releases/download/${VERSION}/${fileName}`;
 
     console.log(`Downloading Envault CLI ${VERSION} for ${osName} ${archName}...`);
-    console.log(`URL: ${url}`);
 
-    const dest = path.join(__dirname, 'bin', fileName);
     const binDir = path.join(__dirname, 'bin');
-
     if (!fs.existsSync(binDir)) {
         fs.mkdirSync(binDir);
     }
+    const dest = path.join(binDir, fileName);
 
-    const file = fs.createWriteStream(dest);
-    https.get(url, (response) => {
-        if (response.statusCode === 302) {
-            // Handle redirect if needed (GitHub releases often redirect)
-            https.get(response.headers.location, (response) => {
-                response.pipe(file);
-                file.on('finish', () => {
-                    file.close(() => {
-                        extract(dest, binDir, extension);
-                    });
+    function download(downloadUrl) {
+        https.get(downloadUrl, (response) => {
+            if (response.statusCode === 301 || response.statusCode === 302) {
+                return download(response.headers.location);
+            }
+
+            if (response.statusCode !== 200) {
+                console.error(`Download failed with status code ${response.statusCode}`);
+                process.exit(1);
+            }
+
+            const file = fs.createWriteStream(dest);
+            response.pipe(file);
+            file.on('finish', () => {
+                file.close(() => {
+                    extract(dest, binDir, extension);
                 });
             });
-            return;
-        }
-
-        response.pipe(file);
-        file.on('finish', () => {
-            file.close(() => {
-                extract(dest, binDir, extension);
-            });
+        }).on('error', (err) => {
+            console.error('Error downloading binary:', err.message);
+            process.exit(1);
         });
-    }).on('error', (err) => {
-        fs.unlink(dest, () => { }); // Delete the file async. (But we don't check result)
-        console.error('Error downloading binary:', err.message);
-        process.exit(1);
-    });
+    }
+
+    download(url);
 }
 
 function extract(filePath, destDir, extension) {
