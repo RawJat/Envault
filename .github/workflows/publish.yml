@@ -5,8 +5,10 @@ on:
     branches:
       - main
     paths:
-      - 'cli/**' # Only trigger if changes inside cli/ folder
+      - 'cli-go/**'
+      - 'cli-wrapper/**'
       - '.github/workflows/publish.yml'
+      - 'release.config.js'
 
 jobs:
   release:
@@ -30,18 +32,18 @@ jobs:
           node-version: 22
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Install Dependencies
-        run: |
-          cd cli
-          npm install
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
 
-      - name: Semantic Release
+      - name: Install dependencies
+        run: |
+            npm install --no-save semantic-release @semantic-release/commit-analyzer @semantic-release/release-notes-generator @semantic-release/npm @semantic-release/git @semantic-release/exec
+
+      - name: Semantic Release to Wrapper & GoReleaser
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }} 
-          # Note: Even with OIDC, semantic-release often checks for NPM_TOKEN. 
-          # If you strictly want OIDC, you might need extra config, but setting NPM_TOKEN (Granular Access Token) 
-          # in GitHub Secrets is the most reliable way for semantic-release to work out of the box.
+          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
         run: |
-          cd cli
           npx semantic-release
