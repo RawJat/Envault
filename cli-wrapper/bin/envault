@@ -1,0 +1,14 @@
+#!/usr/bin/env node
+
+const { spawn } = require('child_process');
+const path = require('path');
+const os = require('os');
+
+const binName = os.platform() === 'win32' ? 'envault.exe' : 'envault';
+const binPath = path.join(__dirname, '..', 'bin', binName);
+
+const child = spawn(binPath, process.argv.slice(2), {
+    stdio: 'inherit'
+});
+
+child.on('exit', process.exit);

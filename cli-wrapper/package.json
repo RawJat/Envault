@@ -1,0 +1,19 @@
+{
+  "name": "@dinanathdash/envault",
+  "version": "1.7.0",
+  "description": "Envault CLI - Securely manage your environment variables",
+  "bin": {
+    "envault": "./bin/envault"
+  },
+  "scripts": {
+    "postinstall": "node install.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DinanathDash/Envault.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}

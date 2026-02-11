@@ -102,7 +102,7 @@ export function NotificationDropdown() {
 
             <DropdownMenuContent
                 align={isMobile ? "center" : "end"}
-                className="w-[90vw] max-w-[380px] sm:w-[380px] p-0"
+                className="w-[90vw] max-w-[400px] sm:w-[400px] p-0"
                 sideOffset={8}
             >
                 {/* Header */}
