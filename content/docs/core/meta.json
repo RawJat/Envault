@@ -3,6 +3,8 @@
   "pages": [
     "architecture",
     "security",
-    "projects"
+    "projects",
+    "projects-environments",
+    "access-control"
   ]
 }

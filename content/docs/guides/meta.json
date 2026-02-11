@@ -2,6 +2,8 @@
   "title": "Guides",
   "pages": [
     "installation",
-    "initial-setup"
+    "initial-setup",
+    "production-deployment",
+    "ci-cd-integration"
   ]
 }

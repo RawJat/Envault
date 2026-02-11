@@ -3,35 +3,92 @@ title: API Overview
 description: Programmatic access to Envault
 ---
 
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
 # API Access
 
-Envault provides a REST API for programmatic access to secrets. This is useful for CI/CD pipelines or custom integrations.
-
-<Callout type="warn">
-  Direct API access requires a Service Token. Do not use your user JWT for automated scripts.
-</Callout>
+Envault provides a REST API for programmatic access to secrets. This is useful for CI/CD pipelines, custom integrations, or building your own clients.
 
 ## Authentication
 
-All API requests must include the `Authorization` header:
+All API requests must include the `Authorization` header with a valid **Service Token**.
+
+<Callout type="warn">
+  Do not use your personal User JWT for automated scripts. Generate a Service Token from the project settings.
+</Callout>
 
 ```http
-Authorization: Bearer <your_token>
+Authorization: Bearer evt_live_...
 ```
+
+## Base URL
+
+```bash
+https://your-envault-instance.com/api/v1
+```
+
+## Error Handling
+
+The API uses standard HTTP status codes.
+
+| Code | Meaning | Description |
+| :--- | :--- | :--- |
+| `200` | OK | Request succeeded. |
+| `401` | Unauthorized | Invalid or missing API token. |
+| `403` | Forbidden | Token lacks permission for this resource. |
+| `404` | Not Found | Project or secret not found. |
+| `500` | Server Error | Something went wrong on our end. |
 
 ## Endpoints
 
-### `GET /api/v1/projects/:id/secrets`
+### Get Project Secrets
 
-Retrieve secrets for a specific project.
+Retrieve all decrypted secrets for a specific project environment.
 
-**Response:**
+`GET /projects/:projectId/secrets`
+
+**Parameters**
+
+| Name | Type | Description |
+| :--- | :--- | :--- |
+| `environment` | `string` | The environment to fetch (e.g., `production`, `preview`). Default: `development`. |
+
+**Response**
 
 ```json
 {
   "secrets": {
-    "DATABASE_URL": "postgres://...",
-    "API_KEY": "sk_test_..."
+    "DATABASE_URL": "postgres://user:pass@localhost:5432/db",
+    "API_KEY": "sk_test_12345",
+    "NEXT_PUBLIC_API_URL": "https://api.example.com"
   }
 }
 ```
+
+### Example Request
+
+<Tabs items={['cURL', 'JavaScript']}>
+  <Tab value="cURL">
+  
+  ```bash
+  curl -X GET "https://envault.app/api/v1/projects/proj_123/secrets?environment=production" \
+    -H "Authorization: Bearer evt_live_abc123"
+  ```
+  
+  </Tab>
+  <Tab value="JavaScript">
+  
+  ```javascript
+  const response = await fetch('https://envault.app/api/v1/projects/proj_123/secrets?environment=production', {
+    headers: {
+      Authorization: 'Bearer evt_live_abc123'
+    }
+  });
+  
+  const data = await response.json();
+  console.log(data.secrets);
+  ```
+  
+  </Tab>
+</Tabs>

@@ -1,0 +1,74 @@
+---
+title: Projects & Environments
+description: Understanding the hierarchy of secrets in Envault
+---
+
+import { Briefcase, FolderGit2, Braces } from 'lucide-react';
+import { Card, Cards } from 'fumadocs-ui/components/card';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Mermaid } from '@/components/mermaid';
+
+Envault organizes your secrets using a logical hierarchy designed to mirror modern development workflows.
+
+## Hierarchy
+
+The structure consists of three main entities:
+
+1.  **Organization** (Team)
+2.  **Projects** (Apps/Services)
+3.  **Environments** (Development, Production, etc.)
+
+<Mermaid chart={`
+graph TD
+    Org[Organization] --> Proj1["Project: Web App"]
+    Org --> Proj2["Project: API Service"]
+    
+    Proj1 --> EnvDev[Development]
+    Proj1 --> EnvStaging[Staging]
+    Proj1 --> EnvProd[Production]
+    
+    EnvDev --> Secret1[DATABASE_URL]
+    EnvDev --> Secret2[STRIPE_KEY]
+`} />
+
+## Projects
+
+A **Project** represents a single application or service. For example, your Next.js frontend would be one project, and your Golang backend would be another.
+
+<Callout type="info">
+  Each project has its own set of Data Keys (DEKs), meaning a compromise in one project's keys (unlikely) does not compromise others.
+</Callout>
+
+### Creating a Project
+When you create a project, you are automatically assigned the **Owner** role. You can then invite team members to collaborate.
+
+## Environments
+
+Every project comes with three default environments:
+
+- **Development**: For local development. Syncs with `envault pull`.
+- **Preview / Staging**: For testing, CI/CD, and pull request previews.
+- **Production**: For your live application.
+
+<Callout type="warn">
+  Production secrets should be severely restricted. Use **Branch Protection** rules (coming soon) to prevent accidental overwrites.
+</Callout>
+
+### Environment Isolation
+Secrets in **Production** are completely isolated from **Development**. A variable named `DATABASE_URL` can (and should) have different values in each environment.
+
+## Secrets
+
+Secrets are key-value pairs stored encrypted in the database.
+
+- **Keys**: Must be uppercase, underscores allowed (e.g., `NEXT_PUBLIC_API_URL`).
+- **Values**: Can be any string. Multi-line values are supported (useful for private keys).
+
+### Referencing Secrets
+You can reference other secrets using the syntax `${SECRET_NAME}`. This is resolved at runtime by the CLI.
+
+**Example:**
+```properties
+BASE_URL=https://api.example.com
+API_ENDPOINT=${BASE_URL}/v1
+```

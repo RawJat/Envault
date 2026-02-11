@@ -1,0 +1,89 @@
+---
+title: CI/CD Integration
+description: Automate secret injection in your pipelines.
+---
+
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+import { Callout } from 'fumadocs-ui/components/callout';
+
+Envault shines when integrated into your Continuous Integration and Deployment (CI/CD) pipelines. Instead of manually copying secrets to GitHub Secrets or Vercel, you can pull them dynamically during the build process.
+
+## The `envault-run` Method
+
+The safest way to inject secrets is to wrap your build command with `envault run`. This injects definitions into the process environment without writing them to disk.
+
+### Prerequisites
+
+1.  **Service Token**: Generate a Service Token in your Project Settings.
+2.  **Envault CLI**: Ensure the CLI is installed in your CI environment.
+
+## GitHub Actions
+
+Here is a complete workflow example for a Next.js application.
+
+```yaml
+name: Build and Deploy
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      ENVAULT_TOKEN: ${{ secrets.ENVAULT_SERVICE_TOKEN }}
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          
+      - name: Install Envault CLI
+        run: curl -sL https://envault.app/install.sh | bash
+
+      - name: Install Dependencies
+        run: npm ci
+        
+      - name: Build with Envault
+        run: envault run --project proj_123 --env production -- npm run build
+```
+
+## GitLab CI
+
+```yaml
+stages:
+  - build
+
+build_app:
+  stage: build
+  image: node:18
+  variables:
+    ENVAULT_TOKEN: $ENVAULT_SERVICE_TOKEN
+  before_script:
+    - curl -sL https://envault.app/install.sh | bash
+  script:
+    - npm ci
+    - envault run --project proj_123 --env production -- npm run build
+```
+
+## Docker Entrypoint
+
+You can use Envault to inject secrets at container runtime.
+
+```dockerfile
+FROM node:18-alpine
+
+# Install Envault
+RUN curl -sL https://envault.app/install.sh | bash
+
+WORKDIR /app
+COPY . .
+
+# Use envault run as the entrypoint
+CMD ["envault", "run", "--project", "proj_123", "--", "node", "server.js"]
+```
+
+<Callout type="info">
+  Make sure to pass `ENVAULT_TOKEN` as an environment variable when running the container.
+</Callout>

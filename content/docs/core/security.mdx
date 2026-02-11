@@ -9,7 +9,7 @@ description: Security practices and standards
 
 The `ENCRYPTION_KEY` is the crown jewel of your Envault instance.
 
-- **Storage**: Never commit this to version control. Use a secret manager (like AWS Secrets Manager, Vercel Env Vars, or Infisical) to inject it at runtime.
+- **Storage**: Never commit this to version control. This is your **"Secret Zero"** and should be injected at runtime via your infrastructure provider (e.g., Vercel Dashboard, Railway Variables, or Docker `.env`).
 - **Rotation**: If you suspect the Master Key is compromised, you must immediately rotate it. This involves:
     1. Generating a new key.
     2. Decrypting all Data Keys with the old Master Key.

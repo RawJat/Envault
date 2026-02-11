@@ -1,0 +1,101 @@
+---
+title: Production Deployment
+description: Deploying Envault to Vercel, Railway, or your own infrastructure
+---
+
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+import { Callout } from 'fumadocs-ui/components/callout';
+
+Envault is designed to be easily deployable to any platform that supports **Next.js** (Node.js).
+
+## Environment Variables
+
+Before deploying, ensure you have the following environment variables configured in your production environment:
+
+| Variable | Description | Required |
+| :--- | :--- | :--- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase Project URL | Yes |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your Supabase Anon Key | Yes |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase Service Role Key (for Admin tasks) | Yes |
+| `ENCRYPTION_KEY` | 32-byte hex string for Master Key | Yes |
+| `NEXT_PUBLIC_SITE_URL` | The URL where your app is hosted (e.g. `https://envault.app`) | Yes |
+
+<Callout type="warn">
+  Never check your `SUPABASE_SERVICE_ROLE_KEY` or `ENCRYPTION_KEY` into version control. Always set them in your deployment platform's dashboard.
+</Callout>
+
+## Deployment Providers
+
+<Tabs items={['Vercel', 'Docker', 'Railway']}>
+  <Tab value="Vercel">
+  
+  ### Deploy to Vercel
+
+  Vercel is the creators of Next.js and offers the seamless deployment experience.
+
+  1.  Push your code to a Git repository (GitHub, GitLab, Bitbucket).
+  2.  Import the project into Vercel.
+  3.  Add the **Environment Variables** listed above.
+  4.  Click **Deploy**.
+
+  </Tab>
+  <Tab value="Docker">
+
+  ### Docker Build
+
+  You can containerize Envault using the standard Next.js Dockerfile.
+
+  ```dockerfile
+  FROM node:18-alpine AS base
+
+  # Install dependencies only when needed
+  FROM base AS deps
+  WORKDIR /app
+  COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
+  RUN npm ci
+
+  # Rebuild the source code only when needed
+  FROM base AS builder
+  WORKDIR /app
+  COPY --from=deps /app/node_modules ./node_modules
+  COPY . .
+  RUN npm run build
+
+  # Production image, copy all the files and run next
+  FROM base AS runner
+  WORKDIR /app
+  ENV NODE_ENV production
+  COPY --from=builder /app/public ./public
+  COPY --from=builder /app/.next/standalone ./
+  COPY --from=builder /app/.next/static ./.next/static
+
+  EXPOSE 3000
+  CMD ["node", "server.js"]
+  ```
+
+  Build and run:
+  ```bash
+  docker build -t envault .
+  docker run -p 3000:3000 --env-file .env.production envault
+  ```
+
+  </Tab>
+  <Tab value="Railway">
+
+  ### Deploy to Railway
+
+  Railway requires zero configuration for Next.js apps.
+
+  1.  Connect your GitHub repository.
+  2.  Railway will automatically detect the `package.json` and build command.
+  3.  Go to **Variables** and add the required environment variables.
+  4.  Deployment will trigger automatically.
+
+  </Tab>
+</Tabs>
+
+## Post-Deployment Checklist
+
+- **HTTPS**: Ensure your domain is serving over HTTPS.
+- **Database Backups**: Enable Point-in-Time Recovery (PITR) on Supabase.
+- **Key Backup**: Securely back up your `ENCRYPTION_KEY` in a password manager. If you lose this, all data is lost.

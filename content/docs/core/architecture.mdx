@@ -1,46 +1,87 @@
 ---
 title: Architecture
-description: Understanding Envault's security model
+description: Understanding Envault's security model and request flow
 ---
 
 import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Mermaid } from '@/components/mermaid';
 
 # Security Architecture
 
-Envault prioritizes security above all else. Our architecture is designed to ensure that your secrets remain confidential, even in the event of a database compromise.
+Envault prioritizes security above all else. Our architecture is designed to ensure that your secrets remain confidential, even in the event of a database compromise. We adhere to the principle of **Defense in Depth**.
 
-## Hybrid Encryption Model
+## Envelope Encryption
 
-We use a multi-tiered encryption strategy (Envelope Encryption).
+We use a multi-tiered encryption strategy known as **Envelope Encryption**. This limits the exposure of any single key and allows for easier key rotation.
+
+<Mermaid chart={`
+graph TD
+    User(["User / App"]) -->|Requests Secret| API[Envault API]
+    API -->|1. Fetch Encrypted Data Key| DB[(Database)]
+    DB -- Encrypted Data Key --> API
+    API -->|2. Decrypt Data Key| MasterKey["Master Key (Env Var)"]
+    MasterKey -- Decrypted Data Key --> API
+    API -->|3. Fetch Encrypted Secret| DB
+    DB -- Encrypted Secret --> API
+    API -->|4. Decrypt Secret| Memory[Memory]
+    Memory -- Plaintext Secret --> User
+    
+    style MasterKey fill:#f9f,stroke:#333,stroke-width:2px,color:#000
+    style DB fill:#bbf,stroke:#333,stroke-width:2px,color:#000
+`} />
 
 <Accordions>
 <Accordion title="1. Master Key (KEK)">
 A **32-byte key** stored in environment variables (`ENCRYPTION_KEY`) on the server.
-- Used **only** to encrypt/decrypt Data Keys.
-- Never stored in the database.
-- Should be rotated periodically (requires re-encrypting Data Keys).
+- **Purpose**: Encrypts and decrypts Data Keys.
+- **Storage**: Ephemeral (Environment Variable), never persisted to the database.
+- **Management**: Should be rotated periodically throughout the infrastructure provider.
 </Accordion>
 <Accordion title="2. Data Keys (DEK)">
 Unique keys generated for each project or secret bundle.
-- Stored in the database, **encrypted by the Master Key**.
-- When needed, the app fetches the encrypted DEK, decrypts it with the Master Key in memory, and then uses it to decrypt the actual secret.
+- **Purpose**: Encrypts the actual secret values.
+- **Storage**: Stored in the database, **encrypted by the Master Key**.
+- **Rotation**: Can be re-encrypted if the Master Key changes.
 </Accordion>
 <Accordion title="3. Secret Payload">
-The actual environment variables.
-- Encrypted using **AES-256-GCM** with the Data Key.
-- Authenticated encryption (GCM) ensures data integrity.
+The actual environment variables (e.g., `DATABASE_URL`).
+- **Encryption**: **AES-256-GCM** (Galois/Counter Mode).
+- **Integrity**: GCM provides authenticated encryption, meaning any tampering with the ciphertext will be detected upon decryption.
 </Accordion>
 </Accordions>
 
-## Request Flow
+## Threat Model
 
-When a user requests a secret (e.g., via `envault pull`):
+What happens if...
 
-1. **Auth**: CLI authenticates via Device Flow.
-2. **Permission Check**: Server verifies user has `Viewer` or `Editor` role.
-3. **Key Retrieval**: Server fetches the encrypted Data Key for the project.
-4. **Decryption**: Server decrypts the Data Key using the Master Key.
-5. **Secret Decryption**: Server uses the Data Key to decrypt the secrets.
-6. **Transmission**: Secrets are sent over TLS to the CLI.
+### The Database is Leaked?
+**Impact: Low.**
+Attacker gains access to:
+- Encrypted Secrets (Ciphertext)
+- Encrypted Data Keys
+- User Metadata
 
-This ensures that the plaintext secrets never reside on disk on the server side (except potentially in swap, which should be disabled or encrypted in production).
+They **cannot** decrypt any secrets because the **Master Key** is not in the database.
+
+### The Server is Compromised?
+**Impact: Critical.**
+If an attacker gains full shell access to the running server, they can read the `ENCRYPTION_KEY` from the environment.
+- **Mitigation**: Use a hardened infrastructure provider (e.g., Vercel, AWS ECS). Restrict access to the production environment. Envault does **not** store decrypted secrets on disk.
+
+### A Developer's Laptop is Stolen?
+**Impact: Medium.**
+- The attacker might have access to the local `.env` file if it was pulled.
+- **Mitigation**: `envault pull` does not persist credentials permanently. Revoke the user's access immediately via the dashboard to prevent fetching new secrets.
+
+## Key Rotation
+
+Envault supports key rotation to minimize the impact of a potential key compromise.
+
+<Callout type="info">
+  To rotate the Master Key, you must provide the old key and the new key to a migration script that re-encrypts all Data Keys.
+</Callout>
+
+1.  **Generate New Key**: Create a new 32-byte random string.
+2.  **Run Migration**: The server decrypts all Data Keys with the *Old Master Key* and re-encrypts them with the *New Master Key*.
+3.  **Update Environment**: Update the `ENCRYPTION_KEY` variable on your deployment.

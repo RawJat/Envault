@@ -1,70 +1,85 @@
 ---
 title: Introduction
-description: Welcome to the Envault documentation
+description: Secure, collaborative, and developer-friendly environment variable management.
 ---
 
-import { NotebookPen, Terminal, Shield, Settings, Server } from 'lucide-react';
+import { NotebookPen, Terminal, Shield, Server, Network, Lock, Users, Database, ServerCrash, Palette, File } from 'lucide-react';
 import { Card, Cards } from 'fumadocs-ui/components/card';
+import { Callout } from 'fumadocs-ui/components/callout';
 
-**Envault** is a secure, modern vault application built with Next.js, Supabase, and Tailwind CSS. It provides a robust authentication system and a sleek user interface for storing and managing sensitive information.
+# Welcome to Envault
+
+**Envault** is an open-source, self-hostable secret management platform designed for modern development teams. It simplifies the chaos of managing `.env` files across multiple projects, environments, and team members, ensuring your sensitive data is **always encrypted** and **always syncronized**.
+
+<Callout title="Why Envault?">
+  Traditional secret management often involves insecurely sharing `.env` files over Slack or using expensive, enterprise-only SaaS solutions. Envault bridges the gap: **Bank-grade security** with a **developer-first experience**, completely under your control.
+</Callout>
+
+## Quick Links
 
 <Cards>
   <Card
     title="Getting Started"
     href="/docs/guides/installation"
     icon={<NotebookPen />}
-    description="Learn how to install and set up Envault locally."
+    description="Install Envault locally or deploy to your infrastructure in minutes."
   />
   <Card
-    title="Core Concepts"
+    title="Architecture"
     href="/docs/core/architecture"
     icon={<Shield />}
-    description="Understand the security architecture and encryption model."
+    description="Deep dive into our Envelope Encryption and security model."
   />
   <Card
     title="CLI Reference"
     href="/docs/cli/reference"
     icon={<Terminal />}
-    description="Manage your secrets directly from your terminal."
+    description="Master the `envault` command line interface."
   />
    <Card
-    title="Configuration"
-    href="/docs/configuration/environment-variables"
-    icon={<Settings />}
-    description="Configure your server environment."
-  />
-   <Card
-    title="API"
+    title="API Reference"
     href="/docs/api/overview"
     icon={<Server />}
-    description="Integrate seamlessly."
+    description="Integrate Envault programmatically into your CI/CD."
   />
 </Cards>
 
-## Vision and Mission
+## Core Features
 
-Envault makes it easy to manage environments across teams and projects, ensuring that your sensitive data is always encrypted and secure while remaining accessible to the right people.
+Envault isn't just a database for strings. It's a complete ecosystem for secret lifecycle management.
 
-## Features
+### Security First
+Security isn't an afterthought; it's the foundation.
+- **AES-256-GCM Encryption**: Utilizing a robust envelope encryption strategy.
+- **Zero-Knowledge Architecture**: Secrets are decrypted only in memory when requested.
+- **Automatic Key Rotation**: Rotate keys seamlessly without downtime.
 
-- **Bank-Grade Security**: AES-256-GCM encryption with master/data key hierarchy and automatic key rotation.
-- **Project Workspaces**: Organize secrets into distinct projects for better management.
-- **Team Collaboration**: Secure project sharing with role-based access control (Owner, Editor, Viewer).
-- **Secure Authentication**: Powered by Supabase Auth for robust user management.
-- **Modern UI/UX**: Built with Tailwind CSS, Shadcn UI, and Framer Motion for a premium experience.
-- **Interactive 3D Elements**: High-performance 3D visuals powered by React Three Fiber.
-- **Keyboard First**: Navigate efficiently with fully customizable, conflict-free hotkeys.
-- **Responsive Design**: Fully responsive layout that works seamlessly on desktop and mobile.
-- **Dark Mode Support**: Built-in support for light and dark themes.
-- **CLI Support**: Manage your secrets directly from your terminal.
+### Developer Experience
+Built to fit into your existing workflow, not disrupt it.
+- **Unified CLI**: `envault pull` is all you need to sync secrets.
+- **Project Workspaces**: Isolate secrets by project (e.g., `web-app`, `backend-api`).
+- **Team Collaboration**: Granular permissions (Owner, Editor, Viewer) for every member.
+
+### Performance & Design
+- **Modern UI**: A stunning, responsive dashboard built with **Next.js**, **Tailwind CSS**, and **Shadcn UI**.
+- **Interactive Visuals**: Experience 3D elements powered by **React Three Fiber**.
+- **Keyboard Navigation**: Move through your secrets as fast as you type.
+
+## How it Works
+
+At a high level, Envault acts as the single source of truth for your environment variables.
+
+1.  **Push**: Developers push encrypted secrets to a central project.
+2.  **Manage**: Owners control access using Role-Based Access Control (RBAC).
+3.  **Pull**: Apps and developers pull secrets into their local environments or CI/CD pipelines securely.
 
 ## Tech Stack
 
+Envault is built on the giants of the modern web.
+
 <Cards>
-  <Card title="Next.js" href="https://nextjs.org/" description="Framework (App Router)" />
-  <Card title="Supabase" href="https://supabase.com/" description="Database & Auth" />
-  <Card title="Upstash Redis" href="https://upstash.com/" description="KV Store" />
-  <Card title="Tailwind CSS" href="https://tailwindcss.com/" description="Styling" />
-  <Card title="Shadcn UI" href="https://ui.shadcn.com/" description="UI Components" />
-  <Card title="React Three Fiber" href="https://r3f.docs.pmnd.rs/" description="3D & Graphics" />
+  <Card title="Next.js 14" href="https://nextjs.org/" icon={<ServerCrash />} description="App Router & Server Actions" />
+  <Card title="Supabase" href="https://supabase.com/" icon={<Database />} description="PostgreSQL & Auth" />
+  <Card title="Tailwind CSS" href="https://tailwindcss.com/" icon={<Palette />} description="Utility-first Styling" />
+  <Card title="Fumadocs" href="https://fumadocs.vercel.app" icon={<File />} description="Documentation Framework" />
 </Cards>

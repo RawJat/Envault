@@ -5,8 +5,9 @@ description: How to install and run Envault locally
 
 import { Step, Steps } from 'fumadocs-ui/components/steps';
 import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+import { Callout } from 'fumadocs-ui/components/callout';
 
-Envault is a self-hostable application. You can run it locally or deploy it to your own infrastructure.
+Envault is a self-hostable application. You can run it locally for development or deploy it to your own infrastructure.
 
 ## Prerequisites
 
@@ -72,8 +73,70 @@ cp .env.example .env.local
 You will need to populate `.env.local` with your Supabase credentials.
 
 </Step>
+<Step>
+
+### Start Development Server
+
+```bash
+npm run dev
+```
+
+Visit `http://localhost:3000` to see your Envault instance running.
+
+</Step>
 </Steps>
 
-## Next Steps
+## Docker Compose
 
-Once installed, proceed to the [Initial Setup](/docs/guides/initial-setup) guide to configure your database and encryption keys.
+For a quick local setup with all dependencies (including Redis and Postgres), you can use Docker Compose.
+
+```yaml
+version: '3.8'
+services:
+  envault:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/envault
+      - ENCRYPTION_KEY=...
+    depends_on:
+      - db
+      - redis
+  
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_PASSWORD: postgres
+      
+  redis:
+    image: redis:alpine
+```
+
+```bash
+docker-compose up -d
+```
+
+## Verify Installation
+
+To ensure everything is working correctly:
+
+1.  **Sign In**: Open the app and try signing in (this tests Supabase Auth).
+2.  **Create Project**: Create a new project called "Test Project" (tests Database write).
+3.  **Add Secret**: Add a key-value pair `TEST_KEY=123` (tests Encryption).
+
+<Callout type="info">
+  If you see an error about `ENCRYPTION_KEY` missing, ensure you have generated a valid 32-byte key in your `.env.local`.
+</Callout>
+
+## Troubleshooting
+
+### `ENCRYPTION_KEY` Error
+If you see "Invalid Encryption Key", run this command to generate a valid one:
+```bash
+openssl rand -hex 32
+```
+Add the output to your `.env.local`.
+
+### Database Connection Failed
+Check your `DATABASE_URL` and ensure your Supabase project is active. If running locally, make sure your local Supabase instance is running with `npx supabase start`.
