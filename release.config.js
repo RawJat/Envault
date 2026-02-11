@@ -1,4 +1,4 @@
-module.exports = {
+export default {
     // Release from main branch
     branches: ['main'],
 
