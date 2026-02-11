@@ -7,16 +7,11 @@ import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler"
 import { motion, useScroll, useMotionValueEvent, AnimatePresence } from "framer-motion"
 import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
-import { usePathname, useRouter } from "next/navigation"
 
 export function Navbar() {
     const { scrollY } = useScroll()
     const [scrolled, setScrolled] = useState(false)
     const [isOpen, setIsOpen] = useState(false)
-    const pathname = usePathname()
-    const router = useRouter()
-
-    const getHref = (hash: string) => pathname === '/' ? `#${hash}` : `/#${hash}`
 
     useMotionValueEvent(scrollY, "change", (latest) => {
         setScrolled(latest > 50)
@@ -52,9 +47,6 @@ export function Navbar() {
                     <nav className="hidden md:flex gap-6 text-sm font-medium items-center">
                         <Link href="/docs" className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
                             Docs
-                        </Link>
-                        <Link href={getHref('features')} className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
-                            Features
                         </Link>
                         <Link href="https://github.com/dinanathdash/envault" target="_blank" className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
                             GitHub
@@ -132,24 +124,6 @@ export function Navbar() {
                                     onClick={() => setIsOpen(false)}
                                 >
                                     Docs
-                                </Link>
-                                <Link
-                                    href={getHref('features')}
-                                    className="text-muted-foreground hover:text-foreground transition-colors py-2 border-b border-muted/20"
-                                    onClick={(e) => {
-                                        if (pathname === '/') {
-                                            e.preventDefault()
-                                            setIsOpen(false)
-                                            setTimeout(() => {
-                                                document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })
-                                            }, 300)
-                                        } else {
-                                            setIsOpen(false)
-                                            router.push('/#features')
-                                        }
-                                    }}
-                                >
-                                    Features
                                 </Link>
                                 <Link
                                     href="https://github.com/dinanathdash/envault"
