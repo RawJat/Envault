@@ -15,9 +15,9 @@ import * as __fd_glob_8 from "../content/docs/core/projects.mdx?collection=docs"
 import * as __fd_glob_7 from "../content/docs/core/projects-environments.mdx?collection=docs"
 import * as __fd_glob_6 from "../content/docs/core/architecture.mdx?collection=docs"
 import * as __fd_glob_5 from "../content/docs/core/access-control.mdx?collection=docs"
-import * as __fd_glob_4 from "../content/docs/configuration/environment-variables.mdx?collection=docs"
-import * as __fd_glob_3 from "../content/docs/cli/reference.mdx?collection=docs"
-import * as __fd_glob_2 from "../content/docs/cli/commands.mdx?collection=docs"
+import * as __fd_glob_4 from "../content/docs/cli/reference.mdx?collection=docs"
+import * as __fd_glob_3 from "../content/docs/cli/commands.mdx?collection=docs"
+import * as __fd_glob_2 from "../content/docs/configuration/environment-variables.mdx?collection=docs"
 import * as __fd_glob_1 from "../content/docs/api/overview.mdx?collection=docs"
 import * as __fd_glob_0 from "../content/docs/index.mdx?collection=docs"
 import { server } from 'fumadocs-mdx/runtime/server';
@@ -28,6 +28,6 @@ const create = server<typeof Config, import("fumadocs-mdx/runtime/types").Intern
   }
 }>({"doc":{"passthroughs":["extractedReferences"]}});
 
-export const docs = await create.doc("docs", "content/docs", {"index.mdx": __fd_glob_0, "api/overview.mdx": __fd_glob_1, "cli/commands.mdx": __fd_glob_2, "cli/reference.mdx": __fd_glob_3, "configuration/environment-variables.mdx": __fd_glob_4, "core/access-control.mdx": __fd_glob_5, "core/architecture.mdx": __fd_glob_6, "core/projects-environments.mdx": __fd_glob_7, "core/projects.mdx": __fd_glob_8, "core/security.mdx": __fd_glob_9, "core/system-status.mdx": __fd_glob_10, "guides/ci-cd-integration.mdx": __fd_glob_11, "guides/initial-setup.mdx": __fd_glob_12, "guides/installation.mdx": __fd_glob_13, "guides/production-deployment.mdx": __fd_glob_14, });
+export const docs = await create.doc("docs", "content/docs", {"index.mdx": __fd_glob_0, "api/overview.mdx": __fd_glob_1, "configuration/environment-variables.mdx": __fd_glob_2, "cli/commands.mdx": __fd_glob_3, "cli/reference.mdx": __fd_glob_4, "core/access-control.mdx": __fd_glob_5, "core/architecture.mdx": __fd_glob_6, "core/projects-environments.mdx": __fd_glob_7, "core/projects.mdx": __fd_glob_8, "core/security.mdx": __fd_glob_9, "core/system-status.mdx": __fd_glob_10, "guides/ci-cd-integration.mdx": __fd_glob_11, "guides/initial-setup.mdx": __fd_glob_12, "guides/installation.mdx": __fd_glob_13, "guides/production-deployment.mdx": __fd_glob_14, });
 
 export const meta = await create.meta("meta", "content/docs", {"meta.json": __fd_glob_15, "api/meta.json": __fd_glob_16, "cli/meta.json": __fd_glob_17, "configuration/meta.json": __fd_glob_18, "core/meta.json": __fd_glob_19, "guides/meta.json": __fd_glob_20, });

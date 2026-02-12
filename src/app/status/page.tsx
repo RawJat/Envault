@@ -90,8 +90,9 @@ export default async function StatusPage() {
                     {activeIncidents.length > 0 && (
                         <div className="space-y-4 md:space-y-6 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
                             <div className="flex items-center gap-2 md:gap-3">
-                                <div className="h-px bg-border flex-1" />
-                                <h2 className="text-sm md:text-lg font-semibold uppercase tracking-widest text-muted-foreground whitespace-nowrap">Active Incidents</h2>
+                                <h2 className="text-xl md:text-2xl font-serif whitespace-nowrap">
+                                    Active Incidents
+                                </h2>
                                 <div className="h-px bg-border flex-1" />
                             </div>
 
@@ -100,27 +101,47 @@ export default async function StatusPage() {
                                     <div key={incident.id} className="group relative overflow-hidden rounded-xl border bg-card/50 backdrop-blur-sm p-4 md:p-6 shadow-sm transition-all hover:shadow-md hover:border-destuctive/50">
                                         <div className="absolute inset-0 bg-gradient-to-r from-red-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                                         <div className="relative space-y-3 md:space-y-4">
-                                            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                                            <div className="flex flex-row sm:items-start sm:justify-between gap-3">
                                                 <div className="flex items-start gap-2 md:gap-3 flex-1 min-w-0">
-                                                    <AlertTriangle className="h-5 w-5 md:h-6 md:w-6 text-red-500 shrink-0 mt-0.5" />
+                                                    <div className="flex h-7 items-center shrink-0">
+                                                        <AlertTriangle className="h-5 w-5 md:h-6 md:w-6 text-red-500" />
+                                                    </div>
                                                     <h3 className="text-lg md:text-xl font-bold break-words">{incident.title}</h3>
                                                 </div>
-                                                <Badge variant={incident.severity === "critical" ? "destructive" : "secondary"} className="uppercase text-xs shrink-0 self-start">
-                                                    {incident.status}
+                                                <Badge variant={incident.severity === "critical" ? "destructive" : "secondary"} className="text-xs shrink-0 self-start">
+                                                    {incident.status.charAt(0).toUpperCase() + incident.status.slice(1)}
                                                 </Badge>
                                             </div>
 
                                             <div className="space-y-3 md:space-y-4 pl-0 sm:pl-9">
                                                 <div className="prose dark:prose-invert max-w-none text-sm md:text-base">
-                                                    {incident.incident_updates.map((update: any, idx: number) => (
-                                                        <div key={update.id} className={cn("relative pl-4 md:pl-6 pb-4 md:pb-6 border-l", idx === incident.incident_updates.length - 1 ? "border-transparent pb-0" : "border-border")}>
-                                                            <div className="absolute top-1.5 left-[-4.5px] w-2 h-2 rounded-full bg-muted-foreground ring-4 ring-background" />
-                                                            <p className="text-xs md:text-sm font-medium text-muted-foreground mb-1">
-                                                                {format(new Date(update.created_at), "MMM d, HH:mm")} - <span className="capitalize">{update.status}</span>
-                                                            </p>
-                                                            <p className="text-sm md:text-base text-foreground/90 break-words">{update.message}</p>
-                                                        </div>
-                                                    ))}
+                                                    <Timeline>
+                                                        {incident.incident_updates.map((update: any, idx: number) => (
+                                                            <TimelineItem key={update.id} className="group pb-0">
+                                                                <TimelineHeader className="relative w-4 md:w-5 items-center shrink-0">
+                                                                    {idx !== incident.incident_updates.length - 1 && (
+                                                                        <TimelineSeparator className="w-px bg-border top-0 left-1/2 -translate-x-1/2 h-full" />
+                                                                    )}
+                                                                    <TimelineIcon className="bg-background border-2 border-border size-4 md:size-5 p-0 z-10 shrink-0">
+                                                                        <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-muted-foreground" />
+                                                                    </TimelineIcon>
+                                                                </TimelineHeader>
+                                                                <TimelineBody className={cn("pl-3 md:pl-4", idx === incident.incident_updates.length - 1 ? "pb-2" : "pb-4")}>
+                                                                    <div className="space-y-2">
+                                                                        <div className="flex flex-row sm:items-baseline gap-1 sm:gap-3">
+                                                                            <span className="text-xs font-mono text-muted-foreground">
+                                                                                {format(new Date(update.created_at), "MMM d, h:mm a")}
+                                                                            </span>
+                                                                            <span className="text-xs font-mono tracking-wider text-muted-foreground">
+                                                                                {update.status.charAt(0).toUpperCase() + update.status.slice(1)}
+                                                                            </span>
+                                                                        </div>
+                                                                        <p className="text-sm md:text-base text-foreground/90 leading-relaxed break-words">{update.message}</p>
+                                                                    </div>
+                                                                </TimelineBody>
+                                                            </TimelineItem>
+                                                        ))}
+                                                    </Timeline>
                                                 </div>
                                             </div>
                                         </div>
@@ -204,7 +225,7 @@ export default async function StatusPage() {
                                         <AccordionContent className="pt-4 pb-4 md:pb-6 px-1">
                                             <Timeline>
                                                 {incident.incident_updates.map((update: any, idx: number) => (
-                                                    <TimelineItem key={update.id} className="group pb-6 last:pb-0">
+                                                    <TimelineItem key={update.id} className="group pb-0">
                                                         <TimelineHeader className="relative w-4 md:w-5 items-center shrink-0">
                                                             {idx !== incident.incident_updates.length - 1 && (
                                                                 <TimelineSeparator className="w-px bg-border top-0 left-1/2 -translate-x-1/2 h-full" />
@@ -213,14 +234,14 @@ export default async function StatusPage() {
                                                                 <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-muted-foreground" />
                                                             </TimelineIcon>
                                                         </TimelineHeader>
-                                                        <TimelineBody className="pb-2 pl-3 md:pl-4">
+                                                        <TimelineBody className={cn("pl-3 md:pl-4", idx === incident.incident_updates.length - 1 ? "pb-2" : "pb-4")}>
                                                             <div className="space-y-2">
-                                                                <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3">
+                                                                <div className="flex flex-row sm:items-baseline gap-1 sm:gap-3">
                                                                     <span className="text-xs font-mono text-muted-foreground">
-                                                                        {format(new Date(update.created_at), "h:mm a")}
+                                                                        {format(new Date(update.created_at), "MMM d, h:mm a")}
                                                                     </span>
-                                                                    <span className="ml-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground/80">
-                                                                        {update.status}
+                                                                    <span className="text-xs font-mono tracking-wider text-muted-foreground">
+                                                                        {update.status.charAt(0).toUpperCase() + update.status.slice(1)}
                                                                     </span>
                                                                 </div>
                                                                 <p className="text-sm md:text-base text-foreground/90 leading-relaxed break-words">{update.message}</p>
