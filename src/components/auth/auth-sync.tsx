@@ -18,6 +18,8 @@ export function AuthSync({ user }: { user: User }) {
                 email: user.email!,
                 avatar: meta.avatar_url,
                 authProviders: user.identities?.map((id) => id.provider) || [],
+                app_metadata: user.app_metadata,
+                user_metadata: user.user_metadata,
             })
         }
     }, [user, login])

@@ -88,7 +88,7 @@ export function ShortcutProvider({ children }: { children: React.ReactNode }) {
     // 5. Notifications: 'Shift+B'
     useHotkeys("shift+b", () => {
         document.dispatchEvent(new CustomEvent("toggle-notifications"))
-    }, { enableOnContentEditable: true, enableOnFormTags: true })
+    }, { enableOnContentEditable: false, enableOnFormTags: false })
 
     // 6. Universal Action: 'n' (Contextual)
     useHotkeys("n", () => {

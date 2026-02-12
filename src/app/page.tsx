@@ -8,11 +8,16 @@ import { RegMark } from "@/components/landing/RegMark"
 import { CliSection } from "@/components/landing/CliSection"
 import { Testimonials } from "@/components/landing/Testimonials"
 
-export default function LandingPage() {
+import { createClient } from "@/lib/supabase/server"
+
+export default async function LandingPage() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
     return (
         <div className="flex min-h-screen flex-col font-sans selection:bg-primary/20 relative blueprint-grid sharp">
             {/* <Preloader /> */}
-            <Navbar />
+            <Navbar user={user} />
             <main className="flex-1 relative">
                 <RegMark position="top-left" />
                 <RegMark position="top-right" />

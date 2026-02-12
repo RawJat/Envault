@@ -7,10 +7,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { User, HelpCircle, Trash2, LogOut, ArrowLeft, Shield, Bell, Command, Option as OptionIcon, Copy } from "lucide-react"
+import { User, HelpCircle, Trash2, LogOut, Shield, Bell, Command, Copy } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler"
 import { NotificationPreferences } from "@/components/notifications/notification-preferences"
 import {
     AlertDialog,
@@ -22,18 +21,12 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from "@/components/ui/tooltip"
 import { createClient } from "@/lib/supabase/client"
 import { deleteAccountAction, signOut } from "@/app/actions"
 import { useReauthStore } from "@/lib/reauth-store"
-import { NotificationDropdown } from "@/components/notifications/notification-dropdown"
 import { useHotkeys } from "@/hooks/use-hotkeys"
 import { Kbd } from "@/components/ui/kbd"
+import { AppHeader } from "@/components/dashboard/app-header"
 
 const ModKey = () => (
     <>
@@ -54,12 +47,17 @@ export default function SettingsView() {
         setMounted(true)
     }, [])
 
-    // State for form fields - initialized from user
-    // We use key={user?.id} on the form fields container to reset state when user changes
+    // State for form fields
     const [firstName, setFirstName] = useState(user?.firstName || "")
     const [lastName, setLastName] = useState(user?.lastName || "")
     const [username, setUsername] = useState(user?.username || "")
-    const [email] = useState(user?.email || "")
+    useEffect(() => {
+        if (user) {
+            setFirstName(user.firstName || "")
+            setLastName(user.lastName || "")
+            setUsername(user.username || "")
+        }
+    }, [user])
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
     const [deleteConfirmation, setDeleteConfirmation] = useState("")
     const [isDeleteConfirmed, setIsDeleteConfirmed] = useState(false)
@@ -177,34 +175,11 @@ export default function SettingsView() {
 
     return (
         <div className="min-h-screen bg-background text-foreground">
-            <header className="border-b sticky top-0 bg-background/95 backdrop-blur z-50">
-                <div className="container mx-auto py-4 px-4 flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                        <Button variant="ghost" size="icon" onClick={() => router.push('/dashboard')}>
-                            <ArrowLeft style={{ width: '24px', height: '24px' }} />
-                        </Button>
-                        <h1 className="text-xl font-semibold">Settings</h1>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <AnimatedThemeToggler />
-                        <NotificationDropdown />
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button variant="ghost" size="icon" onClick={handleLogout}>
-                                        <LogOut className="w-5 h-5" />
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p className="flex items-center gap-2">
-                                        Log out
-                                    </p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                    </div>
-                </div>
-            </header>
+            <AppHeader
+                title="Settings"
+                backTo="/dashboard"
+                hideSearch
+            />
 
             <main className="container mx-auto py-8 px-4">
                 <div className="flex flex-col md:flex-row gap-8 relative">
@@ -261,7 +236,7 @@ export default function SettingsView() {
                                 </div>
 
                                 <Card>
-                                    <CardContent className="p-6 space-y-6" key={user?.email || 'loading'}>
+                                    <CardContent className="p-6 space-y-6">
                                         <div className="grid gap-2">
                                             <Label htmlFor="firstName">First name</Label>
                                             <Input
@@ -294,7 +269,7 @@ export default function SettingsView() {
                                             <div className="relative">
                                                 <Input
                                                     id="email"
-                                                    value={email}
+                                                    value={user?.email || ""}
                                                     disabled
                                                     className="bg-muted pr-10"
                                                     suppressHydrationWarning

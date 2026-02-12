@@ -52,6 +52,8 @@ export type User = {
     email: string
     avatar?: string
     authProviders: string[]
+    app_metadata?: { [key: string]: any }
+    user_metadata?: { [key: string]: any }
 }
 
 export const useEnvaultStore = create<EnvaultState>()(

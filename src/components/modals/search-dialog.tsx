@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Search, Folder, Settings, LogOut, Sun, Moon, Home, CornerDownLeft, ArrowUp, ArrowDown, Bell, Star, Github, User, FilesIcon } from "lucide-react"
+import { Search, Folder, Settings, LogOut, Sun, Moon, Home, CornerDownLeft, ArrowUp, ArrowDown, Bell, Star, Github, User, FilesIcon, Activity } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Kbd } from "@/components/ui/kbd"
@@ -32,6 +32,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
     const [isKeyboardMode, setIsKeyboardMode] = React.useState(false)
     const scrollContainerRef = React.useRef<HTMLDivElement>(null)
     const listRef = React.useRef<HTMLDivElement>(null)
+    const savedScrollPosition = React.useRef<number>(0)
     const { user, logout, projects } = useEnvaultStore()
     const router = useRouter()
     const { setTheme, theme } = useTheme()
@@ -42,11 +43,22 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
     const activeProjectId = projectPathMatch ? projectPathMatch[1] : null
     const activeProject = projects.find(p => p.id === activeProjectId)
 
-    // Reset logic
+    // Save scroll position when dialog opens, restore when it closes
     React.useEffect(() => {
         if (open) {
+            // Save current scroll position when opening
+            savedScrollPosition.current = window.scrollY
             setQuery("")
             setSelectedIndex(0)
+        } else {
+            // Restore scroll position when closing
+            // Use requestAnimationFrame to ensure DOM has updated
+            requestAnimationFrame(() => {
+                window.scrollTo({
+                    top: savedScrollPosition.current,
+                    behavior: 'instant'
+                })
+            })
         }
     }, [open])
 
@@ -60,23 +72,47 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
                     type: 'command',
                     icon: <Home className="w-4 h-4" />,
                     label: 'Go to Dashboard',
-                    action: () => router.push('/dashboard')
+                    action: () => {
+                        savedScrollPosition.current = window.scrollY
+                        router.push('/dashboard')
+                    }
                 },
                 {
                     id: 'nav-settings',
                     type: 'command',
                     icon: <Settings className="w-4 h-4" />,
                     label: 'Go to Settings',
-                    action: () => router.push('/settings')
+                    action: () => {
+                        savedScrollPosition.current = window.scrollY
+                        router.push('/settings')
+                    }
                 },
                 {
                     id: 'nav-notifications',
                     type: 'command',
                     icon: <Bell className="w-4 h-4" />,
                     label: 'Go to Notifications',
-                    action: () => router.push('/notifications')
+                    action: () => {
+                        savedScrollPosition.current = window.scrollY
+                        router.push('/notifications')
+                    }
                 }
             )
+
+            // Check for admin role
+            const isAdmin = user.user_metadata?.is_admin === true || user.app_metadata?.is_admin === true
+            if (isAdmin) {
+                items.push({
+                    id: 'nav-admin-status',
+                    type: 'command',
+                    icon: <Activity className="w-4 h-4" />,
+                    label: 'Go to Admin Status',
+                    action: () => {
+                        savedScrollPosition.current = window.scrollY
+                        router.push('/admin/status')
+                    }
+                })
+            }
         } else {
             // Landing Page / Unauthenticated items
             items.push(
@@ -85,14 +121,20 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
                     type: 'command',
                     icon: <Home className="w-4 h-4" />,
                     label: 'Go to Home',
-                    action: () => router.push('/')
+                    action: () => {
+                        savedScrollPosition.current = window.scrollY
+                        router.push('/')
+                    }
                 },
                 {
                     id: 'nav-docs',
                     type: 'command',
                     icon: <FilesIcon className="w-4 h-4" />,
                     label: 'Go to Docs',
-                    action: () => router.push('/docs')
+                    action: () => {
+                        savedScrollPosition.current = window.scrollY
+                        router.push('/docs')
+                    }
                 },
                 {
                     id: 'nav-features',
@@ -117,9 +159,26 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
                     type: 'command',
                     icon: <User className="w-4 h-4" />,
                     label: 'Login / Sign Up',
-                    action: () => router.push('/login')
+                    action: () => {
+                        savedScrollPosition.current = window.scrollY
+                        router.push('/login')
+                    }
                 }
             )
+        }
+
+        // System Status - Show if not logged in OR if on landing page
+        if (!user || pathname === '/') {
+            items.push({
+                id: 'nav-system-status',
+                type: 'command',
+                icon: <Activity className="w-4 h-4" />,
+                label: 'System Status',
+                action: () => {
+                    savedScrollPosition.current = window.scrollY
+                    router.push('/status')
+                }
+            })
         }
 
         // Shared items
@@ -185,7 +244,10 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
                 type: 'project',
                 icon: <Folder className="w-4 h-4 text-primary" />,
                 label: p.name,
-                action: () => router.push(`/project/${p.id}`)
+                action: () => {
+                    savedScrollPosition.current = window.scrollY
+                    router.push(`/project/${p.id}`)
+                }
             }))
     }, [user, projects, query, router])
 

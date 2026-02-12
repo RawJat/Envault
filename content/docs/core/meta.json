@@ -5,6 +5,7 @@
     "security",
     "projects",
     "projects-environments",
-    "access-control"
+    "access-control",
+    "system-status"
   ]
 }

@@ -1,30 +1,17 @@
 "use client"
 
-import Link from "next/link"
 import { useEnvaultStore } from "@/lib/store"
 import { CreateProjectDialog } from "@/components/dashboard/create-project-dialog"
 import { ProjectCard } from "@/components/dashboard/project-card"
-import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler"
-import { ShieldCheck, Settings as SettingsIcon, LogOut, Share2, Search, Keyboard } from "lucide-react"
-import { UserAvatar } from "@/components/ui/user-avatar"
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Button } from "@/components/ui/button"
+import { ShieldCheck, Share2 } from "lucide-react"
 import { Kbd } from "@/components/ui/kbd"
-import { getModifierKey } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 import { signOut } from "@/app/actions"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { NotificationDropdown } from "@/components/notifications/notification-dropdown"
 import { useState, useEffect, useCallback } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { AppHeader } from "@/components/dashboard/app-header"
 
 export default function DashboardPage() {
     const projects = useEnvaultStore((state) => state.projects)
@@ -96,7 +83,7 @@ export default function DashboardPage() {
             document.removeEventListener('project-role-changed', handleProjectRoleChanged)
             window.removeEventListener('focus', handleWindowFocus)
         }
-    }, [requested, approved, denied, router])
+    }, [requested, approved, denied, router, refreshProjects])
 
     // Shortcuts
     useEffect(() => {
@@ -131,83 +118,7 @@ export default function DashboardPage() {
 
     return (
         <div className="min-h-screen bg-background">
-            <header className="border-b sticky top-0 bg-background/95 backdrop-blur z-50">
-                <div className="container mx-auto py-4 px-4 flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                        <ShieldCheck className="w-6 h-6 text-primary" />
-                        <span className="font-bold text-2xl font-serif">Envault</span>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-muted-foreground hidden md:flex items-center gap-2 h-9"
-                            onClick={() => {
-                                document.dispatchEvent(new CustomEvent('open-global-search'))
-                            }}
-                        >
-                            <Search className="w-4 h-4" />
-                            Search...
-                            <div className="ml-2 hidden md:flex items-center gap-1">
-                                <Kbd size="xs">{getModifierKey('mod')}</Kbd>
-                                <Kbd size="xs">K</Kbd>
-                            </div>
-                        </Button>
-                        <AnimatedThemeToggler />
-                        <NotificationDropdown />
-
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="rounded-full">
-                                    <UserAvatar
-                                        user={{
-                                            email: user?.email,
-                                            avatar: user?.avatar,
-                                            firstName: user?.firstName
-                                        }}
-                                        className="h-8 w-8"
-                                    />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-56">
-                                <DropdownMenuLabel>
-                                    <div className="flex flex-col space-y-1">
-                                        <p className="text-sm font-medium leading-none">{user?.firstName || "User"}</p>
-                                        <p className="text-xs leading-none text-muted-foreground">{user?.email || "user@example.com"}</p>
-                                    </div>
-                                </DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem asChild>
-                                    <Link href="/settings" className="cursor-pointer flex w-full items-center">
-                                        <SettingsIcon className="mr-2 h-4 w-4" />
-                                        <span>Settings</span>
-                                        <div className="ml-auto hidden md:flex items-center gap-1">
-                                            <Kbd size="xs">G</Kbd>
-                                            <Kbd size="xs">O</Kbd>
-                                        </div>
-                                    </Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    className="cursor-pointer"
-                                    onClick={() => document.dispatchEvent(new CustomEvent('open-shortcut-help'))}
-                                >
-                                    <Keyboard className="mr-2 h-4 w-4" />
-                                    <span>Keyboard Shortcuts</span>
-                                    <div className="ml-auto hidden md:flex items-center gap-1">
-                                        <Kbd size="xs">Shift</Kbd>
-                                        <Kbd size="xs">?</Kbd>
-                                    </div>
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem className="text-red-600 dark:text-red-500 focus:text-red-600 dark:focus:text-red-500 cursor-pointer" onClick={handleLogout}>
-                                    <LogOut className="mr-2 h-4 w-4" />
-                                    <span>Log out</span>
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
-                </div>
-            </header>
+            <AppHeader />
 
             <main className="container mx-auto py-8 px-4">
                 <div className="flex items-center justify-between mb-8">

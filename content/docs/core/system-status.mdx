@@ -1,0 +1,44 @@
+---
+title: System Status
+description: Real-time monitoring of system health and incident reporting.
+---
+
+Envault includes a built-in System Status page that provides real-time transparency into the health of the application's components. This feature allows users to verify if the system is operational, check for active incidents, and review historical uptime.
+
+## Overview
+
+The System Status page is accessible at `/status`. It provides a comprehensive view of:
+
+-   **Overall System Health**: A global indicator of the system's current state.
+-   **Active Incidents**: Real-time updates on any ongoing issues, including severity and status.
+-   **Component Status**: Granular health checks for individual system components (e.g., API, Database, Authentication).
+-   **Past Incidents**: A history of resolved incidents over the last 90 days.
+
+## Status Indicators
+
+The system uses color-coded indicators to communicate the health of each component:
+
+-   <span className="text-emerald-500 font-bold">Operational</span>: The component is functioning normally.
+-   <span className="text-amber-500 font-bold">Degraded Performance</span>: The component is operational but experiencing latency or minor issues.
+-   <span className="text-red-500 font-bold">Partial/Major Outage</span>: The component is currently unavailable or severely impacted.
+-   <span className="text-blue-500 font-bold">Maintenance</span>: The component is undergoing scheduled maintenance.
+
+## Incident Reporting
+
+When an incident occurs, the status page displays detailed information, including:
+
+1.  **Severity**: Classified as **Minor**, **Major**, or **Critical**.
+2.  **Status**: The current state of the incident (e.g., **Investigating**, **Identified**, **Monitoring**, **Resolved**).
+3.  **Updates**: A timeline of updates provided by the team as they work to resolve the issue.
+
+Users can subscribe to updates (if configured) or simply refresh the page to see the latest information.
+
+## Administrative Controls
+
+Administrators can manage the system status via the admin dashboard. This includes:
+
+-   Creating and updating incidents.
+-   Manually overriding the status of individual components.
+-   Scheduling maintenance windows.
+
+For more details on managing system status, please refer to the Admin Guide.

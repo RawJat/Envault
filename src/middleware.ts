@@ -52,7 +52,8 @@ export async function middleware(request: NextRequest) {
     '/settings',
     '/project',
     '/notifications',
-    '/approve'
+    '/approve',
+    '/admin'
   ]
 
   // Check if the current path is protected
@@ -69,6 +70,7 @@ export async function middleware(request: NextRequest) {
     '/terms',
     '/auth',
     '/docs',
+    '/status',
     '/robots.txt',
     '/sitemap.xml'
   ]

@@ -8,7 +8,13 @@ import { motion, useScroll, useMotionValueEvent, AnimatePresence } from "framer-
 import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 
-export function Navbar() {
+import { User } from "@supabase/supabase-js"
+
+interface NavbarProps {
+    user?: User | null
+}
+
+export function Navbar({ user }: NavbarProps) {
     const { scrollY } = useScroll()
     const [scrolled, setScrolled] = useState(false)
     const [isOpen, setIsOpen] = useState(false)
@@ -51,9 +57,9 @@ export function Navbar() {
                         <Link href="https://github.com/dinanathdash/envault" target="_blank" className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
                             GitHub
                         </Link>
-                        <Link href="/login">
+                        <Link href={user ? "/dashboard" : "/login"}>
                             <Button variant={scrolled ? "default" : "secondary"} size="sm" className="font-semibold flex items-center gap-2 rounded-none">
-                                Login
+                                {user ? "Dashboard" : "Login"}
                             </Button>
                         </Link>
                     </nav>
@@ -135,9 +141,9 @@ export function Navbar() {
                                 </Link>
                             </nav>
                             <div className="flex flex-col gap-4">
-                                <Link href="/login" onClick={() => setIsOpen(false)}>
+                                <Link href={user ? "/dashboard" : "/login"} onClick={() => setIsOpen(false)}>
                                     <Button className="w-full" size="lg">
-                                        Login
+                                        {user ? "Dashboard" : "Login"}
                                     </Button>
                                 </Link>
                             </div>

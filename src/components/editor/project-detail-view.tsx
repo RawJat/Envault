@@ -2,10 +2,8 @@
 
 import * as React from "react"
 import { useParams, useRouter } from "next/navigation"
-import { ArrowLeft, Plus, Upload, Download, Settings, Share2, Trash2, Settings as SettingsIcon, LogOut, CornerDownLeft, Keyboard, Copy } from "lucide-react"
-import Link from "next/link"
+import { Plus, Upload, Download, Settings, Share2, Trash2, CornerDownLeft, Keyboard, Copy } from "lucide-react"
 import { useState } from "react"
-
 import { Button } from "@/components/ui/button"
 import { EnvVarTable } from "@/components/editor/env-var-table"
 import { VariableDialog } from "@/components/editor/variable-dialog"
@@ -13,14 +11,10 @@ import { ImportEnvDialog } from "@/components/editor/import-env-dialog"
 import { Project, useEnvaultStore } from "@/lib/store"
 import { useReauthStore } from "@/lib/reauth-store"
 import { useEffect } from "react"
-import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler"
-import { UserAvatar } from "@/components/ui/user-avatar"
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Kbd } from "@/components/ui/kbd"
@@ -39,8 +33,7 @@ import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 import { deleteProject as deleteProjectAction } from "@/app/project-actions"
 import { ShareProjectDialog } from "@/components/dashboard/share-project-dialog"
-import { NotificationDropdown } from "@/components/notifications/notification-dropdown"
-import { signOut } from "@/app/actions"
+import { AppHeader } from "@/components/dashboard/app-header"
 
 interface ProjectDetailViewProps {
     project: Project
@@ -163,102 +156,39 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
         document.body.removeChild(a)
     }
 
+    // Extract the settings dropdown content into a variable or separate component to pass to actions
+    const projectActions = (
+        <div className="flex items-center gap-2">
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="[&_svg]:size-5">
+                        <Settings className="h-5 w-5" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setShareDialogOpen(true)} disabled={!canEdit}>
+                        <Share2 className="w-4 h-4 mr-2" /> Share
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={handleDeleteClick} disabled={project.role !== 'owner'}>
+                        <Trash2 className="w-4 h-4 mr-2" /> Delete
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </div>
+    )
+
     if (!mounted) {
         return null
     }
 
     return (
         <div className="min-h-screen bg-background">
-            <header className="border-b bg-background/95 backdrop-blur z-50">
-                <div className="container mx-auto py-4 px-4 flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                        <Link href="/dashboard">
-                            <Button variant="ghost" size="icon">
-                                <ArrowLeft style={{ width: '24px', height: '24px' }} />
-                            </Button>
-                        </Link>
-                        <div className="flex flex-col">
-                            <h1 className="font-bold text-lg">{project.name}</h1>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <AnimatedThemeToggler />
-
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="[&_svg]:size-5">
-                                    <Settings className="h-5 w-5" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => setShareDialogOpen(true)} disabled={!canEdit}>
-                                    <Share2 className="w-4 h-4 mr-2" /> Share
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={handleDeleteClick} disabled={project.role !== 'owner'}>
-                                    <Trash2 className="w-4 h-4 mr-2" /> Delete
-                                    <div className="ml-auto hidden md:flex items-center gap-1">
-                                    </div>
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                        <NotificationDropdown />
-
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="rounded-full ml-2">
-                                    <UserAvatar
-                                        user={{
-                                            email: user?.email,
-                                            avatar: user?.avatar,
-                                            firstName: user?.firstName
-                                        }}
-                                        className="h-8 w-8"
-                                    />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-56">
-                                <DropdownMenuLabel>
-                                    <div className="flex flex-col space-y-1">
-                                        <p className="text-sm font-medium leading-none">{user?.firstName || "User"}</p>
-                                        <p className="text-xs leading-none text-muted-foreground">{user?.email || "user@example.com"}</p>
-                                    </div>
-                                </DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem asChild>
-                                    <Link href="/settings" className="cursor-pointer flex w-full items-center">
-                                        <SettingsIcon className="mr-2 h-4 w-4" />
-                                        <span>Settings</span>
-                                        <div className="ml-auto hidden md:flex items-center gap-1">
-                                            <Kbd size="xs">G</Kbd>
-                                            <Kbd size="xs">O</Kbd>
-                                        </div>
-                                    </Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    className="cursor-pointer"
-                                    onClick={() => document.dispatchEvent(new CustomEvent('open-shortcut-help'))}
-                                >
-                                    <Keyboard className="mr-2 h-4 w-4" />
-                                    <span>Keyboard Shortcuts</span>
-                                    <div className="ml-auto hidden md:flex items-center gap-1">
-                                        <Kbd size="xs">Shift</Kbd>
-                                        <Kbd size="xs">?</Kbd>
-                                    </div>
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem className="text-red-600 dark:text-red-500 focus:text-red-600 dark:focus:text-red-500 cursor-pointer" onClick={() => {
-                                    const { logout } = useEnvaultStore.getState()
-                                    logout()
-                                    signOut()
-                                }}>
-                                    <LogOut className="mr-2 h-4 w-4" />
-                                    <span>Log out</span>
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
-                </div>
-            </header>
+            <AppHeader
+                title={project.name}
+                backTo="/dashboard"
+                actions={projectActions}
+                hideSearch
+            />
 
             <main className="container mx-auto py-8 px-4">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4 sm:gap-0">

@@ -1,5 +1,6 @@
 import Link from "next/link"
-import { Github, Twitter, Mail } from "lucide-react"
+import { Github, Twitter, Mail, Copyright } from "lucide-react"
+import { StatusBadge } from "@/components/landing/StatusBadge"
 
 export function Footer() {
     return (
@@ -24,6 +25,9 @@ export function Footer() {
                             <Link href="mailto:dinanath@example.com" className="text-muted-foreground hover:text-foreground transition-colors">
                                 <Mail className="w-5 h-5" />
                             </Link>
+                        </div>
+                        <div className="mt-8">
+                            <StatusBadge />
                         </div>
                     </div>
                     <div>
@@ -63,8 +67,8 @@ export function Footer() {
                         </a>
                         .
                     </p>
-                    <p className="text-sm text-muted-foreground">
-                        © 2026 Envault. All rights reserved.
+                    <p className="text-sm text-muted-foreground inline-flex items-center gap-1">
+                        <Copyright className="w-4 h-4" /> {new Date().getFullYear()} Envault. All rights reserved.
                     </p>
                 </div>
             </div>
