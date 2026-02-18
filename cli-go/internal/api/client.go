@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
-
 	"github.com/spf13/viper"
 )
 
@@ -21,6 +21,21 @@ func NewClient() *Client {
 	baseURL := os.Getenv("ENVAULT_API_URL")
 	if baseURL == "" {
 		baseURL = "https://envault.tech/api/cli"
+	}
+
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		fmt.Printf("Error: Invalid API URL: %v\n", err)
+		os.Exit(1)
+	}
+
+	hostname := u.Hostname()
+	isLocal := hostname == "localhost" || hostname == "127.0.0.1"
+
+	if !isLocal && u.Scheme != "https" {
+		fmt.Println("Error: Insecure connection (HTTP) is only allowed for localhost.")
+		fmt.Println("       Please use HTTPS for remote servers.")
+		os.Exit(1)
 	}
 
 	return &Client{
