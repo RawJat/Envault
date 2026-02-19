@@ -3,9 +3,21 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
-export type ComponentStatus = 'operational' | 'degraded' | 'outage' | 'maintenance';
-export type IncidentSeverity = 'minor' | 'major' | 'critical' | 'maintenance';
-export type IncidentStatus = 'investigating' | 'identified' | 'monitoring' | 'resolved';
+import {
+  CreateComponentSchema,
+  CreateIncidentSchema,
+  UpdateComponentStatusSchema,
+  UpdateIncidentSchema,
+  ComponentStatusEnum,
+  IncidentSeverityEnum,
+  IncidentStatusEnum,
+} from "@/lib/schemas";
+import { z } from "zod";
+
+// Define types locally to avoid re-export issues with type-only strings in Server Actions
+export type ComponentStatus = z.infer<typeof ComponentStatusEnum>;
+export type IncidentSeverity = z.infer<typeof IncidentSeverityEnum>;
+export type IncidentStatus = z.infer<typeof IncidentStatusEnum>;
 
 export interface Component {
   id: string;
@@ -39,7 +51,10 @@ export interface IncidentUpdate {
 
 async function checkAdmin() {
   const supabase = await createClient();
-  const { data: { user }, error } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
 
   if (error || !user) {
     throw new Error("Unauthorized");
@@ -65,7 +80,17 @@ export async function getComponents() {
   return data as Component[];
 }
 
-export async function updateComponentStatus(id: string, status: ComponentStatus) {
+export async function updateComponentStatus(
+  id: string,
+  status: ComponentStatus,
+) {
+  const validation = UpdateComponentStatusSchema.safeParse({ id, status });
+  if (!validation.success) {
+    throw new Error(
+      `Validation failed: ${validation.error.issues.map((i) => i.message).join(", ")}`,
+    );
+  }
+
   const supabase = await checkAdmin();
 
   const { error } = await supabase
@@ -84,22 +109,26 @@ export async function getIncidents(limit = 10) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("status_incidents")
-    .select(`
+    .select(
+      `
       *,
       incident_updates:status_incident_updates(*),
       components:status_components!status_component_incidents(*)
-    `)
+    `,
+    )
     .order("created_at", { ascending: false })
     .limit(limit);
 
   if (error) throw new Error(error.message);
 
   // Sort incident_updates by created_at DESC on the client side
-  const sortedData = data?.map(incident => ({
+  const sortedData = data?.map((incident) => ({
     ...incident,
-    incident_updates: incident.incident_updates?.sort((a: any, b: any) =>
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    ) || []
+    incident_updates:
+      incident.incident_updates?.sort(
+        (a: IncidentUpdate, b: IncidentUpdate) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      ) || [],
   }));
 
   return sortedData;
@@ -110,8 +139,22 @@ export async function createIncident(
   severity: IncidentSeverity,
   status: IncidentStatus,
   componentIds: string[],
-  initialMessage: string
+  initialMessage: string,
 ) {
+  const validation = CreateIncidentSchema.safeParse({
+    title,
+    severity,
+    status,
+    componentIds,
+    initialMessage,
+  });
+
+  if (!validation.success) {
+    throw new Error(
+      `Validation failed: ${validation.error.issues.map((i) => i.message).join(", ")}`,
+    );
+  }
+
   const supabase = await checkAdmin();
 
   // 1. Create Incident
@@ -127,9 +170,9 @@ export async function createIncident(
 
   // 2. Link Components
   if (componentIds.length > 0) {
-    const links = componentIds.map(id => ({
+    const links = componentIds.map((id) => ({
       incident_id: incidentId,
-      component_id: id
+      component_id: id,
     }));
 
     const { error: linkError } = await supabase
@@ -145,7 +188,7 @@ export async function createIncident(
     .insert({
       incident_id: incidentId,
       message: initialMessage,
-      status: status
+      status: status,
     });
 
   if (updateError) throw new Error(updateError.message);
@@ -155,7 +198,22 @@ export async function createIncident(
   return { success: true, incidentId };
 }
 
-export async function updateIncident(incidentId: string, status: IncidentStatus, message: string) {
+export async function updateIncident(
+  incidentId: string,
+  status: IncidentStatus,
+  message: string,
+) {
+  const validation = UpdateIncidentSchema.safeParse({
+    incidentId,
+    status,
+    message,
+  });
+  if (!validation.success) {
+    throw new Error(
+      `Validation failed: ${validation.error.issues.map((i) => i.message).join(", ")}`,
+    );
+  }
+
   const supabase = await checkAdmin();
 
   // 1. Update Incident Status
@@ -172,7 +230,7 @@ export async function updateIncident(incidentId: string, status: IncidentStatus,
     .insert({
       incident_id: incidentId,
       message: message,
-      status: status
+      status: status,
     });
 
   if (updateError) throw new Error(updateError.message);
@@ -183,6 +241,13 @@ export async function updateIncident(incidentId: string, status: IncidentStatus,
 }
 
 export async function createComponent(name: string, description: string) {
+  const validation = CreateComponentSchema.safeParse({ name, description });
+  if (!validation.success) {
+    throw new Error(
+      `Validation failed: ${validation.error.issues.map((i) => i.message).join(", ")}`,
+    );
+  }
+
   const supabase = await checkAdmin();
 
   const { data, error } = await supabase
@@ -190,8 +255,11 @@ export async function createComponent(name: string, description: string) {
     .insert({
       name,
       description,
-      status: 'operational',
-      slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+      status: "operational",
+      slug: name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, ""),
     })
     .select()
     .single();
