@@ -221,7 +221,7 @@ export default function SystemStatusView({
                             handleStatusChange(component.id, value)
                           }
                         >
-                          <SelectTrigger className="w-full sm:w-[180px]">
+                          <SelectTrigger className="w-auto">
                             <SelectValue placeholder="Status" />
                           </SelectTrigger>
                           <SelectContent>
@@ -503,7 +503,7 @@ function IncidentManager({
                     {components.length === 0 ? (
                       <div className="text-sm text-muted-foreground text-center py-4">
                         No components available. Create components in the
-                        'Components' tab first.
+                        &apos;Components&apos; tab first.
                       </div>
                     ) : (
                       components.map((c) => (

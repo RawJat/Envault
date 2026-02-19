@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/DinanathDash/Envault/cli-go/internal/api"
@@ -55,10 +56,34 @@ var deployCmd = &cobra.Command{
 			fmt.Println(ui.ColorGreen(fmt.Sprintf("✔ Project linked! (ID: %s)\n", projectId)))
 		}
 
-		// 2. Read .env
-		envMap, err := godotenv.Read()
+		// 2. Read .env manually to be lenient
+		content, err := os.ReadFile(".env")
 		if err != nil {
 			fmt.Println(ui.ColorRed("Error reading .env file"))
+			os.Exit(1)
+		}
+
+		// Filter invalid lines
+		var validLines []string
+		lines := strings.Split(string(content), "\n")
+		for _, line := range lines {
+			trimmed := strings.TrimSpace(line)
+			if trimmed == "" {
+				continue
+			}
+			// It's a comment
+			if strings.HasPrefix(trimmed, "#") {
+				continue 
+			}
+			// It has a key=value pair
+			if strings.Contains(trimmed, "=") {
+				validLines = append(validLines, line)
+			}
+		}
+
+		envMap, err := godotenv.Unmarshal(strings.Join(validLines, "\n"))
+		if err != nil {
+			fmt.Println(ui.ColorRed("Error parsing .env file"))
 			os.Exit(1)
 		}
 
