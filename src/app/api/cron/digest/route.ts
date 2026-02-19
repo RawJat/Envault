@@ -9,6 +9,10 @@ export async function GET(request: NextRequest) {
   // 1. Verify Authentication
   const authHeader = request.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    console.error("Cron Auth Failed:", {
+      provided: authHeader,
+      expectedEnvSet: !!process.env.CRON_SECRET,
+    });
     return new NextResponse("Unauthorized", { status: 401 });
   }
 

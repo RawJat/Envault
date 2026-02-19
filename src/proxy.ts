@@ -56,6 +56,7 @@ export async function proxy(request: NextRequest) {
     "/api/cli",
     "/api/search",
     "/api/status",
+    "/api/cron",
   ];
 
   const isPublicApi = publicApiRoutes.some((route) =>
