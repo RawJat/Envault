@@ -9,10 +9,6 @@ export async function GET(request: NextRequest) {
   // 1. Verify Authentication
   const authHeader = request.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    console.error("Cron Auth Failed:", {
-      provided: authHeader,
-      expectedEnvSet: !!process.env.CRON_SECRET,
-    });
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
@@ -45,9 +41,6 @@ export async function GET(request: NextRequest) {
     }
 
     const userIds = preferences.map((p) => p.user_id);
-    console.log(
-      `[Digest] Found ${userIds.length} users with ${frequency} preference`,
-    );
 
     // 4. Calculate Time Window
     const now = new Date();
@@ -73,8 +66,6 @@ export async function GET(request: NextRequest) {
         continue;
       }
 
-      console.log(`[Digest] Processing user ${user.email} (${userId})`);
-
       // Get recent notifications
       const { data: notifications, error: notifError } = await supabase
         .from("notifications")
@@ -91,9 +82,6 @@ export async function GET(request: NextRequest) {
         continue;
       }
 
-      console.log(
-        `[Digest] User ${userId} has ${notifications?.length || 0} notifications since ${timeWindowIso}`,
-      );
 
       // Send Email if there is activity
       if (notifications && notifications.length > 0) {
@@ -103,12 +91,6 @@ export async function GET(request: NextRequest) {
           frequency,
         );
         results.push({ userId, sent: true, count: notifications.length });
-        console.log(`[Digest] Email sent to ${user.email}`);
-      } else {
-        results.push({ userId, sent: false, count: 0 });
-        console.log(
-          `[Digest] No new notifications for ${user.email}, skipping email`,
-        );
       }
     }
 
