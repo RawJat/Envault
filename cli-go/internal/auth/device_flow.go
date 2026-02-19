@@ -94,8 +94,16 @@ func Login() error {
 
 	for {
 		select {
+
 		case <-sigChan:
 			s.Stop()
+			fmt.Println("\nCancelling login...")
+			
+			// Attempt to notify server of cancellation
+			_, _ = client.Post("/auth/device/cancel", map[string]string{
+				"device_code": codeResp.DeviceCode,
+			})
+			
 			return fmt.Errorf("login cancelled")
 		case <-time.After(interval):
 			// Continue polling
