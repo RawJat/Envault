@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { sendDigestEmail } from "@/lib/email";
 import { Notification } from "@/lib/types/notifications";
 
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   try {
     // 3. Get Users with valid preference
@@ -45,6 +45,9 @@ export async function GET(request: NextRequest) {
     }
 
     const userIds = preferences.map((p) => p.user_id);
+    console.log(
+      `[Digest] Found ${userIds.length} users with ${frequency} preference`,
+    );
 
     // 4. Calculate Time Window
     const now = new Date();
@@ -66,9 +69,11 @@ export async function GET(request: NextRequest) {
       } = await supabase.auth.admin.getUserById(userId);
 
       if (userError || !user || !user.email) {
-        console.error(`Failed to get user ${userId}:`, userError);
+        console.error(`[Digest] Failed to get user ${userId}:`, userError);
         continue;
       }
+
+      console.log(`[Digest] Processing user ${user.email} (${userId})`);
 
       // Get recent notifications
       const { data: notifications, error: notifError } = await supabase
@@ -79,9 +84,16 @@ export async function GET(request: NextRequest) {
         .order("created_at", { ascending: false });
 
       if (notifError) {
-        console.error(`Failed to get notifications for ${userId}:`, notifError);
+        console.error(
+          `[Digest] Failed to get notifications for ${userId}:`,
+          notifError,
+        );
         continue;
       }
+
+      console.log(
+        `[Digest] User ${userId} has ${notifications?.length || 0} notifications since ${timeWindowIso}`,
+      );
 
       // Send Email if there is activity
       if (notifications && notifications.length > 0) {
@@ -91,8 +103,12 @@ export async function GET(request: NextRequest) {
           frequency,
         );
         results.push({ userId, sent: true, count: notifications.length });
+        console.log(`[Digest] Email sent to ${user.email}`);
       } else {
         results.push({ userId, sent: false, count: 0 });
+        console.log(
+          `[Digest] No new notifications for ${user.email}, skipping email`,
+        );
       }
     }
 
