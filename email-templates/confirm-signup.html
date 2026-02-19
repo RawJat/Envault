@@ -1,192 +1,208 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="x-apple-disable-message-reformatting">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="x-apple-disable-message-reformatting" />
     <title>Confirm Your Signup</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&display=swap');
+      @import url("https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&display=swap");
 
-        body {
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f5;
-            font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            -webkit-font-smoothing: antialiased;
-            color: #18181b
-        }
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f5;
+        font-family:
+          "Google Sans",
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          Helvetica,
+          Arial,
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+        color: #18181b;
+      }
 
-        table {
-            border-spacing: 0;
-            width: 100%
-        }
+      table {
+        border-spacing: 0;
+        width: 100%;
+      }
 
-        td {
-            padding: 0
-        }
+      td {
+        padding: 0;
+      }
 
-        img {
-            border: 0
-        }
+      img {
+        border: 0;
+      }
 
+      .wrapper {
+        width: 100%;
+        table-layout: fixed;
+        background-color: #f4f4f5;
+        padding: 60px 0;
+      }
+
+      .main {
+        background-color: #ffffff;
+        margin: 0 auto;
+        width: 96%;
+        max-width: 540px;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px -1px rgba(0, 0, 0, 0.08);
+        border: 1px solid #e4e4e7;
+      }
+
+      .header {
+        padding: 40px 48px 32px;
+        text-align: center;
+      }
+
+      .logo {
+        font-size: 26px;
+        font-weight: 700;
+        color: #18181b;
+        text-decoration: none;
+        letter-spacing: -0.75px;
+        display: inline-block;
+      }
+
+      .body {
+        padding: 0 48px 48px 48px;
+      }
+
+      .heading {
+        font-size: 24px;
+        font-weight: 600;
+        margin: 0 0 20px;
+        color: #18181b;
+        line-height: 1.3;
+        letter-spacing: -0.5px;
+        text-align: left;
+      }
+
+      .text {
+        font-size: 16px;
+        line-height: 1.6;
+        color: #52525b;
+        margin: 0 0 24px;
+        text-align: left;
+      }
+
+      .btn-container {
+        margin: 32px 0;
+        text-align: left;
+      }
+
+      .btn {
+        display: inline-block;
+        background-color: #18181b;
+        color: #ffffff;
+        font-size: 15px;
+        font-weight: 500;
+        text-decoration: none;
+        padding: 14px 28px;
+        border-radius: 10px;
+        transition: opacity 0.2s;
+        text-align: center;
+      }
+
+      .btn:hover {
+        opacity: 0.9;
+      }
+
+      .footer {
+        padding: 32px 48px;
+        text-align: center;
+        background-color: #fafafa;
+        border-top: 1px solid #e4e4e7;
+      }
+
+      .footer-text {
+        font-size: 13px;
+        color: #a1a1aa;
+        line-height: 1.6;
+        margin: 0;
+      }
+
+      @media only screen and (max-width: 600px) {
         .wrapper {
-            width: 100%;
-            table-layout: fixed;
-            background-color: #f4f4f5;
-            padding: 60px 0
-        }
-
-        .main {
-            background-color: #ffffff;
-            margin: 0 auto;
-            width: 96%;
-            max-width: 540px;
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 4px 20px -1px rgba(0, 0, 0, 0.08);
-            border: 1px solid #e4e4e7
+          padding: 20px 0;
         }
 
         .header {
-            padding: 40px 48px 32px;
-            text-align: center
-        }
-
-        .logo {
-            font-size: 26px;
-            font-weight: 700;
-            color: #18181b;
-            text-decoration: none;
-            letter-spacing: -0.75px;
-            display: inline-block
+          padding: 32px 24px 24px;
         }
 
         .body {
-            padding: 0 48px 48px 48px
+          padding: 0 24px 32px;
         }
 
         .heading {
-            font-size: 24px;
-            font-weight: 600;
-            margin: 0 0 20px;
-            color: #18181b;
-            line-height: 1.3;
-            letter-spacing: -0.5px;
-            text-align: left
+          font-size: 22px;
         }
 
         .text {
-            font-size: 16px;
-            line-height: 1.6;
-            color: #52525b;
-            margin: 0 0 24px;
-            text-align: left
-        }
-
-        .btn-container {
-            margin: 32px 0;
-            text-align: left
+          font-size: 15px;
         }
 
         .btn {
-            display: inline-block;
-            background-color: #18181b;
-            color: #ffffff;
-            font-size: 15px;
-            font-weight: 500;
-            text-decoration: none;
-            padding: 14px 28px;
-            border-radius: 10px;
-            transition: opacity 0.2s;
-            text-align: center
+          width: 100%;
+          box-sizing: border-box;
         }
-
-        .btn:hover {
-            opacity: 0.9
-        }
-
-        .footer {
-            padding: 32px 48px;
-            text-align: center;
-            background-color: #fafafa;
-            border-top: 1px solid #e4e4e7
-        }
-
-        .footer-text {
-            font-size: 13px;
-            color: #a1a1aa;
-            line-height: 1.6;
-            margin: 0
-        }
-
-        @media only screen and (max-width:600px) {
-            .wrapper {
-                padding: 20px 0
-            }
-
-            .header {
-                padding: 32px 24px 24px
-            }
-
-            .body {
-                padding: 0 24px 32px
-            }
-
-            .heading {
-                font-size: 22px
-            }
-
-            .text {
-                font-size: 15px
-            }
-
-            .btn {
-                width: 100%;
-                box-sizing: border-box
-            }
-        }
+      }
     </style>
-</head>
+  </head>
 
-<body>
+  <body>
     <div class="wrapper">
-        <table role="presentation">
-            <tr>
-                <td align="center">
-                    <div class="main">
-                        <div class="header">
-                            <a href="https://envault.tech" class="logo">
-                                <img src="https://www.envault.tech/logo-bimi.svg?v=1" width="26" height="26" alt=""
-                                    style="vertical-align: middle; margin-right: 8px;">
-                                <span style="vertical-align: middle;">Envault</span>
-                            </a>
-                        </div>
-                        <div class="body">
-                            <h1 class="heading">Confirm your email address</h1>
-                            <p class="text">
-                                Welcome to Envault. We're excited to have you on board! Please confirm your email
-                                address to activate your account and start securing your environment variables.
-                            </p>
-                            <div class="btn-container">
-                                <a href="{{ .ConfirmationURL }}" class="btn">Confirm Email</a>
-                            </div>
-                            <p class="text" style="font-size: 14px; margin-top: 24px; color: #71717a;">
-                                If you didn't create an account with Envault, you can safely ignore this email.
-                            </p>
-                        </div>
-                        <div class="footer">
-                            <p class="footer-text">
-                                &copy; Envault. All rights reserved.<br>
-                                Secure Environment Variables Management
-                            </p>
-                        </div>
-                    </div>
-                </td>
-            </tr>
-        </table>
+      <table role="presentation">
+        <tr>
+          <td align="center">
+            <div class="main">
+              <div class="header">
+                <a href="https://envault.tech" class="logo">
+                  <img
+                    src="https://www.envault.tech/favicon.svg"
+                    width="26"
+                    height="26"
+                    alt=""
+                    style="vertical-align: middle; margin-right: 8px"
+                  />
+                  <span style="vertical-align: middle">Envault</span>
+                </a>
+              </div>
+              <div class="body">
+                <h1 class="heading">Confirm your email address</h1>
+                <p class="text">
+                  Welcome to Envault. We're excited to have you on board! Please
+                  confirm your email address to activate your account and start
+                  securing your environment variables.
+                </p>
+                <div class="btn-container">
+                  <a href="{{ .ConfirmationURL }}" class="btn">Confirm Email</a>
+                </div>
+                <p
+                  class="text"
+                  style="font-size: 14px; margin-top: 24px; color: #71717a"
+                >
+                  If you didn't create an account with Envault, you can safely
+                  ignore this email.
+                </p>
+              </div>
+              <div class="footer">
+                <p class="footer-text">
+                  &copy; Envault. All rights reserved.<br />
+                  Secure Environment Variables Management
+                </p>
+              </div>
+            </div>
+          </td>
+        </tr>
+      </table>
     </div>
-</body>
-
+  </body>
 </html>
