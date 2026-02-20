@@ -94,13 +94,83 @@ export async function GET(
     targetSecrets.map(async (s) => {
       try {
         const cleanValue = await decrypt(s.value);
-        return { key: s.key, value: cleanValue };
+        return {
+          key: s.key,
+          value: cleanValue,
+          // Keep original for rotation check
+          _originalId: (s as any).id,
+          _originalValue: s.value,
+        };
       } catch (e) {
         console.error(`Failed to decrypt secret ${s.key}`, e);
         return { key: s.key, value: "<<DECRYPTION_FAILED>>" };
       }
     }),
   );
+
+  // [READ-REPAIR] Trigger rotation for outdated secrets
+  // We use the same logic as the UI.
+  const { getActiveKeyId, reEncryptSecret } = await import("@/lib/encryption");
+
+  // Fire-and-forget background process
+  const performRotation = async () => {
+    let activeKeyId = "";
+    try {
+      activeKeyId = await getActiveKeyId();
+    } catch (e) {
+      return;
+    } // No active key, skip
+
+    const updates: any[] = [];
+
+    await Promise.all(
+      decryptedSecrets.map(async (s: any) => {
+        if (!s._originalValue || !s._originalId) return;
+
+        // specific check: is it legacy or old key?
+        let needsRotation = false;
+        if (!s._originalValue.startsWith("v1:")) {
+          needsRotation = true;
+        } else {
+          const parts = s._originalValue.split(":");
+          if (parts.length === 3 && parts[1] !== activeKeyId) {
+            needsRotation = true;
+          }
+        }
+
+        if (needsRotation) {
+          try {
+            const newValue = await reEncryptSecret(s._originalValue);
+            const newKeyId = newValue.split(":")[1];
+            updates.push({
+              id: s._originalId,
+              value: newValue,
+              key_id: newKeyId,
+            });
+          } catch (e) {
+            console.error(`CLI Read-Repair failed for ${s.key}`, e);
+          }
+        }
+      }),
+    );
+
+    if (updates.length > 0) {
+      const { error } = await supabase.from("secrets").upsert(updates);
+      if (error) console.error("CLI Read-Repair Batch Update Error:", error);
+      else console.log(`[CLI Read-Repair] Rotated ${updates.length} secrets`);
+    }
+  };
+
+  // Execute without awaiting (or await if platform requires)
+  // Vercel generally waits for promises in API routes? No, only if returned or awaited.
+  // We use `waitUntil` if possible, otherwise we await to be safe as per "Async Updates" requirement.
+  await performRotation();
+
+  // Clean up internal keys before returning
+  const finalSecrets = decryptedSecrets.map((s) => ({
+    key: s.key,
+    value: s.value,
+  }));
 
   // Notification for Pull
   // Retrieve project name for notification
@@ -135,7 +205,7 @@ export async function GET(
       if (error) console.error("Failed to create pull notification:", error);
     });
 
-  return NextResponse.json({ secrets: decryptedSecrets });
+  return NextResponse.json({ secrets: finalSecrets });
 }
 
 export async function POST(
