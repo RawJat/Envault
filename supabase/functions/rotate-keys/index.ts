@@ -1,412 +1,326 @@
-import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import {
+  createClient,
+  SupabaseClient,
+} from "https://esm.sh/@supabase/supabase-js@2";
 import nodeCrypto from "node:crypto";
 import { Buffer } from "node:buffer";
-import { Redis } from 'https://esm.sh/@upstash/redis'
+import { Redis } from "https://esm.sh/@upstash/redis";
 
 const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+};
 
-const MASTER_KEY_HEX = Deno.env.get('ENCRYPTION_KEY')!
-const ALGORITHM = 'aes-256-gcm'
-const IV_LENGTH = 16
-const AUTH_TAG_LENGTH = 16
-const ENCODING = 'hex'
-const CHUNK_SIZE = 500 // Process 500 secrets per invocation to avoid timeouts
+const MASTER_KEY_HEX = Deno.env.get("ENCRYPTION_KEY")!;
+const ALGORITHM = "aes-256-gcm";
+const IV_LENGTH = 16;
+const AUTH_TAG_LENGTH = 16;
+const ENCODING = "hex";
+// [SCAVENGER] Scavenger processes smaller batches to be "Low-and-Slow"
+const BATCH_SIZE = 50;
 
 // --- Helper Functions ---
 function getMasterKey(): Buffer {
-    if (!MASTER_KEY_HEX || MASTER_KEY_HEX.length !== 64) {
-        throw new Error('Invalid ENCRYPTION_KEY')
-    }
-    return Buffer.from(MASTER_KEY_HEX, ENCODING)
+  if (!MASTER_KEY_HEX || MASTER_KEY_HEX.length !== 64) {
+    throw new Error("Invalid ENCRYPTION_KEY");
+  }
+  return Buffer.from(MASTER_KEY_HEX, ENCODING);
 }
 
 function encryptWithKey(text: string, key: Buffer): string {
-    const iv = nodeCrypto.randomBytes(IV_LENGTH)
-    const cipher = nodeCrypto.createCipheriv(ALGORITHM, key, iv)
-    let encrypted = cipher.update(text, 'utf8', ENCODING)
-    encrypted += cipher.final(ENCODING)
-    const authTag = cipher.getAuthTag()
-    const combined = Buffer.concat([iv, Buffer.from(encrypted, ENCODING), authTag])
-    return combined.toString('base64')
+  const iv = nodeCrypto.randomBytes(IV_LENGTH);
+  const cipher = nodeCrypto.createCipheriv(ALGORITHM, key, iv);
+  let encrypted = cipher.update(text, "utf8", ENCODING);
+  encrypted += cipher.final(ENCODING);
+  const authTag = cipher.getAuthTag();
+  const combined = Buffer.concat([
+    iv,
+    Buffer.from(encrypted, ENCODING),
+    authTag,
+  ]);
+  return combined.toString("base64");
 }
 
 function decryptWithKey(encryptedText: string, key: Buffer): string {
-    const combined = Buffer.from(encryptedText, 'base64')
-    const iv = combined.subarray(0, IV_LENGTH)
-    const authTag = combined.subarray(combined.length - AUTH_TAG_LENGTH)
-    const encrypted = combined.subarray(IV_LENGTH, combined.length - AUTH_TAG_LENGTH)
-    const decipher = nodeCrypto.createDecipheriv(ALGORITHM, key, iv)
-    decipher.setAuthTag(authTag)
-    try {
-        let decrypted = decipher.update(encrypted.toString(ENCODING), ENCODING, 'utf8')
-        decrypted += decipher.final('utf8')
-        return decrypted
-    } catch {
-        throw new Error('Decryption Failed')
-    }
+  const combined = Buffer.from(encryptedText, "base64");
+  const iv = combined.subarray(0, IV_LENGTH);
+  const authTag = combined.subarray(combined.length - AUTH_TAG_LENGTH);
+  const encrypted = combined.subarray(
+    IV_LENGTH,
+    combined.length - AUTH_TAG_LENGTH,
+  );
+  const decipher = nodeCrypto.createDecipheriv(ALGORITHM, key, iv);
+  decipher.setAuthTag(authTag);
+  try {
+    let decrypted = decipher.update(
+      encrypted.toString(ENCODING),
+      ENCODING,
+      "utf8",
+    );
+    decrypted += decipher.final("utf8");
+    return decrypted;
+  } catch {
+    throw new Error("Decryption Failed");
+  }
 }
 
 Deno.serve(async (req: Request) => {
-    if (req.method === 'OPTIONS') {
-        return new Response('ok', { headers: corsHeaders })
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
+  try {
+    const authHeader = req.headers.get("Authorization");
+    let serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      serviceRoleKey = authHeader.split(" ")[1];
     }
 
-    try {
-        const authHeader = req.headers.get('Authorization')
-        let serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      serviceRoleKey,
+    );
 
-        if (authHeader && authHeader.startsWith('Bearer ')) {
-            serviceRoleKey = authHeader.split(' ')[1]
-            console.log("Using propagated Authorization header for client init")
+    // Parse Request
+    const { action, job_id } = await req
+      .json()
+      .catch(() => ({ action: "scavenge", job_id: null }));
+
+    // Actions:
+    // 'roll_key': Explicitly creates a new key and sets it as active.
+    // 'scavenge': Default. Finds secrets encrypted with OLD keys and rotates them to the ACTIVE key.
+
+    if (action === "roll_key") {
+      return await rollKey(supabaseClient);
+    } else {
+      return await runScavenger(supabaseClient);
+    }
+  } catch (error: unknown) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    return new Response(JSON.stringify({ error: errorMessage }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 400,
+    });
+  }
+});
+
+/**
+ * [ACTION] Roll Key
+ * Creates a new Data Key and sets it as ACTIVE.
+ * Does NOT rotate secrets immediately.
+ */
+async function rollKey(supabase: SupabaseClient) {
+  console.log("Rolling Key...");
+
+  // 1. Create NEW Data Key
+  const newKeyBuffer = nodeCrypto.randomBytes(32);
+  const masterKey = getMasterKey();
+  const newKeyHex = newKeyBuffer.toString("hex");
+  const encryptedNewKey = encryptWithKey(newKeyHex, masterKey);
+
+  // 2. Retire current active key logic?
+  // We should first insert the new key as 'active' and update old 'active' keys to 'retired'?
+  // Transaction ideally.
+
+  // Fetch currently active key to retire it
+  const { data: currentActive } = await supabase
+    .from("encryption_keys")
+    .select("id")
+    .eq("status", "active")
+    .single();
+
+  // Insert new key as active
+  const { data: newKeyData, error: newKeyError } = await supabase
+    .from("encryption_keys")
+    .insert({
+      encrypted_key: encryptedNewKey,
+      status: "active", // Immediately active for NEW writes
+    })
+    .select()
+    .single();
+
+  if (newKeyError)
+    throw new Error(`Failed to create new key: ${newKeyError.message}`);
+
+  // Retire old key
+  if (currentActive) {
+    await supabase
+      .from("encryption_keys")
+      .update({ status: "retired" })
+      .eq("id", currentActive.id);
+  }
+
+  // Invalidate Redis
+  try {
+    const redis = new Redis({
+      url: Deno.env.get("UPSTASH_REDIS_REST_URL")!,
+      token: Deno.env.get("UPSTASH_REDIS_REST_TOKEN")!,
+    });
+    await redis.del("active_key");
+  } catch (e) {
+    console.error("Failed to invalidate Redis:", e);
+  }
+
+  return new Response(
+    JSON.stringify({
+      success: true,
+      message: "Key Rolled. New key is now active.",
+      new_key_id: newKeyData.id,
+    }),
+    { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+  );
+}
+
+/**
+ * [ACTION] Scavenger
+ * Finds secrets that do not match the current ACTIVE key ID and rotates them.
+ */
+async function runScavenger(supabase: SupabaseClient) {
+  // 1. Get Active Key
+  const { data: activeKeyData, error: activeKeyError } = await supabase
+    .from("encryption_keys")
+    .select("id, encrypted_key")
+    .eq("status", "active")
+    .single();
+
+  if (activeKeyError || !activeKeyData) {
+    // If no active key, we can't do anything (or maybe we should init one? but 'roll_key' does that)
+    return new Response(
+      JSON.stringify({
+        message: "No Active Key found. Please run roll_key first.",
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
+  const activeKeyId = activeKeyData.id;
+
+  // Unwrap Active Key
+  const masterKey = getMasterKey();
+  const activeKeyUnwrapped = Buffer.from(
+    decryptWithKey(activeKeyData.encrypted_key, masterKey),
+    "hex",
+  );
+
+  // 2. Find Dormant Secrets (Limit 50)
+  // Criteria: key_id IS NULL or key_id != activeKeyId
+  const { data: dormantSecrets, error: fetchError } = await supabase
+    .from("secrets")
+    .select("id, key, value, key_id")
+    .neq("key_id", activeKeyId) // This works if key_id is not null. For nulls we need "or is null"
+    .or(`key_id.neq.${activeKeyId},key_id.is.null`) // Supabase syntax for OR
+    .limit(BATCH_SIZE);
+
+  if (fetchError) {
+    return new Response(
+      JSON.stringify({ error: `Fetch failed: ${fetchError.message}` }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      },
+    );
+  }
+
+  if (!dormantSecrets || dormantSecrets.length === 0) {
+    return new Response(
+      JSON.stringify({
+        message: "No dormant secrets found. System is up to date.",
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
+  console.log(`[Scavenger] Found ${dormantSecrets.length} secrets to rotate.`);
+
+  // 3. Process Batch
+  let processedCount = 0;
+  const failedIds: string[] = [];
+
+  // Key Cache for decryption (Old Keys)
+  const oldKeyCache = new Map<string, Buffer>();
+
+  for (const secret of dormantSecrets) {
+    try {
+      let decryptedValue = "";
+
+      // Decrypt Logic
+      if (!secret.key_id) {
+        // Legacy: Decrypt with Master Key
+        // Careful: secret.value might be raw or v1?
+        // If it's v1 but key_id column is null (migration pending?), check prefix
+        if (secret.value.startsWith("v1:")) {
+          // Should have key_id, but if missing, parse from string
+          const parts = secret.value.split(":");
+          const keyId = parts[1];
+          // Fetch key...
+          // Reuse logic below
+          secret.key_id = keyId;
         } else {
-            console.log("Using env var for client init (Auth header missing or invalid)")
+          decryptedValue = decryptWithKey(secret.value, masterKey);
+        }
+      }
+
+      if (secret.key_id && !decryptedValue) {
+        let oldKeyBuffer = oldKeyCache.get(secret.key_id);
+        if (!oldKeyBuffer) {
+          const { data: oldKeyData } = await supabase
+            .from("encryption_keys")
+            .select("encrypted_key")
+            .eq("id", secret.key_id)
+            .single();
+          if (oldKeyData) {
+            const hex = decryptWithKey(oldKeyData.encrypted_key, masterKey);
+            oldKeyBuffer = Buffer.from(hex, "hex");
+            oldKeyCache.set(secret.key_id, oldKeyBuffer);
+          }
         }
 
-        const supabaseClient = createClient(
-            Deno.env.get('SUPABASE_URL') ?? '',
-            serviceRoleKey
-        )
-
-        // Parse Request
-        const { job_id, cleanup_only } = await req.json().catch(() => ({ job_id: null, cleanup_only: false }))
-
-        // Mode 0: Cleanup Only (For testing/maintenance)
-        if (cleanup_only) {
-            return await performCleanup(supabaseClient)
+        if (oldKeyBuffer) {
+          if (secret.value.startsWith("v1:")) {
+            const parts = secret.value.split(":");
+            decryptedValue = decryptWithKey(parts[2], oldKeyBuffer);
+          } else {
+            decryptedValue = decryptWithKey(secret.value, oldKeyBuffer);
+          }
         }
+      }
 
-        // Mode 1: Initialization (No job_id provided)
-        if (!job_id) {
-            return await initializeRotationJob(supabaseClient, authHeader)
-        }
+      // Encrypt with ACTIVE Key
+      if (decryptedValue) {
+        const ciphertext = encryptWithKey(decryptedValue, activeKeyUnwrapped);
+        const storedValue = `v1:${activeKeyId}:${ciphertext}`;
 
-        // Mode 2: Processing Loop (job_id provided)
-        return await processRotationChunk(supabaseClient, job_id, authHeader)
+        await supabase
+          .from("secrets")
+          .update({
+            value: storedValue,
+            key_id: activeKeyId,
+            // Don't update last_updated_at usually for system rotation?
+            // But for debugging it helps.
+          })
+          .eq("id", secret.id);
 
-    } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-        return new Response(
-            JSON.stringify({ error: errorMessage }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-        )
-    }
-})
-
-
-async function initializeRotationJob(supabase: SupabaseClient, authHeader: string | null) {
-    // 1. Create NEW Data Key
-    const newKeyBuffer = nodeCrypto.randomBytes(32)
-    const masterKey = getMasterKey()
-    const newKeyHex = newKeyBuffer.toString('hex')
-    const encryptedNewKey = encryptWithKey(newKeyHex, masterKey)
-
-    // 2. Store Key in DB
-    const { data: newKeyData, error: newKeyError } = await supabase
-        .from('encryption_keys')
-        .insert({
-            encrypted_key: encryptedNewKey,
-            status: 'migrating'
-        })
-        .select()
-        .single()
-
-    if (newKeyError) throw new Error(`Failed to create new key: ${newKeyError.message}`)
-
-    // 3. Count Total Secrets
-    const { count, error: countError } = await supabase
-        .from('secrets')
-        .select('*', { count: 'exact', head: true })
-
-    if (countError) throw new Error(`Failed to count secrets: ${countError.message}`)
-
-    // 4. Create Job Record
-    const { data: jobData, error: jobError } = await supabase
-        .from('key_rotation_jobs')
-        .insert({
-            new_key_id: newKeyData.id,
-            status: 'pending',
-            total_secrets: count || 0,
-            processed_secrets: 0
-        })
-        .select()
-        .single()
-
-    if (jobError) throw new Error(`Failed to create job: ${jobError.message}`)
-
-    // 5. Trigger Async Processing (Recursion Start)
-    // We use raw fetch to ensure we explicitly use the Service Role Key for the Authorization header.
-    // supabase.functions.invoke can sometimes result in 401s if the client config isn't propagated perfectly.
-    try {
-        const functionUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/rotate-keys`
-        // Fallback to env var if header is missing (e.g. direct invocation from Dashboard without header?)
-        // But honestly, the header is the most reliable source if we trust the caller (cron/script).
-        const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-        const authValue = authHeader ?? `Bearer ${serviceKey}`
-
-        console.log("Triggering self-invocation (init)...")
-
-        // We do not await this fetch if we can avoid it, but Deno processing limits might kill generic background tasks.
-        // However, we want to return the response to the user quickly. 
-        // Ideally, we use EdgeChain or just fire-and-forget (but without await it might be cancelled).
-        // We will await it but ignore the result content to keep it simple.
-        fetch(functionUrl, {
-            method: 'POST',
-            headers: {
-                'Authorization': authValue,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ job_id: jobData.id })
-        }).catch(err => console.error("Self-invocation (init) failed:", err))
-
+        processedCount++;
+      } else {
+        throw new Error("Could not decrypt");
+      }
     } catch (e) {
-        console.error("Failed to setup self-invocation:", e)
+      console.error(`[Scavenger] Failed secret ${secret.id}`, e);
+      failedIds.push(secret.id);
     }
+  }
 
-    return new Response(
-        JSON.stringify({
-            success: true,
-            job_id: jobData.id,
-            message: 'Rotation job started'
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
-}
-
-
-async function processRotationChunk(supabase: SupabaseClient, job_id: string, authHeader: string | null) {
-    console.log(`Processing chunk for job ${job_id}`)
-
-    // 1. Fetch Job State
-    const { data: job, error: jobFetchError } = await supabase
-        .from('key_rotation_jobs')
-        .select('*')
-        .eq('id', job_id)
-        .single()
-
-    if (jobFetchError) console.error("Job fetch error:", jobFetchError)
-    if (!job) console.error("Job not found (null data)")
-
-    if (jobFetchError || !job) throw new Error(`Job not found: ${jobFetchError?.message}`)
-
-    if (job.status === 'completed' || job.status === 'failed') {
-        return new Response(
-            JSON.stringify({ message: 'Job already finished', status: job.status }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-    }
-
-    // 2. Fetch Helper: New Key
-    const { data: newKeyData, error: newKeyError } = await supabase
-        .from('encryption_keys')
-        .select('encrypted_key')
-        .eq('id', job.new_key_id)
-        .single()
-
-    if (newKeyError) console.error("New key fetch error:", newKeyError)
-    if (!newKeyData) throw new Error("New key data missing")
-
-    const masterKey = getMasterKey()
-    const newKeyUnwrapped = Buffer.from(decryptWithKey(newKeyData.encrypted_key, masterKey), 'hex')
-
-    // 3. Fetch Chunk of Secrets (Keyset Pagination)
-    let query = supabase
-        .from('secrets')
-        .select('*')
-        .neq('key_id', job.new_key_id) // Only fetch ones not yet migrated? 
-        // Or safely fetch by specific order? 
-        // Ideally: Order by ID ASC, Key > last_processed_secret_id
-        .order('id', { ascending: true })
-        .limit(CHUNK_SIZE)
-
-    if (job.last_processed_secret_id) {
-        query = query.gt('id', job.last_processed_secret_id)
-    }
-
-    const { data: secretsChunk, error: chunkError } = await query
-
-    if (chunkError) throw new Error(`Chunk fetch error: ${chunkError.message}`)
-
-    // 4. Process Chunk
-    if (!secretsChunk || secretsChunk.length === 0) {
-        // DONE! No more secrets to process.
-        // Finalize: Switch Active Key
-        await supabase.from('encryption_keys').update({ status: 'retired' }).eq('status', 'active')
-        await supabase.from('encryption_keys').update({ status: 'active' }).eq('id', job.new_key_id)
-        await supabase.from('key_rotation_jobs').update({ status: 'completed' }).eq('id', job_id)
-
-        // Invalid Redis Cache
-        try {
-            const redis = new Redis({
-                url: Deno.env.get('UPSTASH_REDIS_REST_URL')!,
-                token: Deno.env.get('UPSTASH_REDIS_REST_TOKEN')!,
-            })
-            await redis.del('active_key')
-        } catch (e) {
-            console.error('Failed to invalidate Redis:', e)
-        }
-
-        // Perform Cleanup
-        await performCleanup(supabase)
-
-        return new Response(
-            JSON.stringify({ success: true, message: 'Rotation COMPLETED', job_id }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-    }
-
-    // Update Init Status
-    if (job.status === 'pending') {
-        await supabase.from('key_rotation_jobs').update({ status: 'processing' }).eq('id', job_id)
-    }
-
-    // Process Items
-    const failedIds: string[] = []
-    let lastId = job.last_processed_secret_id
-    let processedCount = 0
-
-    // Key Cache for decryption (Old Keys)
-    const oldKeyCache = new Map<string, Buffer>()
-
-    for (const secret of secretsChunk) {
-        try {
-            let decryptedValue = ''
-
-            // Decrypt Logic
-            if (!secret.key_id) {
-                decryptedValue = decryptWithKey(secret.value, masterKey)
-            } else {
-                let oldKeyBuffer = oldKeyCache.get(secret.key_id)
-                if (!oldKeyBuffer) {
-                    const { data: oldKeyData } = await supabase
-                        .from('encryption_keys')
-                        .select('encrypted_key')
-                        .eq('id', secret.key_id)
-                        .single()
-                    if (oldKeyData) {
-                        const hex = decryptWithKey(oldKeyData.encrypted_key, masterKey)
-                        oldKeyBuffer = Buffer.from(hex, 'hex')
-                        oldKeyCache.set(secret.key_id, oldKeyBuffer)
-                    }
-                }
-
-                if (oldKeyBuffer) {
-                    if (secret.value.startsWith('v1:')) {
-                        const parts = secret.value.split(':')
-                        decryptedValue = decryptWithKey(parts[2], oldKeyBuffer)
-                    } else {
-                        decryptedValue = decryptWithKey(secret.value, oldKeyBuffer)
-                    }
-                }
-            }
-
-            // Encrypt with NEW Key
-            if (decryptedValue) {
-                const ciphertext = encryptWithKey(decryptedValue, newKeyUnwrapped)
-                const storedValue = `v1:${job.new_key_id}:${ciphertext}`
-
-                await supabase
-                    .from('secrets')
-                    .update({ value: storedValue, key_id: job.new_key_id })
-                    .eq('id', secret.id)
-            }
-
-            processedCount++
-            lastId = secret.id
-
-        } catch (e) {
-            console.error(`Failed secret ${secret.id}`, e)
-            failedIds.push(secret.id)
-            // We continue processing the chunk even if one fails?
-            // Yes, but log it.
-        }
-    }
-
-    // 5. Update Job State
-    await supabase.from('key_rotation_jobs').update({
-        processed_secrets: (job.processed_secrets || 0) + processedCount,
-        last_processed_secret_id: lastId,
-        updated_at: new Date().toISOString()
-    }).eq('id', job_id)
-
-    // 6. Recurse (Trigger Next Chunk)
-    const functionUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/rotate-keys`
-    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    const authValue = authHeader ?? `Bearer ${serviceKey}`
-
-    fetch(functionUrl, {
-        method: 'POST',
-        headers: {
-            'Authorization': authValue,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ job_id: job.id })
-    }).catch(err => console.error("Self-invocation (recurse) failed:", err))
-
-    return new Response(
-        JSON.stringify({
-            success: true,
-            message: 'Chunk processed',
-            processed: processedCount,
-            next_cursor: lastId
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
-}
-
-async function performCleanup(supabase: SupabaseClient) {
-    let deletedKeysCount = 0
-    let deletedJobsCount = 0
-
-    // 1. Cleanup Completed Jobs (Keep last 3)
-    const { data: completedJobs, error: jobsError } = await supabase
-        .from('key_rotation_jobs')
-        .select('id')
-        .eq('status', 'completed')
-        .order('created_at', { ascending: false })
-
-    if (!jobsError && completedJobs && completedJobs.length > 2) {
-        const jobsToDelete = completedJobs.slice(2).map((j: { id: string }) => j.id)
-        if (jobsToDelete.length > 0) {
-            const { error: delJobError } = await supabase
-                .from('key_rotation_jobs')
-                .delete()
-                .in('id', jobsToDelete)
-
-            if (!delJobError) deletedJobsCount = jobsToDelete.length
-            else console.error("Failed to delete jobs:", delJobError)
-        }
-    }
-
-    // 2. Cleanup Retired Keys (Keep last 3)
-    const { data: retiredKeys, error: keysError } = await supabase
-        .from('encryption_keys')
-        .select('id')
-        .eq('status', 'retired')
-        .order('created_at', { ascending: false })
-
-    if (!keysError && retiredKeys && retiredKeys.length > 2) {
-        const keysToDelete = retiredKeys.slice(2).map((k: { id: string }) => k.id)
-        if (keysToDelete.length > 0) {
-            const { error: delKeyError } = await supabase
-                .from('encryption_keys')
-                .delete()
-                .in('id', keysToDelete)
-
-            if (!delKeyError) deletedKeysCount = keysToDelete.length
-            else console.error("Failed to delete keys:", delKeyError)
-        }
-    }
-
-    return new Response(
-        JSON.stringify({
-            success: true,
-            message: 'Cleanup completed',
-            deleted_keys: deletedKeysCount,
-            deleted_jobs: deletedJobsCount
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+  return new Response(
+    JSON.stringify({
+      success: true,
+      action: "scavenge",
+      processed: processedCount,
+      failed: failedIds.length,
+      target_key: activeKeyId,
+    }),
+    { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+  );
 }
