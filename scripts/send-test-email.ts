@@ -30,7 +30,7 @@ async function main() {
   const result = await sendTestEmail(email);
   if (result && result.success) {
     console.log("Email sent successfully!");
-    console.log("Message ID:", result.data?.id);
+    console.log("Message ID:", result.data?.data?.id);
   } else {
     console.error("Failed to send email.");
     console.error(result ? result.error : "Unknown error");
