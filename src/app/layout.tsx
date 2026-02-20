@@ -3,11 +3,9 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthSync } from "@/components/auth/auth-sync";
-import { ReauthDialog } from "@/components/auth/reauth-dialog";
-import { SessionMonitor } from "@/components/auth/session-monitor";
 import { createClient } from "@/lib/supabase/server";
 import { Analytics } from "@vercel/analytics/react";
-import { NotificationProvider } from '@/components/notifications/notification-provider'
+import { NotificationProvider } from "@/components/notifications/notification-provider";
 import { ShortcutProvider } from "@/components/providers/shortcut-provider";
 
 export const metadata: Metadata = {
@@ -16,7 +14,8 @@ export const metadata: Metadata = {
     default: "Envault - Secure Secrets Management & Environment Variable Vault",
     template: "%s | Envault",
   },
-  description: "Envault is a secure vault for your environment variables featuring end-to-end encryption. Manage secrets with confidence using AES-256-GCM and simplify team collaboration for developers.",
+  description:
+    "Envault is a secure vault for your environment variables featuring end-to-end encryption. Manage secrets with confidence using AES-256-GCM and simplify team collaboration for developers.",
   keywords: [
     "secrets management",
     "environment variables",
@@ -25,10 +24,10 @@ export const metadata: Metadata = {
     "developer CLI",
     "AES-256-GCM",
     "team collaboration security",
-    "developer tools"
+    "developer tools",
   ],
   alternates: {
-    canonical: '/',
+    canonical: "/",
   },
   authors: [{ name: "Envault Team" }],
   creator: "Envault",
@@ -40,7 +39,8 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: "https://www.envault.tech",
     title: "Envault - Secure Environment Variables",
-    description: "Manage your environment variables securely with Envault. End-to-end encryption for your peace of mind.",
+    description:
+      "Manage your environment variables securely with Envault. End-to-end encryption for your peace of mind.",
     siteName: "Envault",
     images: [
       {
@@ -81,7 +81,11 @@ export default async function RootLayout({
     <html lang="en" suppressHydrationWarning data-os={os}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
         <link
           href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Instrument+Serif:ital,wght@0,400;0,700;1,400;1,700&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap"
           rel="stylesheet"
@@ -94,17 +98,19 @@ export default async function RootLayout({
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "SoftwareApplication",
-              "name": "Envault",
-              "applicationCategory": "DeveloperApplication",
-              "operatingSystem": "Any",
-              "description": "Envault is a secure vault for your environment variables featuring end-to-end encryption.",
-              "featureList": "Secure Secret Storage, End-to-End Encryption, Team Collaboration, CLI Integration, AES-256-GCM",
-              "offers": {
+              name: "Envault",
+              applicationCategory: "DeveloperApplication",
+              operatingSystem: "Any",
+              description:
+                "Envault is a secure vault for your environment variables featuring end-to-end encryption.",
+              featureList:
+                "Secure Secret Storage, End-to-End Encryption, Team Collaboration, CLI Integration, AES-256-GCM",
+              offers: {
                 "@type": "Offer",
-                "price": "0",
-                "priceCurrency": "USD"
-              }
-            })
+                price: "0",
+                priceCurrency: "USD",
+              },
+            }),
           }}
         />
         <ThemeProvider
@@ -120,8 +126,7 @@ export default async function RootLayout({
               {user && (
                 <>
                   <AuthSync user={user} />
-                  <SessionMonitor />
-                  <ReauthDialog />
+
                   <NotificationProvider />
                 </>
               )}

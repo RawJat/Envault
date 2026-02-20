@@ -42,7 +42,7 @@ import {
 import { Project, useEnvaultStore } from "@/lib/store";
 import { toast } from "sonner";
 import { deleteProject as deleteProjectAction } from "@/app/project-actions";
-import { useReauthStore } from "@/lib/reauth-store";
+
 import { ShareProjectDialog } from "@/components/dashboard/share-project-dialog";
 import { Share2 } from "lucide-react";
 import { Kbd } from "@/components/ui/kbd";
@@ -94,10 +94,6 @@ export function ProjectCard({ project }: ProjectCardProps) {
   const handleDeleteConfirm = async () => {
     const result = await deleteProjectAction(project.id);
     if (result.error) {
-      if (result.error === "REAUTH_REQUIRED") {
-        useReauthStore.getState().openReauth(() => handleDeleteConfirm());
-        return;
-      }
       toast.error(result.error);
       return;
     }
