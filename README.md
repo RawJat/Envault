@@ -7,7 +7,7 @@
 - **Bank-Grade Security**: AES-256-GCM encryption with master/data key hierarchy and automatic key rotation.
 - **Project Workspaces**: Organize secrets into distinct projects for better management.
 - **Team Collaboration**: Secure project sharing with role-based access control (Owner, Editor, Viewer).
-- **Secure Authentication**: Powered by Supabase Auth for robust user management.
+- **Secure Authentication**: Powered by Supabase Auth for robust user management, including **Passkey** support for passwordless, biometric login.
 - **Modern UI/UX**: Built with Tailwind CSS, Shadcn UI, and Framer Motion for a premium experience.
 - **Interactive 3D Elements**: High-performance 3D visuals powered by React Three Fiber.
 - **Keyboard First**: Navigate efficiently with fully customizable, conflict-free hotkeys.
@@ -15,6 +15,7 @@
 - **Dark Mode Support**: Built-in support for light and dark themes.
 - **CLI Support**: Manage your secrets directly from your terminal.
 - **Real-time System Status**: Monitor system health, active incidents, and historical uptime with a dedicated status page.
+- **Dedicated Support Page**: Integrated support features directly within the app to help users manage troubleshooting options efficiently.
 - **Comprehensive Documentation**: Integrated docs site with guides, API reference, and CLI documentation.
 
 ## CLI
@@ -24,11 +25,13 @@ Envault comes with a high-performance Go CLI to manage your secrets without leav
 ### Installation
 
 **macOS & Linux (Universal)**
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/DinanathDash/Envault/main/install.sh | sh
 ```
 
 **macOS (Homebrew)**
+
 ```bash
 brew tap DinanathDash/envault
 brew install envault
@@ -104,12 +107,12 @@ Follow these steps to get the project running locally.
     ```env
     NEXT_PUBLIC_SUPABASE_URL=your-project-url
     NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-    
+
     # Generate a secure key: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
     ENCRYPTION_KEY=your-64-char-hex-key
-    
+
     SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-    
+
     UPSTASH_REDIS_REST_URL=your-upstash-url
     UPSTASH_REDIS_REST_TOKEN=your-upstash-token
     ```

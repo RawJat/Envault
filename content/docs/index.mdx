@@ -3,16 +3,31 @@ title: Introduction
 description: Secure, collaborative, and developer-friendly environment variable management.
 ---
 
-import { NotebookPen, Terminal, Shield, Server, Network, Lock, Users, Database, ServerCrash, Palette, File } from 'lucide-react';
-import { Card, Cards } from 'fumadocs-ui/components/card';
-import { Callout } from 'fumadocs-ui/components/callout';
+import {
+  NotebookPen,
+  Terminal,
+  Shield,
+  Server,
+  Network,
+  Lock,
+  Users,
+  Database,
+  ServerCrash,
+  Palette,
+  File,
+} from "lucide-react";
+import { Card, Cards } from "fumadocs-ui/components/card";
+import { Callout } from "fumadocs-ui/components/callout";
 
 # Welcome to Envault
 
 **Envault** is an open-source, self-hostable secret management platform designed for modern development teams. It simplifies the chaos of managing `.env` files across multiple projects, environments, and team members, ensuring your sensitive data is **always encrypted** and **always syncronized**.
 
 <Callout title="Why Envault?">
-  Traditional secret management often involves insecurely sharing `.env` files over Slack or using expensive, enterprise-only SaaS solutions. Envault bridges the gap: **Bank-grade security** with a **developer-first experience**, completely under your control.
+  Traditional secret management often involves insecurely sharing `.env` files
+  over Slack or using expensive, enterprise-only SaaS solutions. Envault bridges
+  the gap: **Bank-grade security** with a **developer-first experience**,
+  completely under your control.
 </Callout>
 
 ## Quick Links
@@ -36,7 +51,7 @@ import { Callout } from 'fumadocs-ui/components/callout';
     icon={<Terminal />}
     description="Master the `envault` command line interface."
   />
-   <Card
+  <Card
     title="API Reference"
     href="/docs/api/overview"
     icon={<Server />}
@@ -49,18 +64,25 @@ import { Callout } from 'fumadocs-ui/components/callout';
 Envault isn't just a database for strings. It's a complete ecosystem for secret lifecycle management.
 
 ### Security First
+
 Security isn't an afterthought; it's the foundation.
+
 - **AES-256-GCM Encryption**: Utilizing a robust envelope encryption strategy.
 - **Zero-Knowledge Architecture**: Secrets are decrypted only in memory when requested.
 - **Automatic Key Rotation**: Rotate keys seamlessly without downtime.
+- **Passkey Support**: Passwordless, biometric login powered by WebAuthn.
 
 ### Developer Experience
+
 Built to fit into your existing workflow, not disrupt it.
+
 - **Unified CLI**: `envault pull` is all you need to sync secrets.
 - **Project Workspaces**: Isolate secrets by project (e.g., `web-app`, `backend-api`).
 - **Team Collaboration**: Granular permissions (Owner, Editor, Viewer) for every member.
+- **Dedicated Support Page**: Integrated troubleshooting options directly within the app.
 
 ### Performance & Design
+
 - **Modern UI**: A stunning, responsive dashboard built with **Next.js**, **Tailwind CSS**, and **Shadcn UI**.
 - **Interactive Visuals**: Experience 3D elements powered by **React Three Fiber**.
 - **Keyboard Navigation**: Move through your secrets as fast as you type.
@@ -78,8 +100,28 @@ At a high level, Envault acts as the single source of truth for your environment
 Envault is built on the giants of the modern web.
 
 <Cards>
-  <Card title="Next.js 14" href="https://nextjs.org/" icon={<ServerCrash />} description="App Router & Server Actions" />
-  <Card title="Supabase" href="https://supabase.com/" icon={<Database />} description="PostgreSQL & Auth" />
-  <Card title="Tailwind CSS" href="https://tailwindcss.com/" icon={<Palette />} description="Utility-first Styling" />
-  <Card title="Fumadocs" href="https://fumadocs.vercel.app" icon={<File />} description="Documentation Framework" />
+  <Card
+    title="Next.js 14"
+    href="https://nextjs.org/"
+    icon={<ServerCrash />}
+    description="App Router & Server Actions"
+  />
+  <Card
+    title="Supabase"
+    href="https://supabase.com/"
+    icon={<Database />}
+    description="PostgreSQL & Auth"
+  />
+  <Card
+    title="Tailwind CSS"
+    href="https://tailwindcss.com/"
+    icon={<Palette />}
+    description="Utility-first Styling"
+  />
+  <Card
+    title="Fumadocs"
+    href="https://fumadocs.vercel.app"
+    icon={<File />}
+    description="Documentation Framework"
+  />
 </Cards>

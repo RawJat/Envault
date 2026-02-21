@@ -11,10 +11,10 @@ The `ENCRYPTION_KEY` is the crown jewel of your Envault instance.
 
 - **Storage**: Never commit this to version control. This is your **"Secret Zero"** and should be injected at runtime via your infrastructure provider (e.g., Vercel Dashboard, Railway Variables, or Docker `.env`).
 - **Rotation**: If you suspect the Master Key is compromised, you must immediately rotate it. This involves:
-    1. Generating a new key.
-    2. Decrypting all Data Keys with the old Master Key.
-    3. Re-encrypting all Data Keys with the new Master Key.
-    4. Updating the environment variable.
+  1. Generating a new key.
+  2. Decrypting all Data Keys with the old Master Key.
+  3. Re-encrypting all Data Keys with the new Master Key.
+  4. Updating the environment variable.
 
 ## Key Rotation Policies
 
@@ -28,3 +28,7 @@ Envault supports key rotation for Data Keys. This limits the "blast radius" if a
 ## Database Security
 
 - **RLS (Row Level Security)**: We use Supabase RLS to ensure that users can only access data rows they are explicitly permitted to see. Even if the application logic fails, the database layer attempts to prevent unauthorized access.
+
+## Authentication Security
+
+- **Passkeys (WebAuthn)**: Envault supports passwordless authentication using WebAuthn. This provides phishing-resistant, biometric login capabilities and significantly improves account security compared to traditional passwords.
