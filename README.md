@@ -115,6 +115,10 @@ Follow these steps to get the project running locally.
 
     UPSTASH_REDIS_REST_URL=your-upstash-url
     UPSTASH_REDIS_REST_TOKEN=your-upstash-token
+
+    # Used for securely signing and verifying frontend API mutations (POST, PUT, DELETE, PATCH)
+    NEXT_PUBLIC_HMAC_SECRET=your-secure-random-hmac-secret
+
     ```
 
 4.  **Run the development server**

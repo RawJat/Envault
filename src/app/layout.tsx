@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Analytics } from "@vercel/analytics/react";
 import { NotificationProvider } from "@/components/notifications/notification-provider";
 import { ShortcutProvider } from "@/components/providers/shortcut-provider";
+import { HmacProvider } from "@/components/hmac-provider";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.envault.tech"),
@@ -121,6 +122,7 @@ export default async function RootLayout({
         >
           <TooltipProvider>
             <ShortcutProvider>
+            <HmacProvider>
               {children}
               <Toaster />
               {user && (
@@ -131,6 +133,7 @@ export default async function RootLayout({
                 </>
               )}
               <Analytics />
+              </HmacProvider>
             </ShortcutProvider>
           </TooltipProvider>
         </ThemeProvider>
