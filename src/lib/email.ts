@@ -10,7 +10,7 @@ const SENDER = SENDER_VAR.includes("<")
   ? SENDER_VAR
   : `Envault <${SENDER_VAR}>`;
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://envault.tech";
-const LOGO_URL = `https://www.envault.tech/favicon.svg`;
+const LOGO_URL = `https://www.envault.tech/favicon.png`;
 
 /**
  * Send a test email to verify Resend configuration
