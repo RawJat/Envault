@@ -57,6 +57,7 @@ export async function proxy(request: NextRequest) {
     "/api/search",
     "/api/status",
     "/api/cron",
+    "/api/auth/webauthn/authenticate",
   ];
 
   const isPublicApi = publicApiRoutes.some((route) =>
