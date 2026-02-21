@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { verifyHmacSignature } from "@/lib/hmac";
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -14,6 +15,63 @@ export async function proxy(request: NextRequest) {
     pathname.endsWith(".ico")
   ) {
     return NextResponse.next();
+  }
+
+  
+  const method = request.method.toUpperCase();
+
+  // HMAC Verification for mutations
+  if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
+    const signature = request.headers.get("x-signature");
+    const timestampStr = request.headers.get("x-timestamp");
+    const secret = process.env.NEXT_PUBLIC_HMAC_SECRET || "default_dev_secret_so_it_works";
+
+    if (!signature || !timestampStr) {
+      return NextResponse.json(
+        { error: "Missing required HMAC headers (X-Signature, X-Timestamp)" },
+        { status: 403 }
+      );
+    }
+
+    const timestamp = parseInt(timestampStr, 10);
+    const now = Date.now();
+
+    // Replay protection: Reject if older than 30 seconds
+    if (isNaN(timestamp) || now - timestamp > 30000) {
+      return NextResponse.json(
+        { error: "Request expired (Replay Protection enabled)" },
+        { status: 403 }
+      );
+    }
+
+    let payload = "";
+    try {
+      const clonedRequest = request.clone();
+      const contentType = request.headers.get("content-type") || "";
+      if (contentType.includes("application/x-www-form-urlencoded")) {
+        const formData = await clonedRequest.formData();
+        payload = new URLSearchParams(formData as any).toString();
+      } else if (contentType.includes("multipart/form-data")) {
+        payload = "";
+      } else {
+        payload = await clonedRequest.text();
+      }
+    } catch (error) {
+      payload = "";
+    }
+
+    const isValid = await verifyHmacSignature(payload, timestampStr, signature, secret);
+
+    if (!isValid) {
+      const isFallbackValid = await verifyHmacSignature("", timestampStr, signature, secret);
+
+      if (!isFallbackValid) {
+        return NextResponse.json(
+          { error: "Invalid HMAC signature" },
+          { status: 403 }
+        );
+      }
+    }
   }
 
   // Define protected routes
