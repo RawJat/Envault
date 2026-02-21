@@ -65,13 +65,17 @@ export async function POST(req: Request) {
       const { newCounter } = verification.authenticationInfo;
 
       // Update counter
-      await supabaseAdmin
+      const { error: updateError } = await supabaseAdmin
         .from("passkeys")
         .update({
           counter: newCounter,
           last_used_at: new Date().toISOString(),
         })
         .eq("credential_id", response.id);
+
+      if (updateError) {
+        console.error("Failed to update passkey counter:", updateError);
+      }
 
       // Clear challenge safely
       await redis.del(`webauthn:auth:${sessionId}`);

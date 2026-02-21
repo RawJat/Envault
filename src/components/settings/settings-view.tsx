@@ -6,6 +6,7 @@ import { SecurityTab } from "./security-tab";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SupportView } from "@/components/support/support-view";
 import {
   Card,
   CardContent,
@@ -364,26 +365,7 @@ export default function SettingsView() {
                 <div>
                   <h2 className="text-lg font-medium">Support</h2>
                 </div>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Help & Support</CardTitle>
-                    <CardDescription>Get help with Envault</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="text-sm text-muted-foreground">
-                      If you need assistance, please contact our support team.
-                    </p>
-                    <div className="flex items-center space-x-2 text-sm">
-                      <span className="font-semibold">Email:</span>
-                      <a
-                        href="mailto:dashdinanath056@gmail.com"
-                        className="text-blue-500 hover:underline"
-                      >
-                        dashdinanath056@gmail.com
-                      </a>
-                    </div>
-                  </CardContent>
-                </Card>
+                <SupportView inDashboard={true} />
               </div>
             )}
 
@@ -472,7 +454,7 @@ export default function SettingsView() {
               >
                 To confirm, type{" "}
                 <span className="inline-flex items-center gap-1 font-bold">
-                  "{user?.username || user?.email}"{" "}
+                  &quot;{user?.username || user?.email}&quot;{" "}
                   <Copy
                     className="h-4 w-4 cursor-pointer hover:text-primary"
                     onClick={handleCopyUserIdentifier}

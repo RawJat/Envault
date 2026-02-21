@@ -115,14 +115,14 @@ export default async function StatusPage() {
               <p className="text-base md:text-lg text-muted-foreground leading-relaxed">
                 {statusMessage}
               </p>
-              <p className="text-xs md:text-sm text-muted-foreground/60 font-mono">
+              <div className="text-xs md:text-sm text-muted-foreground/60 font-mono">
                 Last updated:{" "}
                 <FormattedDate
                   className="text-xs md:text-sm text-muted-foreground/60 font-mono"
                   date={new Date()}
                   formatStr="MMM d, h:mm:ss a"
                 />
-              </p>
+              </div>
             </div>
           </div>
 

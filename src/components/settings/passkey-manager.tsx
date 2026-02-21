@@ -181,22 +181,24 @@ export function PasskeyManager() {
                   <KeyRound className="w-5 h-5 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0 mr-2">
-                  <span className="font-medium">{pk.name || "Passkey"}</span>
-                  <div className="flex flex-col gap-1 mt-1 text-xs text-muted-foreground">
-                    <div className="flex flex-col md:flex-row gap-2 md:items-center">
-                      <div className="flex items-center gap-1.5">
+                  <span className="font-medium truncate block">
+                    {pk.name || "Passkey"}
+                  </span>
+                  <div className="flex flex-col gap-1 mt-1 text-xs text-muted-foreground overflow-hidden">
+                    <div className="flex flex-col md:flex-row gap-2 md:items-center overflow-hidden">
+                      <div className="flex items-center gap-1.5 overflow-hidden">
                         <Calendar className="w-3.5 h-3.5 shrink-0" />
-                        <span>
+                        <span className="truncate">
                           Added{" "}
                           {formatDistanceToNow(new Date(pk.created_at), {
                             addSuffix: true,
                           })}
                         </span>
                       </div>
-                      <div className="hidden md:block w-1 h-1 rounded-full bg-muted-foreground/30" />
-                      <div className="flex items-center gap-1.5">
+                      <div className="hidden md:block w-1 h-1 rounded-full bg-muted-foreground/30 shrink-0" />
+                      <div className="flex items-center gap-1.5 overflow-hidden">
                         <Clock className="w-3.5 h-3.5 shrink-0" />
-                        <span>
+                        <span className="truncate">
                           Last used{" "}
                           {pk.last_used_at
                             ? formatDistanceToNow(new Date(pk.last_used_at), {
