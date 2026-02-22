@@ -13,11 +13,36 @@ export async function createProject(name: string) {
     return { error: "Not authenticated" };
   }
 
+  const slugBase =
+    name
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, "")
+      .replace(/[\s_-]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "project";
+
+  // We need to ensure the slug is unique for this user
+  let finalSlug = slugBase;
+  let counter = 1;
+  while (true) {
+    const { data: existing } = await supabase
+      .from("projects")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("slug", finalSlug)
+      .maybeSingle();
+
+    if (!existing) break;
+    finalSlug = `${slugBase}-${counter}`;
+    counter++;
+  }
+
   const { data, error } = await supabase
     .from("projects")
     .insert({
       user_id: user.id,
       name,
+      slug: finalSlug,
     })
     .select()
     .single();
@@ -30,6 +55,75 @@ export async function createProject(name: string) {
   // Invalidate user's project list cache
   const { cacheDel, CacheKeys } = await import("@/lib/cache");
   await cacheDel(CacheKeys.userProjects(user.id));
+
+  revalidatePath("/dashboard");
+  return { data };
+}
+
+export async function renameProject(id: string, newName: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  // Permission Check: Owner Only
+  const { getProjectRole } = await import("@/lib/permissions");
+  const role = await getProjectRole(supabase, id, user.id);
+
+  if (role !== "owner") {
+    return { error: "Unauthorized: Only the owner can rename a project." };
+  }
+
+  const slugBase =
+    newName
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, "")
+      .replace(/[\s_-]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "project";
+
+  // We need to ensure the slug is unique for this user
+  let finalSlug = slugBase;
+  let counter = 1;
+  while (true) {
+    // Exclude the current project from the uniqueness check so you don't conflict with yourself
+    const { data: existing } = await supabase
+      .from("projects")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("slug", finalSlug)
+      .neq("id", id)
+      .maybeSingle();
+
+    if (!existing) break;
+    finalSlug = `${slugBase}-${counter}`;
+    counter++;
+  }
+
+  const { data, error } = await supabase
+    .from("projects")
+    .update({
+      name: newName,
+      slug: finalSlug,
+    })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error renaming project:", error);
+    return { error: error.message };
+  }
+
+  // Invalidate user's project list cache and specific project cache
+  const { cacheDel, CacheKeys, invalidateProjectCaches } =
+    await import("@/lib/cache");
+  await cacheDel(CacheKeys.userProjects(user.id));
+  await invalidateProjectCaches(id);
 
   revalidatePath("/dashboard");
   return { data };
@@ -51,12 +145,15 @@ export async function getProjects(bypassCache: boolean = false) {
   const cacheKey = CacheKeys.userProjects(user.id);
 
   if (!bypassCache) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const cachedProjects = await cacheGet<any[]>(cacheKey);
     if (cachedProjects !== null) {
       // Stale check: if first project uses old snake_case or missing createdAt
       const isStale =
         cachedProjects.length > 0 &&
         (!cachedProjects[0].createdAt ||
+          !("slug" in cachedProjects[0]) ||
+          !("owner_username" in cachedProjects[0]) ||
           "created_at" in cachedProjects[0] ||
           "secrets" in cachedProjects[0]);
       if (!isStale) {
@@ -89,11 +186,13 @@ export async function getProjects(bypassCache: boolean = false) {
 
   const sharedProjectIds = [
     ...new Set(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       sharedProjectIdsData?.map((s) => (s.secrets as any).project_id) || [],
     ),
   ];
 
   // Fetch shared projects
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let sharedProjects: any[] = [];
   if (sharedProjectIds.length > 0) {
     const { data: sharedProjs } = await supabase
@@ -113,7 +212,7 @@ export async function getProjects(bypassCache: boolean = false) {
 
   // Step 2: Fetch secrets count for each project
   const projectIds = allProjects.map((p) => p.id);
-  const { data: secretCounts, error: countError } = await supabase
+  const { data: secretCounts } = await supabase
     .from("secrets")
     .select("id, project_id")
     .in("project_id", projectIds);
@@ -128,7 +227,7 @@ export async function getProjects(bypassCache: boolean = false) {
   });
 
   // Step 3: Fetch project members for current user
-  const { data: memberships, error: memberError } = await supabase
+  const { data: memberships } = await supabase
     .from("project_members")
     .select("project_id, role")
     .in("project_id", projectIds)
@@ -144,7 +243,7 @@ export async function getProjects(bypassCache: boolean = false) {
   const ownedProjectIds = allProjects
     .filter((p) => p.user_id === user.id)
     .map((p) => p.id);
-  let sharedStatusMap = new Map<string, boolean>();
+  const sharedStatusMap = new Map<string, boolean>();
 
   if (ownedProjectIds.length > 0) {
     // Check for project members
@@ -165,11 +264,25 @@ export async function getProjects(bypassCache: boolean = false) {
         allMembers?.some((m) => m.project_id === projectId) || false;
       const hasSharedSecrets =
         sharedSecrets?.some(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (s) => (s.secrets as any).project_id === projectId,
         ) || false;
       sharedStatusMap.set(projectId, hasMembers || hasSharedSecrets);
     });
   }
+
+  // Step 3.75: Fetch Owner Usernames from 'profiles'
+  // We need to resolve the 'username' for every unique 'user_id' in allProjects
+  const uniqueOwnerIds = [...new Set(allProjects.map((p) => p.user_id))];
+  const { data: ownerProfiles } = await supabase
+    .from("profiles")
+    .select("id, username")
+    .in("id", uniqueOwnerIds);
+
+  const ownerUsernameMap = new Map<string, string>();
+  ownerProfiles?.forEach((profile) => {
+    ownerUsernameMap.set(profile.id, profile.username);
+  });
 
   // Step 4: Enrich projects with the data
   const enrichedProjects = allProjects.map((p) => {
@@ -182,12 +295,17 @@ export async function getProjects(bypassCache: boolean = false) {
     }
 
     const count = secretCountMap.get(p.id) || 0;
-    const isShared = sharedStatusMap.get(p.id) || false;
+    // For the owner: isShared means they have shared it with others
+    // For non-owners: isShared must always be true so ProjectCard routes to /[owner_username]/[slug]
+    const isShared =
+      p.user_id === user.id ? sharedStatusMap.get(p.id) || false : true; // Non-owned projects are always "shared" from the viewer's perspective
 
     return {
       id: p.id,
       name: p.name,
+      slug: p.slug,
       user_id: p.user_id,
+      owner_username: ownerUsernameMap.get(p.user_id) || null,
       createdAt: p.created_at || new Date().toISOString(), // Fallback for safety
       secretCount: count,
       variables: [],
@@ -292,7 +410,7 @@ export async function addVariable(
     return { error: error.message };
   }
 
-  revalidatePath(`/project/${projectId}`);
+  revalidatePath("/project/[slug]", "page");
   return { data };
 }
 
@@ -348,7 +466,7 @@ export async function updateVariable(
     return { error: error.message };
   }
 
-  revalidatePath(`/project/${projectId}`);
+  revalidatePath("/project/[slug]", "page");
   return { success: true };
 }
 
@@ -378,7 +496,7 @@ export async function deleteVariable(id: string, projectId: string) {
     return { error: error.message };
   }
 
-  revalidatePath(`/project/${projectId}`);
+  revalidatePath("/project/[slug]", "page");
   return { success: true };
 }
 
@@ -418,14 +536,19 @@ export async function addVariablesBulk(
   // Import encryption utility
   const { encrypt } = await import("@/lib/encryption");
 
-  // Fetch existing variables
+  // Fetch existing variables and their original creators (user_id)
   const { data: existingSecrets } = await supabase
     .from("secrets")
-    .select("id, key")
+    .select("id, key, user_id")
     .eq("project_id", projectId);
   // Removed eq('user_id') to see ALL secrets in project
 
-  const keyToIdMap = new Map((existingSecrets || []).map((s) => [s.key, s.id]));
+  const keyToIdMap = new Map(
+    (existingSecrets || []).map((s) => [
+      s.key,
+      { id: s.id, user_id: s.user_id },
+    ]),
+  );
 
   // const upsertPayload = []
   let added = 0;
@@ -434,17 +557,17 @@ export async function addVariablesBulk(
 
   const processVariable = async (variable: BulkImportVariable) => {
     const encryptedValue = await encrypt(variable.value);
-    const existingId = keyToIdMap.get(variable.key);
+    const existing = keyToIdMap.get(variable.key);
 
-    if (existingId) updated++;
+    if (existing) updated++;
     else added++;
 
     // Extract key_id
     const keyId = encryptedValue.split(":")[1];
 
     return {
-      ...(existingId ? { id: existingId } : {}),
-      user_id: user.id, // Only matters on insert
+      ...(existing ? { id: existing.id } : {}),
+      user_id: existing ? existing.user_id : user.id, // Preserve original creator or assign to current importer
       project_id: projectId,
       key: variable.key,
       value: encryptedValue,
@@ -466,6 +589,6 @@ export async function addVariablesBulk(
     }
   }
 
-  revalidatePath(`/project/${projectId}`);
+  revalidatePath("/project/[slug]", "page");
   return { added, updated, skipped };
 }

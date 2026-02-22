@@ -1,35 +1,38 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { redirect } from "next/navigation";
+import { redirect, notFound } from "next/navigation";
 import ProjectDetailView from "@/components/editor/project-detail-view";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 interface PageProps {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }
 
 export default async function ProjectPage({ params }: PageProps) {
-  const { id } = await params;
+  const { slug } = await params;
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/");
+    redirect("/login");
   }
 
-  // Fetch the project first (no joins to avoid RLS recursion)
+  // Fetch the project by slug and user_id
   const { data: project, error: _projectError } = await supabase
     .from("projects")
     .select("*")
-    .eq("id", id)
+    .eq("slug", slug)
+    .eq("user_id", user.id)
     .single();
 
+  const id = project?.id;
+
   if (_projectError || !project) {
-    redirect("/dashboard");
+    notFound();
   }
 
   // Verify user has access to this project
@@ -38,7 +41,7 @@ export default async function ProjectPage({ params }: PageProps) {
 
   if (!role) {
     // User has no access to this project
-    redirect("/dashboard");
+    notFound();
   }
 
   // Fetch secrets separately
@@ -76,7 +79,8 @@ export default async function ProjectPage({ params }: PageProps) {
   // Filter shared secrets for this project
   const filteredSharedSecrets =
     sharedSecrets?.filter(
-      (share) => (share.secrets as any).project_id === id,
+      (share) =>
+        (share.secrets as unknown as { project_id: string }).project_id === id,
     ) || [];
 
   // For owners/editors, we need to check which secrets are actually shared with others
@@ -104,7 +108,10 @@ export default async function ProjectPage({ params }: PageProps) {
 
   // Add shared secrets (for viewers), marking as not shared from their perspective
   filteredSharedSecrets?.forEach((share) => {
-    const secret = share.secrets as any;
+    const secret = share.secrets as unknown as {
+      id: string;
+      [key: string]: unknown;
+    };
     if (!secretsMap.has(secret.id)) {
       secretsMap.set(secret.id, {
         ...secret,
@@ -161,6 +168,7 @@ export default async function ProjectPage({ params }: PageProps) {
   const transformedProject = {
     id: project.id,
     name: project.name,
+    slug: project.slug,
     user_id: project.user_id,
     createdAt: project.created_at,
     role: role,
@@ -222,7 +230,7 @@ export default async function ProjectPage({ params }: PageProps) {
   let activeKeyId = "";
   try {
     activeKeyId = await getActiveKeyId();
-  } catch (e) {
+  } catch {
     // If no active key (e.g. not initialized), we can't rotate. Ignore.
   }
 

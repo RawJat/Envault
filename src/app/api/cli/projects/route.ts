@@ -142,7 +142,7 @@ export async function POST(request: Request) {
       name: name.trim(),
       user_id: userId,
     })
-    .select("id, name")
+    .select("id, name, slug")
     .single();
 
   if (error) {
@@ -162,7 +162,7 @@ export async function POST(request: Request) {
       projectName: name.trim(),
       source: "cli",
     },
-    action_url: `/project/${data.id}`,
+    action_url: `/project/${data.slug}`,
     action_type: "view_project",
   });
 

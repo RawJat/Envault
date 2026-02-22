@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   Plus,
   Upload,
@@ -10,8 +10,9 @@ import {
   Share2,
   Trash2,
   CornerDownLeft,
-  Keyboard,
   Copy,
+  Check,
+  Info,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Kbd } from "@/components/ui/kbd";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -43,32 +50,27 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { deleteProject as deleteProjectAction } from "@/app/project-actions";
 import { ShareProjectDialog } from "@/components/dashboard/share-project-dialog";
+import { RenameProjectDialog } from "@/components/dashboard/rename-project-dialog";
 import { AppHeader } from "@/components/dashboard/app-header";
+import { Edit3 } from "lucide-react";
 
 interface ProjectDetailViewProps {
   project: Project;
 }
 
 export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
-  const params = useParams();
-  const projectId = params.id as string;
   const router = useRouter();
-
-  // Delete Logic
-  const { deleteProject, user } = useEnvaultStore();
+  const projectId = project.id;
+  const { deleteProject } = useEnvaultStore();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
-  const [mounted, setMounted] = useState(false);
+  const [idCopied, setIdCopied] = useState(false);
 
-  const isViewer = project.role === "viewer";
   const canEdit = project.role === "owner" || project.role === "editor";
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Listen for global command context
   useEffect(() => {
@@ -109,7 +111,7 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
       document.removeEventListener("universal-share", handleOpenShare);
       document.removeEventListener("universal-delete", handleUniversalDelete);
     };
-  }, [project]);
+  }, [project, canEdit]);
 
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -133,7 +135,7 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
     try {
       await navigator.clipboard.writeText(project.name);
       toast.success("Project name copied to clipboard");
-    } catch (err) {
+    } catch {
       toast.error("Failed to copy project name");
     }
   };
@@ -155,36 +157,38 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
   };
 
   // Extract the settings dropdown content into a variable or separate component to pass to actions
-  const projectActions = (
-    <div className="flex items-center gap-2">
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="[&_svg]:size-5">
-            <Settings className="h-5 w-5" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem
-            onClick={() => setShareDialogOpen(true)}
-            disabled={!canEdit}
-          >
-            <Share2 className="w-4 h-4 mr-2" /> Share
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="text-destructive focus:text-destructive"
-            onClick={handleDeleteClick}
-            disabled={project.role !== "owner"}
-          >
-            <Trash2 className="w-4 h-4 mr-2" /> Delete
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
-  );
-
-  if (!mounted) {
-    return null;
-  }
+  const projectActions =
+    project.role === "owner" || project.role === "editor" ? (
+      <div className="flex items-center gap-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="[&_svg]:size-5">
+              <Settings className="h-5 w-5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {project.role === "owner" && (
+              <DropdownMenuItem onClick={() => setRenameDialogOpen(true)}>
+                <Edit3 className="w-4 h-4 mr-2" /> Rename
+              </DropdownMenuItem>
+            )}
+            {(project.role === "owner" || project.role === "editor") && (
+              <DropdownMenuItem onClick={() => setShareDialogOpen(true)}>
+                <Share2 className="w-4 h-4 mr-2" /> Share
+              </DropdownMenuItem>
+            )}
+            {project.role === "owner" && (
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={handleDeleteClick}
+              >
+                <Trash2 className="w-4 h-4 mr-2" /> Delete
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    ) : null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -201,6 +205,53 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
             <h2 className="text-2xl font-semibold tracking-tight">
               Variables ({project.variables.length})
             </h2>
+            <div className="flex items-center gap-1.5 mt-1">
+              <TooltipProvider delayDuration={200}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-1 cursor-default">
+                      <Info className="h-3 w-3 text-muted-foreground" />
+                      <span className="font-mono bg-muted px-2 py-0.5 rounded text-xs text-muted-foreground select-all">
+                        {project.id}
+                      </span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-xs">
+                    <p className="font-medium">Project ID</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Used for CLI authentication and API integration.
+                      <br />
+                      Run{" "}
+                      <code className="font-mono bg-muted px-1 rounded">
+                        envault pull --project {project.id}
+                      </code>
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(project.id);
+                        setIdCopied(true);
+                        setTimeout(() => setIdCopied(false), 2000);
+                      }}
+                      className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                    >
+                      {idCopied ? (
+                        <Check className="h-3 w-3 text-green-500" />
+                      ) : (
+                        <Copy className="h-3 w-3" />
+                      )}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    {idCopied ? "Copied!" : "Copy Project ID"}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
           </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
             <Button
@@ -211,33 +262,37 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
               <Download className="w-4 h-4 mr-2" />
               Download .env
             </Button>
-            <ImportEnvDialog
-              projectId={projectId}
-              existingVariables={project.variables}
-              open={isImportDialogOpen}
-              onOpenChange={setIsImportDialogOpen}
-              trigger={
-                <Button variant="outline" disabled={!canEdit}>
-                  <Upload className="w-4 h-4 mr-2" />
-                  Import .env
-                </Button>
-              }
-            />
-            <VariableDialog
-              projectId={projectId}
-              existingVariables={project.variables}
-              open={isAddDialogOpen}
-              onOpenChange={setIsAddDialogOpen}
-              trigger={
-                <Button variant="default" disabled={!canEdit}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Variable
-                  <Kbd variant="primary" size="xs" className="ml-2">
-                    N
-                  </Kbd>
-                </Button>
-              }
-            />
+            {canEdit && (
+              <>
+                <ImportEnvDialog
+                  projectId={projectId}
+                  existingVariables={project.variables}
+                  open={isImportDialogOpen}
+                  onOpenChange={setIsImportDialogOpen}
+                  trigger={
+                    <Button variant="outline">
+                      <Upload className="w-4 h-4 mr-2" />
+                      Import .env
+                    </Button>
+                  }
+                />
+                <VariableDialog
+                  projectId={projectId}
+                  existingVariables={project.variables}
+                  open={isAddDialogOpen}
+                  onOpenChange={setIsAddDialogOpen}
+                  trigger={
+                    <Button variant="default">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Variable
+                      <Kbd variant="primary" size="xs" className="ml-2">
+                        N
+                      </Kbd>
+                    </Button>
+                  }
+                />
+              </>
+            )}
           </div>
         </div>
 
@@ -265,7 +320,7 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
             >
               To confirm, type{" "}
               <span className="inline-flex items-center gap-1 font-bold">
-                "{project.name}"{" "}
+                &quot;{project.name}&quot;{" "}
                 <Copy
                   className="h-4 w-4 cursor-pointer hover:text-primary"
                   onClick={handleCopyProjectName}
@@ -302,6 +357,12 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
         project={project}
         open={shareDialogOpen}
         onOpenChange={setShareDialogOpen}
+      />
+
+      <RenameProjectDialog
+        project={project}
+        open={renameDialogOpen}
+        onOpenChange={setRenameDialogOpen}
       />
     </div>
   );

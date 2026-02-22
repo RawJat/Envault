@@ -1,0 +1,216 @@
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { redirect, notFound } from "next/navigation";
+import ProjectDetailView from "@/components/editor/project-detail-view";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+interface PageProps {
+  params: Promise<{ handle: string; slug: string }>;
+}
+
+export default async function SharedProjectPage({ params }: PageProps) {
+  const { handle, slug } = await params;
+
+  // Kick off auth + profile lookup in parallel — both are independent
+  const supabase = await createClient();
+  const adminSupabase = createAdminClient();
+
+  const [
+    {
+      data: { user },
+    },
+    { data: profile, error: profileError },
+  ] = await Promise.all([
+    supabase.auth.getUser(),
+    supabase.from("profiles").select("id").eq("username", handle).single(),
+  ]);
+
+  if (!user) {
+    redirect(`/login`);
+  }
+
+  if (profileError || !profile) {
+    notFound();
+  }
+
+  const ownerId = profile.id;
+
+  // Redirect owners to their own cleaner route
+  if (ownerId === user.id) {
+    redirect(`/project/${slug}`);
+  }
+
+  // Fetch project (needs ownerId, so can't be earlier — but use admin to bypass RLS)
+  const { data: project, error: _projectError } = await adminSupabase
+    .from("projects")
+    .select("*")
+    .eq("slug", slug)
+    .eq("user_id", ownerId)
+    .single();
+
+  const id = project?.id;
+
+  if (_projectError || !project) {
+    notFound();
+  }
+
+  // Get role (needs project.id)
+  const { getProjectRole } = await import("@/lib/permissions");
+  const role = await getProjectRole(supabase, id, user.id);
+
+  if (!role) {
+    notFound();
+  }
+
+  // Fetch secrets + sharedSecrets in parallel (both need project.id)
+  const [
+    { data: secrets, error: secretsError },
+    { data: sharedSecrets, error: sharedSecretsError },
+  ] = await Promise.all([
+    supabase
+      .from("secrets")
+      .select("*")
+      .eq("project_id", id)
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("secret_shares")
+      .select(`id, created_at, secrets (*)`)
+      .eq("user_id", user.id),
+  ]);
+
+  if (secretsError)
+    console.error(`[SharedProjectPage] secrets error:`, secretsError);
+  if (sharedSecretsError)
+    console.error(
+      `[SharedProjectPage] sharedSecrets error:`,
+      sharedSecretsError,
+    );
+
+  // Filter shared secrets belonging to this project
+  const filteredSharedSecrets =
+    sharedSecrets?.filter(
+      (share) =>
+        (share.secrets as unknown as { project_id: string }).project_id === id,
+    ) || [];
+
+  // For owners/editors: which secrets are already shared with others?
+  let sharedSecretIds = new Set<string>();
+  if (
+    (role === "owner" || role === "editor") &&
+    secrets &&
+    secrets.length > 0
+  ) {
+    const { data: allShares } = await supabase
+      .from("secret_shares")
+      .select("secret_id")
+      .in(
+        "secret_id",
+        secrets.map((s) => s.id),
+      );
+    sharedSecretIds = new Set(allShares?.map((s) => s.secret_id) || []);
+  }
+
+  // Deduplicate secrets (owned + shared)
+  const secretsMap = new Map();
+  secrets?.forEach((secret) => {
+    secretsMap.set(secret.id, {
+      ...secret,
+      isShared: sharedSecretIds.has(secret.id),
+    });
+  });
+  filteredSharedSecrets?.forEach((share) => {
+    const secret = share.secrets as unknown as {
+      id: string;
+      [key: string]: unknown;
+    };
+    if (!secretsMap.has(secret.id)) {
+      secretsMap.set(secret.id, {
+        ...secret,
+        isShared: false,
+        sharedAt: share.created_at,
+      });
+    }
+  });
+
+  const allSecrets = Array.from(secretsMap.values());
+
+  // Collect unique user IDs, then batch-fetch from admin (all in parallel)
+  const userIds = new Set<string>();
+  allSecrets.forEach((s) => {
+    if (s.user_id) userIds.add(s.user_id);
+    if (s.last_updated_by) userIds.add(s.last_updated_by);
+  });
+
+  const userMap = new Map<
+    string,
+    { email: string; id: string; avatar?: string }
+  >();
+  if (userIds.size > 0 && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    await Promise.all(
+      Array.from(userIds).map(async (uid) => {
+        const { data } = await adminSupabase.auth.admin.getUserById(uid);
+        if (data?.user) {
+          userMap.set(uid, {
+            id: uid,
+            email: data.user.email || "",
+            avatar:
+              data.user.user_metadata?.avatar_url ||
+              data.user.user_metadata?.picture ||
+              undefined,
+          });
+        }
+      }),
+    );
+  }
+
+  // Decrypt + transform (in parallel)
+  const { decrypt } = await import("@/lib/encryption");
+  const isEncrypted = (value: string): boolean => {
+    if (value.startsWith("v1:")) return true;
+    const base64Pattern = /^[A-Za-z0-9+/]+=*$/;
+    return value.length > 40 && base64Pattern.test(value);
+  };
+
+  const transformedProject = {
+    id: project.id,
+    name: project.name,
+    slug: project.slug,
+    user_id: project.user_id,
+    owner_username: handle,
+    createdAt: project.created_at,
+    role,
+    variables: await Promise.all(
+      allSecrets.map(async (secret) => {
+        let decryptedValue = secret.value;
+        if (isEncrypted(secret.value)) {
+          try {
+            decryptedValue = await decrypt(secret.value);
+          } catch (error) {
+            console.error(`Failed to decrypt key: ${secret.key}`, error);
+          }
+        }
+        return {
+          id: secret.id,
+          key: secret.key,
+          value: decryptedValue,
+          isSecret: secret.is_secret,
+          lastUpdatedBy: secret.last_updated_by,
+          lastUpdatedAt: secret.last_updated_at,
+          isShared: secret.isShared || false,
+          sharedAt: secret.sharedAt,
+          userInfo: {
+            creator: secret.user_id ? userMap.get(secret.user_id) : undefined,
+            updater: secret.last_updated_by
+              ? userMap.get(secret.last_updated_by)
+              : undefined,
+          },
+        };
+      }),
+    ),
+    secretCount: allSecrets.length,
+  };
+
+  return <ProjectDetailView project={transformedProject} />;
+}

@@ -9,6 +9,7 @@ import {
   CornerDownLeft,
   Users,
   Copy,
+  Pencil,
 } from "lucide-react";
 import * as React from "react";
 import { useRouter } from "next/navigation";
@@ -44,6 +45,7 @@ import { toast } from "sonner";
 import { deleteProject as deleteProjectAction } from "@/app/project-actions";
 
 import { ShareProjectDialog } from "@/components/dashboard/share-project-dialog";
+import { RenameProjectDialog } from "@/components/dashboard/rename-project-dialog";
 import { Share2 } from "lucide-react";
 import { Kbd } from "@/components/ui/kbd";
 
@@ -55,6 +57,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
   const deleteProject = useEnvaultStore((state) => state.deleteProject);
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [shareDialogOpen, setShareDialogOpen] = React.useState(false);
+  const [renameDialogOpen, setRenameDialogOpen] = React.useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = React.useState("");
   const router = useRouter();
 
@@ -72,13 +75,17 @@ export function ProjectCard({ project }: ProjectCardProps) {
     const handleUniversalShare = () => {
       if (project.role === "viewer") return;
       // If this card is focused or has a focused element within it
-      if (document.activeElement?.closest(`a[href="/project/${project.id}"]`)) {
+      if (
+        document.activeElement?.closest(`a[href="/project/${project.slug}"]`)
+      ) {
         setShareDialogOpen(true);
       }
     };
     const handleUniversalDelete = () => {
       if (project.role !== "owner") return;
-      if (document.activeElement?.closest(`a[href="/project/${project.id}"]`)) {
+      if (
+        document.activeElement?.closest(`a[href="/project/${project.slug}"]`)
+      ) {
         handleDeleteClick();
       }
     };
@@ -89,7 +96,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
       document.removeEventListener("universal-share", handleUniversalShare);
       document.removeEventListener("universal-delete", handleUniversalDelete);
     };
-  }, [project.id]);
+  }, [project.id, project.role, project.slug]);
 
   const handleDeleteConfirm = async () => {
     const result = await deleteProjectAction(project.id);
@@ -115,7 +122,11 @@ export function ProjectCard({ project }: ProjectCardProps) {
   return (
     <>
       <Link
-        href={`/project/${project.id}`}
+        href={
+          project.isShared && project.owner_username && project.role !== "owner"
+            ? `/${project.owner_username}/${project.slug}`
+            : `/project/${project.slug}`
+        }
         className="block h-full outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl transition-all"
       >
         <Card className="h-full transition-all hover:border-primary/50 hover:shadow-md group relative overflow-hidden">
@@ -145,37 +156,56 @@ export function ProjectCard({ project }: ProjectCardProps) {
                 className="flex items-center"
                 onClick={(e) => e.preventDefault()}
               >
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 -mr-2 text-muted-foreground"
-                    >
-                      <MoreVertical className="w-4 h-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShareDialogOpen(true);
-                      }}
-                      disabled={project.role === "viewer"}
-                    >
-                      <Share2 className="w-4 h-4 mr-2" />
-                      Share
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      className="text-red-600 dark:text-red-500 focus:text-red-600 dark:focus:text-red-500"
-                      onClick={handleDeleteClick}
-                      disabled={project.role !== "owner"}
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                {(project.role === "owner" || project.role === "editor") && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 -mr-2 text-muted-foreground"
+                      >
+                        <MoreVertical className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {project.role === "owner" && (
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setRenameDialogOpen(true);
+                          }}
+                        >
+                          <Pencil className="w-4 h-4 mr-2" />
+                          Rename
+                        </DropdownMenuItem>
+                      )}
+
+                      {/* Editors can share (initiates an approval request to the owner) */}
+                      {(project.role === "owner" ||
+                        project.role === "editor") && (
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShareDialogOpen(true);
+                          }}
+                        >
+                          <Share2 className="w-4 h-4 mr-2" />
+                          Share
+                        </DropdownMenuItem>
+                      )}
+
+                      {project.role === "owner" && (
+                        <DropdownMenuItem
+                          className="text-red-600 dark:text-red-500 focus:text-red-600 dark:focus:text-red-500"
+                          onClick={handleDeleteClick}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </div>
             </div>
           </CardHeader>
@@ -265,6 +295,11 @@ export function ProjectCard({ project }: ProjectCardProps) {
         project={project}
         open={shareDialogOpen}
         onOpenChange={setShareDialogOpen}
+      />
+      <RenameProjectDialog
+        project={project}
+        open={renameDialogOpen}
+        onOpenChange={setRenameDialogOpen}
       />
     </>
   );

@@ -1,74 +1,93 @@
-import { SupabaseClient } from '@supabase/supabase-js'
-import { cacheGet, cacheSet, CacheKeys, CACHE_TTL } from './cache'
+import { SupabaseClient } from "@supabase/supabase-js";
+import { cacheGet, cacheSet, CacheKeys, CACHE_TTL } from "./cache";
 
-export type ProjectRole = 'owner' | 'editor' | 'viewer' | null
+export type ProjectRole = "owner" | "editor" | "viewer" | null;
 
 /**
  * Checks the user's role in a specific project.
  * Returns: 'owner', 'editor', 'viewer', or null (no access).
  */
 export async function getProjectRole(
-    supabase: SupabaseClient,
-    projectId: string,
-    userId: string
+  supabase: SupabaseClient,
+  projectId: string,
+  userId: string,
 ): Promise<ProjectRole> {
-    // Check cache first
-    const cacheKey = CacheKeys.userProjectRole(userId, projectId)
-    const cachedRole = await cacheGet<ProjectRole>(cacheKey)
+  // Check cache first
+  const cacheKey = CacheKeys.userProjectRole(userId, projectId);
+  const cachedRole = await cacheGet<ProjectRole>(cacheKey);
 
-    if (cachedRole !== null) {
-        return cachedRole
+  if (cachedRole !== null) {
+    return cachedRole;
+  }
+
+  // 1. Check if Owner via SECURITY DEFINER RPC (bypasses RLS to avoid session edge cases)
+  // sharing_feature.sql uses (project_id, user_id), consolidated_rls_fix.sql uses (p_project_id, p_user_id)
+  const { data: isOwner, error: rpcError } = await supabase.rpc(
+    "user_owns_project",
+    {
+      project_id: projectId,
+      user_id: userId,
+    },
+  );
+
+  if (!rpcError && isOwner) {
+    await cacheSet(cacheKey, "owner", CACHE_TTL.PROJECT_ROLE);
+    return "owner";
+  }
+
+  // Fallback: try p_-prefixed param names (consolidated_rls_fix.sql style)
+  if (rpcError) {
+    const { data: isOwner2 } = await supabase.rpc("user_owns_project", {
+      p_project_id: projectId,
+      p_user_id: userId,
+    });
+    if (isOwner2) {
+      await cacheSet(cacheKey, "owner", CACHE_TTL.PROJECT_ROLE);
+      return "owner";
     }
+  }
 
-    // 1. Check if Owner
-    const { data: project } = await supabase
-        .from('projects')
-        .select('user_id')
-        .eq('id', projectId)
-        .single()
+  // 2. Check if Member
+  const { data: member } = await supabase
+    .from("project_members")
+    .select("role")
+    .eq("project_id", projectId)
+    .eq("user_id", userId)
+    .single();
 
-    if (project && project.user_id === userId) {
-        await cacheSet(cacheKey, 'owner', CACHE_TTL.PROJECT_ROLE)
-        return 'owner'
-    }
+  if (member) {
+    const role = member.role as ProjectRole;
+    await cacheSet(cacheKey, role, CACHE_TTL.PROJECT_ROLE);
+    return role;
+  }
 
-    // 2. Check if Member
-    const { data: member } = await supabase
-        .from('project_members')
-        .select('role')
-        .eq('project_id', projectId)
-        .eq('user_id', userId)
-        .single()
-
-    if (member) {
-        const role = member.role as ProjectRole
-        await cacheSet(cacheKey, role, CACHE_TTL.PROJECT_ROLE)
-        return role
-    }
-
-    // 3. Check if user has shared secrets from this project
-    const { data: sharedSecrets } = await supabase
-        .from('secret_shares')
-        .select(`
+  // 3. Check if user has shared secrets from this project
+  const { data: sharedSecrets } = await supabase
+    .from("secret_shares")
+    .select(
+      `
             id,
             secrets!inner (
                 project_id
             )
-        `)
-        .eq('user_id', userId)
-
-    const hasSharedSecret = sharedSecrets?.some(share => 
-        (share.secrets as any)?.project_id === projectId
+        `,
     )
+    .eq("user_id", userId);
 
-    if (hasSharedSecret) {
-        await cacheSet(cacheKey, 'viewer', CACHE_TTL.PROJECT_ROLE)
-        return 'viewer'
-    }
+  const hasSharedSecret = sharedSecrets?.some(
+    (share) =>
+      (share.secrets as unknown as { project_id: string })?.project_id ===
+      projectId,
+  );
 
-    // Cache null result to avoid repeated DB queries for non-members
-    await cacheSet(cacheKey, null, CACHE_TTL.PROJECT_ROLE)
-    return null
+  if (hasSharedSecret) {
+    await cacheSet(cacheKey, "viewer", CACHE_TTL.PROJECT_ROLE);
+    return "viewer";
+  }
+
+  // Cache null result to avoid repeated DB queries for non-members
+  await cacheSet(cacheKey, null, CACHE_TTL.PROJECT_ROLE);
+  return null;
 }
 
 /**
@@ -76,74 +95,80 @@ export async function getProjectRole(
  * Checks: Project Ownership OR Project Membership OR Granular Share.
  */
 export async function canAccessSecret(
-    supabase: SupabaseClient,
-    secretId: string,
-    userId: string
+  supabase: SupabaseClient,
+  secretId: string,
+  userId: string,
 ): Promise<{ hasAccess: boolean; role: ProjectRole }> {
-    // Check cache first
-    const cacheKey = CacheKeys.userSecretAccess(userId, secretId)
-    const cachedAccess = await cacheGet<{ hasAccess: boolean; role: ProjectRole }>(cacheKey)
+  // Check cache first
+  const cacheKey = CacheKeys.userSecretAccess(userId, secretId);
+  const cachedAccess = await cacheGet<{
+    hasAccess: boolean;
+    role: ProjectRole;
+  }>(cacheKey);
 
-    if (cachedAccess !== null) {
-        return cachedAccess
-    }
+  if (cachedAccess !== null) {
+    return cachedAccess;
+  }
 
-    // 1. Fetch Secret & Project info
-    const { data: secret } = await supabase
-        .from('secrets')
-        .select(`
+  // 1. Fetch Secret & Project info
+  const { data: secret } = await supabase
+    .from("secrets")
+    .select(
+      `
             id,
             project_id,
             projects!inner (user_id)
-        `)
-        .eq('id', secretId)
-        .single()
+        `,
+    )
+    .eq("id", secretId)
+    .single();
 
-    if (!secret) {
-        const noAccess = { hasAccess: false, role: null }
-        await cacheSet(cacheKey, noAccess, CACHE_TTL.SECRET_ACCESS)
-        return noAccess
-    }
+  if (!secret) {
+    const noAccess = { hasAccess: false, role: null };
+    await cacheSet(cacheKey, noAccess, CACHE_TTL.SECRET_ACCESS);
+    return noAccess;
+  }
 
-    const projectOwnerId = (secret.projects as unknown as { user_id: string }).user_id
+  const projectOwnerId = (secret.projects as unknown as { user_id: string })
+    .user_id;
 
-    // 2. Check Project Owner
-    if (projectOwnerId === userId) {
-        const ownerAccess = { hasAccess: true, role: 'owner' as ProjectRole }
-        await cacheSet(cacheKey, ownerAccess, CACHE_TTL.SECRET_ACCESS)
-        return ownerAccess
-    }
+  // 2. Check Project Owner
+  if (projectOwnerId === userId) {
+    const ownerAccess = { hasAccess: true, role: "owner" as ProjectRole };
+    await cacheSet(cacheKey, ownerAccess, CACHE_TTL.SECRET_ACCESS);
+    return ownerAccess;
+  }
 
-    // 3. Check Project Member
-    const { data: member } = await supabase
-        .from('project_members')
-        .select('role')
-        .eq('project_id', secret.project_id)
-        .eq('user_id', userId)
-        .single()
+  // 3. Check Project Member
+  const { data: member } = await supabase
+    .from("project_members")
+    .select("role")
+    .eq("project_id", secret.project_id)
+    .eq("user_id", userId)
+    .single();
 
-    if (member) {
-        const memberAccess = { hasAccess: true, role: member.role as ProjectRole }
-        await cacheSet(cacheKey, memberAccess, CACHE_TTL.SECRET_ACCESS)
-        return memberAccess
-    }
+  if (member) {
+    const memberAccess = { hasAccess: true, role: member.role as ProjectRole };
+    await cacheSet(cacheKey, memberAccess, CACHE_TTL.SECRET_ACCESS);
+    return memberAccess;
+  }
 
-    // 4. Check Granular Secret Share
-    const { data: share } = await supabase
-        .from('secret_shares')
-        .select('role')
-        .eq('secret_id', secretId)
-        .eq('user_id', userId)
-        .single()
+  // 4. Check Granular Secret Share
+  const { data: share } = await supabase
+    .from("secret_shares")
+    .select("role")
+    .eq("secret_id", secretId)
+    .eq("user_id", userId)
+    .single();
 
-    if (share) {
-        // Map granular 'viewer' to general viewer role or distinct type if needed
-        const shareAccess = { hasAccess: true, role: 'viewer' as ProjectRole }
-        await cacheSet(cacheKey, shareAccess, CACHE_TTL.SECRET_ACCESS)
-        return shareAccess
-    }
+  if (share) {
+    // Map granular 'viewer' to general viewer role or distinct type if needed
+    const shareAccess = { hasAccess: true, role: "viewer" as ProjectRole };
+    await cacheSet(cacheKey, shareAccess, CACHE_TTL.SECRET_ACCESS);
+    return shareAccess;
+  }
 
-    const noAccess = { hasAccess: false, role: null }
-    await cacheSet(cacheKey, noAccess, CACHE_TTL.SECRET_ACCESS)
-    return noAccess
+  const noAccess = { hasAccess: false, role: null };
+  await cacheSet(cacheKey, noAccess, CACHE_TTL.SECRET_ACCESS);
+  return noAccess;
 }

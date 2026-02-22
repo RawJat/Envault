@@ -3,33 +3,35 @@ title: Projects & Roles
 description: Organizing your secrets
 ---
 
-import { Mermaid } from '@/components/mermaid';
+import { Mermaid } from "@/components/mermaid";
 
 # Project Structure
 
 Envault organizes secrets into **Projects**. Each project typically corresponds to a specific application or service (e.g., "Main Website", "Backend API", "IOS App").
+Projects are cleanly structured via **semantic routing** (e.g., `/[username]/[project-slug]`), allowing for global uniqueness and easy navigation between owned and shared projects.
 
 ## Hierarchy
 
-<Mermaid chart={`
+<Mermaid
+  chart={`
 graph TD
     User -->|Member of| Workspace
     Workspace -->|Contains| ProjectA[Project A]
     Workspace -->|Contains| ProjectB[Project B]
     ProjectA -->|Contains| SecretsA[Secrets]
     ProjectB -->|Contains| SecretsB[Secrets]
-`} />
-
+`}
+/>
 
 ## Roles and Permissions
 
 Envault implements a Role-Based Access Control (RBAC) system.
 
-| Role | Description | Capabilities |
-| :--- | :--- | :--- |
-| **Owner** | Full administrative access | Manage settings, manage members, delete project, Read/Write secrets. |
-| **Editor** | Active contributor | Read and Write secrets. Cannot manage members or delete project. |
-| **Viewer** | Read-only access | Can only Read (pull) secrets. Cannot modify them. |
+| Role       | Description                | Capabilities                                                                                                     |
+| :--------- | :------------------------- | :--------------------------------------------------------------------------------------------------------------- |
+| **Owner**  | Full administrative access | Manage settings, delete project, Read/Write secrets, approve share requests.                                     |
+| **Editor** | Active contributor         | Read and Write secrets. Can initiate Share requests (requires owner approval). Cannot delete/rename the project. |
+| **Viewer** | Read-only access           | Can only Read (pull) or download secrets. Entirely blocked from modifying settings or initiating shares.         |
 
 ## Sharing Projects
 

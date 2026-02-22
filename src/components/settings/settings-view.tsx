@@ -23,8 +23,8 @@ import {
   Bell,
   Command,
   Copy,
+  AlertTriangle,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { NotificationPreferences } from "@/components/notifications/notification-preferences";
 import {
@@ -38,7 +38,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { createClient } from "@/lib/supabase/client";
-import { deleteAccountAction, signOut } from "@/app/actions";
+import { deleteAccountAction } from "@/app/actions";
 import { useHotkeys } from "@/hooks/use-hotkeys";
 import { Kbd } from "@/components/ui/kbd";
 import { AppHeader } from "@/components/dashboard/app-header";
@@ -51,15 +51,14 @@ const ModKey = () => (
 );
 
 export default function SettingsView() {
-  const router = useRouter();
-  const { user, updateUser, deleteAccount, logout, projects } =
-    useEnvaultStore();
+  const { user, updateUser, deleteAccount, projects } = useEnvaultStore();
 
   // State for navigation
   const [activeTab, setActiveTab] = useState("profile");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
@@ -69,6 +68,7 @@ export default function SettingsView() {
   const [username, setUsername] = useState(user?.username || "");
   useEffect(() => {
     if (user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFirstName(user.firstName || "");
       setLastName(user.lastName || "");
       setUsername(user.username || "");
@@ -79,7 +79,49 @@ export default function SettingsView() {
   const [isDeleteConfirmed, setIsDeleteConfirmed] = useState(false);
 
   const handleUpdateProfile = async () => {
+    if (!username || username.trim() === "") {
+      toast.error("Username cannot be empty");
+      return;
+    }
+
+    // Guard against reserved route keywords that would conflict with Next.js static routes
+    const RESERVED_USERNAMES = [
+      "project",
+      "dashboard",
+      "settings",
+      "login",
+      "signup",
+      "join",
+      "approve",
+      "invite",
+      "api",
+      "auth",
+      "status",
+      "admin",
+    ];
+    if (RESERVED_USERNAMES.includes(username.toLowerCase())) {
+      toast.error(
+        `"${username}" is a reserved keyword and cannot be used as a username.`,
+      );
+      return;
+    }
+
     const supabase = createClient();
+
+    // Check uniqueness if changing
+    if (username !== user?.username) {
+      const { data: existingProfile } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("username", username)
+        .maybeSingle();
+
+      if (existingProfile && existingProfile.id !== user?.id) {
+        toast.error("This username is already taken. Please choose another.");
+        return;
+      }
+    }
+
     const { error } = await supabase.auth.updateUser({
       data: {
         first_name: firstName,
@@ -101,6 +143,12 @@ export default function SettingsView() {
     });
     toast.success("Profile updated successfully");
   };
+
+  const emailPrefix = user?.email?.split("@")[0] || "";
+  const defaultUsernameRegex = new RegExp(`^${emailPrefix}(-\\d+)?$`);
+  const hasCustomizedUsername = user?.username
+    ? !defaultUsernameRegex.test(user.username)
+    : false;
 
   const handleDeleteAccountClick = () => {
     setDeleteConfirmation("");
@@ -125,14 +173,9 @@ export default function SettingsView() {
     try {
       await navigator.clipboard.writeText(identifier);
       toast.success("Identifier copied to clipboard");
-    } catch (err) {
+    } catch {
       toast.error("Failed to copy identifier");
     }
-  };
-
-  const handleLogout = async () => {
-    logout();
-    await signOut();
   };
 
   // Shortcuts
@@ -307,15 +350,47 @@ export default function SettingsView() {
                       <Label htmlFor="username">Username</Label>
                       <p className="text-sm text-muted-foreground mb-2">
                         Username appears as a display name throughout the
-                        dashboard.
+                        dashboard and is used in your public project sharing
+                        links.
                       </p>
+
+                      {!hasCustomizedUsername && (
+                        <div className="mb-3 p-4 rounded-md bg-destructive/10 border border-destructive/20 text-destructive flex gap-3">
+                          <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
+                          <div className="flex flex-col gap-1">
+                            <h5 className="font-medium leading-none tracking-tight text-destructive">
+                              Warning
+                            </h5>
+                            <p className="text-sm text-destructive">
+                              You can only change your username once. Changing
+                              your username will alter the sharing links for all
+                              your projects. Any existing links you have shared
+                              will instantly break.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
                       <Input
                         id="username"
                         value={username}
-                        onChange={(e) => setUsername(e.target.value)}
+                        onChange={(e) =>
+                          setUsername(
+                            e.target.value
+                              .toLowerCase()
+                              .replace(/[^a-z0-9-]/g, ""),
+                          )
+                        }
+                        disabled={hasCustomizedUsername}
                         className="bg-background"
                         suppressHydrationWarning
                       />
+                      {hasCustomizedUsername && (
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Your username is permanently locked to prevent broken
+                          sharing links.
+                        </p>
+                      )}
                     </div>
 
                     <div className="flex justify-end pt-4">

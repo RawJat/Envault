@@ -3,9 +3,10 @@ title: CLI Overview
 description: Managing secrets from the terminal
 ---
 
-import { Terminal } from 'lucide-react';
-import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
-import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Terminal } from "lucide-react";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+import { Step, Steps } from "fumadocs-ui/components/steps";
+import { Callout } from "fumadocs-ui/components/callout";
 
 # Envault CLI
 
@@ -34,27 +35,11 @@ brew install envault
 
 Envault is available as an NPM package, allowing you to use it with any Node.js package manager.
 
-<Tabs items={['npm', 'pnpm', 'yarn', 'bun']}>
-  <Tab value="npm">
-  ```bash
-  npm install -g @dinanathdash/envault
-  ```
-  </Tab>
-  <Tab value="pnpm">
-  ```bash
-  pnpm add -g @dinanathdash/envault
-  ```
-  </Tab>
-  <Tab value="yarn">
-  ```bash
-  yarn global add @dinanathdash/envault
-  ```
-  </Tab>
-  <Tab value="bun">
-  ```bash
-  bun add -g @dinanathdash/envault
-  ```
-  </Tab>
+<Tabs items={["npm", "pnpm", "yarn", "bun"]}>
+  <Tab value="npm">```bash npm install -g @dinanathdash/envault ```</Tab>
+  <Tab value="pnpm">```bash pnpm add -g @dinanathdash/envault ```</Tab>
+  <Tab value="yarn">```bash yarn global add @dinanathdash/envault ```</Tab>
+  <Tab value="bun">```bash bun add -g @dinanathdash/envault ```</Tab>
 </Tabs>
 
 Or run instantly via `npx`:
@@ -88,3 +73,26 @@ The typical developer workflow looks like this:
 5. **Push**: Upload new secrets if you added any.
 
 See the [Commands Reference](/docs/cli/commands) for details on each command.
+
+## Environment Variables
+
+The Envault CLI uses the following environment variables for configuration:
+
+| Variable              | Description                          | Default                        |
+| :-------------------- | :----------------------------------- | :----------------------------- |
+| `ENVAULT_API_URL`     | The URL of the Envault API server.   | `https://envault.tech/api/cli` |
+| `ENVAULT_CONFIG_FILE` | Path to a custom configuration file. | `~/.envault.yaml`              |
+
+### Using Local Instance
+
+To test against a local instance of Envault:
+
+```bash
+export ENVAULT_API_URL="http://localhost:3000/api/cli"
+envault login
+```
+
+<Callout type="warn">
+  Insecure (HTTP) connections are only permitted when the hostname is
+  `localhost` or `127.0.0.1`.
+</Callout>
