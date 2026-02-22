@@ -13,6 +13,9 @@ export async function signInWithGoogle(formData?: FormData) {
     provider: "google",
     options: {
       redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}`,
+      queryParams: {
+        prompt: "select_account",
+      },
     },
   });
 
@@ -35,6 +38,9 @@ export async function signInWithGithub(formData?: FormData) {
     provider: "github",
     options: {
       redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}`,
+      queryParams: {
+        prompt: "select_account",
+      },
     },
   });
 

@@ -1,6 +1,7 @@
 import { getComponents, getIncidents } from "@/actions/status";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import SystemStatusView from "./system-status-view";
 import type { Viewport } from "next";
 
@@ -32,9 +33,11 @@ export default async function AdminStatusPage() {
   const incidents = await getIncidents(); // Fetch recent 10
 
   return (
-    <SystemStatusView
-      initialComponents={components}
-      initialIncidents={incidents}
-    />
+    <Suspense fallback={null}>
+      <SystemStatusView
+        initialComponents={components}
+        initialIncidents={incidents}
+      />
+    </Suspense>
   );
 }

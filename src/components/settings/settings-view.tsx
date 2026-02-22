@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams, usePathname } from "next/navigation";
 import { useEnvaultStore } from "@/lib/store";
 import { SecurityTab } from "./security-tab";
 import { Button } from "@/components/ui/button";
@@ -53,9 +54,33 @@ const ModKey = () => (
 export default function SettingsView() {
   const { user, updateUser, deleteAccount, projects } = useEnvaultStore();
 
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
   // State for navigation
-  const [activeTab, setActiveTab] = useState("profile");
+  const [activeTab, setActiveTab] = useState(
+    () => searchParams.get("tab") || "profile",
+  );
   const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    if (!mounted) return;
+    const currentUrlTab = searchParams.get("tab");
+    const defaultTab = "profile";
+    // Only update URL if it differs from state
+    if (activeTab === defaultTab && !currentUrlTab) return;
+    if (activeTab !== currentUrlTab) {
+      const params = new URLSearchParams(searchParams.toString());
+      if (activeTab === defaultTab) {
+        params.delete("tab");
+      } else {
+        params.set("tab", activeTab);
+      }
+      const query = params.toString();
+      const url = query ? `${pathname}?${query}` : pathname;
+      window.history.replaceState(null, "", url);
+    }
+  }, [activeTab, mounted, pathname, searchParams]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
