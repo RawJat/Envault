@@ -3,6 +3,8 @@ title: Commands
 description: Detailed CLI command reference
 ---
 
+import { Callout } from "fumadocs-ui/components/callout";
+
 # CLI Commands
 
 ## `login`
@@ -13,11 +15,13 @@ Authenticates the CLI with your Envault instance.
 envault login
 ```
 
-**Options**:
-- `--url <url>`: Specify a custom Envault instance URL (default: `https://envault.dev`).
-
 **Behavior**:
 This opens a browser window to complete the device authorization flow. Once confirmed, an access token is stored securely on your machine.
+
+<Callout type="info">
+  To connect to a custom or local instance, set the `ENVAULT_API_URL`
+  environment variable before running `login`.
+</Callout>
 
 ---
 
@@ -30,6 +34,7 @@ envault init
 ```
 
 **Behavior**:
+
 - Prompts you to select an existing project or create a new one.
 - Creates a `envault.json` (or similar config) mapping the current directory to the project ID.
 
@@ -44,9 +49,11 @@ envault pull [filename]
 ```
 
 **Arguments**:
+
 - `filename`: (Optional) The file to write to. Defaults to `.env`.
 
 **Options**:
+
 - `--environment <env>`: Specify which environment to pull (e.g., `production`, `development`). Defaults to `development`.
 - `--force`: Overwrite local changes without asking.
 
@@ -61,6 +68,7 @@ envault deploy [filename]
 ```
 
 **Arguments**:
+
 - `filename`: (Optional) The file to read from. Defaults to `.env`.
 
 **Behavior**:

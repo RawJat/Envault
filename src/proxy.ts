@@ -17,19 +17,33 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  
   const method = request.method.toUpperCase();
 
+  // Define public API routes
+  const publicApiRoutes = [
+    "/api/cli-version",
+    "/api/cli",
+    "/api/search",
+    "/api/status",
+    "/api/cron",
+    "/api/auth/webauthn/authenticate",
+  ];
+
+  const isPublicApi = publicApiRoutes.some((route) =>
+    pathname.startsWith(route),
+  );
+
   // HMAC Verification for mutations
-  if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
+  if (["POST", "PUT", "PATCH", "DELETE"].includes(method) && !isPublicApi) {
     const signature = request.headers.get("x-signature");
     const timestampStr = request.headers.get("x-timestamp");
-    const secret = process.env.NEXT_PUBLIC_HMAC_SECRET || "default_dev_secret_so_it_works";
+    const secret =
+      process.env.NEXT_PUBLIC_HMAC_SECRET || "default_dev_secret_so_it_works";
 
     if (!signature || !timestampStr) {
       return NextResponse.json(
         { error: "Missing required HMAC headers (X-Signature, X-Timestamp)" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -40,7 +54,7 @@ export async function proxy(request: NextRequest) {
     if (isNaN(timestamp) || now - timestamp > 30000) {
       return NextResponse.json(
         { error: "Request expired (Replay Protection enabled)" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -50,25 +64,37 @@ export async function proxy(request: NextRequest) {
       const contentType = request.headers.get("content-type") || "";
       if (contentType.includes("application/x-www-form-urlencoded")) {
         const formData = await clonedRequest.formData();
-        payload = new URLSearchParams(formData as any).toString();
+        payload = new URLSearchParams(
+          formData as unknown as Record<string, string>,
+        ).toString();
       } else if (contentType.includes("multipart/form-data")) {
         payload = "";
       } else {
         payload = await clonedRequest.text();
       }
-    } catch (error) {
+    } catch {
       payload = "";
     }
 
-    const isValid = await verifyHmacSignature(payload, timestampStr, signature, secret);
+    const isValid = await verifyHmacSignature(
+      payload,
+      timestampStr,
+      signature,
+      secret,
+    );
 
     if (!isValid) {
-      const isFallbackValid = await verifyHmacSignature("", timestampStr, signature, secret);
+      const isFallbackValid = await verifyHmacSignature(
+        "",
+        timestampStr,
+        signature,
+        secret,
+      );
 
       if (!isFallbackValid) {
         return NextResponse.json(
           { error: "Invalid HMAC signature" },
-          { status: 403 }
+          { status: 403 },
         );
       }
     }
@@ -82,9 +108,9 @@ export async function proxy(request: NextRequest) {
     "/notifications",
     "/approve",
     "/admin",
+    "/access",
   ];
 
-  // Check if the current path is protected
   const isProtectedRoute = protectedRoutes.some((route) =>
     pathname.startsWith(route),
   );
@@ -108,19 +134,14 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith(route),
   );
 
-  // Define public API routes
-  const publicApiRoutes = [
-    "/api/cli-version",
-    "/api/cli",
-    "/api/search",
-    "/api/status",
-    "/api/cron",
-    "/api/auth/webauthn/authenticate",
-  ];
-
-  const isPublicApi = publicApiRoutes.some((route) =>
-    pathname.startsWith(route),
-  );
+  // Dynamic [handle]/[slug] routes (e.g. /username/project-slug) need session refreshed
+  // so Supabase realtime and server components can authenticate
+  const isDynamicHandleRoute =
+    !pathname.startsWith("/api") &&
+    !pathname.startsWith("/_next") &&
+    /^\/[^/]+\/[^/]+$/.test(pathname) &&
+    !isPublicRoute &&
+    !isProtectedRoute;
 
   // Performance optimization: Only refresh session for known routes.
   // For unknown routes (404s), skipping getUser saves ~200ms.
@@ -128,6 +149,7 @@ export async function proxy(request: NextRequest) {
   const shouldRefreshSession =
     isProtectedRoute ||
     isPublicRoute ||
+    isDynamicHandleRoute ||
     (pathname.startsWith("/api") && !isPublicApi);
 
   let supabaseResponse = NextResponse.next({
@@ -160,11 +182,10 @@ export async function proxy(request: NextRequest) {
   let user = null;
 
   if (shouldRefreshSession) {
-    // This will refresh session if expired - required for Server Components
     const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser();
-    user = authUser;
+      data: { session },
+    } = await supabase.auth.getSession();
+    user = session?.user ?? null;
   }
 
   // If it's a protected route and user is not authenticated, redirect to login

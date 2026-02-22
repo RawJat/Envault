@@ -63,7 +63,7 @@ export function CreateProjectDialog({
     toast.success("Project created successfully");
     setOpen(false);
     reset();
-    router.push(`/project/${result.data?.id}`);
+    router.push(`/project/${result.data?.slug}`);
   }
 
   return (

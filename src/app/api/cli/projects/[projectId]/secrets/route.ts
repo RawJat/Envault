@@ -49,14 +49,14 @@ export async function GET(
     }
   }
 
-  let targetSecrets = [];
+  let targetSecrets: { id: string; key: string; value: string }[] = [];
 
   if (hasFullProjectAccess) {
     // Has Project-Level Access (Owner/Member)
     // Fetch ALL secrets for project
     const { data: secrets, error } = await supabase
       .from("secrets")
-      .select("key, value")
+      .select("id, key, value")
       .eq("project_id", projectId);
 
     if (error)
@@ -67,7 +67,7 @@ export async function GET(
     // Fetch only the secrets specifically shared with this user
     const { data: sharesFiltered } = await supabase
       .from("secret_shares")
-      .select("secret_id, secrets!inner(key, value, project_id)")
+      .select("secret_id, secrets!inner(id, key, value, project_id)")
       .eq("user_id", userId)
       .eq("secrets.project_id", projectId);
 
@@ -76,6 +76,7 @@ export async function GET(
       targetSecrets = sharesFiltered.map((s) => {
         const secret = Array.isArray(s.secrets) ? s.secrets[0] : s.secrets;
         return {
+          id: secret.id,
           key: secret.key,
           value: secret.value,
         };
@@ -98,7 +99,7 @@ export async function GET(
           key: s.key,
           value: cleanValue,
           // Keep original for rotation check
-          _originalId: (s as any).id,
+          _originalId: s.id,
           _originalValue: s.value,
         };
       } catch (e) {
@@ -117,14 +118,14 @@ export async function GET(
     let activeKeyId = "";
     try {
       activeKeyId = await getActiveKeyId();
-    } catch (e) {
+    } catch {
       return;
     } // No active key, skip
 
-    const updates: any[] = [];
+    const updates: { id: string; value: string; key_id: string }[] = [];
 
     await Promise.all(
-      decryptedSecrets.map(async (s: any) => {
+      decryptedSecrets.map(async (s) => {
         if (!s._originalValue || !s._originalId) return;
 
         // specific check: is it legacy or old key?
@@ -247,34 +248,28 @@ export async function POST(
   }
 
   // Process Upsert
-  // Fetch existing keys for IDs
+  // Fetch existing keys for IDs and original creator (user_id)
   const { data: existingSecrets } = await supabase
     .from("secrets")
-    .select("id, key")
+    .select("id, key, user_id")
     .eq("project_id", projectId);
 
-  const keyMap = new Map((existingSecrets || []).map((s) => [s.key, s.id]));
+  const keyMap = new Map(
+    (existingSecrets || []).map((s) => [
+      s.key,
+      { id: s.id, user_id: s.user_id },
+    ]),
+  );
 
   const upsertData = await Promise.all(
     secrets.map(async (s) => {
       const encryptedValue = await encrypt(s.value);
       const keyId = encryptedValue.split(":")[1];
+      const existing = keyMap.get(s.key);
 
       return {
-        id: keyMap.has(s.key) ? keyMap.get(s.key) : uuidv4(),
-        user_id: userId, // Current user is modifying it (or new owner if inserting, but user_id usually creator)
-        // If updating, strictly `upsert` might require us to NOT change `user_id` if we want to preserve original creator?
-        // But `user_id` in secrets is just for record.
-        // Let's set it to current user for new, but for update `upsert` handles it?
-        // If ID present, `upsert` updates provided fields.
-        // If we provide `user_id`, access control policies usually ignore it for updates?
-        // But we are ADMIN client here.
-        // Let's keep `user_id` as the person who LAST "Created/Pushed" this version?
-        // Or better, respect `last_updated_by`.
-
-        // We should use `last_updated_by` for audit.
-        // `user_id` is NOT NULL usually.
-
+        id: existing ? existing.id : uuidv4(),
+        user_id: existing ? existing.user_id : userId, // Preserve original creator or assign to current deployer
         project_id: projectId,
         key: s.key,
         value: encryptedValue,

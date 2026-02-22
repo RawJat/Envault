@@ -6,7 +6,11 @@
 
 - **Bank-Grade Security**: AES-256-GCM encryption with master/data key hierarchy and automatic key rotation.
 - **Project Workspaces**: Organize secrets into distinct projects for better management.
-- **Team Collaboration**: Secure project sharing with role-based access control (Owner, Editor, Viewer).
+- **Semantic Routing**: Clean, GitHub-style URLs (`/[username]/[project-slug]`) for easy sharing and navigation.
+- **Team Collaboration**: Secure project sharing with strict Role-Based Access Control:
+  - _Owner_: Full administrative control (Rename, Delete, Manage Team).
+  - _Editor_: Active contributor (Read/Write secrets, request to Share).
+  - _Viewer_: Read-only access to variables.
 - **Secure Authentication**: Powered by Supabase Auth for robust user management, including **Passkey** support for passwordless, biometric login.
 - **Modern UI/UX**: Built with Tailwind CSS, Shadcn UI, and Framer Motion for a premium experience.
 - **Interactive 3D Elements**: High-performance 3D visuals powered by React Three Fiber.
@@ -38,6 +42,15 @@ brew install envault
 ```
 
 For more details, check out the [CLI Documentation](./cli-go/README.md).
+
+### Local Testing
+
+To use the Envault CLI with a local development server, set the `ENVAULT_API_URL` environment variable:
+
+```bash
+export ENVAULT_API_URL="http://localhost:3000/api/cli"
+envault login
+```
 
 ## Security Architecture
 

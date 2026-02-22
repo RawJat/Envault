@@ -3,7 +3,7 @@ title: Access Control (RBAC)
 description: Manage team permissions with fine-grained roles.
 ---
 
-import { Callout } from 'fumadocs-ui/components/callout';
+import { Callout } from "fumadocs-ui/components/callout";
 
 Envault allows you to control who has access to which projects using a **Role-Based Access Control (RBAC)** system.
 
@@ -11,31 +11,39 @@ Envault allows you to control who has access to which projects using a **Role-Ba
 
 There are three primary roles available in Envault.
 
-| Role | Description | Best For |
-| :--- | :--- | :--- |
-| **Owner** | Full admin access. Can delete projects, manage users, and rotate keys. | Check Tech Leads, DevOps. |
-| **Editor** | Can read, create, update, and delete secrets. Cannot manage users. | Backend Developers. |
-| **Viewer** | Read-only access to secrets. | Frontend Developers, Contractors. |
+| Role       | Description                                                            | Best For                          |
+| :--------- | :--------------------------------------------------------------------- | :-------------------------------- |
+| **Owner**  | Full admin access. Can delete projects, manage users, and rotate keys. | Check Tech Leads, DevOps.         |
+| **Editor** | Can read, create, update, and delete secrets. Cannot manage users.     | Backend Developers.               |
+| **Viewer** | Read-only access to secrets.                                           | Frontend Developers, Contractors. |
 
 ### Owner
+
 The **Owner** has the keys to the castle.
-- **Manage Members**: Invite or remove users from the project.
+
+- **Manage Members**: Invite or remove users from the project, and approve/deny share requests initiated by Editors.
 - **Delete Project**: Permanently remove the project and all its secrets.
 - **Rotate Keys**: Perform cryptographic key rotation.
 - **Billing**: Manage subscription (if applicable).
 
 ### Editor
+
 The **Editor** is the standard role for day-to-day development.
+
 - **Manage Secrets**: Add new environment variables or update existing ones.
 - **Manage Environments**: Create new environments (e.g., `feature-branch-1`).
 - **View Audit Logs**: See who changed what.
 
-<Callout type="warn">
-  Editors cannot invite new members. This prevents unauthorized access expansion.
+<Callout type="info">
+  Editors can initiate **Share** requests to temporarily invite new members to
+  the project, but these require **Owner** approval before the new user gains
+  access.
 </Callout>
 
 ### Viewer
+
 The **Viewer** role is strictly read-only.
+
 - **View Secrets**: See values in the dashboard.
 - **Pull Secrets**: Use `envault pull` to get secrets locally.
 - **Cannot Edit**: Any attempt to write will result in a `403 Forbidden` error.
@@ -44,11 +52,12 @@ The **Viewer** role is strictly read-only.
 
 Currently, permissions are scoped to the **Project** level.
 
-> **Roadmap Item**: We are working on Environment-level permissions (e.g., a user is an *Editor* in `Development` but only a *Viewer* in `Production`).
+> **Roadmap Item**: We are working on Environment-level permissions (e.g., a user is an _Editor_ in `Development` but only a _Viewer_ in `Production`).
 
 ## Governance & Auditing
 
 Every action taken by a user is logged. Owners can view the **Audit Log** in the project settings to see:
+
 - Who accessed a secret.
 - Who changed a value.
 - Timestamps and IP addresses.

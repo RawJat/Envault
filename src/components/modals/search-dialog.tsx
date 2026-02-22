@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/refs */
 "use client";
 
 import * as React from "react";
@@ -261,7 +262,11 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
         label: p.name,
         action: () => {
           savedScrollPosition.current = window.scrollY;
-          router.push(`/project/${p.id}`);
+          if (p.isShared && p.owner_username && p.role !== "owner") {
+            router.push(`/${p.owner_username}/${p.slug}`);
+          } else {
+            router.push(`/project/${p.slug}`);
+          }
         },
       }));
   }, [user, projects, query, router]);
