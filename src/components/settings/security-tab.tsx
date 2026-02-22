@@ -52,16 +52,83 @@ interface Token {
 
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { signInWithGoogle, signInWithGithub } from "@/app/actions";
-// actually I'll just rely on what I see in settings-view.tsx
+import { createClient } from "@/lib/supabase/client";
+import { Loader2 } from "lucide-react";
 
 interface User {
   authProviders?: string[];
 }
 
+import type { UserIdentity } from "@supabase/supabase-js";
+
 export function SecurityTab({ user }: { user: User | null }) {
   const [tokens, setTokens] = useState<Token[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const [identities, setIdentities] = useState<UserIdentity[]>([]);
+  const [authLoading, setAuthLoading] = useState<string | null>(null);
+
+  const fetchIdentities = useCallback(async () => {
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user?.identities) {
+      setIdentities(user.identities);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchIdentities();
+  }, [fetchIdentities]);
+
+  const handleLink = async (provider: "google" | "github") => {
+    setAuthLoading(provider);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.linkIdentity({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=/settings`,
+          queryParams: {
+            prompt: "select_account",
+          },
+        },
+      });
+      if (error) throw error;
+      // Note: page will redirect upon successful start of linking
+    } catch (error) {
+      const err = error as Error;
+      toast.error(err.message || `Failed to link ${provider}`);
+      setAuthLoading(null);
+    }
+  };
+
+  const handleUnlink = async (provider: string) => {
+    if (identities.length <= 1) {
+      toast.error("You cannot unlink your only login method.");
+      return;
+    }
+    setAuthLoading(provider);
+    try {
+      const identityToUnlink = identities.find(
+        (id) => id.provider === provider,
+      );
+      if (!identityToUnlink) return;
+
+      const supabase = createClient();
+      const { error } = await supabase.auth.unlinkIdentity(identityToUnlink);
+      if (error) throw error;
+
+      toast.success(`${provider} disconnected successfully`);
+      await fetchIdentities();
+    } catch (error) {
+      const err = error as Error;
+      toast.error(err.message || `Failed to unlink ${provider}`);
+    } finally {
+      setAuthLoading(null);
+    }
+  };
 
   const fetchTokens = useCallback(async () => {
     setLoading(true);
@@ -189,21 +256,37 @@ export function SecurityTab({ user }: { user: User | null }) {
               <div className="space-y-0.5">
                 <Label className="text-sm font-medium">Google</Label>
                 <p className="text-xs text-muted-foreground">
-                  {user?.authProviders?.includes("google")
+                  {(
+                    identities.length > 0
+                      ? identities.some((id) => id.provider === "google")
+                      : user?.authProviders?.includes("google")
+                  )
                     ? "Connected to Google"
                     : "Not connected"}
                 </p>
               </div>
             </div>
-            <Switch
-              checked={user?.authProviders?.includes("google")}
-              disabled={user?.authProviders?.includes("google")}
-              onCheckedChange={(checked) => {
-                if (checked) signInWithGoogle();
-              }}
-              aria-label="Toggle Google connection"
-              className="data-[state=checked]:bg-green-500"
-            />
+            {authLoading === "google" ? (
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mr-2" />
+            ) : (
+              <Switch
+                checked={
+                  identities.length > 0
+                    ? identities.some((id) => id.provider === "google")
+                    : user?.authProviders?.includes("google")
+                }
+                onCheckedChange={(checked) => {
+                  if (checked) {
+                    handleLink("google");
+                  } else {
+                    handleUnlink("google");
+                  }
+                }}
+                disabled={authLoading !== null}
+                aria-label="Toggle Google connection"
+                className="data-[state=checked]:bg-green-500"
+              />
+            )}
           </div>
 
           <div className="flex items-center justify-between p-3 border rounded-md bg-card">
@@ -221,21 +304,37 @@ export function SecurityTab({ user }: { user: User | null }) {
               <div className="space-y-0.5">
                 <Label className="text-sm font-medium">GitHub</Label>
                 <p className="text-xs text-muted-foreground">
-                  {user?.authProviders?.includes("github")
+                  {(
+                    identities.length > 0
+                      ? identities.some((id) => id.provider === "github")
+                      : user?.authProviders?.includes("github")
+                  )
                     ? "Connected to GitHub"
                     : "Not connected"}
                 </p>
               </div>
             </div>
-            <Switch
-              checked={user?.authProviders?.includes("github")}
-              disabled={user?.authProviders?.includes("github")}
-              onCheckedChange={(checked) => {
-                if (checked) signInWithGithub();
-              }}
-              aria-label="Toggle GitHub connection"
-              className="data-[state=checked]:bg-green-500"
-            />
+            {authLoading === "github" ? (
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mr-2" />
+            ) : (
+              <Switch
+                checked={
+                  identities.length > 0
+                    ? identities.some((id) => id.provider === "github")
+                    : user?.authProviders?.includes("github")
+                }
+                onCheckedChange={(checked) => {
+                  if (checked) {
+                    handleLink("github");
+                  } else {
+                    handleUnlink("github");
+                  }
+                }}
+                disabled={authLoading !== null}
+                aria-label="Toggle GitHub connection"
+                className="data-[state=checked]:bg-green-500"
+              />
+            )}
           </div>
         </CardContent>
       </Card>

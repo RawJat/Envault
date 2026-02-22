@@ -183,9 +183,9 @@ export async function proxy(request: NextRequest) {
 
   if (shouldRefreshSession) {
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    user = session?.user ?? null;
+      data: { user: supabaseUser },
+    } = await supabase.auth.getUser();
+    user = supabaseUser ?? null;
   }
 
   // If it's a protected route and user is not authenticated, redirect to login

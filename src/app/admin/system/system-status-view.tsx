@@ -2,13 +2,13 @@
 
 import {
   Component,
-  Incident,
   updateComponentStatus,
   createIncident,
   updateIncident,
   createComponent,
 } from "@/actions/status";
 import { useState, useEffect } from "react";
+import { useSearchParams, usePathname } from "next/navigation";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Plus, CornerDownLeft } from "lucide-react";
@@ -47,6 +47,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 interface AdminStatusViewProps {
   initialComponents: Component[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   initialIncidents: any[]; // Using any for now to avoid strict type complexity, but locally typed as Incident[]
 }
 
@@ -55,13 +56,6 @@ const statusColors: Record<string, string> = {
   degraded: "bg-yellow-500",
   outage: "bg-red-500",
   maintenance: "bg-blue-500",
-};
-
-const statusLabels: Record<string, string> = {
-  operational: "Operational",
-  degraded: "Degraded Performance",
-  outage: "Major Outage",
-  maintenance: "Maintenance",
 };
 
 import { AppHeader } from "@/components/dashboard/app-header";
@@ -79,21 +73,50 @@ export default function SystemStatusView({
   initialIncidents,
 }: AdminStatusViewProps) {
   const [components, setComponents] = useState(initialComponents);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [incidents, setIncidents] = useState(initialIncidents);
-  const [activeTab, setActiveTab] = useState("components");
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const [activeTab, setActiveTab] = useState(
+    () => searchParams.get("tab") || "components",
+  );
   const [mounted, setMounted] = useState(false);
 
   // Set mounted state
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Set active tab from URL hash
-  useEffect(() => {
+    let isMounted = true;
+    if (isMounted) {
+      // eslint-disable-next-line
+      setMounted(true);
+    }
+    // Initial backwards compatibility migration hook from hash to param
     if (window.location.hash === "#incidents") {
       setActiveTab("incidents");
     }
+    return () => {
+      isMounted = false;
+    };
   }, []);
+
+  // Sync tab state with URL
+  useEffect(() => {
+    if (!mounted) return;
+    const currentUrlTab = searchParams.get("tab");
+    const defaultTab = "components";
+    // Only update URL if it differs from state
+    if (activeTab === defaultTab && !currentUrlTab) return;
+    if (activeTab !== currentUrlTab) {
+      const params = new URLSearchParams(searchParams.toString());
+      if (activeTab === defaultTab) {
+        params.delete("tab");
+      } else {
+        params.set("tab", activeTab);
+      }
+      const query = params.toString();
+      const url = query ? `${pathname}?${query}` : pathname;
+      window.history.replaceState(null, "", url);
+    }
+  }, [activeTab, mounted, pathname, searchParams]);
 
   // Keyboard shortcut: 'n' to create new component/incident based on active tab
   useHotkeys(
@@ -117,7 +140,6 @@ export default function SystemStatusView({
     "2",
     () => {
       setActiveTab("incidents");
-      window.location.hash = "#incidents";
     },
     { enableOnContentEditable: false, enableOnFormTags: false },
   );
@@ -128,14 +150,17 @@ export default function SystemStatusView({
 
     // Optimistic update
     setComponents((prev) =>
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       prev.map((c) => (c.id === id ? { ...c, status: newStatus as any } : c)),
     );
     toast.info("Updating component status...");
 
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await updateComponentStatus(id, newStatus as any);
       toast.success("Component status updated");
-    } catch (error) {
+    } catch (error: unknown) {
+      console.error(error);
       setComponents(originalComponents); // Revert
       toast.error("Failed to update status");
     }
@@ -161,10 +186,7 @@ export default function SystemStatusView({
         <div className="space-y-6">
           <Tabs
             value={activeTab}
-            onValueChange={(value) => {
-              setActiveTab(value);
-              window.location.hash = value === "incidents" ? "#incidents" : "";
-            }}
+            onValueChange={setActiveTab}
             className="w-full"
           >
             <TabsList>
@@ -290,6 +312,7 @@ function CreateComponentDialog() {
       setName("");
       setDescription("");
       window.location.reload();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       toast.error(e.message);
     }
@@ -364,10 +387,12 @@ function IncidentManager({
   initialIncidents,
   components,
 }: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   initialIncidents: any[];
   components: Component[];
 }) {
   const [open, setOpen] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [incidents, setIncidents] = useState(initialIncidents);
 
   // Form State
@@ -415,7 +440,9 @@ function IncidentManager({
     try {
       await createIncident(
         title.trim(),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         severity as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         status as any,
         selectedComponents,
         message.trim(),
@@ -423,9 +450,13 @@ function IncidentManager({
       toast.success("Incident created");
       setOpen(false);
       resetForm();
-      // Preserve the incidents tab on reload
-      window.location.hash = "#incidents";
+
+      // Preserve the incidents tab on reload by using replace first
+      const currentUrl = new URL(window.location.href);
+      currentUrl.searchParams.set("tab", "incidents");
+      window.history.replaceState(null, "", currentUrl.toString());
       window.location.reload();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       toast.error(e.message);
     }
@@ -638,7 +669,12 @@ function IncidentManager({
   );
 }
 
-function UpdateIncidentDialog({ incident }: { incident: any }) {
+function UpdateIncidentDialog({
+  incident,
+}: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  incident: any;
+}) {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState(incident.status);
@@ -651,12 +687,17 @@ function UpdateIncidentDialog({ incident }: { incident: any }) {
     }
 
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await updateIncident(incident.id, status as any, message.trim());
       toast.success("Incident updated");
       setOpen(false);
+
       // Preserve the incidents tab on reload
-      window.location.hash = "#incidents";
+      const currentUrl = new URL(window.location.href);
+      currentUrl.searchParams.set("tab", "incidents");
+      window.history.replaceState(null, "", currentUrl.toString());
       window.location.reload();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       toast.error(e.message);
     }
