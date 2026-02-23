@@ -195,7 +195,6 @@ export default async function SharedProjectPage({ params }: PageProps) {
           id: secret.id,
           key: secret.key,
           value: decryptedValue,
-          isSecret: secret.is_secret,
           lastUpdatedBy: secret.last_updated_by,
           lastUpdatedAt: secret.last_updated_at,
           isShared: secret.isShared || false,

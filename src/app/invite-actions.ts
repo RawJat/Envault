@@ -90,6 +90,7 @@ export async function createAccessRequest(token: string) {
           requester.user.email,
           project.name,
           requestData.id,
+          project.user_id, // Pass ownerId for preferences check
         );
 
         // Create in-app notification
@@ -231,7 +232,11 @@ export async function approveRequest(
         .name;
 
       // Send email
-      await sendAccessGrantedEmail(requester.user.email, projectName);
+      await sendAccessGrantedEmail(
+        requester.user.email,
+        projectName,
+        request.user_id,
+      );
 
       // Create in-app notification
       const { createAccessGrantedNotification } =

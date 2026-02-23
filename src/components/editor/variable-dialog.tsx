@@ -130,7 +130,6 @@ export function VariableDialog({
         {
           key: data.key,
           value: data.value,
-          is_secret: true,
         },
       );
       if (result.error) {
@@ -146,7 +145,6 @@ export function VariableDialog({
         const result = await updateVariableAction(collision.id, projectId, {
           key: data.key,
           value: data.value,
-          is_secret: true,
         });
         if (result.error) {
           toast.error(result.error);
@@ -159,7 +157,6 @@ export function VariableDialog({
           projectId,
           data.key,
           data.value,
-          true,
         );
         if (result.error) {
           toast.error(result.error);

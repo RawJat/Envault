@@ -173,38 +173,42 @@ export async function GET(
     value: s.value,
   }));
 
-  // Notification for Pull
-  // Retrieve project name for notification
+  // Notification for Pull — use helper so user preferences are respected
   const { data: projectData } = await supabase
     .from("projects")
     .select("name")
     .eq("id", projectId)
     .single();
-
   const projectName = projectData?.name || "Project";
 
-  // We use a fire-and-forget approach for the notification to not block the response
-  supabase
-    .from("notifications")
-    .insert({
-      user_id: userId,
-      type: "secrets_pulled",
-      title: "Secrets Pulled via CLI",
-      message: `Environment variables pulled from "${projectName}"`,
-      icon: "Download",
-      variant: "info",
-      metadata: {
-        projectId,
+  const { createSecretsPulledNotification } =
+    await import("@/lib/notifications");
+  createSecretsPulledNotification(
+    userId,
+    projectName,
+    projectId,
+    "CLI",
+    decryptedSecrets.length,
+  ).catch((e) => console.error("Failed to create pull notification:", e));
+
+  // CLI email if user has it toggled ON
+  try {
+    const { data: userData } = await supabase.auth.admin.getUserById(userId);
+    if (userData?.user?.email) {
+      const { sendCliActivityEmail } = await import("@/lib/email");
+      sendCliActivityEmail(
+        userData.user.email,
         projectName,
-        secretCount: decryptedSecrets.length,
-        source: "cli",
-      },
-      action_url: `/project/${projectId}`,
-      action_type: "view_project",
-    })
-    .then(({ error }) => {
-      if (error) console.error("Failed to create pull notification:", error);
-    });
+        "pulled",
+        decryptedSecrets.length,
+        "CLI",
+        projectId,
+        userId,
+      ).catch((e) => console.error("Failed to send CLI pull email:", e));
+    }
+  } catch (err) {
+    console.warn("Non-blocking CLI pull email error:", err);
+  }
 
   return NextResponse.json({ secrets: finalSecrets });
 }
@@ -274,7 +278,6 @@ export async function POST(
         key: s.key,
         value: encryptedValue,
         key_id: keyId,
-        is_secret: true,
         last_updated_by: userId,
         last_updated_at: new Date().toISOString(),
       };
@@ -289,31 +292,42 @@ export async function POST(
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Notification for Push/Deploy
+    // Notification for Push — use helper so user preferences are respected
     const { data: projectData } = await supabase
       .from("projects")
       .select("name")
       .eq("id", projectId)
       .single();
-
     const projectName = projectData?.name || "Project";
 
-    await supabase.from("notifications").insert({
-      user_id: userId,
-      type: "secrets_pushed",
-      title: "Secrets Deployed via CLI",
-      message: `Deployed ${upsertData.length} secrets to "${projectName}"`,
-      icon: "Upload",
-      variant: "success", // Deployment is an "action" so success is good
-      metadata: {
-        projectId,
-        projectName,
-        secretCount: upsertData.length,
-        source: "cli",
-      },
-      action_url: `/project/${projectId}`,
-      action_type: "view_project",
-    });
+    const { createSecretsPushedNotification } =
+      await import("@/lib/notifications");
+    createSecretsPushedNotification(
+      userId,
+      projectName,
+      projectId,
+      "CLI",
+      upsertData.length,
+    ).catch((e) => console.error("Failed to create push notification:", e));
+
+    // CLI email if user has it toggled ON
+    try {
+      const { data: userData } = await supabase.auth.admin.getUserById(userId);
+      if (userData?.user?.email) {
+        const { sendCliActivityEmail } = await import("@/lib/email");
+        sendCliActivityEmail(
+          userData.user.email,
+          projectName,
+          "pushed",
+          upsertData.length,
+          "CLI",
+          projectId,
+          userId,
+        ).catch((e) => console.error("Failed to send CLI push email:", e));
+      }
+    } catch (err) {
+      console.warn("Non-blocking CLI push email error:", err);
+    }
 
     // Invalidate user's project list cache (update secret counts)
     const { cacheDel, CacheKeys } = await import("@/lib/cache");

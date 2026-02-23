@@ -19,12 +19,9 @@ const getGlobalSupabaseClient = () => {
           // Provide a dummy lock in development to prevent lock timeouts with HMR
           ...(process.env.NODE_ENV === "development"
             ? {
-                lock: {
-                  name: "dummy-lock",
-                  acquire: () => Promise.resolve(true),
-                  release: () => Promise.resolve(),
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                } as any,
+                lock: async <R>(name: string, acquireTimeout: number, fn: () => Promise<R>) => {
+                  return await fn();
+                },
               }
             : {}),
         },
@@ -49,12 +46,9 @@ export function createClient(): SupabaseClient {
         auth: {
           ...(process.env.NODE_ENV === "development"
             ? {
-                lock: {
-                  name: "dummy-lock",
-                  acquire: () => Promise.resolve(true),
-                  release: () => Promise.resolve(),
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                } as any,
+                lock: async <R>(name: string, acquireTimeout: number, fn: () => Promise<R>) => {
+                  return await fn();
+                },
               }
             : {}),
         },

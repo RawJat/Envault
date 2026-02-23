@@ -138,7 +138,6 @@ export function ImportEnvDialog({
       const variables: BulkImportVariable[] = parsedVariables.map((v) => ({
         key: v.key,
         value: v.value,
-        isSecret: v.isSecret,
       }));
 
       const result = await addVariablesBulk(projectId, variables);
@@ -184,6 +183,32 @@ export function ImportEnvDialog({
 
   const stats = getImportStats();
   const hasContent = parsedVariables.length > 0 || parseErrors.length > 0;
+
+  // Calculate button state based on stats
+  const getButtonState = () => {
+    const hasAction = stats.willAdd > 0 || stats.willUpdate > 0;
+    const allSkipped = stats.willSkip === parsedVariables.length && parsedVariables.length > 0;
+    
+    if (!hasAction && allSkipped) {
+      return { text: "All Skipped", disabled: true };
+    }
+    
+    if (stats.willAdd > 0 && stats.willUpdate === 0) {
+      return { text: `Import (${stats.willAdd})`, disabled: false };
+    }
+    
+    if (stats.willUpdate > 0 && stats.willAdd === 0) {
+      return { text: `Update (${stats.willUpdate})`, disabled: false };
+    }
+    
+    if (stats.willAdd > 0 && stats.willUpdate > 0) {
+      return { text: `Import & Update`, disabled: false };
+    }
+    
+    return { text: "Import", disabled: parsedVariables.length === 0 };
+  };
+
+  const buttonState = getButtonState();
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -345,9 +370,7 @@ export function ImportEnvDialog({
                                 {variable.key}
                               </TableCell>
                               <TableCell className="font-mono text-sm text-muted-foreground truncate max-w-[300px]">
-                                {variable.isSecret
-                                  ? "••••••••"
-                                  : variable.value}
+                                ••••••••
                               </TableCell>
                               <TableCell>
                                 <span
@@ -403,7 +426,7 @@ export function ImportEnvDialog({
                             </span>
                           </div>
                           <div className="text-xs text-muted-foreground font-mono bg-muted/30 p-2 rounded break-all">
-                            {variable.isSecret ? "••••••••" : variable.value}
+                            ••••••••
                           </div>
                         </div>
                       );
@@ -422,10 +445,10 @@ export function ImportEnvDialog({
             </Button>
             <Button
               onClick={handleImport}
-              disabled={parsedVariables.length === 0 || isImporting}
+              disabled={buttonState.disabled || isImporting}
             >
               {isImporting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Import
+              {buttonState.text}
               <div className="ml-2 hidden md:flex items-center gap-1">
                 <Kbd variant="primary" size="xs">
                   <ModKey />
