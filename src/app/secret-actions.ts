@@ -152,7 +152,11 @@ export async function shareSecret(secretId: string, email: string) {
 
   // Notify
   const { sendAccessGrantedEmail } = await import("@/lib/email");
-  await sendAccessGrantedEmail(email, `${project.name} (Single Variable)`);
+  await sendAccessGrantedEmail(
+    email,
+    `${project.name} (Single Variable)`,
+    targetUserId,
+  );
 
   revalidatePath("/project/[slug]", "page");
   return { success: true };

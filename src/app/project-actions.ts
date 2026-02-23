@@ -125,6 +125,25 @@ export async function renameProject(id: string, newName: string) {
   await cacheDel(CacheKeys.userProjects(user.id));
   await invalidateProjectCaches(id);
 
+  // Fire-and-forget project activity email
+  {
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const admin = createAdminClient();
+    const { data: userData } = await admin.auth.admin.getUserById(user.id);
+    const userEmail = userData?.user?.email;
+    if (userEmail) {
+      const { sendProjectActivityEmail } = await import("@/lib/email");
+      sendProjectActivityEmail(
+        userEmail,
+        data.name,
+        `Project Renamed: ${data.name}`,
+        `Your project has been renamed to "${data.name}"`,
+        data.id,
+        user.id,
+      ).catch(() => {});
+    }
+  }
+
   revalidatePath("/dashboard");
   return { data };
 }
@@ -350,7 +369,7 @@ export async function deleteProject(id: string) {
   const { cacheDel, CacheKeys, invalidateProjectCaches } =
     await import("@/lib/cache");
   await cacheDel(CacheKeys.userProjects(user.id));
-  await invalidateProjectCaches(id); // Clear all project-specific caches
+  await invalidateProjectCaches(id);
 
   revalidatePath("/dashboard");
   return { success: true };
@@ -360,7 +379,6 @@ export async function addVariable(
   projectId: string,
   key: string,
   value: string,
-  isSecret: boolean = true,
 ) {
   const supabase = await createClient();
   const {
@@ -398,7 +416,6 @@ export async function addVariable(
       key,
       value: encryptedValue,
       key_id: keyId,
-      is_secret: isSecret,
       last_updated_by: user.id,
       last_updated_at: new Date().toISOString(),
     })
@@ -410,6 +427,32 @@ export async function addVariable(
     return { error: error.message };
   }
 
+  // Fire-and-forget project activity email
+  {
+    const { data: projectData } = await supabase
+      .from("projects")
+      .select("id, name")
+      .eq("id", projectId)
+      .single();
+    if (projectData) {
+      const { createAdminClient } = await import("@/lib/supabase/admin");
+      const admin = createAdminClient();
+      const { data: userData } = await admin.auth.admin.getUserById(user.id);
+      const userEmail = userData?.user?.email;
+      if (userEmail) {
+        const { sendProjectActivityEmail } = await import("@/lib/email");
+        sendProjectActivityEmail(
+          userEmail,
+          projectData.name,
+          "Secret Added",
+          `A new secret <strong>${key}</strong> was added to <strong>${projectData.name}</strong>`,
+          projectData.id,
+          user.id,
+        ).catch(() => {});
+      }
+    }
+  }
+
   revalidatePath("/project/[slug]", "page");
   return { data };
 }
@@ -417,7 +460,7 @@ export async function addVariable(
 export async function updateVariable(
   id: string,
   projectId: string,
-  updates: { key?: string; value?: string; is_secret?: boolean },
+  updates: { key?: string; value?: string },
 ) {
   const supabase = await createClient();
   const {
@@ -466,6 +509,32 @@ export async function updateVariable(
     return { error: error.message };
   }
 
+  // Fire-and-forget project activity email
+  {
+    const { data: projectData } = await supabase
+      .from("projects")
+      .select("id, name")
+      .eq("id", projectId)
+      .single();
+    if (projectData) {
+      const { createAdminClient } = await import("@/lib/supabase/admin");
+      const admin = createAdminClient();
+      const { data: userData } = await admin.auth.admin.getUserById(user.id);
+      const userEmail = userData?.user?.email;
+      if (userEmail) {
+        const { sendProjectActivityEmail } = await import("@/lib/email");
+        sendProjectActivityEmail(
+          userEmail,
+          projectData.name,
+          "Secret Updated",
+          `A secret was updated in <strong>${projectData.name}</strong>`,
+          projectData.id,
+          user.id,
+        ).catch(() => {});
+      }
+    }
+  }
+
   revalidatePath("/project/[slug]", "page");
   return { success: true };
 }
@@ -496,6 +565,32 @@ export async function deleteVariable(id: string, projectId: string) {
     return { error: error.message };
   }
 
+  // Fire-and-forget project activity email
+  {
+    const { data: projectData } = await supabase
+      .from("projects")
+      .select("id, name")
+      .eq("id", projectId)
+      .single();
+    if (projectData) {
+      const { createAdminClient } = await import("@/lib/supabase/admin");
+      const admin = createAdminClient();
+      const { data: userData } = await admin.auth.admin.getUserById(user.id);
+      const userEmail = userData?.user?.email;
+      if (userEmail) {
+        const { sendProjectActivityEmail } = await import("@/lib/email");
+        sendProjectActivityEmail(
+          userEmail,
+          projectData.name,
+          "Secret Deleted",
+          `A secret was deleted from <strong>${projectData.name}</strong>`,
+          projectData.id,
+          user.id,
+        ).catch(() => {});
+      }
+    }
+  }
+
   revalidatePath("/project/[slug]", "page");
   return { success: true };
 }
@@ -503,7 +598,6 @@ export async function deleteVariable(id: string, projectId: string) {
 export interface BulkImportVariable {
   key: string;
   value: string;
-  isSecret: boolean;
 }
 
 export interface BulkImportResult {
@@ -533,59 +627,135 @@ export async function addVariablesBulk(
     return { added: 0, updated: 0, skipped: 0, error: "Unauthorized" };
   }
 
-  // Import encryption utility
-  const { encrypt } = await import("@/lib/encryption");
+  // Import encryption utilities
+  const { encrypt, decrypt } = await import("@/lib/encryption");
 
-  // Fetch existing variables and their original creators (user_id)
+  // Fetch existing variables for comparison (key, value, and user_id for creator preservation)
   const { data: existingSecrets } = await supabase
     .from("secrets")
-    .select("id, key, user_id")
+    .select("id, key, value, user_id")
     .eq("project_id", projectId);
-  // Removed eq('user_id') to see ALL secrets in project
 
-  const keyToIdMap = new Map(
+  // Create maps for quick lookup
+  const keyToSecretMap = new Map(
     (existingSecrets || []).map((s) => [
       s.key,
-      { id: s.id, user_id: s.user_id },
+      { id: s.id, user_id: s.user_id, value: s.value },
     ]),
   );
 
-  // const upsertPayload = []
   let added = 0;
   let updated = 0;
-  const skipped = 0;
+  let skipped = 0;
+  const itemsToUpsert: Array<{
+    id: string;
+    user_id: string;
+    project_id: string;
+    key: string;
+    value: string;
+    key_id: string;
+    last_updated_by: string;
+    last_updated_at: string;
+  }> = [];
 
   const processVariable = async (variable: BulkImportVariable) => {
     const encryptedValue = await encrypt(variable.value);
-    const existing = keyToIdMap.get(variable.key);
-
-    if (existing) updated++;
-    else added++;
-
-    // Extract key_id
     const keyId = encryptedValue.split(":")[1];
+    const existing = keyToSecretMap.get(variable.key);
 
-    return {
-      id: existing ? existing.id : crypto.randomUUID(),
-      user_id: existing ? existing.user_id : user.id, // Preserve original creator or assign to current importer
-      project_id: projectId,
-      key: variable.key,
-      value: encryptedValue,
-      key_id: keyId,
-      is_secret: variable.isSecret,
-      last_updated_by: user.id,
-      last_updated_at: new Date().toISOString(),
-    };
+    if (!existing) {
+      // New variable - add it
+      added++;
+      itemsToUpsert.push({
+        id: crypto.randomUUID(),
+        user_id: user.id,
+        project_id: projectId,
+        key: variable.key,
+        value: encryptedValue,
+        key_id: keyId,
+        last_updated_by: user.id,
+        last_updated_at: new Date().toISOString(),
+      });
+    } else {
+      // Variable exists - compare plaintext values (decrypt existing to compare)
+      try {
+        const existingPlaintext = await decrypt(existing.value);
+        if (existingPlaintext === variable.value) {
+          // Plaintext values are identical - skip it
+          skipped++;
+        } else {
+          // Plaintext values differ - update it
+          updated++;
+          itemsToUpsert.push({
+            id: existing.id,
+            user_id: existing.user_id, // Preserve original creator
+            project_id: projectId,
+            key: variable.key,
+            value: encryptedValue,
+            key_id: keyId,
+            last_updated_by: user.id,
+            last_updated_at: new Date().toISOString(),
+          });
+        }
+      } catch (error) {
+        // If decryption fails, treat as update to be safe
+        console.error(
+          `Failed to decrypt existing value for key ${variable.key}:`,
+          error,
+        );
+        updated++;
+        itemsToUpsert.push({
+          id: existing.id,
+          user_id: existing.user_id,
+          project_id: projectId,
+          key: variable.key,
+          value: encryptedValue,
+          key_id: keyId,
+          last_updated_by: user.id,
+          last_updated_at: new Date().toISOString(),
+        });
+      }
+    }
   };
 
-  const payload = await Promise.all(variables.map(processVariable));
+  await Promise.all(variables.map(processVariable));
 
-  if (payload.length > 0) {
-    const { error } = await supabase.from("secrets").upsert(payload);
+  if (itemsToUpsert.length > 0) {
+    const { error } = await supabase.from("secrets").upsert(itemsToUpsert);
 
     if (error) {
       console.error("Bulk upsert error:", error);
       return { added: 0, updated: 0, skipped: 0, error: error.message };
+    }
+
+    // Fire-and-forget project activity email summarising the import
+    {
+      const { data: projectData } = await supabase
+        .from("projects")
+        .select("id, name")
+        .eq("id", projectId)
+        .single();
+      if (projectData) {
+        const { createAdminClient } = await import("@/lib/supabase/admin");
+        const admin = createAdminClient();
+        const { data: userData } = await admin.auth.admin.getUserById(user.id);
+        const userEmail = userData?.user?.email;
+        if (userEmail) {
+          const parts: string[] = [];
+          if (added > 0) parts.push(`${added} added`);
+          if (updated > 0) parts.push(`${updated} updated`);
+          const summary = parts.join(", ");
+          const { sendProjectActivityEmail } = await import("@/lib/email");
+          sendProjectActivityEmail(
+            userEmail,
+            projectData.name,
+            "Bulk Import Complete",
+            `Bulk import to <strong>${projectData.name}</strong> finished: ${summary}, ${skipped} unchanged.`,
+            projectData.id,
+            user.id,
+          ).catch(() => {});
+        }
+      }
     }
   }
 

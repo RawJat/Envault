@@ -1,7 +1,6 @@
 export interface ParsedVariable {
     key: string
     value: string
-    isSecret: boolean
 }
 
 export interface ParseError {
@@ -109,25 +108,13 @@ export function parseEnvContent(content: string): ParseResult {
             }
         }
 
-        // Determine if value should be treated as secret
-        // Consider it secret if it contains common secret patterns
-        const isSecret = isLikelySecret()
-
         variables.push({
             key: key.toUpperCase(),
-            value,
-            isSecret
+            value
         })
 
         i++
     }
 
     return { variables, errors }
-}
-
-/**
- * Determines if a variable is likely a secret based on key name and value patterns
- */
-function isLikelySecret(): boolean {
-    return true
 }

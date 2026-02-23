@@ -26,65 +26,74 @@ async function shouldCreateNotification(
   const { createAdminClient } = await import("@/lib/supabase/admin");
   const admin = createAdminClient();
 
-  // Get user preferences using admin client to bypass RLS
   const { data: prefs } = await admin
     .from("notification_preferences")
     .select("*")
     .eq("user_id", userId)
     .single();
 
-  // If no preferences set, allow all notifications
+  // If no preferences row exists, allow all
   if (!prefs) return true;
 
-  // Map notification types to preference fields
-  const accessTypes: NotificationType[] = [
-    "access_request_received",
-    "access_request_approved",
-    "access_request_denied",
-    "invitation_sent",
-    "invitation_accepted",
-  ];
+  switch (type) {
+    // Access Requests
+    case "access_request_received":
+      return prefs.app_access_requests !== false;
 
-  const activityTypes: NotificationType[] = [
-    "secret_added",
-    "secret_updated",
-    "secret_deleted",
-    "bulk_operation",
-    "project_created",
-    "project_renamed",
-    "project_deleted",
-    "settings_changed",
-    "secrets_pulled",
-    "secrets_pushed",
-    "new_device_access",
-    "new_location",
-    "member_joined",
-    "member_left",
-    "role_upgraded",
-    "role_downgraded",
-    "member_removed",
-  ];
+    // Access Granted / Denied / Role changes / Invitations
+    case "access_request_approved":
+    case "access_request_denied":
+    case "invitation_sent":
+    case "invitation_accepted":
+    case "role_upgraded":
+    case "role_downgraded":
+    case "member_removed":
+      return prefs.app_access_granted !== false;
 
-  const errorTypes: NotificationType[] = [
-    "encryption_failed",
-    "rate_limit_warning",
-    "security_alert",
-    "email_failed",
-    "security_advisory",
-    "unknown_login",
-  ];
+    // Device Activity
+    case "new_device_access":
+    case "new_location":
+    case "unknown_login":
+      return prefs.app_device_activity !== false;
 
-  // Check preferences based on type
-  if (accessTypes.includes(type)) {
-    return prefs.app_access_requests !== false;
-  } else if (activityTypes.includes(type)) {
-    return prefs.app_activity !== false;
-  } else if (errorTypes.includes(type)) {
-    return prefs.app_errors !== false;
+    // Security Alerts
+    case "security_alert":
+    case "security_advisory":
+    case "password_changed":
+    case "email_changed":
+    case "2fa_enabled":
+    case "2fa_disabled":
+    case "encryption_failed":
+      return prefs.app_security_alerts !== false;
+
+    // Project & Secret Activity
+    case "secret_added":
+    case "secret_updated":
+    case "secret_deleted":
+    case "bulk_operation":
+    case "project_created":
+    case "project_renamed":
+    case "project_deleted":
+    case "settings_changed":
+    case "member_joined":
+    case "member_left":
+      return prefs.app_project_activity !== false;
+
+    // CLI Activity
+    case "secrets_pulled":
+    case "secrets_pushed":
+      return prefs.app_cli_activity !== false;
+
+    // System & Maintenance
+    case "system_update":
+    case "maintenance":
+    case "rate_limit_warning":
+    case "email_failed":
+      return prefs.app_system_updates !== false;
+
+    default:
+      return true;
   }
-
-  // Allow all other types by default
-  return true;
 }
 
 /**
@@ -491,6 +500,258 @@ export async function createRoleChangedNotification(
       changedBy,
     },
     actionUrl: `/dashboard/${projectId}`,
+    actionType: "view_project",
+  });
+}
+
+// ============================================
+// CLI ACTIVITY NOTIFICATIONS
+// ============================================
+
+/**
+ * Create a secrets pulled notification
+ */
+export async function createSecretsPulledNotification(
+  userId: string,
+  projectName: string,
+  projectId: string,
+  deviceName: string,
+  count: number,
+) {
+  return createNotification({
+    userId,
+    type: "secrets_pulled",
+    title: "Secrets Pulled via CLI",
+    message: `${count} secret${count !== 1 ? "s" : ""} pulled from ${projectName} on ${deviceName}`,
+    variant: "info",
+    metadata: { projectId, deviceName, count },
+    actionUrl: `/project/${projectId}`,
+    actionType: "view_project",
+  });
+}
+
+/**
+ * Create a secrets pushed notification
+ */
+export async function createSecretsPushedNotification(
+  userId: string,
+  projectName: string,
+  projectId: string,
+  deviceName: string,
+  count: number,
+) {
+  return createNotification({
+    userId,
+    type: "secrets_pushed",
+    title: "Secrets Pushed via CLI",
+    message: `${count} secret${count !== 1 ? "s" : ""} pushed to ${projectName} from ${deviceName}`,
+    variant: "info",
+    metadata: { projectId, deviceName, count },
+    actionUrl: `/project/${projectId}`,
+    actionType: "view_project",
+  });
+}
+
+// ============================================
+// DEVICE & SECURITY NOTIFICATIONS
+// ============================================
+
+/**
+ * Create a new device access notification
+ */
+export async function createNewDeviceNotification(
+  userId: string,
+  deviceName: string,
+  deviceInfo?: Record<string, unknown>,
+) {
+  return createNotification({
+    userId,
+    type: "new_device_access",
+    title: "New Device Authenticated",
+    message: `CLI access granted to ${deviceName}`,
+    variant: "info",
+    metadata: { deviceName, device_info: deviceInfo ?? {} },
+  });
+}
+
+/**
+ * Create an unknown login notification
+ */
+export async function createUnknownLoginNotification(
+  userId: string,
+  location: string,
+  ipAddress: string,
+) {
+  return createNotification({
+    userId,
+    type: "unknown_login",
+    title: "Sign-In from Unknown Location",
+    message: `Your account was accessed from ${location} (${ipAddress})`,
+    variant: "warning",
+    metadata: { location, ipAddress },
+    actionUrl: "/settings",
+    actionType: "view_settings",
+  });
+}
+
+/**
+ * Create a security alert notification
+ */
+export async function createSecurityAlertNotification(
+  userId: string,
+  title: string,
+  message: string,
+  metadata?: Record<string, unknown>,
+) {
+  return createNotification({
+    userId,
+    type: "security_alert",
+    title,
+    message,
+    variant: "error",
+    metadata: metadata ?? {},
+    actionUrl: "/settings",
+    actionType: "view_settings",
+  });
+}
+
+// ============================================
+// ACCOUNT EVENT NOTIFICATIONS
+// ============================================
+
+/**
+ * Create a password changed notification
+ */
+export async function createPasswordChangedNotification(userId: string) {
+  return createNotification({
+    userId,
+    type: "password_changed",
+    title: "Password Changed",
+    message:
+      "Your account password was changed. If this wasn't you, secure your account immediately.",
+    variant: "warning",
+    metadata: {},
+    actionUrl: "/settings",
+    actionType: "view_settings",
+  });
+}
+
+/**
+ * Create an email changed notification
+ */
+export async function createEmailChangedNotification(
+  userId: string,
+  newEmail: string,
+) {
+  return createNotification({
+    userId,
+    type: "email_changed",
+    title: "Email Address Updated",
+    message: `Your account email was changed to ${newEmail}`,
+    variant: "info",
+    metadata: { newEmail },
+    actionUrl: "/settings",
+    actionType: "view_settings",
+  });
+}
+
+/**
+ * Create a 2FA enabled/disabled notification
+ */
+export async function create2FANotification(userId: string, enabled: boolean) {
+  return createNotification({
+    userId,
+    type: enabled ? "2fa_enabled" : "2fa_disabled",
+    title: enabled
+      ? "Two-Factor Authentication Enabled"
+      : "Two-Factor Authentication Disabled",
+    message: enabled
+      ? "Your account is now protected with two-factor authentication."
+      : "Two-factor authentication has been disabled on your account.",
+    variant: enabled ? "success" : "warning",
+    metadata: {},
+    actionUrl: "/settings",
+    actionType: "view_settings",
+  });
+}
+
+// ============================================
+// SYSTEM NOTIFICATIONS
+// ============================================
+
+/**
+ * Create a system update notification
+ */
+export async function createSystemUpdateNotification(
+  userId: string,
+  version: string,
+  summary: string,
+) {
+  return createNotification({
+    userId,
+    type: "system_update",
+    title: `Envault Updated to ${version}`,
+    message: summary,
+    variant: "info",
+    metadata: { version },
+  });
+}
+
+/**
+ * Create a maintenance notification
+ */
+export async function createMaintenanceNotification(
+  userId: string,
+  scheduledAt: string,
+  durationMinutes: number,
+) {
+  return createNotification({
+    userId,
+    type: "maintenance",
+    title: "Scheduled Maintenance",
+    message: `Envault will undergo maintenance on ${scheduledAt} for approximately ${durationMinutes} minutes.`,
+    variant: "default",
+    metadata: { scheduledAt, durationMinutes },
+  });
+}
+
+/**
+ * Create a member removed notification (for the removed user)
+ */
+export async function createMemberRemovedNotification(
+  userId: string,
+  projectName: string,
+  removedBy: string,
+) {
+  return createNotification({
+    userId,
+    type: "member_removed",
+    title: "Removed from Project",
+    message: `${removedBy} removed you from ${projectName}`,
+    variant: "warning",
+    metadata: { projectName, removedBy },
+    actionUrl: "/dashboard",
+    actionType: "view_dashboard",
+  });
+}
+
+/**
+ * Create an invitation accepted notification (for the project owner)
+ */
+export async function createInvitationAcceptedNotification(
+  ownerId: string,
+  accepterEmail: string,
+  projectName: string,
+  projectId: string,
+) {
+  return createNotification({
+    userId: ownerId,
+    type: "invitation_accepted",
+    title: "Invitation Accepted",
+    message: `${accepterEmail} accepted the invitation to join ${projectName}`,
+    variant: "success",
+    metadata: { projectId, accepterEmail },
+    actionUrl: `/project/${projectId}`,
     actionType: "view_project",
   });
 }

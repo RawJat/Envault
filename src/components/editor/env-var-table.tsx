@@ -141,8 +141,7 @@ export function EnvVarTable({
               </TableRow>
             ) : (
               variables.map((variable) => {
-                const isVisible =
-                  !variable.isSecret || visibleSecrets[variable.id];
+                const isVisible = visibleSecrets[variable.id];
                 return (
                   <TableRow key={variable.id}>
                     <TableCell className="font-mono font-medium">
@@ -170,23 +169,17 @@ export function EnvVarTable({
                           size="icon"
                           className="h-6 w-6"
                           onClick={() => {
-                            if (variable.isSecret) {
-                              toggleVisibility(
-                                variable.id,
-                                !!visibleSecrets[variable.id],
-                              );
-                            } else {
-                              copyToClipboard(variable.value);
-                            }
+                            toggleVisibility(
+                              variable.id,
+                              !!visibleSecrets[variable.id],
+                            );
                           }}
                         >
-                          {variable.isSecret ? (
-                            isVisible ? (
-                              <EyeOff className="w-3 h-3" />
-                            ) : (
-                              <Eye className="w-3 h-3" />
-                            )
-                          ) : null}
+                          {isVisible ? (
+                            <EyeOff className="w-3 h-3" />
+                          ) : (
+                            <Eye className="w-3 h-3" />
+                          )}
                         </Button>
                         <TooltipProvider>
                           <Tooltip>
@@ -351,15 +344,13 @@ export function EnvVarTable({
                             <Pencil className="w-4 h-4 mr-2" />
                             Edit
                           </DropdownMenuItem>
-                          {variable.isSecret && (
-                            <DropdownMenuItem
-                              onClick={() => setSharingSecret(variable)}
-                              disabled={userRole === "viewer"}
-                            >
-                              <Share2 className="w-4 h-4 mr-2" />
-                              Share
-                            </DropdownMenuItem>
-                          )}
+                          <DropdownMenuItem
+                            onClick={() => setSharingSecret(variable)}
+                            disabled={userRole === "viewer"}
+                          >
+                            <Share2 className="w-4 h-4 mr-2" />
+                            Share
+                          </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive focus:text-destructive"
                             onClick={() => handleDeleteClick(variable.id)}
@@ -386,7 +377,7 @@ export function EnvVarTable({
           </div>
         ) : (
           variables.map((variable) => {
-            const isVisible = !variable.isSecret || visibleSecrets[variable.id];
+            const isVisible = visibleSecrets[variable.id];
             return (
               <div
                 key={variable.id}
@@ -437,14 +428,12 @@ export function EnvVarTable({
                         <Pencil className="w-4 h-4 mr-2" />
                         Edit
                       </DropdownMenuItem>
-                      {variable.isSecret && (
-                        <DropdownMenuItem
-                          onClick={() => setSharingSecret(variable)}
-                        >
-                          <Share2 className="w-4 h-4 mr-2" />
-                          Share
-                        </DropdownMenuItem>
-                      )}
+                      <DropdownMenuItem
+                        onClick={() => setSharingSecret(variable)}
+                      >
+                        <Share2 className="w-4 h-4 mr-2" />
+                        Share
+                      </DropdownMenuItem>
                       <DropdownMenuItem
                         className="text-destructive focus:text-destructive"
                         onClick={() => handleDeleteClick(variable.id)}
@@ -460,27 +449,23 @@ export function EnvVarTable({
                   <div className="font-mono text-sm break-all line-clamp-2 flex-1">
                     {isVisible ? variable.value : "••••••••••••••••"}
                   </div>
-                  {variable.isSecret && (
-                    <>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 shrink-0"
-                        onClick={() =>
-                          toggleVisibility(
-                            variable.id,
-                            !!visibleSecrets[variable.id],
-                          )
-                        }
-                      >
-                        {isVisible ? (
-                          <EyeOff className="w-4 h-4" />
-                        ) : (
-                          <Eye className="w-4 h-4" />
-                        )}
-                      </Button>
-                    </>
-                  )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 shrink-0"
+                    onClick={() =>
+                      toggleVisibility(
+                        variable.id,
+                        !!visibleSecrets[variable.id],
+                      )
+                    }
+                  >
+                    {isVisible ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"
