@@ -34,7 +34,7 @@ export function Footer() {
                 <Twitter className="w-5 h-5" />
               </Link>
               <Link
-                href="mailto:dinanath@example.com"
+                href="mailto:dashdinanath056@gmail.com"
                 className="text-muted-foreground hover:text-foreground transition-colors"
               >
                 <Mail className="w-5 h-5" />

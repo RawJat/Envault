@@ -5,10 +5,13 @@ import { Notification } from "./types/notifications";
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Helper to determine sender email
-const SENDER_VAR = process.env.EMAIL_SENDER || "onboarding@resend.dev";
-const SENDER = SENDER_VAR.includes("<")
-  ? SENDER_VAR
-  : `Envault <${SENDER_VAR}>`;
+const SENDER_DOMAIN = process.env.EMAIL_DOMAIN || "mail.envault.tech";
+const SENDERS = {
+  default: `Envault Team <team@${SENDER_DOMAIN}>`,
+  notifications: `Envault Notifications <notifications@${SENDER_DOMAIN}>`,
+  invites: `Envault Invites <invites@${SENDER_DOMAIN}>`,
+  digest: `Envault Digest <digest@${SENDER_DOMAIN}>`,
+};
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://envault.tech";
 const LOGO_URL = `https://www.envault.tech/favicon.png`;
 
@@ -27,7 +30,7 @@ export async function sendTestEmail(to: string) {
     });
 
     const result = await resend.emails.send({
-      from: SENDER,
+      from: SENDERS.default,
       to,
       subject: "Envault - Test Email",
       html,
@@ -74,7 +77,7 @@ export async function sendAccessRequestEmail(
     });
 
     await resend.emails.send({
-      from: SENDER,
+      from: SENDERS.notifications,
       to,
       subject: `Access Request: ${projectName}`,
       html,
@@ -117,7 +120,7 @@ export async function sendInviteEmail(
     });
 
     await resend.emails.send({
-      from: SENDER,
+      from: SENDERS.invites,
       to,
       subject: `You've been invited to join ${projectName} on Envault`,
       html,
@@ -148,7 +151,7 @@ export async function sendAccessGrantedEmail(to: string, projectName: string) {
     });
 
     await resend.emails.send({
-      from: SENDER,
+      from: SENDERS.notifications,
       to,
       subject: `Access Granted: ${projectName}`,
       html,
@@ -184,7 +187,9 @@ export async function sendDigestEmail(
 
   const listItems = recent
     .map((n) => {
-      const time = new Date(n.created_at).toLocaleTimeString([], {
+      const time = new Date(n.created_at).toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
         hour: "2-digit",
         minute: "2-digit",
       });
@@ -221,7 +226,7 @@ export async function sendDigestEmail(
     });
 
     await resend.emails.send({
-      from: SENDER,
+      from: SENDERS.digest,
       to,
       subject: `Envault - ${period} Digest`,
       html,

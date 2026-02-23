@@ -7,7 +7,8 @@
     "dev": "next dev --turbo",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:email": "tsx scripts/send-test-email.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -77,6 +78,7 @@
     "eslint": "^9.39.2",
     "eslint-config-next": "^16.1.6",
     "playwright": "^1.58.2",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }

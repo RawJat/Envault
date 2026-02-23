@@ -9,19 +9,20 @@ These environment variables are required to run the Envault server (Next.js app)
 
 ## Required Variables
 
-| Variable | Description | Example |
-| :--- | :--- | :--- |
-| `NEXT_PUBLIC_SUPABASE_URL` | The URL of your Supabase project. | `https://xyz.supabase.co` |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | The anonymous public key for Supabase. | `eyJhbGcis...` |
-| `SUPABASE_SERVICE_ROLE_KEY` | The secret service role key. **Critical Security**. | `eyJhbGcis...` |
-| `ENCRYPTION_KEY` | 32-byte hex string used as the Master Key. | `a1b2c3d4...` |
+| Variable                        | Description                                         | Example                   |
+| :------------------------------ | :-------------------------------------------------- | :------------------------ |
+| `NEXT_PUBLIC_SUPABASE_URL`      | The URL of your Supabase project.                   | `https://xyz.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | The anonymous public key for Supabase.              | `eyJhbGcis...`            |
+| `SUPABASE_SERVICE_ROLE_KEY`     | The secret service role key. **Critical Security**. | `eyJhbGcis...`            |
+| `ENCRYPTION_KEY`                | 32-byte hex string used as the Master Key.          | `a1b2c3d4...`             |
 
 ## Optional Variables
 
-| Variable | Description | Default |
-| :--- | :--- | :--- |
-| `REDIS_URL` | URL for Redis caching. | `redis://localhost:6379` |
-| `LOG_LEVEL` | Logging verbosity. | `info` |
+| Variable         | Description                                    | Default                  |
+| :--------------- | :--------------------------------------------- | :----------------------- |
+| `REDIS_URL`      | URL for Redis caching.                         | `redis://localhost:6379` |
+| `RESEND_API_KEY` | Resend API key for sending application emails. | `re_123456789...`        |
+| `LOG_LEVEL`      | Logging verbosity.                             | `info`                   |
 
 ## Generating Keys
 

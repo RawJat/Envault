@@ -38,7 +38,8 @@ export async function proxy(request: NextRequest) {
     const signature = request.headers.get("x-signature");
     const timestampStr = request.headers.get("x-timestamp");
     const secret =
-      process.env.NEXT_PUBLIC_HMAC_SECRET || "default_dev_secret_so_it_works";
+      process.env.NEXT_PUBLIC_API_SIGNATURE_SALT ||
+      "default_dev_secret_so_it_works";
 
     if (!signature || !timestampStr) {
       return NextResponse.json(

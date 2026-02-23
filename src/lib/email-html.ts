@@ -1,34 +1,41 @@
-
 interface EmailAction {
-    text: string;
-    url: string;
+  text: string;
+  url: string;
 }
 
 interface EmailProps {
-    previewText?: string;
-    heading: string;
-    content: string; // HTML string
-    action?: EmailAction;
-    footerText?: string; // Additional text below the button or main content
-    logoUrl?: string;
+  previewText?: string;
+  heading: string;
+  content: string; // HTML string
+  action?: EmailAction;
+  footerText?: string; // Additional text below the button or main content
+  logoUrl?: string;
 }
 
 /**
  * Generates a responsive, styled HTML email string.
  */
-export function getEmailHtml({ previewText, heading, content, action, footerText, logoUrl }: EmailProps): string {
-    // Brand Colors based on Envault's theme
-    const primaryColor = '#18181b'; // Zinc-900
-    const backgroundColor = '#f4f4f5'; // Zinc-100
-    const cardColor = '#ffffff';
-    const textColor = '#18181b';
-    const mutedColor = '#52525b'; // Zinc-600
-    const borderColor = '#e4e4e7'; // Zinc-200
+export function getEmailHtml({
+  previewText,
+  heading,
+  content,
+  action,
+  footerText,
+  logoUrl,
+}: EmailProps): string {
+  // Brand Colors based on Envault's theme
+  const primaryColor = "#18181b"; // Zinc-900
+  const backgroundColor = "#f4f4f5"; // Zinc-100
+  const cardColor = "#ffffff";
+  const textColor = "#18181b";
+  const mutedColor = "#52525b"; // Zinc-600
+  const borderColor = "#e4e4e7"; // Zinc-200
 
-    // Pre-header/Preview Text hidden element style
-    const hiddenStyle = 'display:none;font-size:1px;color:#333333;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;';
+  // Pre-header/Preview Text hidden element style
+  const hiddenStyle =
+    "display:none;font-size:1px;color:#333333;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;";
 
-    return `
+  return `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -37,14 +44,12 @@ export function getEmailHtml({ previewText, heading, content, action, footerText
   <meta name="x-apple-disable-message-reformatting">
   <title>${heading}</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&display=swap');
-    
     /* Reset */
     body { 
       margin: 0; 
       padding: 0; 
       background-color: ${backgroundColor}; 
-      font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
       -webkit-font-smoothing: antialiased; 
       color: ${textColor};
     }
@@ -161,8 +166,8 @@ export function getEmailHtml({ previewText, heading, content, action, footerText
     }
   </style>
 </head>
-<body>
-  ${previewText ? `<div style="${hiddenStyle}">${previewText}</div>` : ''}
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: ${backgroundColor}; color: ${textColor}; margin: 0; padding: 0; -webkit-font-smoothing: antialiased;">
+  ${previewText ? `<div style="${hiddenStyle}">${previewText}</div>` : ""}
   <div class="wrapper">
     <table role="presentation">
       <tr>
@@ -170,15 +175,15 @@ export function getEmailHtml({ previewText, heading, content, action, footerText
           <div class="main">
             <div class="header">
               <a href="https://envault.tech" class="logo">
-                ${logoUrl ? `<img src="${logoUrl}" width="26" height="26" alt="" style="vertical-align: middle; margin-right: 8px;" />` : ''}
+                ${logoUrl ? `<img src="${logoUrl}" width="26" height="26" alt="" style="vertical-align: middle; margin-right: 8px;" />` : ""}
                 <span style="vertical-align: middle;">Envault</span>
               </a>
             </div>
             <div class="body">
               <h1 class="heading">${heading}</h1>
               <div class="text">${content}</div>
-              ${action ? `<div class="btn-container"><a href="${action.url}" class="btn">${action.text}</a></div>` : ''}
-              ${footerText ? `<div class="text" style="font-size: 14px; margin-top: 24px; color: #71717a;">${footerText}</div>` : ''}
+              ${action ? `<div class="btn-container"><a href="${action.url}" class="btn">${action.text}</a></div>` : ""}
+              ${footerText ? `<div class="text" style="font-size: 14px; margin-top: 24px; color: #71717a;">${footerText}</div>` : ""}
             </div>
             <div class="footer">
               <p class="footer-text">
