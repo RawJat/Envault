@@ -17,7 +17,7 @@
 - **Keyboard First**: Navigate efficiently with fully customizable, conflict-free hotkeys.
 - **Responsive Design**: Fully responsive layout that works seamlessly on desktop and mobile.
 - **Dark Mode Support**: Built-in support for light and dark themes.
-- **CLI Support**: Manage your secrets directly from your terminal.
+- **CLI Support**: Manage your secrets directly from your terminal, featuring automatic non-blocking background update checks.
 - **Real-time System Status**: Monitor system health, active incidents, and historical uptime with a dedicated status page.
 - **Dedicated Support Page**: Integrated support features directly within the app to help users manage troubleshooting options efficiently.
 - **Comprehensive Documentation**: Integrated docs site with guides, API reference, and CLI documentation.

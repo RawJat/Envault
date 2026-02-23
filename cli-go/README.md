@@ -13,6 +13,7 @@
 ## Why Go?
 
 The Envault CLI has been rewritten in Go to provide:
+
 - 🚀 **Zero Dependencies**: No more Node.js runtime required.
 - ⚡ **Instant Execution**: Faster startup and command execution.
 - 📦 **Single Binary**: Easy installation via Homebrew or direct download.
@@ -24,21 +25,25 @@ The Envault CLI has been rewritten in Go to provide:
 - 🛡️ **Role-Based Access**: Verifies permissions (Editor/Viewer) for all operations.
 - 🚥 **Graceful Interrupts**: Cleanly handles `Ctrl+C` in all interactive flows.
 - 📁 **Auto-Linking**: Automatically triggers project initialization if no project is linked.
+- 🔄 **Automatic Updates**: Non-blocking background checks to notify you when a new version is available.
 
 ## Installation
 
 ### macOS & Linux (Universal)
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/DinanathDash/Envault/main/install.sh | sh
 ```
 
 ### macOS & Linux (Homebrew)
+
 ```bash
 brew tap DinanathDash/envault
 brew install envault
 ```
 
 ### Via NPM (Backward Compatible Wrapper)
+
 ```bash
 npm install -g @dinanathdash/envault
 ```
@@ -65,9 +70,11 @@ npm install -g @dinanathdash/envault
 ## Development
 
 ### Requirements
+
 - Go 1.25+
 
 ### Build from Source
+
 ```bash
 cd cli-go
 go build -o envault
