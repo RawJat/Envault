@@ -122,17 +122,17 @@ export default async function RootLayout({
         >
           <TooltipProvider>
             <ShortcutProvider>
-            <HmacProvider>
-              {children}
-              <Toaster />
-              {user && (
-                <>
-                  <AuthSync user={user} />
+              <HmacProvider>
+                {children}
+                <Toaster />
+                {user && (
+                  <>
+                    <AuthSync user={user} />
 
-                  <NotificationProvider />
-                </>
-              )}
-              <Analytics />
+                    <NotificationProvider />
+                  </>
+                )}
+                <Analytics />
               </HmacProvider>
             </ShortcutProvider>
           </TooltipProvider>

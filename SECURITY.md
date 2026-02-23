@@ -16,7 +16,7 @@ We take the security of Envault seriously. If you have discovered a security vul
 
 ### Immediate Contact
 
-Please report the vulnerability by emailing [dinanathdash@example.com](mailto:dinanathdash@example.com). Please include:
+Please report the vulnerability by emailing [dashdinanath056@gmail.com](mailto:dashdinanath056@gmail.com). Please include:
 
 - A description of the vulnerability.
 - Steps to reproduce the issue.

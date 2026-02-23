@@ -130,7 +130,7 @@ Follow these steps to get the project running locally.
     UPSTASH_REDIS_REST_TOKEN=your-upstash-token
 
     # Used for securely signing and verifying frontend API mutations (POST, PUT, DELETE, PATCH)
-    NEXT_PUBLIC_HMAC_SECRET=your-secure-random-hmac-secret
+    NEXT_PUBLIC_API_SIGNATURE_SALT=your-secure-random-hmac-secret
 
     ```
 
@@ -141,6 +141,14 @@ Follow these steps to get the project running locally.
     ```
 
     Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+5.  **Test Email Configuration (Optional)**
+
+    To verify that your Resend API configuration is working, you can send a test email to yourself:
+
+    ```bash
+    npm run test:email -- your-email@example.com
+    ```
 
 ## Contributing
 

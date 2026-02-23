@@ -3,7 +3,7 @@ title: Initial Setup
 description: Configuring your Envault instance
 ---
 
-import { Callout } from 'fumadocs-ui/components/callout';
+import { Callout } from "fumadocs-ui/components/callout";
 
 After installing the dependencies, you need to configure the core services.
 
@@ -13,9 +13,9 @@ Envault relies on Supabase for authentication and database storage.
 
 1. Create a new project in the [Supabase Dashboard](https://supabase.com/dashboard).
 2. Go to **Project Settings > API** and copy your:
-    - Project URL
-    - `anon` public key
-    - `service_role` secret key (keep this safe!)
+   - Project URL
+   - `anon` public key
+   - `service_role` secret key (keep this safe!)
 
 Update your `.env.local` file:
 
@@ -30,7 +30,8 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_key
 Envault uses a master key to encrypt the database keys. This is critical for security.
 
 <Callout type="warn" title="Critical Security Warning">
-  You must generate a strong random string for your `ENCRYPTION_KEY`. If you lose this key, **all data encrypted with it will be irretrievable.**
+  You must generate a strong random string for your `ENCRYPTION_KEY`. If you
+  lose this key, **all data encrypted with it will be irretrievable.**
 </Callout>
 
 Generate a secure key (e.g., using openssl):
@@ -54,3 +55,20 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+## Email Configuration (Optional)
+
+Envault uses [Resend](https://resend.com) to send emails for invites and notifications.
+
+1. Sign up for a Resend account and create an API Key.
+2. Add your key to `.env.local`:
+
+```bash
+RESEND_API_KEY=your_resend_api_key
+```
+
+You can verify that your email configuration works by sending a test email:
+
+```bash
+npm run test:email -- your-email@example.com
+```

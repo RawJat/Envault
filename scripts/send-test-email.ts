@@ -1,9 +1,12 @@
-import { sendTestEmail } from "../src/lib/email";
-import { getEmailHtml } from "../src/lib/email-html";
+import * as dotenv from "dotenv";
+import { resolve } from "path";
 
-const email = "dashdinanath056@gmail.com";
+// Extract env from Next.js local files
+dotenv.config({ path: resolve(process.cwd(), ".env.local") });
 
-console.log(`Sending test email to ${email}...`);
+const recipientEmail = process.argv[2] || "dashdinanath056@gmail.com";
+
+console.log(`Sending test email to ${recipientEmail}...`);
 console.log(
   "Using standard Envault HTML email template via sendTestEmail()...",
 );
@@ -13,6 +16,10 @@ async function main() {
     console.error("Error: RESEND_API_KEY is not set in environment variables.");
     process.exit(1);
   }
+
+  // Import dynamically so it evaluates after dotenv.config()
+  const { sendTestEmail } = await import("../src/lib/email");
+  const { getEmailHtml } = await import("../src/lib/email-html");
 
   // Also confirm we can generate HTML successfully
   try {
@@ -27,13 +34,20 @@ async function main() {
     console.error("Template generation failed:", e);
   }
 
-  const result = await sendTestEmail(email);
+  const result = await sendTestEmail(recipientEmail);
   if (result && result.success) {
     console.log("Email sent successfully!");
-    console.log("Message ID:", result.data?.data?.id);
+    console.log(
+      "Message ID:",
+      (result.data as { data?: { id?: string } })?.data?.id,
+    );
   } else {
     console.error("Failed to send email.");
-    console.error(result ? result.error : "Unknown error");
+    console.error(
+      result
+        ? (result.error as Error)?.message || result.error
+        : "Unknown error",
+    );
   }
 }
 

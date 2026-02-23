@@ -566,7 +566,7 @@ export async function addVariablesBulk(
     const keyId = encryptedValue.split(":")[1];
 
     return {
-      ...(existing ? { id: existing.id } : {}),
+      id: existing ? existing.id : crypto.randomUUID(),
       user_id: existing ? existing.user_id : user.id, // Preserve original creator or assign to current importer
       project_id: projectId,
       key: variable.key,
