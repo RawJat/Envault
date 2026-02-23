@@ -13,7 +13,22 @@ const getGlobalSupabaseClient = () => {
     globalAny.__supabaseBrowserClient = createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { isSingleton: true }, // keep it true just in case
+      {
+        isSingleton: true, // keep it true just in case
+        auth: {
+          // Provide a dummy lock in development to prevent lock timeouts with HMR
+          ...(process.env.NODE_ENV === "development"
+            ? {
+                lock: {
+                  name: "dummy-lock",
+                  acquire: () => Promise.resolve(true),
+                  release: () => Promise.resolve(),
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                } as any,
+              }
+            : {}),
+        },
+      },
     );
   }
   return globalAny.__supabaseBrowserClient;
@@ -29,6 +44,21 @@ export function createClient(): SupabaseClient {
     createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        isSingleton: true,
+        auth: {
+          ...(process.env.NODE_ENV === "development"
+            ? {
+                lock: {
+                  name: "dummy-lock",
+                  acquire: () => Promise.resolve(true),
+                  release: () => Promise.resolve(),
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                } as any,
+              }
+            : {}),
+        },
+      },
     );
 
   return clientInstance as SupabaseClient;

@@ -1,54 +1,59 @@
-"use client"
+"use client";
 
-import { useEffect, useState, useRef } from "react"
-import { useInView, useSpring } from "framer-motion"
+import { useEffect, useState, useRef } from "react";
+import { useInView, useSpring } from "framer-motion";
 
 interface AnimatedStatProps {
-  value: string
+  value: string;
 }
 
 export function AnimatedStat({ value }: AnimatedStatProps) {
-  const [isInView, setIsInView] = useState(false)
-  const ref = useRef(null)
-  const inView = useInView(ref, { once: true, margin: "-100px" })
+  const [isInView, setIsInView] = useState(false);
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: "-100px" });
 
   useEffect(() => {
-    if (inView) {
-      setIsInView(true)
+    if (inView && !isInView) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setIsInView(true);
     }
-  }, [inView])
+  }, [inView, isInView]);
 
-  const numericValue = parseFloat(value.replace(/[^0-9.]/g, ''))
-  const suffix = value.replace(/[0-9.]/g, '')
+  const numericValue = parseFloat(value.replace(/[^0-9.]/g, ""));
+  const suffix = value.replace(/[0-9.]/g, "");
 
   const spring = useSpring(0, {
     damping: 50,
     stiffness: 200,
-    mass: 1
-  })
+    mass: 1,
+  });
 
   useEffect(() => {
     if (isInView) {
-      spring.set(numericValue)
+      spring.set(numericValue);
     }
-  }, [isInView, numericValue, spring])
+  }, [isInView, numericValue, spring]);
 
-  const [displayValue, setDisplayValue] = useState("0")
+  const [displayValue, setDisplayValue] = useState("0");
 
   useEffect(() => {
     const unsubscribe = spring.on("change", (latest) => {
-      if (value.includes('.')) {
-        setDisplayValue(latest.toFixed(1))
+      if (value.includes(".")) {
+        setDisplayValue(latest.toFixed(1));
       } else {
-        setDisplayValue(Math.round(latest).toLocaleString())
+        setDisplayValue(Math.round(latest).toLocaleString());
       }
-    })
-    return unsubscribe
-  }, [spring, value])
+    });
+    return unsubscribe;
+  }, [spring, value]);
 
   return (
-    <div ref={ref} className="font-mono text-3xl font-bold text-foreground mb-2">
-      {displayValue}{suffix}
+    <div
+      ref={ref}
+      className="font-mono text-3xl font-bold text-foreground mb-2"
+    >
+      {displayValue}
+      {suffix}
     </div>
-  )
+  );
 }

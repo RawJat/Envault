@@ -79,16 +79,17 @@ export function EnvVarTable({
   >({});
   const [sharingSecret, setSharingSecret] =
     React.useState<EnvironmentVariable | null>(null);
-  const [lastInteractedId, setLastInteractedId] = React.useState<string | null>(
-    null,
-  );
+  /* eslint-disable @typescript-eslint/no-unused-vars */
+  const [_lastInteractedId, setLastInteractedId] = React.useState<
+    string | null
+  >(null);
 
   // Listen for contextual shortcuts
   React.useEffect(() => {
     return () => {};
   }, []);
 
-  const toggleVisibility = async (id: string, isCurrentlyVisible: boolean) => {
+  const toggleVisibility = async (id: string, _isCurrentlyVisible: boolean) => {
     setVisibleSecrets((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 

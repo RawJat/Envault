@@ -6,7 +6,7 @@ const supabase = createClient(
 );
 
 async function run() {
-  const { data, error } = await supabase.from('passkeys').select('*').limit(1);
+  const { data } = await supabase.from('passkeys').select('*').limit(1);
   console.log("Returned public_key:", data[0]?.public_key);
 }
 run();

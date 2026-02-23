@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
@@ -5,7 +6,6 @@ const os = require('os');
 const { execSync } = require('child_process');
 
 const REPO = 'DinanathDash/Envault';
-const BINARY_NAME = 'envault';
 // Grab version from package.json to sync releases
 const pkg = require('./package.json');
 const VERSION = `v${pkg.version}`;

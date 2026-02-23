@@ -82,7 +82,6 @@ export async function GET(request: NextRequest) {
         continue;
       }
 
-
       // Send Email if there is activity
       if (notifications && notifications.length > 0) {
         await sendDigestEmail(
@@ -100,9 +99,11 @@ export async function GET(request: NextRequest) {
       sent: results.filter((r) => r.sent).length,
       details: results,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Digest Cron Job Failed:", error);
-    return new NextResponse(`Internal Server Error: ${error.message}`, {
+    const message =
+      error instanceof Error ? error.message : "Internal Server Error";
+    return new NextResponse(`Internal Server Error: ${message}`, {
       status: 500,
     });
   }

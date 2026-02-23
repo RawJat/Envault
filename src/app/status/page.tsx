@@ -24,6 +24,28 @@ import { createClient } from "@/lib/supabase/server";
 
 import { FormattedDate } from "@/components/ui/formatted-date";
 
+interface Component {
+  id: string;
+  name: string;
+  status: "operational" | "degraded" | "outage" | "maintenance";
+}
+
+interface IncidentUpdate {
+  id: string;
+  created_at: string;
+  status: "investigating" | "identified" | "monitoring" | "resolved";
+  message: string;
+}
+
+interface Incident {
+  id: string;
+  title: string;
+  status: "investigating" | "identified" | "monitoring" | "resolved";
+  severity: "minor" | "major" | "critical";
+  created_at: string;
+  incident_updates: IncidentUpdate[];
+}
+
 export const revalidate = 300; // 5 minutes ISR
 
 export default async function StatusPage() {
@@ -35,17 +57,19 @@ export default async function StatusPage() {
   } = await supabase.auth.getUser();
 
   const activeIncidents = allIncidents.filter(
-    (i: any) => i.status !== "resolved",
+    (i: Incident) => i.status !== "resolved",
   );
   const pastIncidents = allIncidents.filter(
-    (i: any) => i.status === "resolved",
+    (i: Incident) => i.status === "resolved",
   );
 
   const hasActiveIncidents = activeIncidents.length > 0;
-  const hasOutage = components.some((c: any) => c.status === "outage");
-  const hasDegraded = components.some((c: any) => c.status === "degraded");
+  const hasOutage = components.some((c: Component) => c.status === "outage");
+  const hasDegraded = components.some(
+    (c: Component) => c.status === "degraded",
+  );
   const hasMaintenance = components.some(
-    (c: any) => c.status === "maintenance",
+    (c: Component) => c.status === "maintenance",
   );
 
   let statusColor = "text-emerald-500";
@@ -137,7 +161,7 @@ export default async function StatusPage() {
               </div>
 
               <div className="grid gap-4 md:gap-6">
-                {activeIncidents.map((incident: any) => (
+                {activeIncidents.map((incident: Incident) => (
                   <div
                     key={incident.id}
                     className="group relative overflow-hidden rounded-xl border bg-card/50 backdrop-blur-sm p-4 md:p-6 shadow-sm transition-all hover:shadow-md hover:border-destuctive/50"
@@ -170,7 +194,7 @@ export default async function StatusPage() {
                         <div className="prose dark:prose-invert max-w-none text-sm md:text-base">
                           <Timeline>
                             {incident.incident_updates.map(
-                              (update: any, idx: number) => (
+                              (update: IncidentUpdate, idx: number) => (
                                 <TimelineItem
                                   key={update.id}
                                   className="group pb-0"
@@ -237,7 +261,7 @@ export default async function StatusPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-              {components.map((component: any) => (
+              {components.map((component: Component) => (
                 <div
                   key={component.id}
                   className="flex items-center justify-between p-3 md:p-4 rounded-lg border bg-card/30 backdrop-blur-sm hover:bg-card/50 transition-colors group"
@@ -300,7 +324,7 @@ export default async function StatusPage() {
               </div>
             ) : (
               <Accordion type="single" collapsible className="w-full space-y-4">
-                {pastIncidents.map((incident: any) => (
+                {pastIncidents.map((incident: Incident) => (
                   <AccordionItem
                     key={incident.id}
                     value={incident.id}
@@ -344,7 +368,7 @@ export default async function StatusPage() {
                     <AccordionContent className="pt-4 pb-4 md:pb-6 px-1">
                       <Timeline>
                         {incident.incident_updates.map(
-                          (update: any, idx: number) => (
+                          (update: IncidentUpdate, idx: number) => (
                             <TimelineItem
                               key={update.id}
                               className="group pb-0"

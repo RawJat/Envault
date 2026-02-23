@@ -8,6 +8,8 @@ import { Analytics } from "@vercel/analytics/react";
 import { NotificationProvider } from "@/components/notifications/notification-provider";
 import { ShortcutProvider } from "@/components/providers/shortcut-provider";
 import { HmacProvider } from "@/components/hmac-provider";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { getServerOS } from "@/lib/os";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.envault.tech"),
@@ -19,6 +21,23 @@ export const metadata: Metadata = {
     "Envault is a secure vault for your environment variables featuring end-to-end encryption. Manage secrets with confidence using AES-256-GCM and simplify team collaboration for developers.",
   keywords: [
     "secrets management",
+    ".env management",
+    "env management",
+    ".env storage",
+    "env storage",
+    ".env viewer",
+    "env viewer",
+    ".env editor",
+    "env editor",
+    ".env sync",
+    "env sync",
+    ".env sync",
+    "env sync",
+    "env vault",
+    "envvault",
+    "envault.tech",
+    "env secure storage",
+    "env secure vault",
     "environment variables",
     "secure vault",
     "end-to-end encryption",
@@ -64,8 +83,6 @@ export const metadata: Metadata = {
   },
 };
 
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { getServerOS } from "@/lib/os";
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -87,6 +104,7 @@ export default async function RootLayout({
           href="https://fonts.gstatic.com"
           crossOrigin="anonymous"
         />
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link
           href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Instrument+Serif:ital,wght@0,400;0,700;1,400;1,700&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap"
           rel="stylesheet"

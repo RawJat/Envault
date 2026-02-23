@@ -1,28 +1,28 @@
-"use client"
+"use client";
 
-import { RefObject, useEffect, useId, useState } from "react"
-import { motion } from "motion/react"
+import { RefObject, useEffect, useId, useState } from "react";
+import { motion } from "motion/react";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 export interface AnimatedBeamProps {
-  className?: string
-  containerRef: RefObject<HTMLElement | null> // Container ref
-  fromRef: RefObject<HTMLElement | null>
-  toRef: RefObject<HTMLElement | null>
-  curvature?: number
-  reverse?: boolean
-  pathColor?: string
-  pathWidth?: number
-  pathOpacity?: number
-  gradientStartColor?: string
-  gradientStopColor?: string
-  delay?: number
-  duration?: number
-  startXOffset?: number
-  startYOffset?: number
-  endXOffset?: number
-  endYOffset?: number
+  className?: string;
+  containerRef: RefObject<HTMLElement | null>; // Container ref
+  fromRef: RefObject<HTMLElement | null>;
+  toRef: RefObject<HTMLElement | null>;
+  curvature?: number;
+  reverse?: boolean;
+  pathColor?: string;
+  pathWidth?: number;
+  pathOpacity?: number;
+  gradientStartColor?: string;
+  gradientStopColor?: string;
+  delay?: number;
+  duration?: number;
+  startXOffset?: number;
+  startYOffset?: number;
+  endXOffset?: number;
+  endYOffset?: number;
 }
 
 export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
@@ -44,9 +44,9 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
   endXOffset = 0,
   endYOffset = 0,
 }) => {
-  const id = useId()
-  const [pathD, setPathD] = useState("")
-  const [svgDimensions, setSvgDimensions] = useState({ width: 0, height: 0 })
+  const id = useId();
+  const [pathD, setPathD] = useState("");
+  const [svgDimensions, setSvgDimensions] = useState({ width: 0, height: 0 });
 
   // Calculate the gradient coordinates based on the reverse prop
   const gradientCoordinates = reverse
@@ -61,73 +61,69 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
         x2: ["0%", "100%"],
         y1: ["0%", "0%"],
         y2: ["0%", "0%"],
-      }
+      };
 
   useEffect(() => {
     const updatePath = () => {
       if (containerRef.current && fromRef.current && toRef.current) {
-        const containerRect = containerRef.current.getBoundingClientRect()
-        const rectA = fromRef.current.getBoundingClientRect()
-        const rectB = toRef.current.getBoundingClientRect()
+        const containerRect = containerRef.current.getBoundingClientRect();
+        const rectA = fromRef.current.getBoundingClientRect();
+        const rectB = toRef.current.getBoundingClientRect();
 
-        const svgWidth = containerRect.width
-        const svgHeight = containerRect.height
-        setSvgDimensions({ width: svgWidth, height: svgHeight })
+        const svgWidth = containerRect.width;
+        const svgHeight = containerRect.height;
+        setSvgDimensions({ width: svgWidth, height: svgHeight });
 
         const startX =
-          rectA.left - containerRect.left + rectA.width / 2 + startXOffset
+          rectA.left - containerRect.left + rectA.width / 2 + startXOffset;
         const startY =
-          rectA.top - containerRect.top + rectA.height / 2 + startYOffset
+          rectA.top - containerRect.top + rectA.height / 2 + startYOffset;
         const endX =
-          rectB.left - containerRect.left + rectB.width / 2 + endXOffset
+          rectB.left - containerRect.left + rectB.width / 2 + endXOffset;
         const endY =
-          rectB.top - containerRect.top + rectB.height / 2 + endYOffset
-
-        // Calculate the midpoint
-        const midX = (startX + endX) / 2
-        const midY = (startY + endY) / 2
+          rectB.top - containerRect.top + rectB.height / 2 + endYOffset;
 
         // Use cubic Bezier for smoother, more parabolic curves
         // Control points are offset perpendicular to the line for natural arcs
-        const dx = endX - startX
-        const dy = endY - startY
-        const distance = Math.sqrt(dx * dx + dy * dy)
-        
+        const dx = endX - startX;
+        const dy = endY - startY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
         // Normalize and create perpendicular vector
-        const perpX = -dy / distance
-        const perpY = dx / distance
-        
+        const perpX = -dy / distance;
+        const perpY = dx / distance;
+
         // Apply curvature along the perpendicular
-        const controlOffset = curvature
-        
+        const controlOffset = curvature;
+
         // Two control points for cubic Bezier - creates smooth S-curves
-        const cp1X = startX + dx * 0.25 + perpX * controlOffset
-        const cp1Y = startY + dy * 0.25 + perpY * controlOffset
-        const cp2X = startX + dx * 0.75 + perpX * controlOffset
-        const cp2Y = startY + dy * 0.75 + perpY * controlOffset
-        
-        const d = `M ${startX},${startY} C ${cp1X},${cp1Y} ${cp2X},${cp2Y} ${endX},${endY}`
-        setPathD(d)
+        const cp1X = startX + dx * 0.25 + perpX * controlOffset;
+        const cp1Y = startY + dy * 0.25 + perpY * controlOffset;
+        const cp2X = startX + dx * 0.75 + perpX * controlOffset;
+        const cp2Y = startY + dy * 0.75 + perpY * controlOffset;
+
+        const d = `M ${startX},${startY} C ${cp1X},${cp1Y} ${cp2X},${cp2Y} ${endX},${endY}`;
+        setPathD(d);
       }
-    }
+    };
 
     // Initialize ResizeObserver
     const resizeObserver = new ResizeObserver(() => {
-      updatePath()
-    })
+      updatePath();
+    });
 
     // Observe the container element
     if (containerRef.current) {
-      resizeObserver.observe(containerRef.current)
+      resizeObserver.observe(containerRef.current);
     }
 
     // Call the updatePath initially to set the initial path
-    updatePath()
+    updatePath();
 
     // Clean up the observer on component unmount
     return () => {
-      resizeObserver.disconnect()
-    }
+      resizeObserver.disconnect();
+    };
   }, [
     containerRef,
     fromRef,
@@ -137,7 +133,7 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
     startYOffset,
     endXOffset,
     endYOffset,
-  ])
+  ]);
 
   return (
     <svg
@@ -147,7 +143,7 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
       xmlns="http://www.w3.org/2000/svg"
       className={cn(
         "pointer-events-none absolute top-0 left-0 transform-gpu stroke-2",
-        className
+        className,
       )}
       viewBox={`0 0 ${svgDimensions.width} ${svgDimensions.height}`}
     >
@@ -201,5 +197,5 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
         </motion.linearGradient>
       </defs>
     </svg>
-  )
-}
+  );
+};

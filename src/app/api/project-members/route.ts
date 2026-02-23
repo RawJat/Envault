@@ -84,8 +84,27 @@ export async function GET(request: NextRequest) {
     }),
   );
 
+  interface MemberWithUserData {
+    id: string;
+    user_id: string;
+    role: string;
+    created_at: string;
+    email: string | undefined;
+    avatar: string | undefined;
+  }
+
+  interface RequestWithUserData {
+    id: string;
+    user_id: string;
+    project_id: string;
+    status: string;
+    created_at: string;
+    email: string | undefined;
+    avatar: string | undefined;
+  }
+
   // Build members list
-  let allMembers: any[] = [];
+  let allMembers: MemberWithUserData[] = [];
   if (membersData) {
     allMembers = membersData.map((member) => ({
       ...member,
@@ -108,7 +127,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Build requests list
-  let allRequests: any[] = [];
+  let allRequests: RequestWithUserData[] = [];
   if (requestsData) {
     allRequests = requestsData.map((request) => ({
       ...request,
