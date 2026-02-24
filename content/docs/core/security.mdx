@@ -32,3 +32,8 @@ Envault supports key rotation for Data Keys. This limits the "blast radius" if a
 ## Authentication Security
 
 - **Passkeys (WebAuthn)**: Envault supports passwordless authentication using WebAuthn. This provides phishing-resistant, biometric login capabilities and significantly improves account security compared to traditional passwords.
+
+## CLI Security
+
+- **Rolling Sessions**: For interactive users, the Envault CLI stores long-lived Refresh Tokens securely within the native OS Secure Enclave (e.g., macOS Keychain, Windows Credential Manager) rather than plaintext files. Short-lived Access Tokens (valid for 1 hour) are used for API requests.
+- **Service Token Guardrails**: Headless machine workflows use project-scoped Service Tokens. To prevent devastating local leakages, the CLI enforces strict Context Awareness, actively rejecting any Service Tokens executed on local developer machines unless it verifies it is running in a recognized CI/CD environment.
