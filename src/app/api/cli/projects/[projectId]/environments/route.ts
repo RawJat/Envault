@@ -9,20 +9,26 @@ export async function GET(
   { params }: { params: Promise<{ projectId: string }> },
 ) {
   const result = await validateCliToken(request);
-  if (typeof result !== "string") {
+  if ('status' in result) {
     return result;
   }
-  const userId = result;
 
   const { projectId } = await params;
   const supabase = createAdminClient();
 
-  const role = await getProjectRole(supabase, projectId, userId);
-  if (!role) {
-    return NextResponse.json(
-      { error: "Forbidden: no access to this project" },
-      { status: 403 },
-    );
+  if (result.type === 'service') {
+    if (result.projectId !== projectId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+  } else {
+    const userId = result.userId;
+    const role = await getProjectRole(supabase, projectId, userId);
+    if (!role) {
+      return NextResponse.json(
+        { error: "Forbidden: no access to this project" },
+        { status: 403 },
+      );
+    }
   }
 
   try {

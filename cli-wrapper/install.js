@@ -79,21 +79,7 @@ function extract(filePath, destDir, extension) {
     console.log('Extracting...');
     try {
         if (extension === '.zip') {
-            // Requires 'unzip' on path or a library. 
-            // Minimal dependency approach: use system unzip for now
-            // Or node 'adm-zip' if we add dependencies.
-            // Let's assume unzip command exists for Windows users with Git Bash/WSL or standard unzip?
-            // Windows native: Use PowerShell?
-            // Standard user might not have unzip in PATH on bare Windows.
-            // Simplest is to add 'adm-zip' to package.json dependencies only for wrapper.
-            // But let's try using tar for tar.gz (available on Mac/Linux/Win10+)
-
-            // For now, let's just use tar for everything since GoReleaser can output tar.gz for Windows too? (We configured Zip for windows)
-            // Let's use 'tar' command, usually available.
-            // But Windows default tar handles .zip?
-            // Let's assume proper environment or add dependency.
-            // I'll add 'adm-zip' as dependency for safety in package.json next.
-            // For now, placeholder.
+            execSync(`powershell -command "Expand-Archive -Path '${filePath}' -DestinationPath '${destDir}' -Force"`);
         } else {
             execSync(`tar -xzf "${filePath}" -C "${destDir}"`);
         }
