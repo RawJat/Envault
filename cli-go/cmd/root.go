@@ -11,6 +11,8 @@ import (
 
 var (
 	cfgFile string
+	envFlag string
+	showVersion bool
 	version = "dev"
 	commit  = "none"
 	date    = "unknown"
@@ -21,6 +23,13 @@ var rootCmd = &cobra.Command{
 	Short: "Envault CLI - Securely manage your environment variables",
 	Long: `Envault CLI is a tool to securely manage your environment variables
 across your development workflow.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if showVersion {
+			fmt.Printf("envault v%s (%s) built at %s\n", version, commit, date)
+			return
+		}
+		_ = cmd.Help()
+	},
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
 		// Only check for updates if it's not the internal update check command itself
 		if cmd.Name() != "__update_check" {
@@ -40,6 +49,8 @@ func init() {
 	cobra.OnInitialize(initConfig)
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.envault.yaml)")
+	rootCmd.PersistentFlags().StringVarP(&envFlag, "env", "e", "", "Target environment (development, preview, production, etc.)")
+	rootCmd.PersistentFlags().BoolVarP(&showVersion, "version", "v", false, "Print the version number of Envault CLI")
 
 	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(updateCheckCmd)

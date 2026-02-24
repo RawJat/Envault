@@ -19,11 +19,20 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { createProject } from "@/app/project-actions";
 import { Kbd } from "@/components/ui/kbd";
 
 const projectSchema = z.object({
   name: z.string().min(1, "Project name is required"),
+  uiMode: z.enum(["simple", "advanced"]),
+  defaultEnvironmentSlug: z.enum(["development", "preview", "production"]),
 });
 
 type ProjectValues = z.infer<typeof projectSchema>;
@@ -38,6 +47,9 @@ export function CreateProjectDialog({
   onOpenChange: controlledOnOpenChange,
 }: CreateProjectDialogProps = {}) {
   const [internalOpen, setInternalOpen] = React.useState(false);
+  const [uiMode, setUiMode] = React.useState<ProjectValues["uiMode"]>("simple");
+  const [defaultEnvironmentSlug, setDefaultEnvironmentSlug] =
+    React.useState<ProjectValues["defaultEnvironmentSlug"]>("development");
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
   const setOpen = controlledOnOpenChange || setInternalOpen;
 
@@ -47,13 +59,21 @@ export function CreateProjectDialog({
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<ProjectValues>({
     resolver: zodResolver(projectSchema),
+    defaultValues: {
+      uiMode: "simple",
+      defaultEnvironmentSlug: "development",
+    },
   });
 
   async function onSubmit(data: ProjectValues) {
-    const result = await createProject(data.name);
+    const result = await createProject(data.name, {
+      uiMode: data.uiMode,
+      defaultEnvironmentSlug: data.defaultEnvironmentSlug,
+    });
 
     if (result.error) {
       toast.error(result.error);
@@ -62,12 +82,31 @@ export function CreateProjectDialog({
 
     toast.success("Project created successfully");
     setOpen(false);
-    reset();
+    reset({
+      name: "",
+      uiMode: "simple",
+      defaultEnvironmentSlug: "development",
+    });
+    setUiMode("simple");
+    setDefaultEnvironmentSlug("development");
     router.push(`/project/${result.data?.slug}`);
   }
 
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (!nextOpen) {
+      reset({
+        name: "",
+        uiMode: "simple",
+        defaultEnvironmentSlug: "development",
+      });
+      setUiMode("simple");
+      setDefaultEnvironmentSlug("development");
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button>
           <Plus className="w-4 h-4 mr-2" />
@@ -95,6 +134,51 @@ export function CreateProjectDialog({
             {errors.name && (
               <p className="text-xs text-destructive">{errors.name.message}</p>
             )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="ui-mode">Workspace Mode</Label>
+            <Select
+              value={uiMode}
+              onValueChange={(value) => {
+                const next = value as ProjectValues["uiMode"];
+                setUiMode(next);
+                setValue("uiMode", next, { shouldValidate: true });
+              }}
+            >
+              <SelectTrigger id="ui-mode">
+                <SelectValue placeholder="Choose mode" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="simple">
+                  Simple (single environment view)
+                </SelectItem>
+                <SelectItem value="advanced">
+                  Advanced (multi-environment ready)
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="default-environment">Default Environment</Label>
+            <Select
+              value={defaultEnvironmentSlug}
+              onValueChange={(value) => {
+                const next = value as ProjectValues["defaultEnvironmentSlug"];
+                setDefaultEnvironmentSlug(next);
+                setValue("defaultEnvironmentSlug", next, {
+                  shouldValidate: true,
+                });
+              }}
+            >
+              <SelectTrigger id="default-environment">
+                <SelectValue placeholder="Choose default environment" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="development">Development</SelectItem>
+                <SelectItem value="preview">Preview</SelectItem>
+                <SelectItem value="production">Production</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <DialogFooter>
             <Button type="submit" disabled={isSubmitting}>

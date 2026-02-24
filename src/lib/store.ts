@@ -20,6 +20,15 @@ export type Project = {
   name: string;
   slug: string;
   user_id: string;
+  ui_mode?: "simple" | "advanced";
+  default_environment_slug?: string;
+  active_environment_slug?: string;
+  environments?: Array<{
+    id: string;
+    slug: string;
+    name: string;
+    is_default?: boolean;
+  }>;
   owner_username?: string | null;
   variables: EnvironmentVariable[];
   secretCount: number;

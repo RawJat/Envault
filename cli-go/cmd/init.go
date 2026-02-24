@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 
@@ -18,7 +17,7 @@ var initCmd = &cobra.Command{
 		// Check config existing
 		if _, err := os.Stat("envault.json"); err == nil {
 			fmt.Println(ui.ColorYellow("envault.json already exists in this directory."))
-			
+
 			confirm := false
 			prompt := &survey.Confirm{
 				Message: "Do you want to overwrite it?",
@@ -51,14 +50,20 @@ var initCmd = &cobra.Command{
 		}
 
 		// Write config
-		config := project.Config{ProjectId: projectId}
-		data, err := json.MarshalIndent(config, "", "  ")
+		cfg, err := project.ReadConfig()
 		if err != nil {
-			fmt.Println(ui.ColorRed(fmt.Sprintf("\nError creating config JSON: %v", err)))
+			fmt.Println(ui.ColorRed(fmt.Sprintf("\nError reading existing config: %v", err)))
 			os.Exit(1)
 		}
+		cfg.ProjectId = projectId
+		if cfg.DefaultEnvironment == "" {
+			cfg.DefaultEnvironment = defaultEnvName
+		}
+		if cfg.EnvironmentFiles == nil {
+			cfg.EnvironmentFiles = map[string]string{}
+		}
 
-		if err := os.WriteFile("envault.json", data, 0644); err != nil {
+		if err := project.WriteConfig(cfg); err != nil {
 			fmt.Println(ui.ColorRed(fmt.Sprintf("\nError writing envault.json: %v", err)))
 			os.Exit(1)
 		}

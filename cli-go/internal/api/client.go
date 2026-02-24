@@ -4,12 +4,21 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/spf13/viper"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
-	"github.com/spf13/viper"
 )
+
+type APIError struct {
+	StatusCode int
+	Body       string
+}
+
+func (e *APIError) Error() string {
+	return fmt.Sprintf("api error %d: %s", e.StatusCode, e.Body)
+}
 
 type Client struct {
 	BaseURL string
@@ -69,7 +78,7 @@ func (c *Client) Post(path string, body interface{}) ([]byte, error) {
 
 	if resp.StatusCode >= 400 {
 		bodyBytes, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("API error: %s", string(bodyBytes))
+		return nil, &APIError{StatusCode: resp.StatusCode, Body: string(bodyBytes)}
 	}
 
 	return io.ReadAll(resp.Body)
@@ -94,7 +103,7 @@ func (c *Client) Get(path string) ([]byte, error) {
 
 	if resp.StatusCode >= 400 {
 		bodyBytes, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("API error: %s", string(bodyBytes))
+		return nil, &APIError{StatusCode: resp.StatusCode, Body: string(bodyBytes)}
 	}
 
 	return io.ReadAll(resp.Body)

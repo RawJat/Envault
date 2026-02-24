@@ -6,6 +6,7 @@
     "projects",
     "projects-environments",
     "access-control",
-    "system-status"
+    "system-status",
+    "notifications"
   ]
 }

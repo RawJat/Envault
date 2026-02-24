@@ -66,12 +66,12 @@ func SelectProject() (string, error) {
 		if len(list) == 0 {
 			list = data.Data
 		}
-		
+
 		all = list
 		// specific logic to split if isOwner present, else just put all in all?
 		// Node logic:
 		// projectsData.owned = data.projects.filter(p => p.isOwner);
-        // projectsData.shared = data.projects.filter(p => !p.isOwner);
+		// projectsData.shared = data.projects.filter(p => !p.isOwner);
 		for _, p := range list {
 			if p.IsOwner {
 				owned = append(owned, p)
@@ -151,8 +151,8 @@ func SelectProject() (string, error) {
 
 	selectedLabel := ""
 	selPrompt := &survey.Select{
-		Message: "Select the project to link:",
-		Options: options,
+		Message:  "Select the project to link:",
+		Options:  options,
 		PageSize: 10,
 	}
 	if err := survey.AskOne(selPrompt, &selectedLabel, survey.WithPageSize(10)); err != nil {
@@ -201,6 +201,6 @@ func createNewProject(client *api.Client) (string, error) {
 
 	s.Stop()
 	fmt.Println(ui.ColorGreen(fmt.Sprintf("✔ Project \"%s\" created!", resp.Project.Name)))
-	
+
 	return resp.Project.ID, nil
 }

@@ -1,9 +1,49 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
+import { getProjectEnvironments } from "@/lib/cli-environments";
 
-export async function createProject(name: string) {
+type ProjectUIMode = "simple" | "advanced";
+
+async function resolveProjectEnvironmentForUI(
+  _supabase: Awaited<ReturnType<typeof createClient>>,
+  projectId: string,
+  environmentSlug?: string,
+) {
+  const admin = createAdminClient();
+  const { data: project } = await admin
+    .from("projects")
+    .select("default_environment_slug, ui_mode")
+    .eq("id", projectId)
+    .single();
+
+  const preferredSlug =
+    environmentSlug || project?.default_environment_slug || "development";
+  const environments = await getProjectEnvironments(admin, projectId);
+  const preferredEnv =
+    environments.find((env) => env.slug === preferredSlug) ||
+    environments.find((env) => env.is_default) ||
+    environments[0];
+
+  if (preferredEnv) {
+    return {
+      id: preferredEnv.id,
+      slug: preferredEnv.slug,
+      uiMode: (project?.ui_mode as ProjectUIMode) || "simple",
+    };
+  }
+  return null;
+}
+
+export async function createProject(
+  name: string,
+  options?: {
+    uiMode?: ProjectUIMode;
+    defaultEnvironmentSlug?: "development" | "preview" | "production";
+  },
+) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -43,6 +83,8 @@ export async function createProject(name: string) {
       user_id: user.id,
       name,
       slug: finalSlug,
+      ui_mode: options?.uiMode || "simple",
+      default_environment_slug: options?.defaultEnvironmentSlug || "development",
     })
     .select()
     .single();
@@ -324,6 +366,8 @@ export async function getProjects(bypassCache: boolean = false) {
       name: p.name,
       slug: p.slug,
       user_id: p.user_id,
+      ui_mode: p.ui_mode || "simple",
+      default_environment_slug: p.default_environment_slug || "development",
       owner_username: ownerUsernameMap.get(p.user_id) || null,
       createdAt: p.created_at || new Date().toISOString(), // Fallback for safety
       secretCount: count,
@@ -379,6 +423,7 @@ export async function addVariable(
   projectId: string,
   key: string,
   value: string,
+  environmentSlug?: string,
 ) {
   const supabase = await createClient();
   const {
@@ -401,6 +446,14 @@ export async function addVariable(
 
   // Import encryption utility
   const { encrypt } = await import("@/lib/encryption");
+  const environment = await resolveProjectEnvironmentForUI(
+    supabase,
+    projectId,
+    environmentSlug,
+  );
+  if (!environment) {
+    return { error: "No environment configured for this project." };
+  }
 
   // Encrypt the value before storing
   const encryptedValue = await encrypt(value);
@@ -413,6 +466,7 @@ export async function addVariable(
     .insert({
       user_id: user.id, // Creator
       project_id: projectId,
+      environment_id: environment.id,
       key,
       value: encryptedValue,
       key_id: keyId,
@@ -461,6 +515,7 @@ export async function updateVariable(
   id: string,
   projectId: string,
   updates: { key?: string; value?: string },
+  environmentSlug?: string,
 ) {
   const supabase = await createClient();
   const {
@@ -484,6 +539,14 @@ export async function updateVariable(
       error: "Unauthorized: You do not have permission to update variables.",
     };
   }
+  const environment = await resolveProjectEnvironmentForUI(
+    supabase,
+    projectId,
+    environmentSlug,
+  );
+  if (!environment) {
+    return { error: "No environment configured for this project." };
+  }
 
   // If updating the value, encrypt it first
   const finalUpdates: Record<string, unknown> = {
@@ -502,7 +565,8 @@ export async function updateVariable(
   const { error } = await supabase
     .from("secrets")
     .update(finalUpdates)
-    .eq("id", id);
+    .eq("id", id)
+    .eq("environment_id", environment.id);
   // Remove .eq('user_id') because editors can update secrets they didn't create
 
   if (error) {
@@ -539,7 +603,11 @@ export async function updateVariable(
   return { success: true };
 }
 
-export async function deleteVariable(id: string, projectId: string) {
+export async function deleteVariable(
+  id: string,
+  projectId: string,
+  environmentSlug?: string,
+) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -558,7 +626,20 @@ export async function deleteVariable(id: string, projectId: string) {
     };
   }
 
-  const { error } = await supabase.from("secrets").delete().eq("id", id);
+  const environment = await resolveProjectEnvironmentForUI(
+    supabase,
+    projectId,
+    environmentSlug,
+  );
+  if (!environment) {
+    return { error: "No environment configured for this project." };
+  }
+
+  const { error } = await supabase
+    .from("secrets")
+    .delete()
+    .eq("id", id)
+    .eq("environment_id", environment.id);
   // Remove .eq('user_id')
 
   if (error) {
@@ -610,6 +691,7 @@ export interface BulkImportResult {
 export async function addVariablesBulk(
   projectId: string,
   variables: BulkImportVariable[],
+  environmentSlug?: string,
 ): Promise<BulkImportResult> {
   const supabase = await createClient();
   const {
@@ -629,12 +711,26 @@ export async function addVariablesBulk(
 
   // Import encryption utilities
   const { encrypt, decrypt } = await import("@/lib/encryption");
+  const environment = await resolveProjectEnvironmentForUI(
+    supabase,
+    projectId,
+    environmentSlug,
+  );
+  if (!environment) {
+    return {
+      added: 0,
+      updated: 0,
+      skipped: 0,
+      error: "No environment configured for this project.",
+    };
+  }
 
   // Fetch existing variables for comparison (key, value, and user_id for creator preservation)
   const { data: existingSecrets } = await supabase
     .from("secrets")
     .select("id, key, value, user_id")
-    .eq("project_id", projectId);
+    .eq("project_id", projectId)
+    .eq("environment_id", environment.id);
 
   // Create maps for quick lookup
   const keyToSecretMap = new Map(
@@ -651,6 +747,7 @@ export async function addVariablesBulk(
     id: string;
     user_id: string;
     project_id: string;
+    environment_id: string;
     key: string;
     value: string;
     key_id: string;
@@ -670,6 +767,7 @@ export async function addVariablesBulk(
         id: crypto.randomUUID(),
         user_id: user.id,
         project_id: projectId,
+        environment_id: environment.id,
         key: variable.key,
         value: encryptedValue,
         key_id: keyId,
@@ -690,6 +788,7 @@ export async function addVariablesBulk(
             id: existing.id,
             user_id: existing.user_id, // Preserve original creator
             project_id: projectId,
+            environment_id: environment.id,
             key: variable.key,
             value: encryptedValue,
             key_id: keyId,
@@ -708,6 +807,7 @@ export async function addVariablesBulk(
           id: existing.id,
           user_id: existing.user_id,
           project_id: projectId,
+          environment_id: environment.id,
           key: variable.key,
           value: encryptedValue,
           key_id: keyId,

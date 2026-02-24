@@ -43,6 +43,7 @@ import { Kbd } from "@/components/ui/kbd";
 
 interface ImportEnvDialogProps {
   projectId: string;
+  environmentSlug?: string;
   existingVariables: EnvironmentVariable[];
   trigger?: React.ReactNode;
   open?: boolean;
@@ -58,6 +59,7 @@ const ModKey = () => (
 
 export function ImportEnvDialog({
   projectId,
+  environmentSlug,
   existingVariables,
   trigger,
   open: controlledOpen,
@@ -140,7 +142,11 @@ export function ImportEnvDialog({
         value: v.value,
       }));
 
-      const result = await addVariablesBulk(projectId, variables);
+      const result = await addVariablesBulk(
+        projectId,
+        variables,
+        environmentSlug,
+      );
 
       if (result.error) {
         toast.error(result.error);
@@ -187,24 +193,25 @@ export function ImportEnvDialog({
   // Calculate button state based on stats
   const getButtonState = () => {
     const hasAction = stats.willAdd > 0 || stats.willUpdate > 0;
-    const allSkipped = stats.willSkip === parsedVariables.length && parsedVariables.length > 0;
-    
+    const allSkipped =
+      stats.willSkip === parsedVariables.length && parsedVariables.length > 0;
+
     if (!hasAction && allSkipped) {
       return { text: "All Skipped", disabled: true };
     }
-    
+
     if (stats.willAdd > 0 && stats.willUpdate === 0) {
       return { text: `Import (${stats.willAdd})`, disabled: false };
     }
-    
+
     if (stats.willUpdate > 0 && stats.willAdd === 0) {
       return { text: `Update (${stats.willUpdate})`, disabled: false };
     }
-    
+
     if (stats.willAdd > 0 && stats.willUpdate > 0) {
       return { text: `Import & Update`, disabled: false };
     }
-    
+
     return { text: "Import", disabled: parsedVariables.length === 0 };
   };
 

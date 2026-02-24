@@ -56,12 +56,14 @@ import { useRouter } from "next/navigation";
 
 interface EnvVarTableProps {
   projectId: string;
+  environmentSlug?: string;
   variables: EnvironmentVariable[];
   userRole?: "owner" | "editor" | "viewer";
 }
 
 export function EnvVarTable({
   projectId,
+  environmentSlug,
   variables,
   userRole,
 }: EnvVarTableProps) {
@@ -106,7 +108,11 @@ export function EnvVarTable({
   const handleDeleteConfirm = async () => {
     if (!variableToDelete) return;
 
-    const result = await deleteVariableAction(variableToDelete, projectId);
+    const result = await deleteVariableAction(
+      variableToDelete,
+      projectId,
+      environmentSlug,
+    );
     if (result.error) {
       toast.error(result.error);
       return;
@@ -497,6 +503,7 @@ export function EnvVarTable({
 
       <VariableDialog
         projectId={projectId}
+        environmentSlug={environmentSlug}
         existingVariable={editingVariable || undefined}
         existingVariables={variables}
         open={!!editingVariable}

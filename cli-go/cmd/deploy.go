@@ -3,12 +3,12 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/DinanathDash/Envault/cli-go/internal/api"
-	"github.com/DinanathDash/Envault/cli-go/internal/project"
 	"github.com/DinanathDash/Envault/cli-go/internal/ui"
 	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
@@ -18,48 +18,34 @@ var forceDeploy bool
 var dryRun bool
 
 var deployCmd = &cobra.Command{
-	Use:   "deploy",
-	Short: "Push secrets from .env to Envault",
+	Use:     "deploy",
+	Aliases: []string{"push"},
+	Short:   "Push secrets from .env to Envault",
 	Run: func(cmd *cobra.Command, args []string) {
 		// 1. Get Project ID
-		projectId := projectFlag
-		if projectId == "" {
-			var err error
-			projectId, err = project.GetProjectId()
-			if err != nil {
-				// Silent fail
-			}
-		}
+		projectId := ensureProjectID()
 
 		if projectId == "" {
 			fmt.Println(ui.ColorYellow("No project linked."))
-			// Auto-Select project
-			var err error
-			projectId, err = project.SelectProject()
-			if err != nil {
-				if err == project.ErrUserCancelled {
-					fmt.Println(ui.ColorYellow("\nOperation cancelled."))
-					os.Exit(0)
-				}
-				fmt.Printf("Error selecting project: %v\n", err)
-				os.Exit(1)
-			}
-			if projectId == "" {
-				fmt.Println("Operation cancelled.")
-				os.Exit(0)
-			}
-			
-			// Save selection
-			config := project.Config{ProjectId: projectId}
-			data, _ := json.MarshalIndent(config, "", "  ")
-			_ = os.WriteFile("envault.json", data, 0644)
+			projectId = selectProjectAndPersistOrExit()
 			fmt.Println(ui.ColorGreen(fmt.Sprintf("✔ Project linked! (ID: %s)\n", projectId)))
 		}
+		if !isValidProjectID(projectId) {
+			fmt.Println(ui.ColorRed("Invalid project ID. Expected a UUID."))
+			os.Exit(1)
+		}
+		targetEnv := resolveTargetEnvironment()
+		targetFile := resolveEnvFile(targetEnv, fileFlag)
 
 		// 2. Read .env manually to be lenient
-		content, err := os.ReadFile(".env")
+		content, err := os.ReadFile(targetFile)
 		if err != nil {
-			fmt.Println(ui.ColorRed("Error reading .env file"))
+			if os.IsNotExist(err) {
+				fmt.Println(ui.ColorRed(fmt.Sprintf("Local env file not found: %s", targetFile)))
+				fmt.Println(ui.ColorYellow("Provide a file explicitly with --file, or map one with `envault env map --env <name> --file <path>`."))
+			} else {
+				fmt.Println(ui.ColorRed(fmt.Sprintf("Error reading %s: %v", targetFile, err)))
+			}
 			os.Exit(1)
 		}
 
@@ -73,7 +59,7 @@ var deployCmd = &cobra.Command{
 			}
 			// It's a comment
 			if strings.HasPrefix(trimmed, "#") {
-				continue 
+				continue
 			}
 			// It has a key=value pair
 			if strings.Contains(trimmed, "=") {
@@ -88,7 +74,7 @@ var deployCmd = &cobra.Command{
 		}
 
 		if len(envMap) == 0 {
-			fmt.Println(ui.ColorYellow("No secrets found in .env"))
+			fmt.Println(ui.ColorYellow(fmt.Sprintf("No secrets found in %s", targetFile)))
 			return
 		}
 
@@ -97,8 +83,28 @@ var deployCmd = &cobra.Command{
 			secrets = append(secrets, Secret{Key: k, Value: v})
 		}
 
+		if diff, err := computeDiff(projectId, targetEnv, targetFile); err == nil {
+			fmt.Printf(
+				"%s %d additions, %d deletions, %d modifications, %d unchanged\n",
+				ui.ColorBold("Diff Summary:"),
+				len(diff.Additions),
+				len(diff.Deletions),
+				len(diff.Modifications),
+				diff.Unchanged,
+			)
+			for _, k := range diff.Additions {
+				fmt.Println(ui.ColorGreen("+ " + k))
+			}
+			for _, k := range diff.Deletions {
+				fmt.Println(ui.ColorRed("- " + k))
+			}
+			for _, k := range diff.Modifications {
+				fmt.Println(ui.ColorYellow("~ " + k))
+			}
+		}
+
 		if dryRun {
-			fmt.Println(ui.ColorBlue(fmt.Sprintf("Dry Run: Would deploy %d secrets to project %s", len(secrets), projectId)))
+			fmt.Println(ui.ColorBlue(fmt.Sprintf("Dry Run: Would deploy %d secrets to %s (%s)", len(secrets), projectId, targetEnv)))
 			for _, s := range secrets {
 				fmt.Printf("- %s\n", s.Key)
 			}
@@ -110,7 +116,7 @@ var deployCmd = &cobra.Command{
 			// Fetch project name for warning
 			client := api.NewClient()
 			projectName := "Envault"
-			
+
 			projectsBytes, err := client.Get("/projects")
 			if err == nil {
 				var pResp ProjectResponse
@@ -132,7 +138,7 @@ var deployCmd = &cobra.Command{
 			warningMsg := fmt.Sprintf(
 				"%s\n\n%s%s%s%s\n\n%s%s%s\n\n%s\n%s",
 				ui.ColorRed("WARNING: OVERWRITING REMOTE SECRETS"),
-				"You are about to ", ui.ColorRed("DEPLOY"), " local variables to your project: ",
+				"You are about to ", ui.ColorRed("DEPLOY"), fmt.Sprintf(" local variables from %s to your project: ", targetFile),
 				ui.ColorCyan(projectName),
 				"Existing secrets in the project will be ", ui.ColorRed("OVERWRITTEN"), " by values in your .env.",
 				ui.ColorDim("We recommend checking the dashboard for differences:"),
@@ -143,7 +149,7 @@ var deployCmd = &cobra.Command{
 
 			confirm := false
 			prompt := &survey.Confirm{
-				Message: fmt.Sprintf("Are you sure you want to deploy %d secrets to the project?", len(secrets)),
+				Message: fmt.Sprintf("Deploy %d secrets to %s environment?", len(secrets), targetEnv),
 			}
 			if err := survey.AskOne(prompt, &confirm); err != nil {
 				fmt.Println(ui.ColorYellow("\nOperation cancelled."))
@@ -158,23 +164,24 @@ var deployCmd = &cobra.Command{
 
 		// 4. Push Secrets
 		client := api.NewClient()
-		s := ui.NewSpinner("Encrypting and deploying secrets...")
+		s := ui.NewSpinner(fmt.Sprintf("Encrypting and deploying secrets (%s)...", targetEnv))
 		s.Start()
 
 		payload := map[string]interface{}{
 			"secrets": secrets,
 		}
 
-		_, err = client.Post(fmt.Sprintf("/projects/%s/secrets", projectId), payload)
+		path := fmt.Sprintf("/projects/%s/secrets?environment=%s", projectId, url.QueryEscape(targetEnv))
+		_, err = client.Post(path, payload)
 		if err != nil {
 			s.Stop()
 			fmt.Println(ui.ColorRed("Deploy failed."))
-			fmt.Println(ui.ColorRed(fmt.Sprintf("Error: %v", err)))
+			fmt.Println(ui.ColorRed(classifyAPIError(err)))
 			os.Exit(1)
 		}
-		
+
 		s.Stop()
-		fmt.Println(ui.ColorGreen(fmt.Sprintf("✔ Successfully deployed %d secrets!", len(secrets))))
+		fmt.Println(ui.ColorGreen(fmt.Sprintf("✔ Successfully deployed %d secrets to %s!", len(secrets), targetEnv)))
 	},
 }
 
@@ -183,4 +190,5 @@ func init() {
 	deployCmd.Flags().BoolVarP(&forceDeploy, "force", "f", false, "Deploy without confirmation")
 	deployCmd.Flags().BoolVar(&dryRun, "dry-run", false, "Show what would be deployed without actually deploying")
 	deployCmd.Flags().StringVarP(&projectFlag, "project", "p", "", "Project ID")
+	deployCmd.Flags().StringVar(&fileFlag, "file", "", "Local .env file path override")
 }
