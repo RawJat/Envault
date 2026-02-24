@@ -47,6 +47,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { deleteProject as deleteProjectAction } from "@/app/project-actions";
 import { ShareProjectDialog } from "@/components/dashboard/share-project-dialog";
@@ -69,8 +70,25 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [idCopied, setIdCopied] = useState(false);
+  const activeEnvironment = project.active_environment_slug || "development";
+  const isAdvancedMode = project.ui_mode === "advanced";
+  const availableEnvironments = React.useMemo(
+    () => project.environments || [],
+    [project.environments],
+  );
 
   const canEdit = project.role === "owner" || project.role === "editor";
+  const projectBasePath =
+    project.owner_username && project.role !== "owner"
+      ? `/${project.owner_username}/${project.slug}`
+      : `/project/${project.slug}`;
+
+  useEffect(() => {
+    if (!isAdvancedMode || availableEnvironments.length === 0) return;
+    availableEnvironments.forEach((env) => {
+      router.prefetch(`${projectBasePath}?env=${encodeURIComponent(env.slug)}`);
+    });
+  }, [isAdvancedMode, availableEnvironments, router, projectBasePath]);
 
   // Listen for global command context
   useEffect(() => {
@@ -156,6 +174,11 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
     document.body.removeChild(a);
   };
 
+  const handleEnvironmentChange = (envSlug: string) => {
+    if (!isAdvancedMode) return;
+    router.replace(`${projectBasePath}?env=${encodeURIComponent(envSlug)}`);
+  };
+
   // Extract the settings dropdown content into a variable or separate component to pass to actions
   const projectActions =
     project.role === "owner" || project.role === "editor" ? (
@@ -205,6 +228,28 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
             <h2 className="text-2xl font-semibold tracking-tight">
               Variables ({project.variables.length})
             </h2>
+            <p className="text-xs text-muted-foreground mt-1">
+              Mode: {project.ui_mode || "simple"} | Environment:{" "}
+              {project.active_environment_slug ||
+                project.default_environment_slug ||
+                "development"}
+            </p>
+            {isAdvancedMode && availableEnvironments.length > 0 && (
+              <div className="mt-3">
+                <Tabs
+                  value={activeEnvironment}
+                  onValueChange={handleEnvironmentChange}
+                >
+                  <TabsList>
+                    {availableEnvironments.map((env) => (
+                      <TabsTrigger key={env.id} value={env.slug}>
+                        {env.name}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                </Tabs>
+              </div>
+            )}
             <div className="flex items-center gap-1.5 mt-1">
               <TooltipProvider delayDuration={200}>
                 <Tooltip>
@@ -221,9 +266,13 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
                     <p className="text-xs text-muted-foreground mt-0.5">
                       Used for CLI authentication and API integration.
                       <br />
+                      Active environment:{" "}
+                      <span className="font-mono">{activeEnvironment}</span>
+                      <br />
                       Run{" "}
                       <code className="font-mono bg-muted px-1 rounded">
-                        envault pull --project {project.id}
+                        envault pull --project {project.id} --env{" "}
+                        {activeEnvironment}
                       </code>
                     </p>
                   </TooltipContent>
@@ -266,6 +315,7 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
               <>
                 <ImportEnvDialog
                   projectId={projectId}
+                  environmentSlug={activeEnvironment}
                   existingVariables={project.variables}
                   open={isImportDialogOpen}
                   onOpenChange={setIsImportDialogOpen}
@@ -278,6 +328,7 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
                 />
                 <VariableDialog
                   projectId={projectId}
+                  environmentSlug={activeEnvironment}
                   existingVariables={project.variables}
                   open={isAddDialogOpen}
                   onOpenChange={setIsAddDialogOpen}
@@ -298,6 +349,7 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
 
         <EnvVarTable
           projectId={projectId}
+          environmentSlug={activeEnvironment}
           variables={project.variables}
           userRole={project.role}
         />

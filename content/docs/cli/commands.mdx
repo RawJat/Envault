@@ -1,75 +1,198 @@
 ---
 title: Commands
-description: Detailed CLI command reference
+description: Full command reference for Envault CLI
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
 
 # CLI Commands
 
+## Global Usage
+
+```bash
+envault [command] [flags]
+```
+
+Global flags:
+
+- `--config <path>`: custom CLI config file
+- `-e, --env <slug>`: target environment
+- `-v, --version`: print version
+
+---
+
 ## `login`
 
-Authenticates the CLI with your Envault instance.
+Authenticate with Envault using secure device flow.
 
 ```bash
 envault login
 ```
 
-**Behavior**:
-This opens a browser window to complete the device authorization flow. Once confirmed, an access token is stored securely on your machine.
+This opens a browser for approval and stores a personal access token in local CLI config.
 
 <Callout type="info">
-  To connect to a custom or local instance, set the `ENVAULT_API_URL`
-  environment variable before running `login`.
+  To use a local/server instance, set `ENVAULT_API_URL` before `login`.
 </Callout>
 
 ---
 
 ## `init`
 
-Initializes a new project association in the current directory.
+Initialize current directory and link/select a project.
 
 ```bash
 envault init
 ```
 
-**Behavior**:
-
-- Prompts you to select an existing project or create a new one.
-- Creates a `envault.json` (or similar config) mapping the current directory to the project ID.
+If no project is linked, operational commands (`pull`, `diff`, `deploy`, `run`) can also trigger project selection.
 
 ---
 
 ## `pull`
 
-Downloads secrets from the cloud to your local environment file.
+Fetch remote secrets and write them to a local env file.
 
 ```bash
-envault pull [filename]
+envault pull --project <project-id> --env preview --file .env.preview
 ```
 
-**Arguments**:
+Flags:
 
-- `filename`: (Optional) The file to write to. Defaults to `.env`.
+- `-p, --project <id>`: project UUID
+- `--file <path>`: output file path override
+- `-f, --force`: skip overwrite confirmation
 
-**Options**:
+File resolution (if `--file` not provided):
 
-- `--environment <env>`: Specify which environment to pull (e.g., `production`, `development`). Defaults to `development`.
-- `--force`: Overwrite local changes without asking.
+1. mapped file for environment
+2. auto-detected `.env*` file
+3. fallback `.env`
 
 ---
 
 ## `deploy`
 
-Uploads local secrets to the cloud.
+Push local env file values to remote vault for target environment.
 
 ```bash
-envault deploy [filename]
+envault deploy --env production --file .env.production
 ```
 
-**Arguments**:
+Alias: `envault push`
 
-- `filename`: (Optional) The file to read from. Defaults to `.env`.
+Behavior:
 
-**Behavior**:
-Parses your `.env` file and encrypts the values before sending them to the API.
+- Reads local env file
+- Computes and prints diff summary first
+- Prompts confirmation unless `--force`
+- Sends secrets to target environment
+
+Flags:
+
+- `-p, --project <id>`: project UUID
+- `--file <path>`: local env file override
+- `--dry-run`: print what would be pushed
+- `-f, --force`: skip confirmation
+
+---
+
+## `status`
+
+Show current session and execution context.
+
+```bash
+envault status --project <project-id>
+```
+
+Output includes:
+
+- authenticated user email
+- resolved project and role
+- permission scope
+- default environment
+- active target environment
+- resolved local env file
+
+---
+
+## `diff`
+
+Compare local file against remote secrets for one environment.
+
+```bash
+envault diff --env production --file .env.production
+```
+
+Output markers:
+
+- Green `+`: additions (local only)
+- Red `-`: deletions (remote only)
+- Yellow `~`: modifications (same key, different value)
+
+---
+
+## `run`
+
+Run a command with target environment secrets injected into process env.
+
+```bash
+envault run --env production -- npm start
+```
+
+Example:
+
+```bash
+envault run --project <project-id> --env preview -- printenv API_URL
+```
+
+---
+
+## `env`
+
+Manage local environment mappings and default environment.
+
+```bash
+envault env map --env development --file .env.development
+envault env default --env development
+envault env unmap --env preview
+```
+
+Subcommands:
+
+- `env map --env <slug> --file <path>`
+- `env unmap --env <slug>`
+- `env default --env <slug>`
+
+---
+
+## `completion`
+
+Generate shell completion scripts.
+
+```bash
+envault completion zsh
+envault completion bash
+envault completion fish
+envault completion powershell
+```
+
+---
+
+## `version`
+
+Print CLI version.
+
+```bash
+envault version
+envault --version
+envault -v
+```
+
+---
+
+## Error Behavior
+
+- Invalid/missing auth token returns `401` and exits non-zero.
+- Unauthorized access returns `403` and exits non-zero.
+- Invalid `--project` value (non-UUID) is rejected client-side before API call.

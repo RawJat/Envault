@@ -50,6 +50,7 @@ type VariableValues = z.infer<typeof variableSchema>;
 
 interface VariableDialogProps {
   projectId: string;
+  environmentSlug?: string;
   existingVariable?: EnvironmentVariable;
   existingVariables?: EnvironmentVariable[];
   trigger?: React.ReactNode;
@@ -59,6 +60,7 @@ interface VariableDialogProps {
 
 export function VariableDialog({
   projectId,
+  environmentSlug,
   existingVariable,
   existingVariables = [],
   trigger,
@@ -131,6 +133,7 @@ export function VariableDialog({
           key: data.key,
           value: data.value,
         },
+        environmentSlug,
       );
       if (result.error) {
         toast.error(result.error);
@@ -142,10 +145,15 @@ export function VariableDialog({
 
       if (collision) {
         // Upsert/Update existing
-        const result = await updateVariableAction(collision.id, projectId, {
-          key: data.key,
-          value: data.value,
-        });
+        const result = await updateVariableAction(
+          collision.id,
+          projectId,
+          {
+            key: data.key,
+            value: data.value,
+          },
+          environmentSlug,
+        );
         if (result.error) {
           toast.error(result.error);
           return;
@@ -157,6 +165,7 @@ export function VariableDialog({
           projectId,
           data.key,
           data.value,
+          environmentSlug,
         );
         if (result.error) {
           toast.error(result.error);

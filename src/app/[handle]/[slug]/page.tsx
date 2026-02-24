@@ -2,16 +2,23 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect, notFound } from "next/navigation";
 import ProjectDetailView from "@/components/editor/project-detail-view";
+import { getProjectEnvironments } from "@/lib/cli-environments";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 interface PageProps {
   params: Promise<{ handle: string; slug: string }>;
+  searchParams: Promise<{ env?: string }>;
 }
 
-export default async function SharedProjectPage({ params }: PageProps) {
+export default async function SharedProjectPage({
+  params,
+  searchParams,
+}: PageProps) {
   const { handle, slug } = await params;
+  const query = await searchParams;
+  const requestedEnvSlug = query?.env;
 
   // Kick off auth + profile lookup in parallel — both are independent
   const supabase = await createClient();
@@ -64,6 +71,24 @@ export default async function SharedProjectPage({ params }: PageProps) {
     notFound();
   }
 
+  const envList = await getProjectEnvironments(adminSupabase, id);
+  const defaultEnvironmentSlug =
+    project.default_environment_slug || "development";
+  const targetSlug =
+    project.ui_mode === "advanced" && requestedEnvSlug
+      ? requestedEnvSlug
+      : defaultEnvironmentSlug;
+  const preferredEnvironment =
+    envList.find((env) => env.slug === targetSlug) ||
+    envList.find((env) => env.slug === defaultEnvironmentSlug) ||
+    envList.find((env) => env.is_default) ||
+    envList[0];
+
+  const activeEnvironment = preferredEnvironment;
+  if (!activeEnvironment) {
+    notFound();
+  }
+
   // Fetch secrets + sharedSecrets in parallel (both need project.id)
   const [
     { data: secrets, error: secretsError },
@@ -73,6 +98,7 @@ export default async function SharedProjectPage({ params }: PageProps) {
       .from("secrets")
       .select("*")
       .eq("project_id", id)
+      .eq("environment_id", activeEnvironment.id)
       .order("created_at", { ascending: true }),
     supabase
       .from("secret_shares")
@@ -92,7 +118,18 @@ export default async function SharedProjectPage({ params }: PageProps) {
   const filteredSharedSecrets =
     sharedSecrets?.filter(
       (share) =>
-        (share.secrets as unknown as { project_id: string }).project_id === id,
+        (
+          share.secrets as unknown as {
+            project_id: string;
+            environment_id: string;
+          }
+        ).project_id === id &&
+        (
+          share.secrets as unknown as {
+            project_id: string;
+            environment_id: string;
+          }
+        ).environment_id === activeEnvironment.id,
     ) || [];
 
   // For owners/editors: which secrets are already shared with others?
@@ -178,6 +215,16 @@ export default async function SharedProjectPage({ params }: PageProps) {
     name: project.name,
     slug: project.slug,
     user_id: project.user_id,
+    ui_mode: project.ui_mode || "simple",
+    default_environment_slug:
+      project.default_environment_slug || activeEnvironment.slug,
+    active_environment_slug: activeEnvironment.slug,
+    environments: envList.map((env) => ({
+      id: env.id,
+      slug: env.slug,
+      name: env.name,
+      is_default: env.is_default,
+    })),
     owner_username: handle,
     createdAt: project.created_at,
     role,

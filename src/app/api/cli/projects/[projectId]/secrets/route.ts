@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { v4 as uuidv4 } from "uuid";
 import { PushSecretsSchema } from "@/lib/schemas";
+import { getProjectRole } from "@/lib/permissions";
+import { resolveProjectEnvironment } from "@/lib/cli-environments";
 
 export async function GET(
   request: Request,
@@ -17,13 +19,29 @@ export async function GET(
   const userId = result;
 
   const { projectId } = await params;
-
-  // 1. Determine Access Level
-  // For CLI secret access, we need to distinguish between:
-  // - Full project access (owner/member) -> all secrets
-  // - Granular access (secret shares only) -> only shared secrets
+  const requestedEnvironment = new URL(request.url).searchParams.get(
+    "environment",
+  );
 
   const supabase = createAdminClient();
+  let resolvedEnvironment;
+  try {
+    resolvedEnvironment = await resolveProjectEnvironment(
+      supabase,
+      projectId,
+      requestedEnvironment,
+    );
+  } catch (e) {
+    return NextResponse.json(
+      {
+        error:
+          e instanceof Error
+            ? e.message
+            : "Environment not found for the requested project",
+      },
+      { status: 404 },
+    );
+  }
 
   // Check if user has full project access (owner or member)
   const { data: project } = await supabase
@@ -57,7 +75,8 @@ export async function GET(
     const { data: secrets, error } = await supabase
       .from("secrets")
       .select("id, key, value")
-      .eq("project_id", projectId);
+      .eq("project_id", projectId)
+      .eq("environment_id", resolvedEnvironment.environment.id);
 
     if (error)
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -67,9 +86,12 @@ export async function GET(
     // Fetch only the secrets specifically shared with this user
     const { data: sharesFiltered } = await supabase
       .from("secret_shares")
-      .select("secret_id, secrets!inner(id, key, value, project_id)")
+      .select(
+        "secret_id, secrets!inner(id, key, value, project_id, environment_id)",
+      )
       .eq("user_id", userId)
-      .eq("secrets.project_id", projectId);
+      .eq("secrets.project_id", projectId)
+      .eq("secrets.environment_id", resolvedEnvironment.environment.id);
 
     if (sharesFiltered && sharesFiltered.length > 0) {
       // Handle Supabase join returning array or object
@@ -84,8 +106,10 @@ export async function GET(
     } else {
       // No access
       return NextResponse.json(
-        { error: "Project not found or access denied" },
-        { status: 404 },
+        {
+          error: `Forbidden: no access to '${resolvedEnvironment.environment.slug}' environment`,
+        },
+        { status: 403 },
       );
     }
   }
@@ -210,7 +234,10 @@ export async function GET(
     console.warn("Non-blocking CLI pull email error:", err);
   }
 
-  return NextResponse.json({ secrets: finalSecrets });
+  return NextResponse.json({
+    secrets: finalSecrets,
+    environment: resolvedEnvironment.environment.slug,
+  });
 }
 
 export async function POST(
@@ -224,6 +251,9 @@ export async function POST(
   const userId = result;
 
   const { projectId } = await params;
+  const requestedEnvironment = new URL(request.url).searchParams.get(
+    "environment",
+  );
   const body = await request.json();
   const validation = PushSecretsSchema.safeParse(body);
 
@@ -239,9 +269,26 @@ export async function POST(
   const { secrets } = validation.data;
 
   const supabase = createAdminClient();
+  let resolvedEnvironment;
+  try {
+    resolvedEnvironment = await resolveProjectEnvironment(
+      supabase,
+      projectId,
+      requestedEnvironment,
+    );
+  } catch (e) {
+    return NextResponse.json(
+      {
+        error:
+          e instanceof Error
+            ? e.message
+            : "Environment not found for the requested project",
+      },
+      { status: 404 },
+    );
+  }
 
   // Verify Access: Owner OR Editor
-  const { getProjectRole } = await import("@/lib/permissions");
   const role = await getProjectRole(supabase, projectId, userId);
 
   if (role !== "owner" && role !== "editor") {
@@ -256,7 +303,8 @@ export async function POST(
   const { data: existingSecrets } = await supabase
     .from("secrets")
     .select("id, key, user_id")
-    .eq("project_id", projectId);
+    .eq("project_id", projectId)
+    .eq("environment_id", resolvedEnvironment.environment.id);
 
   const keyMap = new Map(
     (existingSecrets || []).map((s) => [
@@ -275,6 +323,7 @@ export async function POST(
         id: existing ? existing.id : uuidv4(),
         user_id: existing ? existing.user_id : userId, // Preserve original creator or assign to current deployer
         project_id: projectId,
+        environment_id: resolvedEnvironment.environment.id,
         key: s.key,
         value: encryptedValue,
         key_id: keyId,
@@ -336,5 +385,9 @@ export async function POST(
     revalidatePath(`/project/${projectId}`);
   }
 
-  return NextResponse.json({ success: true, count: upsertData.length });
+  return NextResponse.json({
+    success: true,
+    count: upsertData.length,
+    environment: resolvedEnvironment.environment.slug,
+  });
 }

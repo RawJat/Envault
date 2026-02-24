@@ -1,16 +1,14 @@
 ---
 title: CLI Overview
-description: Managing secrets from the terminal
+description: Install, authenticate, and use environment-scoped secret workflows from your terminal
 ---
 
-import { Terminal } from "lucide-react";
 import { Tab, Tabs } from "fumadocs-ui/components/tabs";
-import { Step, Steps } from "fumadocs-ui/components/steps";
 import { Callout } from "fumadocs-ui/components/callout";
 
 # Envault CLI
 
-The Envault CLI is the primary way developers interact with secrets in their daily workflow. It allows you to push and pull secrets without leaving your terminal.
+The Envault CLI is the fastest way to work with project secrets across `development`, `preview`, and `production` without leaving your terminal.
 
 ## Installation
 
@@ -42,41 +40,80 @@ Envault is available as an NPM package, allowing you to use it with any Node.js 
   <Tab value="bun">```bash bun add -g @dinanathdash/envault ```</Tab>
 </Tabs>
 
-Or run instantly via `npx`:
+You can also run it directly without global install:
 
 ```bash
 npx @dinanathdash/envault <command>
 ```
 
-### Go Developers
+## Global Flags
 
-If you have Go installed, you can install the CLI directly from source.
+All commands accept these global flags:
+
+- `--config <path>`: Use a specific config file instead of `~/.envault.yaml`
+- `-e, --env <slug>`: Target environment (`development`, `preview`, `production`, or any valid project environment slug)
+- `-v, --version`: Print CLI version
+
+## Quick Workflow
 
 ```bash
-go install github.com/DinanathDash/Envault/cli-go@latest
+# 1) Authenticate once
+envault login
+
+# 2) Link current directory to a project
+envault init
+
+# 3) Inspect current context (user, role, project, environment)
+envault status
+
+# 4) Pull one environment to local file
+envault pull --env preview --file .env.preview
+
+# 5) Compare local vs remote before deploy
+envault diff --env preview --file .env.preview
+
+# 6) Deploy to target environment
+envault deploy --env preview --file .env.preview
 ```
 
-### Manual Installation
+See [Commands](/docs/cli/commands) for full details.
 
-Follow these steps to install the binary manually.
+## Environment-Scoped Local Files
 
-<ManualInstallSelector />
+When a command needs a local env file (`pull`, `diff`, `deploy`), Envault resolves file path in this order:
 
-## Workflow
+1. `--file`
+2. `envault env map --env <slug> --file <path>`
+3. Auto-detected `.env*` candidate in current directory (example/sample/template files are ignored)
+4. Fallback `.env`
 
-The typical developer workflow looks like this:
+Recommended setup:
 
-1. **Login**: Authenticate your machine.
-2. **Init**: Link a folder to an Envault project.
-3. **Pull**: Get the latest secrets.
-4. **Dev**: Work on your code.
-5. **Push**: Upload new secrets if you added any.
+```bash
+envault env map --env development --file .env.development
+envault env map --env preview --file .env.preview
+envault env map --env production --file .env.production
+envault env default --env development
+```
 
-See the [Commands Reference](/docs/cli/commands) for details on each command.
+Then run commands without repeating `--file`.
+
+## Command Index
+
+- `envault login`: authenticate via device flow
+- `envault init`: link current directory to a project
+- `envault status`: show auth/project/environment context
+- `envault pull`: fetch remote secrets into local file
+- `envault diff`: show local vs remote key/value drift
+- `envault deploy` or `envault push`: push local secrets to remote
+- `envault run -- <cmd>`: run a command with injected secrets
+- `envault env map|unmap|default`: manage local file mappings/default env
+- `envault version` or `envault --version`: print version
+- `envault completion <shell>`: generate shell completion
 
 ## Automatic Updates
 
-The Envault CLI features a built-in, non-blocking update checker. It querys the registry for the latest release in the background so it never slows down your workflow. If an update is available, you will receive a clean notification at the bottom of your output instructing you on how to update based on your specific package manager.
+Envault performs a non-blocking update check after commands and shows a hint when a newer release is available.
 
 ## Environment Variables
 

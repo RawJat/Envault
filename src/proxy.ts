@@ -5,6 +5,11 @@ import { verifyHmacSignature } from "@/lib/hmac";
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  const matchesRoute = (path: string, route: string) => {
+    if (route === "/") return path === "/";
+    return path === route || path.startsWith(`${route}/`);
+  };
+
   // Bypass middleware for static files and images immediately
   if (
     pathname.startsWith("/_next") ||
@@ -30,7 +35,7 @@ export async function proxy(request: NextRequest) {
   ];
 
   const isPublicApi = publicApiRoutes.some((route) =>
-    pathname.startsWith(route),
+    matchesRoute(pathname, route),
   );
 
   // HMAC Verification for mutations
@@ -113,7 +118,7 @@ export async function proxy(request: NextRequest) {
   ];
 
   const isProtectedRoute = protectedRoutes.some((route) =>
-    pathname.startsWith(route),
+    matchesRoute(pathname, route),
   );
 
   // Define public routes that don't require auth
@@ -132,7 +137,7 @@ export async function proxy(request: NextRequest) {
   ];
 
   const isPublicRoute = publicRoutes.some((route) =>
-    pathname.startsWith(route),
+    matchesRoute(pathname, route),
   );
 
   // Dynamic [handle]/[slug] routes (e.g. /username/project-slug) need session refreshed

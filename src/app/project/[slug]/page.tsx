@@ -2,17 +2,22 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect, notFound } from "next/navigation";
 import ProjectDetailView from "@/components/editor/project-detail-view";
+import { getProjectEnvironments } from "@/lib/cli-environments";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 interface PageProps {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ env?: string }>;
 }
 
-export default async function ProjectPage({ params }: PageProps) {
+export default async function ProjectPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
+  const query = await searchParams;
+  const requestedEnvSlug = query?.env;
   const supabase = await createClient();
+  const adminSupabase = createAdminClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -44,11 +49,30 @@ export default async function ProjectPage({ params }: PageProps) {
     notFound();
   }
 
+  const envList = await getProjectEnvironments(adminSupabase, id);
+  const defaultEnvironmentSlug =
+    project.default_environment_slug || "development";
+  const targetSlug =
+    project.ui_mode === "advanced" && requestedEnvSlug
+      ? requestedEnvSlug
+      : defaultEnvironmentSlug;
+  const preferredEnvironment =
+    envList.find((env) => env.slug === targetSlug) ||
+    envList.find((env) => env.slug === defaultEnvironmentSlug) ||
+    envList.find((env) => env.is_default) ||
+    envList[0];
+
+  const activeEnvironment = preferredEnvironment;
+  if (!activeEnvironment) {
+    notFound();
+  }
+
   // Fetch secrets separately
   const { data: secrets, error: secretsError } = await supabase
     .from("secrets")
     .select("*")
     .eq("project_id", id)
+    .eq("environment_id", activeEnvironment.id)
     .order("created_at", { ascending: true });
 
   if (secretsError) {
@@ -80,7 +104,18 @@ export default async function ProjectPage({ params }: PageProps) {
   const filteredSharedSecrets =
     sharedSecrets?.filter(
       (share) =>
-        (share.secrets as unknown as { project_id: string }).project_id === id,
+        (
+          share.secrets as unknown as {
+            project_id: string;
+            environment_id: string;
+          }
+        ).project_id === id &&
+        (
+          share.secrets as unknown as {
+            project_id: string;
+            environment_id: string;
+          }
+        ).environment_id === activeEnvironment.id,
     ) || [];
 
   // For owners/editors, we need to check which secrets are actually shared with others
@@ -170,6 +205,16 @@ export default async function ProjectPage({ params }: PageProps) {
     name: project.name,
     slug: project.slug,
     user_id: project.user_id,
+    ui_mode: project.ui_mode || "simple",
+    default_environment_slug:
+      project.default_environment_slug || activeEnvironment.slug,
+    active_environment_slug: activeEnvironment.slug,
+    environments: envList.map((env) => ({
+      id: env.id,
+      slug: env.slug,
+      name: env.name,
+      is_default: env.is_default,
+    })),
     createdAt: project.created_at,
     role: role,
     variables: await Promise.all(
