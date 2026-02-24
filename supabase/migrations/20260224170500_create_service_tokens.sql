@@ -21,7 +21,7 @@ create policy "Users can view service tokens for their projects"
     exists (
       select 1 from public.projects
       where projects.id = service_tokens.project_id
-      and projects.user_id = auth.uid()
+      and projects.user_id = (select auth.uid())
     )
   );
 
@@ -31,7 +31,7 @@ create policy "Users can insert service tokens for their projects"
     exists (
       select 1 from public.projects
       where projects.id = project_id
-      and projects.user_id = auth.uid()
+      and projects.user_id = (select auth.uid())
     )
   );
 
@@ -41,6 +41,6 @@ create policy "Users can delete service tokens for their projects"
     exists (
       select 1 from public.projects
       where projects.id = service_tokens.project_id
-      and projects.user_id = auth.uid()
+      and projects.user_id = (select auth.uid())
     )
   );

@@ -50,3 +50,6 @@ cli-go/envault
 cli-go/envault.json
 cli-go/out.txt
 cli-go/.env
+
+# Generated source files (fumadocs-mdx)
+.source/
