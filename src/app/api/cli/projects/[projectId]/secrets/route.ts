@@ -13,10 +13,9 @@ export async function GET(
   { params }: { params: Promise<{ projectId: string }> },
 ) {
   const result = await validateCliToken(request);
-  if (typeof result !== "string") {
-    return result; // Return the error response
+  if ('status' in result) {
+    return result;
   }
-  const userId = result;
 
   const { projectId } = await params;
   const requestedEnvironment = new URL(request.url).searchParams.get(
@@ -43,35 +42,14 @@ export async function GET(
     );
   }
 
-  // Check if user has full project access (owner or member)
-  const { data: project } = await supabase
-    .from("projects")
-    .select("user_id")
-    .eq("id", projectId)
-    .single();
+  let targetSecrets: { id: string; key: string; value: string; _originalId?: string; _originalValue?: string }[] = [];
+  let userId = '';
 
-  let hasFullProjectAccess = false;
-  if (project && project.user_id === userId) {
-    hasFullProjectAccess = true; // Owner
-  } else {
-    // Check if member
-    const { data: member } = await supabase
-      .from("project_members")
-      .select("role")
-      .eq("project_id", projectId)
-      .eq("user_id", userId)
-      .single();
-
-    if (member) {
-      hasFullProjectAccess = true; // Member
+  if (result.type === 'service') {
+    if (result.projectId !== projectId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
-  }
-
-  let targetSecrets: { id: string; key: string; value: string }[] = [];
-
-  if (hasFullProjectAccess) {
-    // Has Project-Level Access (Owner/Member)
-    // Fetch ALL secrets for project
+    // Fetch all secrets for this project and environment
     const { data: secrets, error } = await supabase
       .from("secrets")
       .select("id, key, value")
@@ -82,35 +60,75 @@ export async function GET(
       return NextResponse.json({ error: error.message }, { status: 500 });
     targetSecrets = secrets || [];
   } else {
-    // Check for Granular Secret Shares
-    // Fetch only the secrets specifically shared with this user
-    const { data: sharesFiltered } = await supabase
-      .from("secret_shares")
-      .select(
-        "secret_id, secrets!inner(id, key, value, project_id, environment_id)",
-      )
-      .eq("user_id", userId)
-      .eq("secrets.project_id", projectId)
-      .eq("secrets.environment_id", resolvedEnvironment.environment.id);
+    userId = result.userId;
 
-    if (sharesFiltered && sharesFiltered.length > 0) {
-      // Handle Supabase join returning array or object
-      targetSecrets = sharesFiltered.map((s) => {
-        const secret = Array.isArray(s.secrets) ? s.secrets[0] : s.secrets;
-        return {
-          id: secret.id,
-          key: secret.key,
-          value: secret.value,
-        };
-      });
+    // Check if user has full project access (owner or member)
+    const { data: project } = await supabase
+      .from("projects")
+      .select("user_id")
+      .eq("id", projectId)
+      .single();
+
+    let hasFullProjectAccess = false;
+    if (project && project.user_id === userId) {
+      hasFullProjectAccess = true; // Owner
     } else {
-      // No access
-      return NextResponse.json(
-        {
-          error: `Forbidden: no access to '${resolvedEnvironment.environment.slug}' environment`,
-        },
-        { status: 403 },
-      );
+      // Check if member
+      const { data: member } = await supabase
+        .from("project_members")
+        .select("role")
+        .eq("project_id", projectId)
+        .eq("user_id", userId)
+        .single();
+
+      if (member) {
+        hasFullProjectAccess = true; // Member
+      }
+    }
+
+    if (hasFullProjectAccess) {
+      // Has Project-Level Access (Owner/Member)
+      // Fetch ALL secrets for project & environment
+      const { data: secrets, error } = await supabase
+        .from("secrets")
+        .select("id, key, value")
+        .eq("project_id", projectId)
+        .eq("environment_id", resolvedEnvironment.environment.id);
+
+      if (error)
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      targetSecrets = secrets || [];
+    } else {
+      // Check for Granular Secret Shares
+      // Fetch only the secrets specifically shared with this user
+      const { data: sharesFiltered } = await supabase
+        .from("secret_shares")
+        .select(
+          "secret_id, secrets!inner(id, key, value, project_id, environment_id)",
+        )
+        .eq("user_id", userId)
+        .eq("secrets.project_id", projectId)
+        .eq("secrets.environment_id", resolvedEnvironment.environment.id);
+
+      if (sharesFiltered && sharesFiltered.length > 0) {
+        // Handle Supabase join returning array or object
+        targetSecrets = sharesFiltered.map((s) => {
+          const secret = Array.isArray(s.secrets) ? s.secrets[0] : s.secrets;
+          return {
+            id: secret.id,
+            key: secret.key,
+            value: secret.value,
+          };
+        });
+      } else {
+        // No access
+        return NextResponse.json(
+          {
+            error: `Forbidden: no access to '${resolvedEnvironment.environment.slug}' environment`,
+          },
+          { status: 403 },
+        );
+      }
     }
   }
 
@@ -186,9 +204,6 @@ export async function GET(
     }
   };
 
-  // Execute without awaiting (or await if platform requires)
-  // Vercel generally waits for promises in API routes? No, only if returned or awaited.
-  // We use `waitUntil` if possible, otherwise we await to be safe as per "Async Updates" requirement.
   await performRotation();
 
   // Clean up internal keys before returning
@@ -197,7 +212,7 @@ export async function GET(
     value: s.value,
   }));
 
-  // Notification for Pull — use helper so user preferences are respected
+  // Notification for Pull
   const { data: projectData } = await supabase
     .from("projects")
     .select("name")
@@ -205,10 +220,16 @@ export async function GET(
     .single();
   const projectName = projectData?.name || "Project";
 
+  let notifUserId = userId;
+  if (!notifUserId && result.type === 'service') {
+    const { data: pData } = await supabase.from('projects').select('user_id').eq('id', projectId).single();
+    if (pData) notifUserId = pData.user_id;
+  }
+
   const { createSecretsPulledNotification } =
     await import("@/lib/notifications");
   createSecretsPulledNotification(
-    userId,
+    notifUserId,
     projectName,
     projectId,
     "CLI",
@@ -217,18 +238,20 @@ export async function GET(
 
   // CLI email if user has it toggled ON
   try {
-    const { data: userData } = await supabase.auth.admin.getUserById(userId);
-    if (userData?.user?.email) {
-      const { sendCliActivityEmail } = await import("@/lib/email");
-      sendCliActivityEmail(
-        userData.user.email,
-        projectName,
-        "pulled",
-        decryptedSecrets.length,
-        "CLI",
-        projectId,
-        userId,
-      ).catch((e) => console.error("Failed to send CLI pull email:", e));
+    if (notifUserId) {
+      const { data: userData } = await supabase.auth.admin.getUserById(notifUserId);
+      if (userData?.user?.email) {
+        const { sendCliActivityEmail } = await import("@/lib/email");
+        sendCliActivityEmail(
+          userData.user.email,
+          projectName,
+          "pulled",
+          decryptedSecrets.length,
+          "CLI",
+          projectId,
+          notifUserId,
+        ).catch((e) => console.error("Failed to send CLI pull email:", e));
+      }
     }
   } catch (err) {
     console.warn("Non-blocking CLI pull email error:", err);
@@ -245,10 +268,9 @@ export async function POST(
   { params }: { params: Promise<{ projectId: string }> },
 ) {
   const result = await validateCliToken(request);
-  if (typeof result !== "string") {
-    return result; // Return the error response
+  if ('status' in result) {
+    return result;
   }
-  const userId = result;
 
   const { projectId } = await params;
   const requestedEnvironment = new URL(request.url).searchParams.get(
@@ -267,7 +289,6 @@ export async function POST(
   }
 
   const { secrets } = validation.data;
-
   const supabase = createAdminClient();
   let resolvedEnvironment;
   try {
@@ -288,14 +309,26 @@ export async function POST(
     );
   }
 
-  // Verify Access: Owner OR Editor
-  const role = await getProjectRole(supabase, projectId, userId);
+  let userId = '';
 
-  if (role !== "owner" && role !== "editor") {
-    return NextResponse.json(
-      { error: "Unauthorized: Read-only access" },
-      { status: 403 },
-    );
+  if (result.type === 'service') {
+    if (result.projectId !== projectId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+    const { data: pData } = await supabase.from('projects').select('user_id').eq('id', projectId).single();
+    if (pData) userId = pData.user_id;
+
+  } else {
+    userId = result.userId;
+    // Verify Access: Owner OR Editor
+    const role = await getProjectRole(supabase, projectId, userId);
+
+    if (role !== "owner" && role !== "editor") {
+      return NextResponse.json(
+        { error: "Unauthorized: Read-only access" },
+        { status: 403 },
+      );
+    }
   }
 
   // Process Upsert
@@ -341,7 +374,7 @@ export async function POST(
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // Notification for Push — use helper so user preferences are respected
+    // Notification for Push
     const { data: projectData } = await supabase
       .from("projects")
       .select("name")
@@ -361,18 +394,20 @@ export async function POST(
 
     // CLI email if user has it toggled ON
     try {
-      const { data: userData } = await supabase.auth.admin.getUserById(userId);
-      if (userData?.user?.email) {
-        const { sendCliActivityEmail } = await import("@/lib/email");
-        sendCliActivityEmail(
-          userData.user.email,
-          projectName,
-          "pushed",
-          upsertData.length,
-          "CLI",
-          projectId,
-          userId,
-        ).catch((e) => console.error("Failed to send CLI push email:", e));
+      if (userId) {
+        const { data: userData } = await supabase.auth.admin.getUserById(userId);
+        if (userData?.user?.email) {
+          const { sendCliActivityEmail } = await import("@/lib/email");
+          sendCliActivityEmail(
+            userData.user.email,
+            projectName,
+            "pushed",
+            upsertData.length,
+            "CLI",
+            projectId,
+            userId,
+          ).catch((e) => console.error("Failed to send CLI push email:", e));
+        }
       }
     } catch (err) {
       console.warn("Non-blocking CLI push email error:", err);

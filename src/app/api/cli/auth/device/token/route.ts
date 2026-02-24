@@ -37,55 +37,51 @@ export async function POST(request: Request) {
         }
 
         if (session.status === 'approved' && session.user_id) {
-            // Success! Generate a long-lived Access Token (PAT)
+            // Success! Generate a long-lived Refresh Token and short-lived Access Token
 
-            // 1. Generate PAT
-            const secretToken = crypto.randomUUID()
+            // 1. Generate Refresh Token (1 month)
+            const secretRefreshToken = 'envault_rt_' + crypto.randomUUID()
+            const deviceName = session.device_info?.hostname || 'Unknown Device'
+            const refreshTokenName = `CLI Refresh Token on ${deviceName}`
+            const rtHash = crypto.createHash('sha256').update(secretRefreshToken).digest('hex')
+            const rtExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
 
-            // Let's keep name static or unique? If static, it overwrites. A user might have multiple devices.
-            // If we use "CLI Device Token", it overwrites the previous one!
-            // WE MUST FIX THIS. Users wanted to see "devices". This implies multiple devices.
-            // So we should name it differently or allow multiple tokens.
-
-            // Current upsert logic: onConflict: 'user_id, name'.
-            // So 'CLI Device Token' overwrites.
-
-            // New Plan Logic: Use hostname in name OR allow multiple.
-            // If I change name, I should check if it breaks anything.
-            // "device_info" is user agent stuff.
-
-            const deviceName = session.device_info?.hostname || 'Unknown Device';
-            const tokenName = `CLI on ${deviceName}`;
-
-            // Hash it for storage
-            const tokenHash = crypto.createHash('sha256').update(secretToken).digest('hex')
-
-            // Set token to expire in 3 days
-            const expiresAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
-
-            const { error: tokenError } = await supabase
+            const { error: rtError } = await supabase
                 .from('personal_access_tokens')
                 .upsert({
                     user_id: session.user_id,
-                    name: tokenName,
-                    token_hash: tokenHash,
+                    name: refreshTokenName,
+                    token_hash: rtHash,
                     last_used_at: new Date().toISOString(),
-                    expires_at: expiresAt.toISOString(),
+                    expires_at: rtExpiresAt.toISOString(),
                     metadata: session.device_info || {}
                 }, { onConflict: 'user_id, name' })
-                .select()
 
-            // Let's use Upsert but with dynamic name.
-            /*
-            .upsert({
-                 ...
-                 name: tokenName
-            }, { onConflict: 'user_id, name' })
-            */
+            if (rtError) {
+                console.error('Error creating Refresh Token:', rtError)
+                return NextResponse.json({ error: 'Failed to generate refresh token' }, { status: 500 })
+            }
 
-            if (tokenError) {
-                console.error('Error creating PAT:', tokenError)
-                return NextResponse.json({ error: 'Failed to generate token' }, { status: 500 })
+            // 2. Generate Access Token (1 hour)
+            const secretAccessToken = 'envault_at_' + crypto.randomUUID()
+            const accessTokenName = `CLI Access Token on ${deviceName}`
+            const atHash = crypto.createHash('sha256').update(secretAccessToken).digest('hex')
+            const atExpiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
+
+            const { error: atError } = await supabase
+                .from('personal_access_tokens')
+                .upsert({
+                    user_id: session.user_id,
+                    name: accessTokenName,
+                    token_hash: atHash,
+                    last_used_at: new Date().toISOString(),
+                    expires_at: atExpiresAt.toISOString(),
+                    metadata: session.device_info || {}
+                }, { onConflict: 'user_id, name' })
+
+            if (atError) {
+                console.error('Error creating Access Token:', atError)
+                return NextResponse.json({ error: 'Failed to generate access token' }, { status: 500 })
             }
 
             // 1.5 Clean up legacy generic token (migration path)
@@ -106,7 +102,9 @@ export async function POST(request: Request) {
             }
 
             return NextResponse.json({
-                access_token: secretToken,
+                access_token: secretAccessToken,
+                refresh_token: secretRefreshToken,
+                expires_in: 3600, // 1 hour in seconds
                 token_type: 'Bearer',
             })
         }
