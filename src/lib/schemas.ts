@@ -52,6 +52,10 @@ export const ProjectNameSchema = z.object({
     .min(1, "Project name is required")
     .max(50, "Project name too long")
     .regex(/^[a-zA-Z0-9_\-\s]+$/, "Project name contains invalid characters"),
+  ui_mode: z.enum(["simple", "advanced"]).optional(),
+  default_environment_slug: z
+    .enum(["development", "preview", "production"])
+    .optional(),
 });
 
 // Secret Schemas

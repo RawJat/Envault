@@ -10,6 +10,7 @@ import {
   Share2,
   Trash2,
   CornerDownLeft,
+  Command,
   Copy,
   Check,
   Info,
@@ -58,6 +59,13 @@ import { Edit3 } from "lucide-react";
 interface ProjectDetailViewProps {
   project: Project;
 }
+
+const ModKey = () => (
+  <>
+    <Command className="w-3 h-3 mac-only" />
+    <span className="non-mac-only">Ctrl</span>
+  </>
+);
 
 export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
   const router = useRouter();
@@ -392,14 +400,20 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
+              data-shortcut-submit="true"
               onClick={handleDeleteConfirm}
               disabled={deleteConfirmation !== project.name}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               Delete
-              <Kbd variant="primary" size="xs">
-                <CornerDownLeft className="h-3 w-3" />
-              </Kbd>
+              <div className="hidden sm:flex items-center gap-1">
+                <Kbd variant="primary" size="xs">
+                  <ModKey />
+                </Kbd>
+                <Kbd variant="primary" size="xs">
+                  <CornerDownLeft className="h-3 w-3" />
+                </Kbd>
+              </div>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

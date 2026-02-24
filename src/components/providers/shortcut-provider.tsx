@@ -207,10 +207,25 @@ export function ShortcutProvider({ children }: { children: React.ReactNode }) {
 
       // 2. If no form found (e.g. focus on body), check for an open dialog with a form
       if (!form) {
-        // Check broadly for an open dialog content
-        const openDialog = document.querySelector('[role="dialog"]');
+        // Handle both Dialog and AlertDialog; pick the most recently mounted visible one.
+        const openDialogs = Array.from(
+          document.querySelectorAll(
+            '[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"]',
+          ),
+        );
+        const openDialog = openDialogs.at(-1) as HTMLElement | undefined;
         if (openDialog) {
           form = openDialog.querySelector("form");
+          if (!form) {
+            const submitBtn = openDialog.querySelector(
+              '[data-shortcut-submit="true"]:not([disabled])',
+            ) as HTMLElement | null;
+            if (submitBtn) {
+              e.preventDefault();
+              submitBtn.click();
+              return;
+            }
+          }
         }
       }
 

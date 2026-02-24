@@ -132,15 +132,41 @@ export async function POST(request: Request) {
     );
   }
 
-  const { name } = validation.data;
+  const { name, ui_mode, default_environment_slug } = validation.data;
 
   const supabase = createAdminClient();
+
+  const slugBase =
+    name
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, "")
+      .replace(/[\s_-]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "project";
+
+  let finalSlug = slugBase;
+  let counter = 1;
+  while (true) {
+    const { data: existing } = await supabase
+      .from("projects")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("slug", finalSlug)
+      .maybeSingle();
+
+    if (!existing) break;
+    finalSlug = `${slugBase}-${counter}`;
+    counter++;
+  }
 
   const { data, error } = await supabase
     .from("projects")
     .insert({
       name: name.trim(),
+      slug: finalSlug,
       user_id: userId,
+      ui_mode: ui_mode || "simple",
+      default_environment_slug: default_environment_slug || "development",
     })
     .select("id, name, slug")
     .single();

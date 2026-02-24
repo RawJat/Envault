@@ -7,6 +7,7 @@ import {
   MoreVertical,
   Trash2,
   CornerDownLeft,
+  Command,
   Users,
   Copy,
   Pencil,
@@ -52,6 +53,13 @@ import { Kbd } from "@/components/ui/kbd";
 interface ProjectCardProps {
   project: Project;
 }
+
+const ModKey = () => (
+  <>
+    <Command className="w-3 h-3 mac-only" />
+    <span className="non-mac-only">Ctrl</span>
+  </>
+);
 
 export function ProjectCard({ project }: ProjectCardProps) {
   const deleteProject = useEnvaultStore((state) => state.deleteProject);
@@ -278,14 +286,20 @@ export function ProjectCard({ project }: ProjectCardProps) {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
+              data-shortcut-submit="true"
               onClick={handleDeleteConfirm}
               disabled={deleteConfirmation !== project.name}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               Delete
-              <Kbd variant="primary" size="xs">
-                <CornerDownLeft className="h-3 w-3" />
-              </Kbd>
+              <div className="hidden sm:flex items-center gap-1">
+                <Kbd variant="primary" size="xs">
+                  <ModKey />
+                </Kbd>
+                <Kbd variant="primary" size="xs">
+                  <CornerDownLeft className="h-3 w-3" />
+                </Kbd>
+              </div>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

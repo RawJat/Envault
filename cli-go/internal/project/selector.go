@@ -181,10 +181,56 @@ func createNewProject(client *api.Client) (string, error) {
 		return "", err
 	}
 
+	uiModeChoice := "Simple (single environment view)"
+	modePrompt := &survey.Select{
+		Message: "Choose workspace mode:",
+		Options: []string{
+			"Simple (single environment view)",
+			"Advanced (multi-environment ready)",
+		},
+		Default: "Simple (single environment view)",
+	}
+	if err := survey.AskOne(modePrompt, &uiModeChoice); err != nil {
+		if isInterrupt(err) {
+			return "", ErrUserCancelled
+		}
+		return "", err
+	}
+
+	defaultEnvChoice := "Development"
+	envPrompt := &survey.Select{
+		Message: "Choose default environment:",
+		Options: []string{"Development", "Preview", "Production"},
+		Default: "Development",
+	}
+	if err := survey.AskOne(envPrompt, &defaultEnvChoice); err != nil {
+		if isInterrupt(err) {
+			return "", ErrUserCancelled
+		}
+		return "", err
+	}
+
+	uiMode := "simple"
+	if uiModeChoice == "Advanced (multi-environment ready)" {
+		uiMode = "advanced"
+	}
+
+	defaultEnvironment := "development"
+	switch defaultEnvChoice {
+	case "Preview":
+		defaultEnvironment = "preview"
+	case "Production":
+		defaultEnvironment = "production"
+	}
+
 	s := ui.NewSpinner("Creating project...")
 	s.Start()
 
-	payload := map[string]interface{}{"name": name}
+	payload := map[string]interface{}{
+		"name":                     name,
+		"ui_mode":                  uiMode,
+		"default_environment_slug": defaultEnvironment,
+	}
 	respBytes, err := client.Post("/projects", payload)
 	if err != nil {
 		s.Stop()
@@ -201,6 +247,16 @@ func createNewProject(client *api.Client) (string, error) {
 
 	s.Stop()
 	fmt.Println(ui.ColorGreen(fmt.Sprintf("✔ Project \"%s\" created!", resp.Project.Name)))
+
+	// Keep local CLI defaults in sync with project creation choices.
+	cfg, err := ReadConfig()
+	if err == nil {
+		cfg.DefaultEnvironment = defaultEnvironment
+		if cfg.EnvironmentFiles == nil {
+			cfg.EnvironmentFiles = map[string]string{}
+		}
+		_ = WriteConfig(cfg)
+	}
 
 	return resp.Project.ID, nil
 }
