@@ -18,7 +18,7 @@ import (
 const (
 	repoUrl     = "https://api.github.com/repos/DinanathDash/Envault/releases/latest"
 	ttlDuration = 12 * time.Hour
-	cacheFile   = ".envault_update_cache.json"
+	cacheFile   = "update_cache.json"
 )
 
 type CacheData struct {
@@ -105,7 +105,13 @@ func getCachePath() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(home, cacheFile), nil
+	
+	configDir := filepath.Join(home, ".envault")
+	if _, err := os.Stat(configDir); os.IsNotExist(err) {
+		_ = os.Mkdir(configDir, 0700)
+	}
+	
+	return filepath.Join(configDir, cacheFile), nil
 }
 
 func readCache() (*CacheData, error) {

@@ -16,41 +16,48 @@ function permissionSetForRole(role: string | null) {
 
 export async function GET(request: Request) {
   const result = await validateCliToken(request);
-  if (typeof result !== "string") {
+  if ('status' in result) {
     return result;
   }
-  const userId = result;
 
   const supabase = createAdminClient();
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.admin.getUserById(userId);
+  let projectId = new URL(request.url).searchParams.get("projectId") || "";
+  let user = { id: "", email: "" };
+  let userId = "";
 
-  if (error || !user) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  if (result.type === 'service') {
+    if (projectId && projectId !== result.projectId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+    projectId = result.projectId;
+    user = { id: `service-${result.projectId}`, email: "Service Token (CI)" };
+  } else {
+    userId = result.userId;
+    const { data: userData, error } = await supabase.auth.admin.getUserById(userId);
+    if (error || !userData?.user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+    user = { id: userData.user.id, email: userData.user.email || "" };
   }
-
-  const projectId = new URL(request.url).searchParams.get("projectId") || "";
 
   if (!projectId) {
     return NextResponse.json({
-      user: {
-        id: user.id,
-        email: user.email,
-      },
+      user,
     });
   }
 
-  const role = await getProjectRole(supabase, projectId, userId);
+  let role: string | null = null;
+  if (result.type === 'service') {
+    role = "owner"; // Service tokens have read/write access to their linked project
+  } else {
+    role = await getProjectRole(supabase, projectId, userId);
+  }
+
   if (!role) {
     return NextResponse.json(
       {
         error: "Forbidden: no access to this project",
-        user: {
-          id: user.id,
-          email: user.email,
-        },
+        user,
       },
       { status: 403 },
     );
@@ -78,10 +85,7 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json({
-    user: {
-      id: user.id,
-      email: user.email,
-    },
+    user,
     project: {
       id: projectData?.id || projectId,
       name: projectData?.name || "Unknown",

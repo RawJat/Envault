@@ -43,3 +43,10 @@ next-env.d.ts
 
 # IDE
 .idea/
+
+# Go CLI
+cli-go/envault.exe
+cli-go/envault
+cli-go/envault.json
+cli-go/out.txt
+cli-go/.env

@@ -4,11 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/spf13/viper"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
+
+	"github.com/spf13/viper"
+	"github.com/zalando/go-keyring"
 )
 
 type APIError struct {
@@ -47,45 +50,106 @@ func NewClient() *Client {
 		os.Exit(1)
 	}
 
+	// 1. Check for Service Tokens via Envar
+	token := os.Getenv("ENVAULT_TOKEN")
+	if token == "" {
+		token = os.Getenv("ENVAULT_SERVICE_TOKEN")
+	}
+
+	if token != "" {
+		if strings.HasPrefix(token, "envault_svc_") {
+			// CI Guardrail
+			isCI := os.Getenv("CI") == "true" || os.Getenv("GITHUB_ACTIONS") == "true"
+			isLoginCmd := len(os.Args) >= 2 && os.Args[1] == "login"
+
+			if !isCI && !isLoginCmd {
+				fmt.Println("Error: Service tokens are for CI environments only.")
+				fmt.Println("Please run 'envault login' to authenticate your local machine.")
+				os.Exit(1)
+			}
+		}
+	} else {
+		// Fallback to local session token
+		token = viper.GetString("auth.token")
+	}
+
 	return &Client{
 		BaseURL: baseURL,
-		Token:   viper.GetString("auth.token"),
+		Token:   token,
 		HTTP:    &http.Client{},
 	}
 }
 
-func (c *Client) Post(path string, body interface{}) ([]byte, error) {
-	jsonBody, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
+func (c *Client) refreshToken() error {
+	rt, err := keyring.Get("envault", "cli")
+	if err != nil || rt == "" {
+		return fmt.Errorf("no refresh token found")
 	}
 
-	req, err := http.NewRequest("POST", c.BaseURL+path, bytes.NewBuffer(jsonBody))
+	payload := map[string]interface{}{
+		"refresh_token": rt,
+	}
+	jsonBody, err := json.Marshal(payload)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
+	req, err := http.NewRequest("POST", c.BaseURL+"/auth/refresh", bytes.NewBuffer(jsonBody))
+	if err != nil {
+		return err
+	}
 	req.Header.Set("Content-Type", "application/json")
-	if c.Token != "" {
-		req.Header.Set("Authorization", "Bearer "+c.Token)
-	}
 
 	resp, err := c.HTTP.Do(req)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 400 {
 		bodyBytes, _ := io.ReadAll(resp.Body)
-		return nil, &APIError{StatusCode: resp.StatusCode, Body: string(bodyBytes)}
+		return &APIError{StatusCode: resp.StatusCode, Body: string(bodyBytes)}
 	}
 
-	return io.ReadAll(resp.Body)
+	var parsed map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&parsed); err != nil {
+		return err
+	}
+
+	newToken, ok := parsed["access_token"].(string)
+	if !ok || newToken == "" {
+		return fmt.Errorf("invalid token response")
+	}
+
+	// Save new access token
+	c.Token = newToken
+	viper.Set("auth.token", newToken)
+	_ = viper.WriteConfig()
+	return nil
+}
+
+func (c *Client) Post(path string, body interface{}) ([]byte, error) {
+	return c.doReq("POST", path, body, true)
 }
 
 func (c *Client) Get(path string) ([]byte, error) {
-	req, err := http.NewRequest("GET", c.BaseURL+path, nil)
+	return c.doReq("GET", path, nil, true)
+}
+
+func (c *Client) doReq(method, path string, body interface{}, canRetry bool) ([]byte, error) {
+	var bodyReader io.Reader
+	var reqBody []byte
+	
+	if body != nil {
+		var err error
+		reqBody, err = json.Marshal(body)
+		if err != nil {
+			return nil, err
+		}
+		bodyReader = bytes.NewBuffer(reqBody)
+	}
+
+	req, err := http.NewRequest(method, c.BaseURL+path, bodyReader)
 	if err != nil {
 		return nil, err
 	}
@@ -100,6 +164,17 @@ func (c *Client) Get(path string) ([]byte, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode == 401 && canRetry {
+		if c.Token != "" && !strings.HasPrefix(c.Token, "envault_svc_") {
+			bodyBytes, _ := io.ReadAll(resp.Body) // consume old body
+			errRefresh := c.refreshToken()
+			if errRefresh == nil {
+				return c.doReq(method, path, body, false)
+			}
+			return nil, fmt.Errorf("Refresh Token Exchange Failed: %v | (Original Auth Error: %s)", errRefresh, string(bodyBytes))
+		}
+	}
 
 	if resp.StatusCode >= 400 {
 		bodyBytes, _ := io.ReadAll(resp.Body)

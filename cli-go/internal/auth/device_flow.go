@@ -13,6 +13,7 @@ import (
 	"github.com/DinanathDash/Envault/cli-go/internal/ui"
 	"github.com/pkg/browser"
 	"github.com/spf13/viper"
+	"github.com/zalando/go-keyring"
 )
 
 type DeviceCodeResponse struct {
@@ -23,9 +24,10 @@ type DeviceCodeResponse struct {
 }
 
 type TokenResponse struct {
-	AccessToken string `json:"access_token"`
-	TokenType   string `json:"token_type"`
-	Error       string `json:"error"`
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+	TokenType    string `json:"token_type"`
+	Error        string `json:"error"`
 }
 
 type UserResponse struct {
@@ -140,6 +142,12 @@ func Login() error {
 				if err := viper.SafeWriteConfig(); err != nil {
 					s.Stop()
 					return fmt.Errorf("failed to save config: %w", err)
+				}
+			}
+			
+			if tokenResp.RefreshToken != "" {
+				if err := keyring.Set("envault", "cli", tokenResp.RefreshToken); err != nil {
+					fmt.Println(ui.ColorYellow("\nWarning: Failed to save refresh token to system keyring. You may need to login again sooner."))
 				}
 			}
 			

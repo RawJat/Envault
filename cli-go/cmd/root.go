@@ -48,7 +48,7 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.envault.yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.envault/config.toml)")
 	rootCmd.PersistentFlags().StringVarP(&envFlag, "env", "e", "", "Target environment (development, preview, production, etc.)")
 	rootCmd.PersistentFlags().BoolVarP(&showVersion, "version", "v", false, "Print the version number of Envault CLI")
 
@@ -79,9 +79,14 @@ func initConfig() {
 		home, err := os.UserHomeDir()
 		cobra.CheckErr(err)
 
-		viper.AddConfigPath(home)
-		viper.SetConfigType("yaml")
-		viper.SetConfigName(".envault")
+		configDir := home + "/.envault"
+		if _, err := os.Stat(configDir); os.IsNotExist(err) {
+			_ = os.Mkdir(configDir, 0700)
+		}
+
+		viper.AddConfigPath(configDir)
+		viper.SetConfigType("toml")
+		viper.SetConfigName("config")
 	}
 
 	viper.AutomaticEnv()

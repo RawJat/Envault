@@ -6,12 +6,37 @@ import { ProjectNameSchema } from "@/lib/schemas";
 
 export async function GET(request: Request) {
   const result = await validateCliToken(request);
-  if (typeof result !== "string") {
+  if ('status' in result) {
     return result;
   }
-  const userId = result;
 
   const supabase = createAdminClient();
+
+  if (result.type === 'service') {
+    // Service tokens only see their specific project
+    const { data: project } = await supabase
+      .from("projects")
+      .select("id, name, user_id")
+      .eq("id", result.projectId)
+      .single();
+
+    if (!project) {
+      return NextResponse.json({ projects: [], owned: [], shared: [] });
+    }
+    const mappedProject = {
+      id: project.id,
+      name: project.name,
+      isOwner: false,
+      role: "viewer" as const,
+    };
+    return NextResponse.json({
+      projects: [mappedProject],
+      owned: [],
+      shared: [mappedProject],
+    });
+  }
+
+  const userId = result.userId;
 
   // 1. Owned projects
   const { data: owned } = await supabase
@@ -42,9 +67,9 @@ export async function GET(request: Request) {
   // Map shared projects with isOwner flag and role
   interface SharedProjectMember {
     projects:
-      | { id: string; name: string; user_id: string }
-      | { id: string; name: string; user_id: string }[]
-      | null;
+    | { id: string; name: string; user_id: string }
+    | { id: string; name: string; user_id: string }[]
+    | null;
     role: "viewer" | "editor" | "owner";
   }
 
@@ -115,10 +140,15 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const result = await validateCliToken(request);
-  if (typeof result !== "string") {
+  if ('status' in result) {
     return result;
   }
-  const userId = result;
+
+  if (result.type === 'service') {
+    return NextResponse.json({ error: 'Service tokens cannot create projects' }, { status: 403 });
+  }
+
+  const userId = result.userId;
 
   const body = await request.json();
   const validation = ProjectNameSchema.safeParse(body);

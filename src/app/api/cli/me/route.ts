@@ -4,10 +4,18 @@ import { NextResponse } from 'next/server'
 
 export async function GET(request: Request) {
     const result = await validateCliToken(request)
-    if (typeof result !== 'string') {
+    if ('status' in result) {
         return result
     }
-    const userId = result
+
+    if (result.type === 'service') {
+        return NextResponse.json({
+            id: result.projectId,
+            email: 'Service Token (CI)'
+        })
+    }
+
+    const userId = result.userId
 
     const supabase = createAdminClient()
 
