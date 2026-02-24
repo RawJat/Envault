@@ -50,7 +50,7 @@ npx @dinanathdash/envault <command>
 
 All commands accept these global flags:
 
-- `--config <path>`: Use a specific config file instead of `~/.envault.yaml`
+- `--config <path>`: Use a specific config file instead of `~/.envault/config.toml`
 - `-e, --env <slug>`: Target environment (`development`, `preview`, `production`, or any valid project environment slug)
 - `-v, --version`: Print CLI version
 
@@ -111,6 +111,14 @@ Then run commands without repeating `--file`.
 - `envault version` or `envault --version`: print version
 - `envault completion <shell>`: generate shell completion
 
+## Authentication & Sessions
+
+Envault CLI relies on secure Device Flow for interactive authentication. When you run `envault login`:
+- A **30-day Refresh Token** is generated and saved securely in your native OS Secure Enclave (macOS Keychain, Windows Credential Manager, or Linux Secret Service).
+- A **1-hour Access Token** is stored in your configuration file (`~/.envault/config.toml`).
+
+The CLI features an **Auto-Refresh Interceptor**. If your access token expires, the CLI silently securely requests a new one using your keyring refresh token and retries your command without failing, creating a seamless rolling session.
+
 ## Automatic Updates
 
 Envault performs a non-blocking update check after commands and shows a hint when a newer release is available.
@@ -122,7 +130,7 @@ The Envault CLI uses the following environment variables for configuration:
 | Variable              | Description                          | Default                        |
 | :-------------------- | :----------------------------------- | :----------------------------- |
 | `ENVAULT_API_URL`     | The URL of the Envault API server.   | `https://envault.tech/api/cli` |
-| `ENVAULT_CONFIG_FILE` | Path to a custom configuration file. | `~/.envault.yaml`              |
+| `ENVAULT_CONFIG_FILE` | Path to a custom configuration file. | `~/.envault/config.toml`       |
 
 ### Using Local Instance
 

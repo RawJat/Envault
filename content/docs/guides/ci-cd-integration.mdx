@@ -17,6 +17,10 @@ The safest way to inject secrets is to wrap your build command with `envault run
 1.  **Service Token**: Generate a Service Token in your Project Settings.
 2.  **Envault CLI**: Ensure the CLI is installed in your CI environment.
 
+<Callout type="warn">
+  **Security Guardrail**: To prevent accidental leakage of Service Tokens on developer machines, the CLI aggressively blocks Service Token (`ENVAULT_TOKEN`) usage unless a standard CI/CD environment variable (like `CI=true` or `GITHUB_ACTIONS=true`) is detected. Local authentication must use `envault login`.
+</Callout>
+
 ## GitHub Actions
 
 Here is a complete workflow example for a Next.js application.
