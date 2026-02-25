@@ -22,7 +22,88 @@ interface DocumentMetadata {
 const DOCS_DIR = path.join(process.cwd(), "content", "docs");
 const OUTPUT_FILE = path.join(process.cwd(), "public", "llms-full.txt");
 const BASE_URL = "https://envault.tech/docs";
-const SEPARATOR = "─".repeat(80);
+const SEPARATOR = "-".repeat(80);
+
+/**
+ * Clean MDX content by removing imports, exports, and transforming components
+ */
+function cleanMdxContent(content: string): string {
+  // Remove import statements (single and multi-line)
+  let cleaned = content.replace(
+    /^import\s+(?:\{[\s\S]*?\}|[\w\s*,]+)\s+from\s+['"][^'"]+['"];?\s*/gm,
+    ""
+  );
+  
+  // Remove side-effect imports like import "style.css";
+  cleaned = cleaned.replace(/^import\s+['"][^'"]+['"];?\s*/gm, "");
+
+  // Remove exports (like metadata)
+  cleaned = cleaned.replace(/^export\s+(?:const|let|var|default)\s+[\s\S]*?;?\s*/gm, "");
+
+  // Transform <Callout> to blockquotes
+  // Handle with title prop
+  cleaned = cleaned.replace(
+    /<Callout[^>]*title="([^"]+)"[^>]*>\s*([\s\S]*?)\s*<\/Callout>/g,
+    (_, title, body) => `> **${title}**\n>\n> ${body.trim()}`
+  );
+  // Handle without title prop (uses type or default)
+  cleaned = cleaned.replace(
+    /<Callout[^>]*>\s*([\s\S]*?)\s*<\/Callout>/g,
+    (_, body) => `> ${body.trim()}`
+  );
+
+  // Remove <Cards> wrapper
+  cleaned = cleaned.replace(/<Cards>/g, "");
+  cleaned = cleaned.replace(/<\/Cards>/g, "");
+
+  // Remove icon attributes separately to avoid nested tag issues in regex
+  cleaned = cleaned.replace(/icon=\{<[^>]+>\}/g, "");
+  cleaned = cleaned.replace(/icon=\{[^}]+\}/g, ""); // generic prop
+
+  // Transform <Card> to list item
+  // Capture content between <Card ... /> multiline
+  cleaned = cleaned.replace(/<Card\s+([\s\S]+?)\/>/g, (match, attrs) => {
+    const titleMatch = attrs.match(/title="([^"]+)"/);
+    const descMatch = attrs.match(/description="([^"]+)"/);
+    const hrefMatch = attrs.match(/href="([^"]+)"/);
+
+    const title = titleMatch ? titleMatch[1] : "";
+    const desc = descMatch ? descMatch[1] : "";
+    const href = hrefMatch ? hrefMatch[1] : "";
+
+    if (title) {
+        let line = `- **${title}**`;
+        if (href) line = `- [**${title}**](${href})`; // Make title a link
+        if (desc) line += `: ${desc}`;
+        return line;
+    }
+    
+    return ""; // Remove if no title
+  });
+
+  // Remove generic opening/closing tags that span a whole line (e.g. <Step>)
+  // but be careful not to remove inline HTML or code blocks.
+  // We'll target specific known components to be safe.
+  const componentsToRemove = ["Step", "Steps", "Tab", "Tabs"];
+  componentsToRemove.forEach(comp => {
+    // Remove opening tag <Comp ...>
+    const regexOpen = new RegExp(`<${comp}[\\s\\S]*?>`, "g");
+    // Remove closing tag </Comp>
+    const regexClose = new RegExp(`<\/${comp}>`, "g");
+    cleaned = cleaned.replace(regexOpen, "");
+    cleaned = cleaned.replace(regexClose, "");
+  });
+
+  // Remove icon components often used inline like <Icon />
+  // Careful not to remove <br /> or <img /> valid HTML
+  // Assuming strict PascalCase for React components
+  cleaned = cleaned.replace(/<[A-Z][a-zA-Z0-9]*\s+[^>]*\/>/g, "");
+
+  // Fix multiple newlines created by removals
+  cleaned = cleaned.replace(/\n{3,}/g, "\n\n");
+
+  return cleaned.trim();
+}
 
 /**
  * Parse YAML frontmatter from MDX/MD files
@@ -35,7 +116,10 @@ function parseFrontMatter(content: string): {
   const match = content.match(frontmatterRegex);
 
   if (!match) {
-    return { frontmatter: { title: "", description: "" }, body: content };
+    return { 
+      frontmatter: { title: "", description: "" }, 
+      body: cleanMdxContent(content) 
+    };
   }
 
   const frontmatterStr = match[1];
@@ -52,7 +136,10 @@ function parseFrontMatter(content: string): {
   if (titleMatch) frontmatter.title = titleMatch[1].trim();
   if (descMatch) frontmatter.description = descMatch[1].trim();
 
-  return { frontmatter, body };
+  return { 
+    frontmatter, 
+    body: cleanMdxContent(body) 
+  };
 }
 
 /**
@@ -268,7 +355,7 @@ function processDocument(filePath: string): DocumentMetadata {
  * Generate the llms-full.txt file
  */
 function generateLlmsFullTxt() {
-  console.log("🔍 Scanning documentation...");
+  console.log("Scanning documentation...");
 
   // Load the desired order from meta.json
   const docOrder = loadDocOrder();
@@ -288,7 +375,7 @@ function generateLlmsFullTxt() {
   // Sort according to meta.json order
   const sortedFiles = sortDocumentsByMetaOrder(docFiles, docOrder);
 
-  console.log(`📚 Found ${sortedFiles.length} documentation files`);
+  console.log(`Found ${sortedFiles.length} documentation files`);
 
   // Process all documents
   const documents: DocumentMetadata[] = sortedFiles.map((file) => {
@@ -301,7 +388,7 @@ function generateLlmsFullTxt() {
   });
 
   // Generate the output
-  console.log("✏️  Generating llms-full.txt...");
+  console.log("Generating llms-full.txt...");
 
   const sections = documents.map((doc) => {
     const metadata = `title: "${doc.title.replace(/"/g, '\\"')}"
@@ -323,9 +410,9 @@ source: "${doc.source}"`;
   // Write the file
   fs.writeFileSync(OUTPUT_FILE, output, "utf-8");
 
-  console.log(`✅ Generated: ${OUTPUT_FILE}`);
-  console.log(`📄 Total sections: ${documents.length}`);
-  console.log(`📏 File size: ${(fs.statSync(OUTPUT_FILE).size / 1024).toFixed(2)} KB`);
+  console.log(`Generated: ${OUTPUT_FILE}`);
+  console.log(`Total sections: ${documents.length}`);
+  console.log(`File size: ${(fs.statSync(OUTPUT_FILE).size / 1024).toFixed(2)} KB`);
 }
 
 // Run the generator
@@ -333,6 +420,6 @@ try {
   generateLlmsFullTxt();
   process.exit(0);
 } catch (error) {
-  console.error("❌ Generation failed:", error);
+  console.error("Generation failed:", error);
   process.exit(1);
 }
