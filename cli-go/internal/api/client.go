@@ -2,13 +2,17 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/spf13/viper"
 	"github.com/zalando/go-keyring"
@@ -80,7 +84,14 @@ func NewClient() *Client {
 	}
 }
 
-func (c *Client) refreshToken() error {
+func (c *Client) refreshToken(httpClient *http.Client) error {
+	if httpClient == nil {
+		httpClient = c.HTTP
+	}
+	if httpClient == nil {
+		httpClient = &http.Client{}
+	}
+
 	rt, err := keyring.Get("envault", "cli")
 	if err != nil || rt == "" {
 		return fmt.Errorf("no refresh token found")
@@ -100,7 +111,7 @@ func (c *Client) refreshToken() error {
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := c.HTTP.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -129,17 +140,45 @@ func (c *Client) refreshToken() error {
 }
 
 func (c *Client) Post(path string, body interface{}) ([]byte, error) {
-	return c.doReq("POST", path, body, true)
+	return c.doReqWithHTTP("POST", path, body, true, c.HTTP)
 }
 
 func (c *Client) Get(path string) ([]byte, error) {
-	return c.doReq("GET", path, nil, true)
+	return c.doReqWithHTTP("GET", path, nil, true, c.HTTP)
 }
 
-func (c *Client) doReq(method, path string, body interface{}, canRetry bool) ([]byte, error) {
+func (c *Client) GetWithTimeout(path string, timeout time.Duration) ([]byte, error) {
+	if timeout <= 0 {
+		return c.Get(path)
+	}
+
+	return c.doReqWithHTTP("GET", path, nil, true, clientWithTimeout(c.HTTP, timeout))
+}
+
+func clientWithTimeout(base *http.Client, timeout time.Duration) *http.Client {
+	if base == nil {
+		return &http.Client{Timeout: timeout}
+	}
+
+	return &http.Client{
+		Transport:     base.Transport,
+		CheckRedirect: base.CheckRedirect,
+		Jar:           base.Jar,
+		Timeout:       timeout,
+	}
+}
+
+func (c *Client) doReqWithHTTP(method, path string, body interface{}, canRetry bool, httpClient *http.Client) ([]byte, error) {
+	if httpClient == nil {
+		httpClient = c.HTTP
+	}
+	if httpClient == nil {
+		httpClient = &http.Client{}
+	}
+
 	var bodyReader io.Reader
 	var reqBody []byte
-	
+
 	if body != nil {
 		var err error
 		reqBody, err = json.Marshal(body)
@@ -159,7 +198,7 @@ func (c *Client) doReq(method, path string, body interface{}, canRetry bool) ([]
 		req.Header.Set("Authorization", "Bearer "+c.Token)
 	}
 
-	resp, err := c.HTTP.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -168,9 +207,9 @@ func (c *Client) doReq(method, path string, body interface{}, canRetry bool) ([]
 	if resp.StatusCode == 401 && canRetry {
 		if c.Token != "" && !strings.HasPrefix(c.Token, "envault_svc_") {
 			bodyBytes, _ := io.ReadAll(resp.Body) // consume old body
-			errRefresh := c.refreshToken()
+			errRefresh := c.refreshToken(httpClient)
 			if errRefresh == nil {
-				return c.doReq(method, path, body, false)
+				return c.doReqWithHTTP(method, path, body, false, httpClient)
 			}
 			return nil, fmt.Errorf("Refresh Token Exchange Failed: %v | (Original Auth Error: %s)", errRefresh, string(bodyBytes))
 		}
@@ -182,4 +221,44 @@ func (c *Client) doReq(method, path string, body interface{}, canRetry bool) ([]
 	}
 
 	return io.ReadAll(resp.Body)
+}
+
+func IsFallbackEligible(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	var apiErr *APIError
+	if errors.As(err, &apiErr) {
+		return false
+	}
+
+	if errors.Is(err, context.DeadlineExceeded) {
+		return true
+	}
+
+	var urlErr *url.Error
+	if errors.As(err, &urlErr) {
+		if urlErr.Timeout() {
+			return true
+		}
+		return IsFallbackEligible(urlErr.Err)
+	}
+
+	var netErr net.Error
+	if errors.As(err, &netErr) {
+		return true
+	}
+
+	var opErr *net.OpError
+	if errors.As(err, &opErr) {
+		return true
+	}
+
+	var dnsErr *net.DNSError
+	if errors.As(err, &dnsErr) {
+		return true
+	}
+
+	return false
 }

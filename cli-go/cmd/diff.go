@@ -85,7 +85,7 @@ func computeDiff(projectID, targetEnv, targetFile string) (diffResult, error) {
 	path := fmt.Sprintf("/projects/%s/secrets?environment=%s", projectID, url.QueryEscape(targetEnv))
 	respBytes, err := client.Get(path)
 	if err != nil {
-		return diffResult{}, fmt.Errorf(classifyAPIError(err))
+		return diffResult{}, fmt.Errorf("%s", classifyAPIError(err))
 	}
 
 	var remote SecretsResponse
