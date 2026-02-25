@@ -4,6 +4,9 @@ import { verifyHmacSignature } from "@/lib/hmac";
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const method = request.method.toUpperCase();
+  const authHeader = request.headers.get("authorization") || "";
+  const hasBearerAuth = authHeader.startsWith("Bearer ");
 
   const matchesRoute = (path: string, route: string) => {
     if (route === "/") return path === "/";
@@ -22,24 +25,32 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const method = request.method.toUpperCase();
+  const isCliApiRoute = matchesRoute(pathname, "/api/cli");
 
-  // Define public API routes
-  const publicApiRoutes = [
+  // Explicit unauthenticated API allowlist.
+  const unauthenticatedApiRoutes = [
     "/api/cli-version",
-    "/api/cli",
     "/api/search",
-    "/api/status",
-    "/api/cron",
-    "/api/auth/webauthn/authenticate",
+    "/api/cli/auth/device/code",
+    "/api/cli/auth/device/token",
+    "/api/cli/auth/device/cancel",
+    "/api/cli/auth/refresh",
+    "/api/cron/digest",
+    "/api/auth/webauthn/authenticate/options",
+    "/api/auth/webauthn/authenticate/verify",
   ];
 
-  const isPublicApi = publicApiRoutes.some((route) =>
+  const isPublicApi = unauthenticatedApiRoutes.some((route) =>
     matchesRoute(pathname, route),
   );
+  const isCliBearerRequest = isCliApiRoute && hasBearerAuth;
 
   // HMAC Verification for mutations
-  if (["POST", "PUT", "PATCH", "DELETE"].includes(method) && !isPublicApi) {
+  if (
+    ["POST", "PUT", "PATCH", "DELETE"].includes(method) &&
+    !isPublicApi &&
+    !isCliBearerRequest
+  ) {
     const signature = request.headers.get("x-signature");
     const timestampStr = request.headers.get("x-timestamp");
     const secret =
@@ -156,7 +167,7 @@ export async function proxy(request: NextRequest) {
     isProtectedRoute ||
     isPublicRoute ||
     isDynamicHandleRoute ||
-    (pathname.startsWith("/api") && !isPublicApi);
+    (pathname.startsWith("/api") && !isPublicApi && !isCliBearerRequest);
 
   let supabaseResponse = NextResponse.next({
     request,
@@ -210,7 +221,12 @@ export async function proxy(request: NextRequest) {
   }
 
   // For API routes, protect all except public ones
-  if (pathname.startsWith("/api") && !isPublicApi && !user) {
+  if (
+    pathname.startsWith("/api") &&
+    !isPublicApi &&
+    !isCliBearerRequest &&
+    !user
+  ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

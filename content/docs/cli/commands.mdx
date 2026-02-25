@@ -150,6 +150,14 @@ Example:
 envault run --project <project-id> --env preview -- printenv API_URL
 ```
 
+Offline behavior:
+
+- `run` performs a strict short secrets fetch timeout (~3s).
+- On successful online fetch, secrets are also encrypted and cached locally at `~/.envault/offline_cache.enc`.
+- On timeout/network transport failures, `run` falls back to the last cached secrets for the same project+environment.
+- Auth/authorization/API errors (`401/403/404`) do not trigger cache fallback.
+- Optional override for slow networks/bootstrap: set `ENVAULT_RUN_TIMEOUT_SECONDS` (for example `10`) to increase the `run` fetch timeout.
+
 ---
 
 ## `env`

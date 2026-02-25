@@ -7,8 +7,12 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/DinanathDash/Envault/cli-go/internal/api"
+	"github.com/DinanathDash/Envault/cli-go/internal/offlinecache"
 	"github.com/DinanathDash/Envault/cli-go/internal/ui"
 	"github.com/spf13/cobra"
 )
@@ -37,17 +41,55 @@ var runCmd = &cobra.Command{
 		targetEnv := resolveTargetEnvironment()
 		client := api.NewClient()
 		path := fmt.Sprintf("/projects/%s/secrets?environment=%s", projectID, url.QueryEscape(targetEnv))
-		respBytes, err := client.Get(path)
-		if err != nil {
-			fmt.Println(ui.ColorRed("Run failed."))
-			fmt.Println(ui.ColorRed(classifyAPIError(err)))
-			os.Exit(1)
-		}
 
 		var secretsResp SecretsResponse
-		if err := json.Unmarshal(respBytes, &secretsResp); err != nil {
-			fmt.Println(ui.ColorRed(fmt.Sprintf("Error parsing response: %v", err)))
-			os.Exit(1)
+		respBytes, err := client.GetWithTimeout(path, resolveRunTimeout())
+		usedOfflineCache := false
+		cachedAt := time.Time{}
+		if err != nil {
+			if api.IsFallbackEligible(err) {
+				cachedSecrets, loadedAt, cacheErr := offlinecache.Load(projectID, targetEnv)
+				if cacheErr != nil {
+					fmt.Println(ui.ColorRed("Run failed."))
+					fmt.Println(ui.ColorRed(fmt.Sprintf("Network error: %v", err)))
+					fmt.Println(ui.ColorRed(fmt.Sprintf("Offline cache unavailable: %v", cacheErr)))
+					os.Exit(1)
+				}
+
+				secretsResp.Secrets = make([]Secret, len(cachedSecrets))
+				for i, s := range cachedSecrets {
+					secretsResp.Secrets[i] = Secret{Key: s.Key, Value: s.Value}
+				}
+				usedOfflineCache = true
+				cachedAt = loadedAt
+			} else {
+				fmt.Println(ui.ColorRed("Run failed."))
+				fmt.Println(ui.ColorRed(classifyAPIError(err)))
+				os.Exit(1)
+			}
+		} else {
+			if err := json.Unmarshal(respBytes, &secretsResp); err != nil {
+				fmt.Println(ui.ColorRed(fmt.Sprintf("Error parsing response: %v", err)))
+				os.Exit(1)
+			}
+
+			offlineSecrets := make([]offlinecache.Secret, len(secretsResp.Secrets))
+			for i, s := range secretsResp.Secrets {
+				offlineSecrets[i] = offlinecache.Secret{Key: s.Key, Value: s.Value}
+			}
+			if cacheErr := offlinecache.Save(projectID, targetEnv, offlineSecrets); cacheErr != nil {
+				fmt.Fprintln(os.Stderr, ui.ColorYellow(fmt.Sprintf("Warning: failed to update offline cache: %v", cacheErr)))
+			}
+		}
+
+		if usedOfflineCache {
+			cacheTime := "unknown"
+			cacheAge := "unknown"
+			if !cachedAt.IsZero() {
+				cacheTime = cachedAt.Format(time.RFC3339)
+				cacheAge = humanizeDuration(time.Since(cachedAt))
+			}
+			fmt.Fprintln(os.Stderr, ui.ColorYellow(fmt.Sprintf("Using offline cache for %s (%s). Cached at %s (%s ago).", projectID, targetEnv, cacheTime, cacheAge)))
 		}
 
 		runTarget := args[0]
@@ -77,6 +119,32 @@ var runCmd = &cobra.Command{
 			os.Exit(1)
 		}
 	},
+}
+
+func humanizeDuration(d time.Duration) string {
+	if d < 0 {
+		d = 0
+	}
+	if d < time.Minute {
+		return d.Round(time.Second).String()
+	}
+	return d.Round(time.Minute).String()
+}
+
+func resolveRunTimeout() time.Duration {
+	const defaultSeconds = 3
+
+	raw := strings.TrimSpace(os.Getenv("ENVAULT_RUN_TIMEOUT_SECONDS"))
+	if raw == "" {
+		return defaultSeconds * time.Second
+	}
+
+	seconds, err := strconv.Atoi(raw)
+	if err != nil || seconds <= 0 {
+		return defaultSeconds * time.Second
+	}
+
+	return time.Duration(seconds) * time.Second
 }
 
 func init() {
