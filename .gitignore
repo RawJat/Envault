@@ -54,3 +54,6 @@ cli-go/.env
 
 # Generated source files (fumadocs-mdx)
 .source/
+
+# Generated documentation
+public/llms-full.txt
