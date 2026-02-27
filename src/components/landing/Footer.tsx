@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "next-view-transitions";
 import { Github, Twitter, Mail, Copyright } from "lucide-react";
 import { StatusBadge } from "@/components/landing/StatusBadge";
 

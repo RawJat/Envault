@@ -6,7 +6,7 @@ import { Footer } from "@/components/landing/Footer";
 import { RegMark } from "@/components/landing/RegMark";
 import { ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
-import Link from "next/link";
+import { Link } from "next-view-transitions";
 
 import { User } from "@supabase/supabase-js";
 

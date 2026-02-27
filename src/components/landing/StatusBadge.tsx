@@ -1,7 +1,7 @@
 "use client";
 
 import { getComponents, getIncidents } from "@/actions/status";
-import Link from "next/link";
+import { Link } from "next-view-transitions";
 import { useState, useEffect } from "react";
 
 interface Component {

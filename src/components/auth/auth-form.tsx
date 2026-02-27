@@ -8,7 +8,7 @@ import * as z from "zod";
 import { Loader2, Lock, Command, Fingerprint } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { startAuthentication } from "@simplewebauthn/browser";
-import Link from "next/link";
+import { Link } from "next-view-transitions";
 
 import { Button } from "@/components/ui/button";
 import {

@@ -10,6 +10,7 @@ import { ShortcutProvider } from "@/components/providers/shortcut-provider";
 import { HmacProvider } from "@/components/hmac-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { getServerOS } from "@/lib/os";
+import { ViewTransitions } from "next-view-transitions";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.envault.tech"),
@@ -96,66 +97,68 @@ export default async function RootLayout({
   const os = await getServerOS();
 
   return (
-    <html lang="en" suppressHydrationWarning data-os={os}>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
-        <link
-          href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Instrument+Serif:ital,wght@0,400;0,700;1,400;1,700&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body className="min-h-screen bg-background font-sans antialiased">
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "SoftwareApplication",
-              name: "Envault",
-              applicationCategory: "DeveloperApplication",
-              operatingSystem: "Any",
-              description:
-                "Envault is a secure vault for your environment variables featuring end-to-end encryption.",
-              featureList:
-                "Secure Secret Storage, End-to-End Encryption, Team Collaboration, CLI Integration, AES-256-GCM",
-              offers: {
-                "@type": "Offer",
-                price: "0",
-                priceCurrency: "USD",
-              },
-            }),
-          }}
-        />
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <TooltipProvider>
-            <ShortcutProvider>
-              <HmacProvider>
-                {children}
-                <Toaster />
-                {user && (
-                  <>
-                    <AuthSync user={user} />
+    <ViewTransitions>
+      <html lang="en" suppressHydrationWarning data-os={os}>
+        <head>
+          <link rel="preconnect" href="https://fonts.googleapis.com" />
+          <link
+            rel="preconnect"
+            href="https://fonts.gstatic.com"
+            crossOrigin="anonymous"
+          />
+          {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+          <link
+            href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Instrument+Serif:ital,wght@0,400;0,700;1,400;1,700&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap"
+            rel="stylesheet"
+          />
+        </head>
+        <body className="min-h-screen bg-background font-sans antialiased">
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "SoftwareApplication",
+                name: "Envault",
+                applicationCategory: "DeveloperApplication",
+                operatingSystem: "Any",
+                description:
+                  "Envault is a secure vault for your environment variables featuring end-to-end encryption.",
+                featureList:
+                  "Secure Secret Storage, End-to-End Encryption, Team Collaboration, CLI Integration, AES-256-GCM",
+                offers: {
+                  "@type": "Offer",
+                  price: "0",
+                  priceCurrency: "USD",
+                },
+              }),
+            }}
+          />
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="light"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <TooltipProvider>
+              <ShortcutProvider>
+                <HmacProvider>
+                  {children}
+                  <Toaster />
+                  {user && (
+                    <>
+                      <AuthSync user={user} />
 
-                    <NotificationProvider />
-                  </>
-                )}
-                <Analytics />
-              </HmacProvider>
-            </ShortcutProvider>
-          </TooltipProvider>
-        </ThemeProvider>
-      </body>
-    </html>
+                      <NotificationProvider />
+                    </>
+                  )}
+                  <Analytics />
+                </HmacProvider>
+              </ShortcutProvider>
+            </TooltipProvider>
+          </ThemeProvider>
+        </body>
+      </html>
+    </ViewTransitions>
   );
 }

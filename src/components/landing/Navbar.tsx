@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "next-view-transitions";
 import { ShieldCheck } from "lucide-react";
 import HamburgerMenu from "@/components/ui/hamburger-menu";
 import { Button } from "@/components/ui/button";

@@ -4,7 +4,7 @@ import { motion, useInView } from "framer-motion"
 import { Terminal, Clipboard, Check, GitBranch, Zap, Shield, ArrowRight } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
-import Link from "next/link"
+import { Link } from "next-view-transitions"
 import { toast } from "sonner"
 
 export function CliSection() {

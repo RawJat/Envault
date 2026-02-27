@@ -7,6 +7,29 @@ import * as THREE from "three";
 import { Suspense } from "react";
 import { useTheme } from "next-themes";
 
+interface Particle {
+  angle: number;
+  radius: number;
+  localY: number;
+  orbitSpeed: number;
+  rotation: THREE.Euler;
+  scale: number;
+  brightness: number;
+  rotationSpeed: THREE.Vector3;
+}
+
+// Global cache to preserve state across Next.js route navigations where Scene remounts
+let cachedParticles: Particle[] | null = null;
+const globalPlanetRotation = { x: 0, y: 0 };
+
+// Simple seeded PRNG for consistent particle generation
+function createPRNG(seed: number) {
+  return function () {
+    const x = Math.sin(seed++) * 10000;
+    return x - Math.floor(x);
+  };
+}
+
 // Vertex Shader - Enhanced for realistic stone texture
 const vertexShader = `
 varying vec2 vUv;
@@ -185,29 +208,32 @@ function StonePlanet() {
 
   useFrame((state, delta) => {
     if (meshRef.current && materialRef.current) {
-      // Slow rotation for stone planet
-      meshRef.current.rotation.y += delta * 0.15;
-      meshRef.current.rotation.x += delta * 0.05;
+      // Use global rotation state to prevent snapping back to 0 on route transitions
+      globalPlanetRotation.y += delta * 0.15;
+      globalPlanetRotation.x += delta * 0.05;
+
+      meshRef.current.rotation.y = globalPlanetRotation.y;
+      meshRef.current.rotation.x = globalPlanetRotation.x;
       materialRef.current.uniforms.uTime.value = state.clock.getElapsedTime();
     }
 
     if (groupRef.current) {
-      // Subtle mouse parallax
+      // Smooth subtle mouse parallax
       groupRef.current.position.x = THREE.MathUtils.lerp(
         groupRef.current.position.x,
-        viewport.width * 0.25 + mouse.x * 0.5,
-        0.03,
+        mouse.x * 0.5,
+        0.05,
       );
       groupRef.current.position.y = THREE.MathUtils.lerp(
         groupRef.current.position.y,
         mouse.y * 0.3,
-        0.03,
+        0.05,
       );
     }
   });
 
   return (
-    <group ref={groupRef} position={[viewport.width * 0.25, 0, 0]}>
+    <group ref={groupRef} position={[0, 0, 0]}>
       <mesh ref={meshRef}>
         {/* Smaller planet for better proportion */}
         <sphereGeometry args={[2.0, 150, 150]} />
@@ -226,7 +252,7 @@ function StonePlanet() {
 }
 
 // Debris ring orbiting around the stone planet
-function OrbitingDebris() {
+function OrbitingDebris({ isAuthPage }: { isAuthPage?: boolean }) {
   const instancedMeshRef = useRef<THREE.InstancedMesh>(null);
   const materialRef = useRef<THREE.MeshBasicMaterial>(null);
   const { viewport } = useThree();
@@ -242,58 +268,55 @@ function OrbitingDebris() {
     }
   }, [resolvedTheme]);
 
-  interface Particle {
-    angle: number;
-    radius: number;
-    localY: number;
-    orbitSpeed: number;
-    rotation: THREE.Euler;
-    scale: number;
-    brightness: number;
-    rotationSpeed: THREE.Vector3;
-  }
-
   const [particles, setParticles] = useState<Particle[]>([]);
 
   useEffect(() => {
+    // If we've already generated particles (e.g., from landing page), reuse them
+    // This prevents the ring from randomly changing/"mirroring" on navigation!
+    if (cachedParticles) {
+      setParticles(cachedParticles);
+      return;
+    }
+
+    const prng = createPRNG(42); // deterministic seed
     const temp = [];
     for (let i = 0; i < particleCount; i++) {
       // Create narrow compressed tube-like ring
       const angle = (i / particleCount) * Math.PI * 2;
 
       // Very tight radial distribution - compressed into narrow band
-      const radiusBase = 3.0 + Math.random() * 0.5; // Closer to planet, narrow band
+      const radiusBase = 3.0 + prng() * 0.5; // Closer to planet, narrow band
 
       // Very narrow thickness for tight tube - only local Y displacement
-      const localY = (Math.random() - 0.5) * 0.8; // Even tighter tube vertically
+      const localY = (prng() - 0.5) * 0.8; // Even tighter tube vertically
 
       // Varied particle sizes (some large chunks, mostly small)
-      const sizeRandom = Math.random();
+      const sizeRandom = prng();
       const scale =
         sizeRandom > 0.9
-          ? 0.06 + Math.random() * 0.08
-          : 0.015 + Math.random() * 0.035;
+          ? 0.06 + prng() * 0.08
+          : 0.015 + prng() * 0.035;
 
       temp.push({
         angle: angle,
         radius: radiusBase,
         localY: localY, // Store local Y offset for ring thickness
-        orbitSpeed: 0.08 + Math.random() * 0.32,
+        orbitSpeed: 0.08 + prng() * 0.32,
         rotation: new THREE.Euler(
-          Math.random() * Math.PI * 2,
-          Math.random() * Math.PI * 2,
-          Math.random() * Math.PI * 2,
+          prng() * Math.PI * 2,
+          prng() * Math.PI * 2,
+          prng() * Math.PI * 2,
         ),
         scale: scale,
-        brightness: 0.3 + Math.random() * 0.7,
+        brightness: 0.3 + prng() * 0.7,
         rotationSpeed: new THREE.Vector3(
-          (Math.random() - 0.5) * 0.025,
-          (Math.random() - 0.5) * 0.025,
-          (Math.random() - 0.5) * 0.025,
+          (prng() - 0.5) * 0.025,
+          (prng() - 0.5) * 0.025,
+          (prng() - 0.5) * 0.025,
         ),
       });
     }
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    cachedParticles = temp;
     setParticles(temp);
   }, []);
 
@@ -318,30 +341,40 @@ function OrbitingDebris() {
   useFrame((state, delta) => {
     if (!instancedMeshRef.current) return;
 
-    const planetX = viewport.width * 0.25;
-    const ringTilt = Math.PI / 4; // 45 degree tilt
+    // Reintroduce tilt to exactly match the requested look
+    const tiltX = Math.PI / 5.5; // Forward tilt
+    const tiltZ = Math.PI / 8.5; // Tilt sideways
 
     particles.forEach((particle, i) => {
       // Update orbital angle - consistent smooth rotation
       particle.angle += delta * particle.orbitSpeed + scrollVelocity * 2;
 
-      // Calculate position in orbital plane - maintain consistent ring structure
-      const localX = Math.cos(particle.angle) * particle.radius;
-      const localZ = Math.sin(particle.angle) * particle.radius;
+      // Base circle in XY plane (if tilt was 0)
+      const baseRadius = particle.radius;
+      const x = Math.cos(particle.angle) * baseRadius;
+      const z = Math.sin(particle.angle) * baseRadius;
+      // Y is just local variance (thickness)
+      const y = particle.localY;
 
-      // Apply ring tilt transformation properly - single transformation
-      const x = planetX + localX;
-      const y =
-        particle.localY * Math.cos(ringTilt) - localZ * Math.sin(ringTilt);
-      const z =
-        particle.localY * Math.sin(ringTilt) + localZ * Math.cos(ringTilt);
+      // Apply 3D rotation matrix for the tilt
+      // Rotate around Z axis first, then X axis
 
-      // Update rotation
+      // 1. Z-axis rotation (tilt)
+      const x1 = x * Math.cos(tiltZ) - y * Math.sin(tiltZ);
+      const y1 = x * Math.sin(tiltZ) + y * Math.cos(tiltZ);
+      const z1 = z;
+
+      // 2. X-axis rotation (forward dip)
+      const finalX = x1;
+      const finalY = y1 * Math.cos(tiltX) - z1 * Math.sin(tiltX);
+      const finalZ = y1 * Math.sin(tiltX) + z1 * Math.cos(tiltX);
+
+      // Update particle rotation
       particle.rotation.x += particle.rotationSpeed.x * delta;
       particle.rotation.y += particle.rotationSpeed.y * delta;
       particle.rotation.z += particle.rotationSpeed.z * delta;
 
-      dummy.position.set(x, y, z);
+      dummy.position.set(finalX, finalY, finalZ);
       dummy.rotation.copy(particle.rotation);
       dummy.scale.setScalar(particle.scale);
       dummy.updateMatrix();
@@ -371,7 +404,7 @@ function OrbitingDebris() {
   );
 }
 
-function SceneContent() {
+function SceneContent({ isAuthPage }: { isAuthPage?: boolean }) {
   return (
     <>
       <PerspectiveCamera makeDefault position={[0, 0, 12]} />
@@ -379,16 +412,18 @@ function SceneContent() {
       <directionalLight position={[5, 5, 5]} intensity={1.2} />
       <directionalLight position={[-5, -5, -5]} intensity={0.3} />
       <StonePlanet />
-      <OrbitingDebris />
+      <OrbitingDebris isAuthPage={isAuthPage} />
     </>
   );
 }
 
-export function Scene() {
+export function Scene({ isAuthPage }: { isAuthPage?: boolean }) {
   const { resolvedTheme } = useTheme();
   const [opacity, setOpacity] = useState(1);
 
   useEffect(() => {
+    // Only fade on scroll for the landing page
+    if (isAuthPage) return;
     const handleScroll = () => {
       const heroHeight = window.innerHeight;
       const scrollY = window.scrollY;
@@ -403,17 +438,17 @@ export function Scene() {
 
   return (
     <div
-      className="absolute inset-0 pointer-events-none z-0 hidden md:block"
+      className={isAuthPage ? 'absolute inset-0 pointer-events-none z-0' : 'absolute inset-0 pointer-events-none z-0 hidden md:block'}
       style={
         {
           opacity,
-          viewTransitionName: "none",
+          viewTransitionName: 'auth-scene',
         } as React.CSSProperties & { viewTransitionName?: string }
       }
     >
       <Canvas gl={{ preserveDrawingBuffer: true }} key={resolvedTheme}>
         <Suspense fallback={null}>
-          <SceneContent />
+          <SceneContent isAuthPage={isAuthPage} />
         </Suspense>
       </Canvas>
     </div>
