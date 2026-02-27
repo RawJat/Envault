@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
-import Link from "next/link"
+import { Link } from "next-view-transitions"
 import { ShieldCheck, ArrowRight, Terminal, Clipboard, Check } from "lucide-react"
 import { useState } from "react"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
@@ -58,7 +58,9 @@ function InstallTerminal({ command, label }: { command: string; label: string })
 export function Hero() {
     return (
         <section className="relative h-screen w-full flex items-center justify-center overflow-hidden">
-            <Scene />
+            <div className="absolute inset-y-0 right-0 w-1/2 hidden md:block pointer-events-none z-0">
+                <Scene />
+            </div>
             <div className="container relative z-20 px-4 md:px-6 grid md:grid-cols-2 gap-12 items-center pt-16">
                 <div className="flex flex-col items-start text-left space-y-8 max-w-2xl">
                     <motion.div

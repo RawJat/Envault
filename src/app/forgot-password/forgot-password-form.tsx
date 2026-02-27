@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { Loader2, ArrowLeft } from 'lucide-react'
-import Link from 'next/link'
+import { Link } from 'next-view-transitions'
 import { toast } from 'sonner'
 
 

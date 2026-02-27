@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useNotificationStore } from "@/lib/stores/notification-store";
 import { Inbox, Trash2 } from "lucide-react";
-import Link from "next/link";
+import { Link } from "next-view-transitions";
 import { useRouter } from "next/navigation";
 import { useHotkeys } from "@/hooks/use-hotkeys";
 import { NotificationSkeleton } from "./notification-skeleton";

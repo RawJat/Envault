@@ -57,3 +57,10 @@ cli-go/.env
 
 # Generated documentation
 public/llms-full.txt
+
+# CLI Wrapper Binaries
+cli-wrapper/bin/envault.exe
+cli-wrapper/bin/envault
+cli-wrapper/bin/README.md
+cli-wrapper/*.zip
+cli-wrapper/test_extract/
