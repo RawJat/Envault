@@ -20,7 +20,7 @@ function GitHubConnectedContent() {
       window.opener.location.href = target;
       setTimeout(() => { setStatus("done"); window.close(); }, 800);
     } else {
-      console.warn("[GitHub Connected] No opener found — navigating self.");
+      console.warn("[GitHub Connected] No opener found - navigating self.");
       setTimeout(() => setStatus("no-opener"), 0);
       window.location.href = target;
     }

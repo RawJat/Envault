@@ -19,6 +19,12 @@ Before deploying, ensure you have the following environment variables configured
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase Service Role Key (for Admin tasks) | Yes |
 | `ENCRYPTION_KEY` | 32-byte hex string for Master Key | Yes |
 | `NEXT_PUBLIC_SITE_URL` | The URL where your app is hosted (e.g. `https://envault.app`) | Yes |
+| `NEXT_PUBLIC_APP_URL` | Same as `NEXT_PUBLIC_SITE_URL` - used for GitHub callback redirects | Yes |
+| `ENVAULT_GITHUB_APP_CLIENT_ID` | GitHub App Client ID | For GitHub Integration |
+| `ENVAULT_GITHUB_APP_CLIENT_SECRET` | GitHub App Client Secret | For GitHub Integration |
+| `ENVAULT_GITHUB_APP_PRIVATE_KEY` | RSA private key, single-line `\n`-escaped | For GitHub Integration |
+| `ENVAULT_GITHUB_WEBHOOK_SECRET` | Secret to verify GitHub webhook payloads | For GitHub Integration |
+| `NEXT_PUBLIC_GITHUB_APP_NAME` | Your GitHub App's slug name | For GitHub Integration |
 
 <Callout type="warn">
   Never check your `SUPABASE_SERVICE_ROLE_KEY` or `ENCRYPTION_KEY` into version control. Always set them in your deployment platform's dashboard.

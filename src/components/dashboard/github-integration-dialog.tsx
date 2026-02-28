@@ -111,13 +111,13 @@ export function GitHubIntegrationDialog({
   };
 
   const handleConnect = () => {
-    // GitHub's Setup URL callback does NOT forward the `state` URL param —
+    // GitHub's Setup URL callback does NOT forward the `state` URL param -
     // so we persist the projectId in a short-lived cookie before leaving.
     // The callback route reads it back to know which project to link.
     document.cookie = `github_oauth_project_id=${liveProject.id}; path=/; max-age=300; SameSite=Lax`;
 
     const appName = process.env.NEXT_PUBLIC_GITHUB_APP_NAME || "envault";
-    // Navigate the current tab — avoids all popup-blocker issues.
+    // Navigate the current tab - avoids all popup-blocker issues.
     window.location.href = `https://github.com/apps/${appName}/installations/new`;
   };
 
@@ -151,7 +151,7 @@ export function GitHubIntegrationDialog({
 
       if (error) throw error;
 
-      // Only clear the repo name — keep the installation ID so the dialog goes
+      // Only clear the repo name - keep the installation ID so the dialog goes
       // back to repo-selection state instead of needing a new GitHub OAuth flow.
       setLiveProject((p) => ({ ...p, github_repo_full_name: null }));
       toast.success("Repository unlinked");

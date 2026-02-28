@@ -85,7 +85,7 @@ export async function isGitHubCollaborator(
     // 204 = is a collaborator, 404 = not a collaborator
     return response.status === 204;
   } catch {
-    // On any error (network, bad token, etc.), fail safe — deny auto-approval
+    // On any error (network, bad token, etc.), fail safe - deny auto-approval
     return false;
   }
 }

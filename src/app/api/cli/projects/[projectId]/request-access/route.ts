@@ -10,7 +10,7 @@ export async function POST(
   const result = await validateCliToken(request);
   if ("status" in result) return result;
 
-  // Service tokens cannot request access — they should already have it
+  // Service tokens cannot request access - they should already have it
   if (result.type === "service") {
     return NextResponse.json(
       { error: "Service tokens cannot submit access requests." },
@@ -48,7 +48,7 @@ export async function POST(
     );
   }
 
-  // 4. Insert access request (idempotent — ignore unique conflicts)
+  // 4. Insert access request (idempotent - ignore unique conflicts)
   const { error: insertError } = await supabase
     .from("access_requests")
     .insert({ project_id: projectId, user_id: userId, status: "pending" });
@@ -99,7 +99,7 @@ export async function POST(
       ]).catch((e) => console.error("[request-access] Notification error:", e));
     }
   } catch (e) {
-    // Non-blocking — don't fail the request if notifications error
+    // Non-blocking - don't fail the request if notifications error
     console.error("[request-access] Failed to send notifications:", e);
   }
 

@@ -20,7 +20,7 @@ export default async function SharedProjectPage({
   const query = await searchParams;
   const requestedEnvSlug = query?.env;
 
-  // Kick off auth + profile lookup in parallel — both are independent
+  // Kick off auth + profile lookup in parallel - both are independent
   const supabase = await createClient();
   const adminSupabase = createAdminClient();
 
@@ -49,7 +49,7 @@ export default async function SharedProjectPage({
     redirect(`/project/${slug}`);
   }
 
-  // Fetch project (needs ownerId, so can't be earlier — but use admin to bypass RLS)
+  // Fetch project (needs ownerId, so can't be earlier - but use admin to bypass RLS)
   const { data: project, error: _projectError } = await adminSupabase
     .from("projects")
     .select("*")

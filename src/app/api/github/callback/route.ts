@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // GitHub Setup URL does NOT forward the `state` param —
+  // GitHub Setup URL does NOT forward the `state` param -
   // we read the projectId from the cookie we set before redirecting to GitHub.
   const cookieStore = await cookies();
   const projectId = cookieStore.get("github_oauth_project_id")?.value;
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
   }
 
   // 3. Update the project with the installation_id
-  // Use admin client to bypass RLS — we've already verified ownership above.
+  // Use admin client to bypass RLS - we've already verified ownership above.
   const adminSupabase = createAdminClient();
 
   // Fetch the slug first so we can redirect back to the correct project URL
@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // Redirect back to the project page — the UI detects ?success=github_linked
+  // Redirect back to the project page - the UI detects ?success=github_linked
   // and opens the GitHub integration dialog in repo-selection state.
   const projectSlug = projectData?.slug || projectId;
   const redirectResponse = NextResponse.redirect(

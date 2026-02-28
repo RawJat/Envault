@@ -84,7 +84,7 @@ export function ProjectsSync() {
     return () => {
       controller.abort();
     };
-  }, []); // Empty deps — runs once on mount
+  }, []); // Empty deps - runs once on mount
 
   return null;
 }

@@ -14,7 +14,7 @@ const nextConfig: NextConfig = {
 
   experimental: {
     // Optimize barrel-file imports so Turbopack only compiles used exports.
-    // lucide-react alone is imported in 59 files — without this, every file
+    // lucide-react alone is imported in 59 files - without this, every file
     // forces resolution of the entire icon tree on first compile.
     optimizePackageImports: [
       "lucide-react",

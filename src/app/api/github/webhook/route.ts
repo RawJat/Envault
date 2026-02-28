@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
   const event = req.headers.get("x-github-event");
   const payload = JSON.parse(body);
 
-  // GitHub App uninstalled — clear both fields for every project linked to this installation
+  // GitHub App uninstalled - clear both fields for every project linked to this installation
   if (event === "installation" && payload.action === "deleted") {
     const installationId: number = payload.installation?.id;
     if (installationId) {
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // GitHub App suspended (e.g. billing issue) — keep installation ID so reconnect is easy,
+  // GitHub App suspended (e.g. billing issue) - keep installation ID so reconnect is easy,
   // but the secrets route will fail the collaborator check anyway since the token will be invalid.
   // Nothing to do here unless you want to surface a warning in the UI.
 
