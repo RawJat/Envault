@@ -22,7 +22,7 @@ export async function GET(request: Request) {
 
   const supabase = createAdminClient();
   let projectId = new URL(request.url).searchParams.get("projectId") || "";
-  let user = { id: "", email: "" };
+  let user = { email: "" };
   let userId = "";
 
   if (result.type === 'service') {
@@ -30,14 +30,14 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
     projectId = result.projectId;
-    user = { id: `service-${result.projectId}`, email: "Service Token (CI)" };
+    user = { email: "Service Token (CI)" };
   } else {
     userId = result.userId;
     const { data: userData, error } = await supabase.auth.admin.getUserById(userId);
     if (error || !userData?.user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
-    user = { id: userData.user.id, email: userData.user.email || "" };
+    user = { email: userData.user.email || "" };
   }
 
   if (!projectId) {
@@ -55,10 +55,7 @@ export async function GET(request: Request) {
 
   if (!role) {
     return NextResponse.json(
-      {
-        error: "Forbidden: no access to this project",
-        user,
-      },
+      { error: "Forbidden: no access to this project" },
       { status: 403 },
     );
   }

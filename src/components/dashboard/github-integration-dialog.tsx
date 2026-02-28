@@ -110,7 +110,36 @@ export function GitHubIntegrationDialog({
     }
   };
 
-  const handleConnect = () => {
+  const handleConnect = async () => {
+    // Check if the user already has the GitHub App installed on another project.
+    // If so, reuse that installation_id and skip the GitHub redirect entirely.
+    const { data: existingProjects } = await supabase
+      .from("projects")
+      .select("github_installation_id")
+      .not("github_installation_id", "is", null)
+      .neq("id", liveProject.id)
+      .limit(1)
+      .single();
+
+    if (existingProjects?.github_installation_id) {
+      // Already installed — just copy the installation_id to this project
+      // and let the user pick a repo directly.
+      const { error } = await supabase
+        .from("projects")
+        .update({ github_installation_id: existingProjects.github_installation_id })
+        .eq("id", liveProject.id);
+
+      if (!error) {
+        setLiveProject((p) => ({
+          ...p,
+          github_installation_id: existingProjects.github_installation_id,
+        }));
+        fetchRepositories(existingProjects.github_installation_id);
+        return;
+      }
+    }
+
+    // No existing installation — go through the normal GitHub App install flow.
     // GitHub's Setup URL callback does NOT forward the `state` URL param -
     // so we persist the projectId in a short-lived cookie before leaving.
     // The callback route reads it back to know which project to link.
@@ -124,6 +153,25 @@ export function GitHubIntegrationDialog({
   const handleSelectRepo = async (repoFullName: string) => {
     setIsLoading(true);
     try {
+      // Prevent the same repo from being linked to more than one project.
+      // If shared, JIT access would auto-grant collaborators access to ALL
+      // linked projects simultaneously — a security risk for prod secrets.
+      const { data: conflict } = await supabase
+        .from("projects")
+        .select("id, name")
+        .eq("github_repo_full_name", repoFullName)
+        .neq("id", liveProject.id)
+        .limit(1)
+        .single();
+
+      if (conflict) {
+        toast.error(
+          `This repository is already linked to another project ("${conflict.name}"). Each repository can only be linked to one project.`,
+        );
+        setIsLoading(false);
+        return;
+      }
+
       const { error } = await supabase
         .from("projects")
         .update({ github_repo_full_name: repoFullName })

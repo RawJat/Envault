@@ -243,6 +243,7 @@ export async function getPersonalAccessTokens() {
     .from("personal_access_tokens")
     .select("*")
     .eq("user_id", user.id)
+    .not("name", "ilike", "CLI Access Token%")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -262,6 +263,14 @@ export async function revokePersonalAccessToken(id: string) {
     return { error: "Not authenticated" };
   }
 
+  // Also revoke the paired Access Token for this device
+  const { data: revokedToken } = await supabase
+    .from("personal_access_tokens")
+    .select("name, metadata")
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .single();
+
   const { error } = await supabase
     .from("personal_access_tokens")
     .delete()
@@ -270,6 +279,16 @@ export async function revokePersonalAccessToken(id: string) {
 
   if (error) {
     return { error: error.message };
+  }
+
+  // If this was a refresh token, also delete the paired access token for the same device
+  if (revokedToken?.name?.startsWith("CLI Refresh Token on ")) {
+    const deviceName = revokedToken.name.replace("CLI Refresh Token on ", "");
+    await supabase
+      .from("personal_access_tokens")
+      .delete()
+      .eq("user_id", user.id)
+      .eq("name", `CLI Access Token on ${deviceName}`);
   }
 
   return { success: true };
