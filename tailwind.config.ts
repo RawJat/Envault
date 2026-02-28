@@ -87,6 +87,9 @@ const config: Config = {
             },
         },
     },
+    future: {
+        hoverOnlyWhenSupported: true,
+    },
     plugins: [animate],
 };
 export default config;

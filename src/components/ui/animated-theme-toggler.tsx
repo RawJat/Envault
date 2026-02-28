@@ -43,7 +43,7 @@ export const AnimatedThemeToggler = ({
       transition.ready.then(() => {
         // Apply ripple animation from button
         if (!buttonRef.current) return;
-        
+
         const { top, left, width, height } =
           buttonRef.current.getBoundingClientRect();
         const x = left + width / 2;
@@ -78,7 +78,7 @@ export const AnimatedThemeToggler = ({
       <button
         ref={buttonRef}
         onClick={toggleTheme}
-        className={cn(className)}
+        className={cn("cursor-pointer min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded-md", className)}
         data-theme-toggle
         {...props}
       >
@@ -96,7 +96,7 @@ export const AnimatedThemeToggler = ({
         <button
           ref={buttonRef}
           onClick={toggleTheme}
-          className={cn(className)}
+          className={cn("cursor-pointer min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded-md", className)}
           data-theme-toggle
           {...props}
         >

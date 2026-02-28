@@ -20,7 +20,7 @@ export const NotificationBell = forwardRef<HTMLButtonElement, NotificationBellPr
             ref={ref}
             {...props}
             className={cn(
-                'inline-flex items-center justify-center h-10 px-3 rounded-md transition-colors gap-2',
+                'inline-flex items-center justify-center min-h-[44px] min-w-[44px] px-3 rounded-md transition-colors gap-2 cursor-pointer',
                 'hover:bg-accent hover:text-accent-foreground',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                 className

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState, useMemo } from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { PerspectiveCamera } from "@react-three/drei";
 import * as THREE from "three";
 import { Suspense } from "react";
@@ -182,7 +182,6 @@ function StonePlanet() {
   const meshRef = useRef<THREE.Mesh>(null);
   const groupRef = useRef<THREE.Group>(null);
   const materialRef = useRef<THREE.ShaderMaterial>(null);
-  const { viewport } = useThree();
   const { resolvedTheme } = useTheme();
   const [mouse, setMouse] = useState({ x: 0, y: 0 });
 
@@ -251,13 +250,13 @@ function StonePlanet() {
   );
 }
 
+const particleCount = 2000; // Increased for denser compressed tube
+
 // Debris ring orbiting around the stone planet
-function OrbitingDebris({ isAuthPage }: { isAuthPage?: boolean }) {
+function OrbitingDebris() {
   const instancedMeshRef = useRef<THREE.InstancedMesh>(null);
   const materialRef = useRef<THREE.MeshBasicMaterial>(null);
-  const { viewport } = useThree();
   const { resolvedTheme } = useTheme();
-  const particleCount = 2000; // Increased for denser compressed tube
 
   // Update material color based on theme
   useEffect(() => {
@@ -268,14 +267,9 @@ function OrbitingDebris({ isAuthPage }: { isAuthPage?: boolean }) {
     }
   }, [resolvedTheme]);
 
-  const [particles, setParticles] = useState<Particle[]>([]);
-
-  useEffect(() => {
-    // If we've already generated particles (e.g., from landing page), reuse them
-    // This prevents the ring from randomly changing/"mirroring" on navigation!
+  const [particles] = useState<Particle[]>(() => {
     if (cachedParticles) {
-      setParticles(cachedParticles);
-      return;
+      return cachedParticles;
     }
 
     const prng = createPRNG(42); // deterministic seed
@@ -317,8 +311,8 @@ function OrbitingDebris({ isAuthPage }: { isAuthPage?: boolean }) {
       });
     }
     cachedParticles = temp;
-    setParticles(temp);
-  }, []);
+    return temp;
+  });
 
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const [scrollVelocity, setScrollVelocity] = useState(0);
@@ -404,7 +398,7 @@ function OrbitingDebris({ isAuthPage }: { isAuthPage?: boolean }) {
   );
 }
 
-function SceneContent({ isAuthPage }: { isAuthPage?: boolean }) {
+function SceneContent() {
   return (
     <>
       <PerspectiveCamera makeDefault position={[0, 0, 12]} />
@@ -412,7 +406,7 @@ function SceneContent({ isAuthPage }: { isAuthPage?: boolean }) {
       <directionalLight position={[5, 5, 5]} intensity={1.2} />
       <directionalLight position={[-5, -5, -5]} intensity={0.3} />
       <StonePlanet />
-      <OrbitingDebris isAuthPage={isAuthPage} />
+      <OrbitingDebris />
     </>
   );
 }
@@ -434,7 +428,7 @@ export function Scene({ isAuthPage }: { isAuthPage?: boolean }) {
 
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [isAuthPage]);
 
   return (
     <div
@@ -448,7 +442,7 @@ export function Scene({ isAuthPage }: { isAuthPage?: boolean }) {
     >
       <Canvas gl={{ preserveDrawingBuffer: true }} key={resolvedTheme}>
         <Suspense fallback={null}>
-          <SceneContent isAuthPage={isAuthPage} />
+          <SceneContent />
         </Suspense>
       </Canvas>
     </div>
