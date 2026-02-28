@@ -45,10 +45,10 @@ For more details, check out the [CLI Documentation](./cli-go/README.md).
 
 ### Local Testing
 
-To use the Envault CLI with a local development server, set the `ENVAULT_API_URL` environment variable:
+To use the Envault CLI with a local development server, set the `ENVAULT_CLI_URL` environment variable:
 
 ```bash
-export ENVAULT_API_URL="http://localhost:3000/api/cli"
+export ENVAULT_CLI_URL="http://localhost:3000/api/cli"
 envault login
 ```
 

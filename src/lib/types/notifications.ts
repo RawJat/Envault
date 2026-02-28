@@ -51,6 +51,7 @@ export type NotificationType =
   | "system_update"
   | "maintenance"
   | "security_advisory"
+  | "incident_created"
   // Account Events
   | "password_changed"
   | "email_changed"
@@ -123,6 +124,7 @@ export const NOTIFICATION_ICONS: Record<NotificationType, string> = {
   system_update: "Sparkles",
   maintenance: "Wrench",
   security_advisory: "Shield",
+  incident_created: "Siren",
   // Account Events
   password_changed: "KeyRound",
   email_changed: "AtSign",

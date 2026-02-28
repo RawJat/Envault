@@ -145,7 +145,7 @@ The Envault CLI uses the following environment variables for configuration:
 
 | Variable              | Description                          | Default                        |
 | :-------------------- | :----------------------------------- | :----------------------------- |
-| `ENVAULT_API_URL`     | The URL of the Envault API server.   | `https://envault.tech/api/cli` |
+| `ENVAULT_CLI_URL`     | The URL of the Envault API server.   | `https://envault.tech/api/cli` |
 | `ENVAULT_CONFIG_FILE` | Path to a custom configuration file. | `~/.envault/config.toml`       |
 
 ### Using Local Instance
@@ -153,7 +153,7 @@ The Envault CLI uses the following environment variables for configuration:
 To test against a local instance of Envault:
 
 ```bash
-export ENVAULT_API_URL="http://localhost:3000/api/cli"
+export ENVAULT_CLI_URL="http://localhost:3000/api/cli"
 envault login
 ```
 

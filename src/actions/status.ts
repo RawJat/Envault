@@ -195,6 +195,52 @@ export async function createIncident(
 
   revalidatePath("/status");
   revalidatePath("/admin/status");
+
+  // Notify all users (app notification + email) respecting their preferences
+  try {
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const admin = createAdminClient();
+
+    // Fetch all auth users
+    const { data: usersData } = await admin.auth.admin.listUsers({ perPage: 1000 });
+    const users = usersData?.users ?? [];
+
+    const notificationTitle = `New Incident: ${title}`;
+    const notificationMessage = `${severity.charAt(0).toUpperCase() + severity.slice(1)} severity – ${initialMessage}`;
+
+    const { createNotification } = await import("@/lib/notifications");
+    const { sendSystemUpdateEmail } = await import("@/lib/email");
+
+    await Promise.allSettled(
+      users.map(async (user) => {
+        // App notification
+        await createNotification({
+          userId: user.id,
+          type: "incident_created",
+          title: notificationTitle,
+          message: notificationMessage,
+          variant: severity === "critical" ? "error" : severity === "major" ? "warning" : "info",
+          metadata: { incidentId, severity, status },
+          actionUrl: "/status",
+          actionType: "view_status",
+        });
+
+        // Email notification (sendSystemUpdateEmail checks email_system_updates preference)
+        if (user.email) {
+          await sendSystemUpdateEmail(
+            user.email,
+            notificationTitle,
+            notificationMessage,
+            user.id,
+          );
+        }
+      }),
+    );
+  } catch (notifError) {
+    // Don't fail incident creation if notifications fail
+    console.error("Failed to send incident notifications:", notifError);
+  }
+
   return { success: true, incidentId };
 }
 

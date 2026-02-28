@@ -220,7 +220,7 @@ export function ImportEnvDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden border-b">
+      <DialogContent className="w-[95vw] max-w-lg sm:w-full max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden border-b">
         <div className="px-6 pt-6">
           <DialogHeader>
             <DialogTitle>Import Environment Variables</DialogTitle>

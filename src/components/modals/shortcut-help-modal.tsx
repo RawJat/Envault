@@ -68,7 +68,7 @@ export function ShortcutHelpModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl h-[80vh] overflow-y-auto md:h-auto">
+      <DialogContent className="w-[95vw] max-w-2xl sm:w-full h-[80vh] overflow-y-auto md:h-auto">
         <DialogHeader>
           <DialogTitle>Keyboard Shortcuts</DialogTitle>
           <DialogDescription>

@@ -53,8 +53,9 @@ import { toast } from "sonner";
 import { deleteProject as deleteProjectAction } from "@/app/project-actions";
 import { ShareProjectDialog } from "@/components/dashboard/share-project-dialog";
 import { RenameProjectDialog } from "@/components/dashboard/rename-project-dialog";
+import { GitHubIntegrationDialog } from "@/components/dashboard/github-integration-dialog";
 import { AppHeader } from "@/components/dashboard/app-header";
-import { Edit3 } from "lucide-react";
+import { Edit3, Github } from "lucide-react";
 
 interface ProjectDetailViewProps {
   project: Project;
@@ -74,6 +75,7 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [githubDialogOpen, setGithubDialogOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
@@ -182,6 +184,22 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
     document.body.removeChild(a);
   };
 
+  // Open the GitHub integration dialog after a successful callback.
+  // We persist the intent in sessionStorage so it survives Fast Refresh remounts
+  // (in dev) and any intermediate re-renders before the dialog can mount.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("success") === "github_linked") {
+      sessionStorage.setItem("open_github_dialog", "1");
+      // Clean up URL immediately so a refresh doesn't re-trigger
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+    if (sessionStorage.getItem("open_github_dialog")) {
+      sessionStorage.removeItem("open_github_dialog");
+      setTimeout(() => setGithubDialogOpen(true), 0);
+    }
+  }, []);
+
   const handleEnvironmentChange = (envSlug: string) => {
     if (!isAdvancedMode) return;
     router.replace(`${projectBasePath}?env=${encodeURIComponent(envSlug)}`);
@@ -206,6 +224,11 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
             {(project.role === "owner" || project.role === "editor") && (
               <DropdownMenuItem onClick={() => setShareDialogOpen(true)}>
                 <Share2 className="w-4 h-4 mr-2" /> Share
+              </DropdownMenuItem>
+            )}
+            {project.role === "owner" && (
+              <DropdownMenuItem onClick={() => setGithubDialogOpen(true)}>
+                <Github className="w-4 h-4 mr-2" /> GitHub Integration
               </DropdownMenuItem>
             )}
             {project.role === "owner" && (
@@ -429,6 +452,11 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
         project={project}
         open={renameDialogOpen}
         onOpenChange={setRenameDialogOpen}
+      />
+      <GitHubIntegrationDialog
+        project={project}
+        open={githubDialogOpen}
+        onOpenChange={setGithubDialogOpen}
       />
     </div>
   );

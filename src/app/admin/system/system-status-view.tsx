@@ -392,6 +392,7 @@ function IncidentManager({
   components: Component[];
 }) {
   const [open, setOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [incidents, setIncidents] = useState(initialIncidents);
 
@@ -423,6 +424,9 @@ function IncidentManager({
   };
 
   const handleCreate = async () => {
+    // Prevent double-submission
+    if (isCreating) return;
+
     // Validate required fields
     if (!title.trim()) {
       toast.error("Incident title is required");
@@ -437,6 +441,7 @@ function IncidentManager({
       return;
     }
 
+    setIsCreating(true);
     try {
       await createIncident(
         title.trim(),
@@ -459,6 +464,8 @@ function IncidentManager({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       toast.error(e.message);
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -593,12 +600,13 @@ function IncidentManager({
                 <Button
                   type="submit"
                   disabled={
+                    isCreating ||
                     !title.trim() ||
                     !message.trim() ||
                     selectedComponents.length === 0
                   }
                 >
-                  Create Incident <Kbd>{getModifierKey("mod")}</Kbd>
+                  {isCreating ? "Creating..." : "Create Incident"} <Kbd>{getModifierKey("mod")}</Kbd>
                   <Kbd>
                     <CornerDownLeft className="w-3 h-3" />
                   </Kbd>
@@ -621,7 +629,7 @@ function IncidentManager({
                 <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
                   <div className="flex-1 min-w-0">
                     <CardTitle className="text-base font-bold flex flex-wrap items-center gap-2">
-                      <span className="truncate">{incident.title}</span>
+                      <span className="flex">{incident.title}</span>
                       <Badge
                         variant={
                           incident.status === "resolved"

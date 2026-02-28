@@ -89,6 +89,7 @@ async function shouldCreateNotification(
     case "maintenance":
     case "rate_limit_warning":
     case "email_failed":
+    case "incident_created":
       return prefs.app_system_updates !== false;
 
     default:

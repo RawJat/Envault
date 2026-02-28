@@ -116,7 +116,7 @@ export function CreateProjectDialog({
           </Kbd>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="w-[95vw] max-w-lg sm:w-full">
         <DialogHeader>
           <DialogTitle>Create Project</DialogTitle>
           <DialogDescription>

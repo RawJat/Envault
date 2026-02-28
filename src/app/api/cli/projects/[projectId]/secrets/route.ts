@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from "uuid";
 import { PushSecretsSchema } from "@/lib/schemas";
 import { getProjectRole } from "@/lib/permissions";
 import { resolveProjectEnvironment } from "@/lib/cli-environments";
+import { isGitHubCollaborator, getGitHubUsername } from "@/lib/github";
 
 export async function GET(
   request: Request,
@@ -65,7 +66,7 @@ export async function GET(
     // Check if user has full project access (owner or member)
     const { data: project } = await supabase
       .from("projects")
-      .select("user_id")
+      .select("user_id, github_installation_id, github_repo_full_name")
       .eq("id", projectId)
       .single();
 
@@ -121,13 +122,54 @@ export async function GET(
           };
         });
       } else {
-        // No access
-        return NextResponse.json(
-          {
-            error: `Forbidden: no access to '${resolvedEnvironment.environment.slug}' environment`,
-          },
-          { status: 403 },
-        );
+        // ── JIT GitHub Collaborator Check ──────────────────────────────────
+        // If the project is linked to a GitHub repo, check if the requesting
+        // user is a collaborator before falling back to a manual request.
+        const installationId = project?.github_installation_id;
+        const repoFullName = project?.github_repo_full_name;
+
+        if (installationId && repoFullName) {
+          const githubUsername = await getGitHubUsername(supabase, userId);
+
+          if (githubUsername) {
+            const isCollaborator = await isGitHubCollaborator(
+              installationId,
+              repoFullName,
+              githubUsername
+            );
+
+            if (isCollaborator) {
+              // Auto-approve: add as viewer and return secrets
+              await supabase.from("project_members").insert({
+                project_id: projectId,
+                user_id: userId,
+                role: "viewer",
+              });
+
+              const { data: jitSecrets, error: jitError } = await supabase
+                .from("secrets")
+                .select("id, key, value")
+                .eq("project_id", projectId)
+                .eq("environment_id", resolvedEnvironment.environment.id);
+
+              if (jitError)
+                return NextResponse.json({ error: jitError.message }, { status: 500 });
+
+              targetSecrets = jitSecrets || [];
+            }
+          }
+        }
+
+        // If JIT did not populate targetSecrets, the user has no access
+        if (targetSecrets.length === 0) {
+          return NextResponse.json(
+            {
+              error: "ACCESS_REQUIRED",
+              message: `You do not have access to this project. Run with --request-access to submit a request to the project owner.`,
+            },
+            { status: 403 }
+          );
+        }
       }
     }
   }

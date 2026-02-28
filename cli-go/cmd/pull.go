@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -114,9 +115,18 @@ var pullCmd = &cobra.Command{
 		respBytes, err := client.Get(path)
 		if err != nil {
 			s.Stop()
-			fmt.Println(ui.ColorRed("Pull failed."))
-			fmt.Println(ui.ColorRed(classifyAPIError(err)))
-			os.Exit(1)
+				// Check specifically for the ACCESS_REQUIRED JIT error
+				var apiErr *api.APIError
+				if errors.As(err, &apiErr) && apiErr.StatusCode == 403 {
+					var errBody struct {
+						Error   string `json:"error"`
+						Message string `json:"message"`
+					}
+					if jsonErr := json.Unmarshal([]byte(apiErr.Body), &errBody); jsonErr == nil && errBody.Error == "ACCESS_REQUIRED" {
+						handleAccessRequired(client, projectId)
+						return
+					}
+				}
 		}
 
 		var secretsResp SecretsResponse
@@ -157,6 +167,41 @@ var pullCmd = &cobra.Command{
 		s.Stop()
 		fmt.Println(ui.ColorGreen(fmt.Sprintf("✔ Pulled %d secrets from %s into %s.", len(secretsResp.Secrets), targetEnv, targetFile)))
 	},
+}
+
+// handleAccessRequired prompts the user to request access to the project
+// when the server returns ACCESS_REQUIRED (no existing membership + GitHub check failed/skipped).
+func handleAccessRequired(client *api.Client, projectId string) {
+	fmt.Println(ui.ColorYellow("\n⚠  You do not have access to this project."))
+
+	confirm := false
+	prompt := &survey.Confirm{
+		Message: "Would you like to send an access request to the project owner?",
+		Default: false,
+	}
+	if err := survey.AskOne(prompt, &confirm); err != nil || !confirm {
+		fmt.Println(ui.ColorYellow("Access request cancelled."))
+		return
+	}
+
+	s := ui.NewSpinner("Sending access request...")
+	s.Start()
+
+	path := fmt.Sprintf("/projects/%s/request-access", projectId)
+	_, err := client.Post(path, nil)
+	s.Stop()
+
+	if err != nil {
+		var apiErr *api.APIError
+		if errors.As(err, &apiErr) && apiErr.StatusCode == 409 {
+			fmt.Println(ui.ColorBlue("ℹ  You already have a pending access request for this project."))
+			return
+		}
+		fmt.Println(ui.ColorRed(fmt.Sprintf("Failed to send access request: %v", err)))
+		return
+	}
+
+	fmt.Println(ui.ColorGreen("✔ Access request sent! The project owner will be notified via email and in-app notification."))
 }
 
 func init() {
