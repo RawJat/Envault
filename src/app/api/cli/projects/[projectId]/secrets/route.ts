@@ -146,6 +146,15 @@ export async function GET(
                 role: "viewer",
               });
 
+              // Clean up any pending access request so the dashboard doesn't
+              // show them as stuck — JIT approval supersedes a manual request.
+              await supabase
+                .from("access_requests")
+                .delete()
+                .eq("project_id", projectId)
+                .eq("user_id", userId)
+                .eq("status", "pending");
+
               const { data: jitSecrets, error: jitError } = await supabase
                 .from("secrets")
                 .select("id, key, value")

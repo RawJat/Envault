@@ -310,7 +310,7 @@ export function GitHubIntegrationDialog({
 
           {isLinked && hasSelectedRepo && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between gap-3 p-4 border rounded-lg bg-green-50/50 dark:bg-green-950/20 border-green-200 dark:border-green-900">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border rounded-lg bg-green-50/50 dark:bg-green-950/20 border-green-200 dark:border-green-900">
                 <div className="flex items-center gap-3 min-w-0">
                   <CheckCircle2 className="h-5 w-5 shrink-0 text-green-600 dark:text-green-500" />
                   <div className="min-w-0">
@@ -327,7 +327,7 @@ export function GitHubIntegrationDialog({
                   size="sm"
                   onClick={handleUnlink}
                   disabled={isLoading}
-                  className="shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  className="shrink-0 w-full sm:w-auto text-destructive hover:text-destructive hover:bg-destructive/10"
                 >
                   {isLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -339,7 +339,7 @@ export function GitHubIntegrationDialog({
               </div>
               <p className="text-sm text-muted-foreground">
                 Anyone who is a collaborator on{" "}
-                <strong>{liveProject.github_repo_full_name}</strong> will
+                <strong className="break-all">{liveProject.github_repo_full_name}</strong> will
                 automatically be granted Viewer access when they run{" "}
                 <code className="bg-muted px-1 py-0.5 rounded">
                   envault pull
@@ -351,7 +351,7 @@ export function GitHubIntegrationDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" className="w-full sm:w-auto" onClick={() => onOpenChange(false)}>
             Close
           </Button>
         </DialogFooter>
