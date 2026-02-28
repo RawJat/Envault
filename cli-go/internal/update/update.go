@@ -16,9 +16,10 @@ import (
 )
 
 const (
-	repoUrl     = "https://api.github.com/repos/DinanathDash/Envault/releases/latest"
-	ttlDuration = 12 * time.Hour
-	cacheFile   = "update_cache.json"
+	repoUrl          = "https://api.github.com/repos/DinanathDash/Envault/releases/latest"
+	ttlDuration      = 12 * time.Hour
+	refreshThrottle  = 5 * time.Minute // minimum gap between consecutive network calls
+	cacheFile        = "update_cache.json"
 )
 
 type CacheData struct {
@@ -41,7 +42,16 @@ func PerformBackgroundCheck() {
 
 // FetchLatestAndCache performs the actual network request and cache writing.
 // This should be called by the background process.
+// It skips the network call if the cache was updated within refreshThrottle to
+// avoid hammering the GitHub API when many CLI commands run in quick succession.
 func FetchLatestAndCache() {
+	// Throttle: skip if we refreshed very recently.
+	if existing, err := readCache(); err == nil {
+		if time.Since(existing.LastChecked) < refreshThrottle {
+			return
+		}
+	}
+
 	resp, err := http.Get(repoUrl)
 	if err != nil {
 		return
@@ -68,16 +78,13 @@ func FetchLatestAndCache() {
 	saveCache(release.TagName)
 }
 
-// ShouldNotfiyIfUpdateAvailable checks if an update is available based on local cache
-// and spawns a background check if the cache TTL has expired.
 func ShouldNotifyIfUpdateAvailable(currentVersion string) {
 	cache, err := readCache()
-	if err != nil || time.Since(cache.LastChecked) > ttlDuration {
-		// Cache expired or missing, spawn background process to update it
-		PerformBackgroundCheck()
-		if err != nil {
-			return // Nothing to show yet, cache is missing or corrupt
-		}
+
+	PerformBackgroundCheck()
+
+	if err != nil {
+		return // Nothing to show yet; cache is missing or corrupt.
 	}
 
 	// Compare current version with cached latest version

@@ -73,6 +73,21 @@ File resolution (if `--file` not provided):
 2. auto-detected `.env*` file
 3. fallback `.env`
 
+### Access Request Flow
+
+If the project has a GitHub repository linked and you are a collaborator on that repository, `pull` automatically grants you **Viewer** access and returns the secrets without any manual invite.
+
+If you do not have access and are not a recognized GitHub collaborator, the CLI prompts:
+
+> You do not have access to this project. Would you like to send an access request to the project owner? (y/N)
+
+- **y**: an access request notification is sent to the project owner. Run `envault pull` again once approved.
+- **N**: exits cleanly without sending a request.
+
+If a request was already submitted and is still pending:
+
+> You already have a pending access request for this project.
+
 ---
 
 ## `deploy`
@@ -206,5 +221,5 @@ envault -v
 ## Error Behavior
 
 - Invalid/missing auth token returns `401` and exits non-zero.
-- Unauthorized access returns `403` and exits non-zero.
+- Unauthorized access (`403`) prints a clear `Access denied` message and exits non-zero. If JIT access via GitHub is configured, the user is prompted to send an access request instead.
 - Invalid `--project` value (non-UUID) is rejected client-side before API call.
