@@ -17,10 +17,10 @@ import {
   TimelineIcon,
   TimelineBody,
 } from "@/components/ui/timeline";
-import { CheckCircle2, AlertTriangle, XCircle, Wrench } from "lucide-react";
-
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/server";
+import { STATUS_CONFIG, INCIDENT_SEVERITY_LEVEL, INCIDENT_PHASE_CONFIG, type StatusLevel } from "@/lib/status-config";
+import { StatusPill } from "@/components/ui/status-pill";
 
 import { FormattedDate } from "@/components/ui/formatted-date";
 
@@ -41,7 +41,7 @@ interface Incident {
   id: string;
   title: string;
   status: "investigating" | "identified" | "monitoring" | "resolved";
-  severity: "minor" | "major" | "critical";
+  severity: "minor" | "major" | "critical" | "maintenance";
   created_at: string;
   incident_updates: IncidentUpdate[];
 }
@@ -63,41 +63,25 @@ export default async function StatusPage() {
     (i: Incident) => i.status === "resolved",
   );
 
-  const hasActiveIncidents = activeIncidents.length > 0;
-  const hasOutage = components.some((c: Component) => c.status === "outage");
-  const hasDegraded = components.some(
-    (c: Component) => c.status === "degraded",
+  // Compute worst level across all component statuses + incident severities,
+  // using the same priority order as system-status.ts so both data paths agree.
+  const levelOrder: StatusLevel[] = ["operational", "maintenance", "degraded", "outage"];
+  const worstOf = (levels: StatusLevel[]): StatusLevel =>
+    levels.reduce<StatusLevel>(
+      (worst, cur) => (levelOrder.indexOf(cur) > levelOrder.indexOf(worst) ? cur : worst),
+      "operational",
+    );
+
+  const componentLevels: StatusLevel[] = components.map(
+    (c: Component) => (c.status as StatusLevel) ?? "operational",
   );
-  const hasMaintenance = components.some(
-    (c: Component) => c.status === "maintenance",
+  const incidentLevels: StatusLevel[] = activeIncidents.map(
+    (i: Incident) => INCIDENT_SEVERITY_LEVEL[i.severity] ?? "degraded",
   );
 
-  let statusColor = "text-emerald-500";
-  let statusBg = "bg-emerald-500/10 border-emerald-500/20";
-  let statusText = "All Systems Operational";
-  let StatusIcon = CheckCircle2;
-  let statusMessage = "All services are running smoothly.";
+  const currentLevel: StatusLevel = worstOf([...componentLevels, ...incidentLevels]);
 
-  if (hasOutage) {
-    statusColor = "text-red-500";
-    statusBg = "bg-red-500/10 border-red-500/20";
-    statusText = "Major System Outage";
-    StatusIcon = XCircle;
-    statusMessage =
-      "We are currently experiencing a major outage. Our team is investigating.";
-  } else if (hasActiveIncidents || hasDegraded) {
-    statusColor = "text-amber-500";
-    statusBg = "bg-amber-500/10 border-amber-500/20";
-    statusText = "Partial System Outage";
-    StatusIcon = AlertTriangle;
-    statusMessage = "Some systems are experiencing issues.";
-  } else if (hasMaintenance) {
-    statusColor = "text-blue-500";
-    statusBg = "bg-blue-500/10 border-blue-500/20";
-    statusText = "System Maintenance";
-    StatusIcon = Wrench;
-    statusMessage = "Scheduled maintenance is currently in progress.";
-  }
+  const { message: statusMessage } = STATUS_CONFIG[currentLevel];
 
   return (
     <div className="flex min-h-screen flex-col font-sans selection:bg-primary/20 relative sharp bg-background text-foreground">
@@ -110,27 +94,7 @@ export default async function StatusPage() {
         <div className="max-w-4xl mx-auto space-y-16 relative z-10">
           {/* Hero Status Section */}
           <div className="text-center space-y-6 md:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <div
-              className={cn(
-                "inline-flex items-center gap-2 md:gap-3 px-4 md:px-6 py-2.5 md:py-3 rounded-full border backdrop-blur-sm",
-                statusBg,
-              )}
-            >
-              <StatusIcon
-                className={cn(
-                  "w-5 h-5 md:w-6 md:h-6 animate-pulse",
-                  statusColor,
-                )}
-              />
-              <span
-                className={cn(
-                  "text-base md:text-lg font-bold tracking-tight",
-                  statusColor,
-                )}
-              >
-                {statusText}.
-              </span>
-            </div>
+            <StatusPill level={currentLevel} />
 
             <div className="space-y-3 md:space-y-4 max-w-2xl mx-auto px-2">
               <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-medium tracking-tight">
@@ -171,7 +135,11 @@ export default async function StatusPage() {
                       <div className="flex flex-row sm:items-start sm:justify-between gap-3">
                         <div className="flex items-start gap-2 md:gap-3 flex-1 min-w-0">
                           <div className="flex h-7 items-center shrink-0">
-                            <AlertTriangle className="h-5 w-5 md:h-6 md:w-6 text-red-500" />
+                            {(() => {
+                              const level = INCIDENT_SEVERITY_LEVEL[incident.severity];
+                              const I = STATUS_CONFIG[level].icon;
+                              return <I className={cn("h-5 w-5 md:h-6 md:w-6", STATUS_CONFIG[level].color)} />;
+                            })()}
                           </div>
                           <h3 className="text-lg md:text-xl font-bold break-words">
                             {incident.title}
@@ -205,7 +173,7 @@ export default async function StatusPage() {
                                       <TimelineSeparator className="w-px bg-border top-0 left-1/2 -translate-x-1/2 h-full" />
                                     )}
                                     <TimelineIcon className="bg-background border-2 border-border size-4 md:size-5 p-0 z-10 shrink-0">
-                                      <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-muted-foreground" />
+                                      <div className={cn("w-1.5 h-1.5 md:w-2 md:h-2 rounded-full", INCIDENT_PHASE_CONFIG[update.status].dot)} />
                                     </TimelineIcon>
                                   </TimelineHeader>
                                   <TimelineBody
@@ -226,11 +194,8 @@ export default async function StatusPage() {
                                             formatStr="MMM d, h:mm a"
                                           />
                                         </span>
-                                        <span className="text-xs font-mono tracking-wider text-muted-foreground">
-                                          {update.status
-                                            .charAt(0)
-                                            .toUpperCase() +
-                                            update.status.slice(1)}
+                                        <span className={cn("text-xs font-mono tracking-wider font-semibold", INCIDENT_PHASE_CONFIG[update.status].color)}>
+                                          {INCIDENT_PHASE_CONFIG[update.status].label}
                                         </span>
                                       </div>
                                       <p className="text-sm md:text-base text-foreground/90 leading-relaxed break-words">
@@ -270,13 +235,8 @@ export default async function StatusPage() {
                     <div
                       className={cn(
                         "w-2 h-2 rounded-full ring-2 ring-offset-2 ring-offset-background transition-all shrink-0",
-                        component.status === "operational"
-                          ? "bg-emerald-500 ring-emerald-500/20"
-                          : component.status === "degraded"
-                            ? "bg-amber-500 ring-amber-500/20"
-                            : component.status === "outage"
-                              ? "bg-red-500 ring-red-500/20"
-                              : "bg-blue-500 ring-blue-500/20",
+                        STATUS_CONFIG[component.status].dot,
+                        STATUS_CONFIG[component.status].ring,
                       )}
                     />
                     <span className="font-medium group-hover:translate-x-1 transition-transform text-sm md:text-base truncate">
@@ -288,18 +248,18 @@ export default async function StatusPage() {
                     <span className="capitalize inline">
                       {component.status.replace("-", " ")}
                     </span>
-                    {component.status === "operational" && (
-                      <CheckCircle2 className="h-3.5 w-3.5 md:h-4 md:w-4 text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    )}
-                    {component.status === "degraded" && (
-                      <AlertTriangle className="h-3.5 w-3.5 md:h-4 md:w-4 text-amber-500" />
-                    )}
-                    {component.status === "outage" && (
-                      <XCircle className="h-3.5 w-3.5 md:h-4 md:w-4 text-red-500" />
-                    )}
-                    {component.status === "maintenance" && (
-                      <Wrench className="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-500" />
-                    )}
+                    {(() => {
+                        const Icon = STATUS_CONFIG[component.status].icon;
+                        return (
+                          <Icon
+                            className={cn(
+                              "h-3.5 w-3.5 md:h-4 md:w-4 transition-opacity",
+                              STATUS_CONFIG[component.status].color,
+                              component.status === "operational" && "opacity-0 group-hover:opacity-100",
+                            )}
+                          />
+                        );
+                      })()}
                   </div>
                 </div>
               ))}
@@ -317,7 +277,7 @@ export default async function StatusPage() {
 
             {pastIncidents.length === 0 ? (
               <div className="p-6 md:p-8 text-center rounded-lg border border-dashed bg-muted/20">
-                <CheckCircle2 className="w-6 h-6 md:w-8 md:h-8 mx-auto text-muted-foreground mb-2 md:mb-3 opacity-50" />
+                {(() => { const I = STATUS_CONFIG.operational.icon; return <I className="w-6 h-6 md:w-8 md:h-8 mx-auto text-muted-foreground mb-2 md:mb-3 opacity-50" />; })()}
                 <p className="text-sm md:text-base text-muted-foreground">
                   No incidents reported in the past 90 days.
                 </p>
@@ -337,9 +297,7 @@ export default async function StatusPage() {
                           <div
                             className={cn(
                               "w-1.5 h-1.5 rounded-full shrink-0",
-                              incident.severity === "minor"
-                                ? "bg-blue-500"
-                                : "bg-orange-500",
+                              STATUS_CONFIG[INCIDENT_SEVERITY_LEVEL[incident.severity]].dot,
                             )}
                           />
                           <span className="text-xs md:text-sm font-mono text-muted-foreground shrink-0">
@@ -357,7 +315,12 @@ export default async function StatusPage() {
                           </span>
                           <Badge
                             variant="outline"
-                            className="mr-2 font-normal text-xs bg-emerald-500/10 text-emerald-500 border-emerald-500/20 shrink-0"
+                            className={cn(
+                              "mr-2 font-normal text-xs shrink-0",
+                              STATUS_CONFIG.operational.bg,
+                              STATUS_CONFIG.operational.color,
+                              STATUS_CONFIG.operational.border,
+                            )}
                           >
                             {incident.status.charAt(0).toUpperCase() +
                               incident.status.slice(1)}

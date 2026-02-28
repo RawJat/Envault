@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState, useCallback } from "react";
 import { Link } from "next-view-transitions";
 import {
   Book,
@@ -11,6 +12,8 @@ import {
   ExternalLink,
   HelpCircle,
 } from "lucide-react";
+import { STATUS_CONFIG, type StatusLevel } from "@/lib/status-config";
+import type { SystemStatusSummary } from "@/lib/system-status";
 import {
   Accordion,
   AccordionContent,
@@ -51,7 +54,41 @@ interface SupportViewProps {
   inDashboard?: boolean;
 }
 
+const communityColors = {
+  bg: "bg-violet-500/10",
+  border: "hover:border-violet-500/50",
+  text: "text-violet-500",
+};
+
 export function SupportView({ inDashboard = false }: SupportViewProps) {
+  const [status, setStatus] = useState<StatusLevel>("operational");
+  const [loading, setLoading] = useState(true);
+  const [incidentCount, setIncidentCount] = useState(0);
+
+  const fetchStatus = useCallback(async () => {
+    try {
+      const data: SystemStatusSummary = await fetch("/api/system-status", {
+        cache: "default",
+      }).then((r) => r.json());
+      setStatus(data.level);
+      setIncidentCount(data.incidentCount ?? 0);
+    } catch (error) {
+      console.error("Failed to fetch status:", error);
+      setStatus("operational");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchStatus();
+    // Refresh every 60 seconds
+    const interval = setInterval(fetchStatus, 60000);
+    return () => clearInterval(interval);
+  }, [fetchStatus]);
+
+  const cfg = STATUS_CONFIG[status];
+
   return (
     <div className="max-w-4xl mx-auto w-full space-y-12">
       {!inDashboard && (
@@ -67,6 +104,98 @@ export function SupportView({ inDashboard = false }: SupportViewProps) {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Status Card */}
+        <Link href="/status" className="group block h-full">
+          <div
+            className={`h-full border bg-card text-card-foreground rounded-xl p-6 transition-all hover:shadow-md ${cfg.hoverBorder} relative overflow-hidden`}
+          >
+            <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-100 transition-opacity translate-x-4 group-hover:translate-x-0">
+              <ExternalLink className="w-5 h-5 text-muted-foreground" />
+            </div>
+            <div
+              className={`w-12 h-12 rounded-lg ${cfg.bg} flex items-center justify-center mb-4`}
+            >
+              <Activity className={`w-6 h-6 ${cfg.color}`} />
+            </div>
+            <h3 className="text-xl font-semibold mb-2 flex items-center gap-2">
+              System Status
+              {!loading && (
+                <span className="flex h-2 w-2 relative">
+                  <span
+                    className={`animate-ping absolute inline-flex h-full w-full rounded-full ${cfg.dot} opacity-75`}
+                  ></span>
+                  <span
+                    className={`relative inline-flex rounded-full h-2 w-2 ${cfg.dot}`}
+                  ></span>
+                </span>
+              )}
+            </h3>
+            <p className="text-muted-foreground mb-3">
+              {cfg.message} · Check the real-time status of
+              Envault&apos;s API, dashboard, and CLI services.
+            </p>
+            <div>
+              <div className="flex items-center justify-between text-xs gap-8">
+                <div className="flex items-center justify-between flex-1">
+                  <span className="text-muted-foreground">Uptime</span>
+                  <span className="font-medium text-foreground">99.9%</span>
+                </div>
+                <div className="text-muted-foreground">|</div>
+                <div className="flex items-center justify-between flex-1">
+                  <span className="text-muted-foreground">Response Time</span>
+                  <span className="font-medium text-foreground">120ms</span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-xs pt-1">
+                <span className="text-muted-foreground">Active Incidents</span>
+                <span
+                  className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold
+                  ${incidentCount === 0 ? `${STATUS_CONFIG.operational.bg} ${STATUS_CONFIG.operational.color}` : `${STATUS_CONFIG.degraded.bg} ${STATUS_CONFIG.degraded.color}`}
+                `}
+                >
+                  {incidentCount}
+                </span>
+              </div>
+            </div>
+          </div>
+        </Link>
+
+        {/* Community Card */}
+        <div
+          className={`border bg-card text-card-foreground rounded-xl p-6 h-full transition-all hover:shadow-md ${communityColors.border}`}
+        >
+          <div
+            className={`w-12 h-12 rounded-lg ${communityColors.bg} flex items-center justify-center mb-4`}
+          >
+            <MessageCircle className={`w-6 h-6 ${communityColors.text}`} />
+          </div>
+          <h3 className="text-xl font-semibold mb-2">Community</h3>
+          <p className="text-muted-foreground mb-4">
+            Join our open-source community to discuss features, report bugs, and
+            contribute to Envault.
+          </p>
+          <div className="flex gap-3">
+            <Button variant="outline" size="sm" asChild className="gap-2">
+              <a
+                href="https://github.com/dinanathdash/envault"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Github className="w-4 h-4" /> GitHub
+              </a>
+            </Button>
+            <Button variant="outline" size="sm" asChild className="gap-2">
+              <a
+                href="https://twitter.com/dinanathdash"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Twitter className="w-4 h-4" /> Twitter
+              </a>
+            </Button>
+          </div>
+        </div>
+
         {/* Documentation Card */}
         <Link href="/docs" className="group block h-full">
           <div className="h-full border bg-card text-card-foreground rounded-xl p-6 transition-all hover:shadow-md hover:border-primary/50 relative overflow-hidden">
@@ -82,56 +211,6 @@ export function SupportView({ inDashboard = false }: SupportViewProps) {
             <p className="text-muted-foreground">
               Learn how to integrate Envault into your workflow, install the
               CLI, and manage team permissions.
-            </p>
-          </div>
-        </Link>
-
-        {/* Community Card */}
-        <div className="border bg-card text-card-foreground rounded-xl p-6 h-full transition-all hover:shadow-md hover:border-sidebar-primary/50">
-          <div className="w-12 h-12 rounded-lg bg-sidebar-primary/10 flex items-center justify-center mb-4">
-            <MessageCircle className="w-6 h-6 text-sidebar-primary" />
-          </div>
-          <h3 className="text-xl font-semibold mb-2">Community</h3>
-          <p className="text-muted-foreground mb-4">
-            Join our open-source community to discuss features, report bugs, and
-            contribute to Envault.
-          </p>
-          <div className="flex gap-3">
-            <Button variant="outline" size="sm" asChild className="gap-2">
-              <Link
-                href="https://github.com/dinanathdash/envault"
-                target="_blank"
-              >
-                <Github className="w-4 h-4" /> GitHub
-              </Link>
-            </Button>
-            <Button variant="outline" size="sm" asChild className="gap-2">
-              <Link href="https://twitter.com/dinanathdash" target="_blank">
-                <Twitter className="w-4 h-4" /> Twitter
-              </Link>
-            </Button>
-          </div>
-        </div>
-
-        {/* Status Card */}
-        <Link href="/status" className="group block h-full">
-          <div className="h-full border bg-card text-card-foreground rounded-xl p-6 transition-all hover:shadow-md hover:border-green-500/50 relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-100 transition-opacity translate-x-4 group-hover:translate-x-0">
-              <ExternalLink className="w-5 h-5 text-muted-foreground" />
-            </div>
-            <div className="w-12 h-12 rounded-lg bg-green-500/10 flex items-center justify-center mb-4">
-              <Activity className="w-6 h-6 text-green-500" />
-            </div>
-            <h3 className="text-xl font-semibold mb-2 flex items-center gap-2">
-              System Status
-              <span className="flex h-2 w-2 relative">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-              </span>
-            </h3>
-            <p className="text-muted-foreground">
-              Check the real-time status of Envault&apos;s API, dashboard, and
-              CLI services.
             </p>
           </div>
         </Link>

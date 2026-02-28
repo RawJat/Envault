@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { verifyHmacSignature } from "@/lib/hmac";
+import { shouldShowBanner } from "@/lib/banner-routes";
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -29,6 +30,7 @@ export async function proxy(request: NextRequest) {
 
   // Explicit unauthenticated API allowlist.
   const unauthenticatedApiRoutes = [
+    "/api/system-status",
     "/api/cli-version",
     "/api/search",
     "/api/cli/auth/device/code",
@@ -231,6 +233,12 @@ export async function proxy(request: NextRequest) {
   ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  // Inject banner visibility hint — read by the root layout (server-side).
+  supabaseResponse.headers.set(
+    "x-show-status-banner",
+    shouldShowBanner(pathname) ? "1" : "0",
+  );
 
   return supabaseResponse;
 }

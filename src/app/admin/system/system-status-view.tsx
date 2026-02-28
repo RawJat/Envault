@@ -12,6 +12,7 @@ import { useSearchParams, usePathname } from "next/navigation";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Plus, CornerDownLeft } from "lucide-react";
+import { STATUS_CONFIG } from "@/lib/status-config";
 import { useHotkeys } from "@/hooks/use-hotkeys";
 import { Kbd } from "@/components/ui/kbd";
 import { getModifierKey } from "@/lib/utils";
@@ -50,13 +51,6 @@ interface AdminStatusViewProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   initialIncidents: any[]; // Using any for now to avoid strict type complexity, but locally typed as Incident[]
 }
-
-const statusColors: Record<string, string> = {
-  operational: "bg-green-500",
-  degraded: "bg-yellow-500",
-  outage: "bg-red-500",
-  maintenance: "bg-blue-500",
-};
 
 import { AppHeader } from "@/components/dashboard/app-header";
 
@@ -226,7 +220,7 @@ export default function SystemStatusView({
                       >
                         <div className="flex items-center gap-3 flex-1 min-w-0">
                           <div
-                            className={`w-3 h-3 rounded-full flex-shrink-0 ${statusColors[component.status]}`}
+                            className={`w-3 h-3 rounded-full flex-shrink-0 ${STATUS_CONFIG[component.status as keyof typeof STATUS_CONFIG]?.dot ?? "bg-muted-foreground"}`}
                           />
                           <div className="min-w-0 flex-1">
                             <p className="font-medium truncate">
