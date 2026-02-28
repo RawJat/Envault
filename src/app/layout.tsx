@@ -11,6 +11,8 @@ import { HmacProvider } from "@/components/hmac-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { getServerOS } from "@/lib/os";
 import { ViewTransitions } from "next-view-transitions";
+import { headers } from "next/headers";
+import { SystemStatusBanner } from "@/components/ui/system-status-banner";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.envault.tech"),
@@ -95,6 +97,8 @@ export default async function RootLayout({
   } = await supabase.auth.getUser();
 
   const os = await getServerOS();
+  const headersList = await headers();
+  const showBanner = headersList.get("x-show-status-banner") === "1";
 
   return (
     <ViewTransitions>
@@ -113,6 +117,7 @@ export default async function RootLayout({
           />
         </head>
         <body className="min-h-screen bg-background font-sans antialiased">
+          <SystemStatusBanner show={showBanner} />
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{
