@@ -61,3 +61,15 @@ Every action taken by a user is logged. Owners can view the **Audit Log** in the
 - Who accessed a secret.
 - Who changed a value.
 - Timestamps and IP addresses.
+
+## Just-in-Time (JIT) Access via GitHub
+
+When a project is linked to a GitHub repository, Envault can automatically grant **Viewer** access to developers the moment they run `envault pull` - no manual invite needed.
+
+**How it works:**
+1. A developer runs `envault pull` without an existing project membership.
+2. Envault checks if their GitHub account is a collaborator on the linked repository.
+3. If yes → they are auto-granted the `viewer` role and receive their secrets.
+4. If no → the CLI offers to submit an access request to the project owner.
+
+See the [GitHub Integration](/docs/guides/github-integration) guide for setup instructions.

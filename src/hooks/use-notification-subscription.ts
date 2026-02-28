@@ -83,7 +83,7 @@ export function useNotificationSubscription() {
             if (err) console.error("Notification subscription error:", err);
           });
       } catch (error) {
-        // Suppress AbortError — it's expected when the component unmounts mid-setup
+        // Suppress AbortError - it's expected when the component unmounts mid-setup
         if (error instanceof Error && error.name === "AbortError") return;
         console.error("Error setting up notification subscription:", error);
       }
@@ -97,5 +97,5 @@ export function useNotificationSubscription() {
         supabase.removeChannel(channel);
       }
     };
-  }, []); // Empty deps — runs once on mount, cleans up on unmount
+  }, []); // Empty deps - runs once on mount, cleans up on unmount
 }

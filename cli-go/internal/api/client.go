@@ -34,7 +34,7 @@ type Client struct {
 }
 
 func NewClient() *Client {
-	baseURL := os.Getenv("ENVAULT_API_URL")
+	baseURL := os.Getenv("ENVAULT_CLI_URL")
 	if baseURL == "" {
 		baseURL = "https://envault.tech/api/cli"
 	}

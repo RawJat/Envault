@@ -4,6 +4,7 @@
     "installation",
     "initial-setup",
     "production-deployment",
-    "ci-cd-integration"
+    "ci-cd-integration",
+    "github-integration"
   ]
 }

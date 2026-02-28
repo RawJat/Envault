@@ -20,7 +20,7 @@ export default async function SharedProjectPage({
   const query = await searchParams;
   const requestedEnvSlug = query?.env;
 
-  // Kick off auth + profile lookup in parallel — both are independent
+  // Kick off auth + profile lookup in parallel - both are independent
   const supabase = await createClient();
   const adminSupabase = createAdminClient();
 
@@ -49,7 +49,7 @@ export default async function SharedProjectPage({
     redirect(`/project/${slug}`);
   }
 
-  // Fetch project (needs ownerId, so can't be earlier — but use admin to bypass RLS)
+  // Fetch project (needs ownerId, so can't be earlier - but use admin to bypass RLS)
   const { data: project, error: _projectError } = await adminSupabase
     .from("projects")
     .select("*")
@@ -215,6 +215,8 @@ export default async function SharedProjectPage({
     name: project.name,
     slug: project.slug,
     user_id: project.user_id,
+    github_installation_id: project.github_installation_id ?? null,
+    github_repo_full_name: project.github_repo_full_name ?? null,
     ui_mode: project.ui_mode || "simple",
     default_environment_slug:
       project.default_environment_slug || activeEnvironment.slug,

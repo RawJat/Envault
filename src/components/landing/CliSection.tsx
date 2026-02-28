@@ -194,7 +194,7 @@ export function CliSection() {
                                     </div>
                                     <div className="flex items-center space-x-2 text-xs font-mono text-white/40">
                                         <Terminal className="w-4 h-4" />
-                                        <span>zsh — 80 x 24</span>
+                                        <span>zsh - 80 x 24</span>
                                     </div>
                                     <button
                                         onClick={copyToClipboard}

@@ -192,7 +192,7 @@ export function VariableDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="w-[95vw] max-w-lg sm:w-full">
         <DialogHeader>
           <DialogTitle>
             {existingVariable ? "Edit Variable" : "Add Variable"}

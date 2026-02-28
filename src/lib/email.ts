@@ -160,7 +160,7 @@ export async function sendNewDeviceEmail(
     const { error } = await resend.emails.send({
       from: SENDERS.notifications,
       to,
-      subject: "New Device Access — Envault",
+      subject: "New Device Access - Envault",
       html,
     });
     if (error) {
@@ -417,7 +417,7 @@ export async function sendSecurityAlertEmail(
     const { error } = await resend.emails.send({
       from: SENDERS.security,
       to,
-      subject: `Security Alert: ${title} — Envault`,
+      subject: `Security Alert: ${title} - Envault`,
       html,
     });
     if (error) {
@@ -478,7 +478,7 @@ export async function sendProjectActivityEmail(
     const { error } = await resend.emails.send({
       from: SENDERS.activity,
       to,
-      subject: `${title} — ${projectName} on Envault`,
+      subject: `${title} - ${projectName} on Envault`,
       html,
     });
     if (error) {
@@ -552,7 +552,7 @@ export async function sendCliActivityEmail(
     const { error } = await resend.emails.send({
       from: SENDERS.cli,
       to,
-      subject: `CLI ${action === "pulled" ? "Pull" : "Push"}: ${projectName} — Envault`,
+      subject: `CLI ${action === "pulled" ? "Pull" : "Push"}: ${projectName} - Envault`,
       html,
     });
     if (error) {
@@ -613,7 +613,7 @@ export async function sendSystemUpdateEmail(
     await resend.emails.send({
       from: SENDERS.system,
       to,
-      subject: `${title} — Envault`,
+      subject: `${title} - Envault`,
       html,
     });
   } catch (error) {

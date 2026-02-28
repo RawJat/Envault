@@ -205,6 +205,8 @@ export default async function ProjectPage({ params, searchParams }: PageProps) {
     name: project.name,
     slug: project.slug,
     user_id: project.user_id,
+    github_installation_id: project.github_installation_id ?? null,
+    github_repo_full_name: project.github_repo_full_name ?? null,
     ui_mode: project.ui_mode || "simple",
     default_environment_slug:
       project.default_environment_slug || activeEnvironment.slug,

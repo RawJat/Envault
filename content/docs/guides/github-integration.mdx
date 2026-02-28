@@ -1,0 +1,95 @@
+---
+title: GitHub Integration
+description: Link a GitHub repository to enable Just-in-Time (JIT) access for your team.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Steps, Step } from "fumadocs-ui/components/steps";
+import { Settings, Github, Link, Unlink } from "lucide-react";
+
+The GitHub Integration lets you link an Envault project to a specific GitHub repository. When a developer runs `envault pull`, Envault automatically checks if they are a collaborator on that repository and grants them **Viewer** access on the spot - no manual invite required.
+
+## How It Works
+
+1. You install the **Envault GitHub App** on your GitHub account or organization.
+2. You link the app to a specific repository in your Envault project settings.
+3. When a team member runs `envault pull`, Envault checks their GitHub identity against that repository's collaborator list.
+4. If they are a collaborator, they are automatically granted `viewer` access and their secrets are returned.
+5. If they are not a collaborator, the CLI prompts them to submit an access request, which notifies the project owner.
+
+<Callout type="info">
+  JIT access only grants the **Viewer** role. To give a team member Editor or Owner access, invite them manually from the project settings.
+</Callout>
+
+## Setup
+
+<Steps>
+  <Step>
+    ### Install the GitHub App
+
+    Open your Envault project, click the <Settings className="inline w-4 h-4 mx-1" /> **Settings** icon in the project header, and select **<Github className="inline w-4 h-4 mx-1" /> GitHub Integration**. Click **Connect GitHub Repository** - you will be redirected to GitHub to install the Envault GitHub App on your account or organization.
+  </Step>
+
+  <Step>
+    ### Select a Repository
+
+    After installation, you are redirected back to Envault. The dialog will show a list of repositories the app has access to. Select the one that corresponds to this project.
+  </Step>
+
+  <Step>
+    ### Done
+
+    The dialog shows **Successfully Linked** with the repository name. From this point, any collaborator on that repository who runs `envault pull` will automatically receive access.
+  </Step>
+</Steps>
+
+## Unlinking a Repository
+
+Click <Unlink className="inline w-4 h-4 mx-1" /> **Unlink** in the GitHub Integration dialog. This clears the linked repository but keeps the GitHub App installed - you can immediately select a different repository without going through GitHub again.
+
+To fully remove the integration, uninstall the Envault GitHub App from [github.com/settings/installations](https://github.com/settings/installations). Envault will automatically clear the linked data via webhook.
+
+## Access Request Flow
+
+When a developer runs `envault pull` on a project they don't have access to, the CLI prompts them:
+
+<Callout type="warn">
+  **You do not have access to this project.**
+  Would you like to send an access request to the project owner? (y/N)
+</Callout>
+
+- **y** - An access request is sent to the project owner. The owner receives an email and an in-app notification. Once approved, the developer can run `envault pull` again.
+- **N** - Outputs `Access request cancelled.` and exits cleanly.
+
+If a request was already submitted, the CLI shows:
+
+<Callout type="info">
+  You already have a pending access request for this project.
+</Callout>
+
+## Self-Hosting: Required Environment Variables
+
+If you are self-hosting Envault, you need to create your own GitHub App and configure the following variables:
+
+| Variable | Description |
+| :--- | :--- |
+| `ENVAULT_GITHUB_APP_CLIENT_ID` | Client ID from your GitHub App settings |
+| `ENVAULT_GITHUB_APP_CLIENT_SECRET` | Client secret from your GitHub App settings |
+| `ENVAULT_GITHUB_APP_PRIVATE_KEY` | RSA private key (single-line, `\n`-escaped) |
+| `ENVAULT_GITHUB_WEBHOOK_SECRET` | Secret used to verify webhook payloads from GitHub |
+| `NEXT_PUBLIC_GITHUB_APP_NAME` | The slug name of your GitHub App (e.g. `My-App`) |
+| `NEXT_PUBLIC_APP_URL` | Your deployment URL (e.g. `https://envault.tech`) |
+
+### GitHub App Configuration
+
+In your GitHub App settings, set:
+
+- **Setup URL**: `https://your-domain.com/api/github/callback`
+- **Webhook URL**: `https://your-domain.com/api/github/webhook`
+- **Webhook secret**: same value as `ENVAULT_GITHUB_WEBHOOK_SECRET`
+- **Permissions**: Repository metadata: Read-only, Members: Read-only
+- **Events**: Subscribe to **Installation**
+
+<Callout type="warn">
+  The private key must be stored as a single line with literal `\n` characters replacing newlines. Multi-line values in `.env` files are truncated by most platforms.
+</Callout>

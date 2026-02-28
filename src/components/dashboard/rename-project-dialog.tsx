@@ -146,7 +146,7 @@ export function RenameProjectDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="w-[95vw] max-w-lg sm:w-full">
         <DialogHeader>
           <DialogTitle>Rename Project</DialogTitle>
           <DialogDescription>

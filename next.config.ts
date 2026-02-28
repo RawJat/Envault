@@ -10,9 +10,11 @@ const nextConfig: NextConfig = {
   // Disable it in dev to speed up Turbopack compilation.
   reactCompiler: !isDev,
 
+  allowedDevOrigins: ["lionly-placeable-zina.ngrok-free.dev"],
+
   experimental: {
     // Optimize barrel-file imports so Turbopack only compiles used exports.
-    // lucide-react alone is imported in 59 files — without this, every file
+    // lucide-react alone is imported in 59 files - without this, every file
     // forces resolution of the entire icon tree on first compile.
     optimizePackageImports: [
       "lucide-react",
