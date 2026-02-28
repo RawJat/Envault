@@ -2,7 +2,7 @@
  * Decoupled system-status helper.
  *
  * Data flow:
- *   1. Read from Upstash Redis (TTL 60 s) — fast, independent of primary DB.
+ *   1. Read from Upstash Redis (TTL 60 s) - fast, independent of primary DB.
  *   2. On cache miss → query Supabase, compute summary, write back to Redis.
  *   3. If both fail → return "operational" (fail-open, never breaks the app).
  */
@@ -114,7 +114,7 @@ export async function getSystemStatus(): Promise<SystemStatusSummary> {
     const cached = await redis.get<SystemStatusSummary>(CACHE_KEY);
     if (cached) return cached;
   } catch {
-    // Redis unavailable — fall through to DB
+    // Redis unavailable - fall through to DB
   }
 
   // 2. Compute from DB
@@ -122,7 +122,7 @@ export async function getSystemStatus(): Promise<SystemStatusSummary> {
   try {
     summary = await computeStatusFromDB();
   } catch {
-    // DB also failed — fail open
+    // DB also failed - fail open
     return { level: "operational", message: null, incidentCount: 0 };
   }
 

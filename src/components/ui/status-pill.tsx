@@ -4,8 +4,8 @@ import { STATUS_CONFIG, type StatusLevel } from "@/lib/status-config";
 interface StatusPillProps {
   level: StatusLevel;
   /**
-   * "md" — full-size pill used on the status page hero (default)
-   * "sm" — compact pill used inside the top banner
+   * "md" - full-size pill used on the status page hero (default)
+   * "sm" - compact pill used inside the top banner
    */
   size?: "md" | "sm";
   className?: string;

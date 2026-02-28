@@ -122,7 +122,7 @@ export function GitHubIntegrationDialog({
       .single();
 
     if (existingProjects?.github_installation_id) {
-      // Already installed — just copy the installation_id to this project
+      // Already installed - just copy the installation_id to this project
       // and let the user pick a repo directly.
       const { error } = await supabase
         .from("projects")
@@ -139,7 +139,7 @@ export function GitHubIntegrationDialog({
       }
     }
 
-    // No existing installation — go through the normal GitHub App install flow.
+    // No existing installation - go through the normal GitHub App install flow.
     // GitHub's Setup URL callback does NOT forward the `state` URL param -
     // so we persist the projectId in a short-lived cookie before leaving.
     // The callback route reads it back to know which project to link.
@@ -155,7 +155,7 @@ export function GitHubIntegrationDialog({
     try {
       // Prevent the same repo from being linked to more than one project.
       // If shared, JIT access would auto-grant collaborators access to ALL
-      // linked projects simultaneously — a security risk for prod secrets.
+      // linked projects simultaneously - a security risk for prod secrets.
       const { data: conflict } = await supabase
         .from("projects")
         .select("id, name")

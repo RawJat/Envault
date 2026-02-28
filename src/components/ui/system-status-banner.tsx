@@ -67,7 +67,7 @@ export function SystemStatusBanner({ show }: SystemStatusBannerProps) {
           aria-live="polite"
           className={cn("relative w-full border-b", cfg.bg, cfg.border, cfg.color)}
         >
-          {/* Diagonal stripe overlay — uses currentColor so it inverts in dark mode automatically */}
+          {/* Diagonal stripe overlay - uses currentColor so it inverts in dark mode automatically */}
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0"
@@ -77,7 +77,7 @@ export function SystemStatusBanner({ show }: SystemStatusBannerProps) {
               opacity: 0.03,
             }}
           />
-          {/* Centred content row — dismiss is absolute so it never shifts the centre */}
+          {/* Centred content row - dismiss is absolute so it never shifts the centre */}
           <div className="mx-auto flex max-w-7xl items-center justify-center gap-2 py-2 pl-4 pr-10 sm:gap-2.5">
 
             {/* Coloured rounded-square icon */}
@@ -88,15 +88,15 @@ export function SystemStatusBanner({ show }: SystemStatusBannerProps) {
               <Icon className="size-[10px] text-white" strokeWidth={2.5} />
             </div>
 
-            {/* Primary bold message — truncates on very small screens */}
+            {/* Primary bold message - truncates on very small screens */}
             <span className="min-w-0 truncate text-sm font-semibold text-foreground/80 sm:truncate">
               {status.message ?? cfg.label}
             </span>
 
-            {/* Arrow separator — hidden on mobile */}
+            {/* Arrow separator - hidden on mobile */}
             <ArrowRight className="hidden size-3 shrink-0 text-foreground/30 sm:block" aria-hidden />
 
-            {/* Muted secondary text + coloured inline link — hidden on mobile */}
+            {/* Muted secondary text + coloured inline link - hidden on mobile */}
             <span className="hidden shrink-0 text-sm text-foreground/55 sm:inline">
               Follow the{" "}
               <Link
@@ -126,7 +126,7 @@ export function SystemStatusBanner({ show }: SystemStatusBannerProps) {
             </Link>
           </div>
 
-          {/* Dismiss — absolute right so centred content is never displaced */}
+          {/* Dismiss - absolute right so centred content is never displaced */}
           <button
             onClick={handleDismiss}
             aria-label="Dismiss status banner"

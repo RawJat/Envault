@@ -16,7 +16,7 @@ export async function GET() {
       },
     });
   } catch {
-    // Always return a valid response — never crash the banner fetch
+    // Always return a valid response - never crash the banner fetch
     return NextResponse.json(
       { level: "operational", message: null, incidentCount: 0 },
       {

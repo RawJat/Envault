@@ -234,7 +234,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Inject banner visibility hint — read by the root layout (server-side).
+  // Inject banner visibility hint - read by the root layout (server-side).
   supabaseResponse.headers.set(
     "x-show-status-banner",
     shouldShowBanner(pathname) ? "1" : "0",

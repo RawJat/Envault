@@ -1,6 +1,6 @@
 /**
  * Path-based visibility rules for the SystemStatusBanner.
- * Pure utility — no Next.js or Node.js imports, safe in Edge runtime.
+ * Pure utility - no Next.js or Node.js imports, safe in Edge runtime.
  */
 
 // Banner is shown on any path that starts with one of these prefixes.
@@ -20,7 +20,7 @@ const SHOW_PREFIXES = [
 
 // Explicit paths where the banner must NEVER appear (exact or prefix match).
 const HIDE_PREFIXES = [
-  "/",        // landing — exact check handled below
+  "/",        // landing - exact check handled below
   "/privacy",
   "/terms",
   "/support",
@@ -49,7 +49,7 @@ export function shouldShowBanner(pathname: string): boolean {
     }
   }
 
-  // Dynamic [handle]/[slug] routes (authenticated project views) — show.
+  // Dynamic [handle]/[slug] routes (authenticated project views) - show.
   const isDynamicHandle = /^\/[^/]+\/[^/]+/.test(pathname);
   return isDynamicHandle;
 }

@@ -147,7 +147,7 @@ export async function GET(
               });
 
               // Clean up any pending access request so the dashboard doesn't
-              // show them as stuck — JIT approval supersedes a manual request.
+              // show them as stuck - JIT approval supersedes a manual request.
               await supabase
                 .from("access_requests")
                 .delete()

@@ -20,23 +20,23 @@ import {
 export type StatusLevel = "operational" | "degraded" | "outage" | "maintenance";
 
 export interface StatusLevelConfig {
-  /** Lucide icon component — render as <cfg.icon className="..." /> */
+  /** Lucide icon component - render as <cfg.icon className="..." /> */
   icon: LucideIcon;
-  /** Tailwind text color class — e.g. "text-red-500" */
+  /** Tailwind text color class - e.g. "text-red-500" */
   color: string;
-  /** Combined bg + border classes (space-separated) — matches the status page pill style */
+  /** Combined bg + border classes (space-separated) - matches the status page pill style */
   bgBorder: string;
-  /** Background only — e.g. "bg-red-500/10" */
+  /** Background only - e.g. "bg-red-500/10" */
   bg: string;
-  /** Border only — e.g. "border-red-500/20" */
+  /** Border only - e.g. "border-red-500/20" */
   border: string;
-  /** Hover border — e.g. "hover:border-red-500/50" */
+  /** Hover border - e.g. "hover:border-red-500/50" */
   hoverBorder: string;
-  /** Dot color — e.g. "bg-red-500" for small dot indicators */
+  /** Dot color - e.g. "bg-red-500" for small dot indicators */
   dot: string;
-  /** Ring color — e.g. "ring-red-500/20" for ring-offset dot indicators */
+  /** Ring color - e.g. "ring-red-500/20" for ring-offset dot indicators */
   ring: string;
-  /** Short human-readable label — e.g. "Major System Outage" */
+  /** Short human-readable label - e.g. "Major System Outage" */
   label: string;
   /** Default prose description shown under the label */
   message: string;

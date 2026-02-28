@@ -3,42 +3,95 @@ title: System Status
 description: Real-time monitoring of system health and incident reporting.
 ---
 
-Envault includes a built-in System Status page that provides real-time transparency into the health of the application's components. This feature allows users to verify if the system is operational, check for active incidents, and review historical uptime.
+import { Callout } from 'fumadocs-ui/components/callout';
 
-## Overview
+Envault includes a built-in system status layer that provides real-time transparency into application health. It covers a dedicated status page, an in-app banner that surfaces active incidents, a public API endpoint, and a footer badge - all driven from the same data source.
 
-The System Status page is accessible at `/status`. It provides a comprehensive view of:
+## Status page
 
--   **Overall System Health**: A global indicator of the system's current state.
--   **Active Incidents**: Real-time updates on any ongoing issues, including severity and status.
--   **Component Status**: Granular health checks for individual system components (e.g., API, Database, Authentication).
--   **Past Incidents**: A history of resolved incidents over the last 90 days.
+The status page is accessible at `/status` and shows:
 
-## Status Indicators
+- **Overall system health** - a single top-level indicator derived from the worst active component or incident
+- **Component status** - granular health for individual services (API, Database, Authentication, etc.)
+- **Active incidents** - severity, current phase, and a live update timeline
+- **Incident history** - resolved incidents from the last 90 days
 
-The system uses color-coded indicators to communicate the health of each component:
+## Status levels
 
--   <span className="text-emerald-500 font-bold">Operational</span>: The component is functioning normally.
--   <span className="text-amber-500 font-bold">Degraded Performance</span>: The component is operational but experiencing latency or minor issues.
--   <span className="text-red-500 font-bold">Partial/Major Outage</span>: The component is currently unavailable or severely impacted.
--   <span className="text-blue-500 font-bold">Maintenance</span>: The component is undergoing scheduled maintenance.
+All status indicators across the app share the same four levels:
 
-## Incident Reporting
+| Level | Colour | Meaning |
+| :--- | :--- | :--- |
+| **Operational** | Emerald | Everything is running normally |
+| **Degraded** | Amber | Some services are impacted or slow |
+| **Outage** | Red | One or more services are unavailable |
+| **Maintenance** | Blue | Scheduled maintenance is in progress |
 
-When an incident occurs, the status page displays detailed information, including:
+The overall level is computed as the **worst** of all active component statuses and incident severities, so the banner and status page always agree.
 
-1.  **Severity**: Classified as **Minor**, **Major**, or **Critical**.
-2.  **Status**: The current state of the incident (e.g., **Investigating**, **Identified**, **Monitoring**, **Resolved**).
-3.  **Updates**: A timeline of updates provided by the team as they work to resolve the issue.
+## In-app status banner
 
-Users can subscribe to updates (if configured) or simply refresh the page to see the latest information.
+When the system is not fully operational, a dismissible banner appears at the top of every app page. It shows the incident message, severity level, and a direct link to the status page.
 
-## Administrative Controls
+- The banner is hidden when all systems are operational
+- Dismissing it stores the state in `sessionStorage` - it won't reappear during the same browser session but will show again after a hard refresh
+- The banner is fully responsive: on small screens the secondary text is replaced with a compact "View status" link
 
-Administrators can manage the system status via the admin dashboard. This includes:
+## Incident severities
 
--   Creating and updating incidents.
--   Manually overriding the status of individual components.
--   Scheduling maintenance windows.
+Incidents are created with one of four severities, which map to the visual status level shown across the app:
 
-For more details on managing system status, please refer to the Admin Guide.
+| Severity | Maps to level | When to use |
+| :--- | :--- | :--- |
+| **Minor** | Maintenance (blue) | Small degradation, minimal user impact |
+| **Major** | Degraded (amber) | Noticeable disruption to some features |
+| **Critical** | Outage (red) | Service is down or broadly unavailable |
+| **Maintenance** | Maintenance (blue) | Planned maintenance window |
+
+## Incident phases
+
+Each incident progresses through phases. The timeline on the status page uses distinct icons and colours per phase:
+
+| Phase | Colour | Meaning |
+| :--- | :--- | :--- |
+| **Investigating** | Red | Issue identified, root cause unknown |
+| **Identified** | Amber | Root cause found, fix in progress |
+| **Monitoring** | Blue | Fix deployed, watching for stability |
+| **Resolved** | Emerald | Incident fully resolved |
+
+## Public API
+
+The current system status is available without authentication:
+
+```http
+GET /api/system-status
+```
+
+**Response**
+
+```json
+{
+  "level": "degraded",
+  "message": "We are investigating elevated API error rates.",
+  "incidentCount": 1
+}
+```
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `level` | `"operational" \| "degraded" \| "outage" \| "maintenance"` | Worst current status level |
+| `message` | `string \| null` | Active incident message, or `null` if fully operational |
+| `incidentCount` | `number` | Number of currently active (unresolved) incidents |
+
+<Callout type="info">
+  Responses are cached for 60 seconds via Redis. This endpoint is safe to poll from external monitoring tools or status widgets without impacting the database.
+</Callout>
+
+## Administrative controls
+
+Administrators can manage system status from the admin dashboard:
+
+- Create and update incidents with severity and phase
+- Post timeline updates as an incident progresses
+- Manually override the status of individual components
+- Schedule and close maintenance windows
