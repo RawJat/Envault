@@ -73,6 +73,13 @@
   mix-blend-mode: normal;
 }
 
+/* Custom smooth easing for the auth scene planet transition */
+::view-transition-old(auth-scene),
+::view-transition-new(auth-scene) {
+  animation-duration: 800ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 @layer utilities {
 
   /* Exclude Three.js Canvas from View Transitions */
