@@ -127,12 +127,11 @@ export function Navbar({ user }: NavbarProps) {
                   Docs
                 </Link>
                 <Link
-                  href="https://github.com/dinanathdash/envault"
-                  target="_blank"
+                  href="/support"
                   className="text-muted-foreground hover:text-foreground transition-colors border-b border-muted/20"
                   onClick={() => setIsOpen(false)}
                 >
-                  GitHub
+                  Support
                 </Link>
               </nav>
               <div className="flex flex-col gap-2">
