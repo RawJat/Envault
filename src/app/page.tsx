@@ -12,7 +12,11 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Envault - Secure Environment Variable Management",
   description: "End-to-end encrypted secret manager for your entire team.",
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
+    url: "https://www.envault.tech",
     images: [
       "/api/og?title=Envault&description=Secure%20Environment%20Variable%20Management",
     ],

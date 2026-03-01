@@ -49,9 +49,6 @@ export const metadata: Metadata = {
     "team collaboration security",
     "developer tools",
   ],
-  alternates: {
-    canonical: "/",
-  },
   authors: [{ name: "Envault Team" }],
   creator: "Envault",
   verification: {
@@ -60,7 +57,6 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://www.envault.tech",
     title: "Envault - Secure Environment Variables",
     description:
       "Manage your environment variables securely with Envault. End-to-end encryption for your peace of mind.",
