@@ -109,7 +109,7 @@ export function SupportView({ inDashboard = false }: SupportViewProps) {
           <div
             className={`h-full border bg-card text-card-foreground rounded-xl p-6 transition-all hover:shadow-md ${cfg.hoverBorder} relative overflow-hidden`}
           >
-            <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-100 transition-opacity translate-x-4 group-hover:translate-x-0">
+            <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-4 group-hover:translate-x-0">
               <ExternalLink className="w-5 h-5 text-muted-foreground" />
             </div>
             <div
@@ -199,7 +199,7 @@ export function SupportView({ inDashboard = false }: SupportViewProps) {
         {/* Documentation Card */}
         <Link href="/docs" className="group block h-full">
           <div className="h-full border bg-card text-card-foreground rounded-xl p-6 transition-all hover:shadow-md hover:border-primary/50 relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-100 transition-opacity translate-x-4 group-hover:translate-x-0">
+            <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-4 group-hover:translate-x-0">
               <ExternalLink className="w-5 h-5 text-muted-foreground" />
             </div>
             <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
@@ -221,7 +221,7 @@ export function SupportView({ inDashboard = false }: SupportViewProps) {
           className="group block h-full"
         >
           <div className="h-full border bg-card text-card-foreground rounded-xl p-6 transition-all hover:shadow-md hover:border-blue-500/50 relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-100 transition-opacity translate-x-4 group-hover:translate-x-0">
+            <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-4 group-hover:translate-x-0">
               <ExternalLink className="w-5 h-5 text-muted-foreground" />
             </div>
             <div className="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center mb-4">
