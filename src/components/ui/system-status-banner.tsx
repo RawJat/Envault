@@ -30,13 +30,13 @@ export function SystemStatusBanner({ show }: SystemStatusBannerProps) {
     fetch("/api/system-status", { cache: "default" })
       .then((r) => r.json())
       .then((data: SystemStatusSummary) => setStatus(data))
-      .catch(() => {});
+      .catch(() => { });
   }, [show, dismissed]);
 
   const handleDismiss = () => {
     try {
       sessionStorage.setItem(DISMISS_KEY, Date.now().toString());
-    } catch {}
+    } catch { }
     setDismissed(true);
   };
 
@@ -80,13 +80,8 @@ export function SystemStatusBanner({ show }: SystemStatusBannerProps) {
           {/* Centred content row - dismiss is absolute so it never shifts the centre */}
           <div className="mx-auto flex max-w-7xl items-center justify-center gap-2 py-2 pl-4 pr-10 sm:gap-2.5">
 
-            {/* Coloured rounded-square icon */}
-            <div className={cn(
-              "flex size-[18px] shrink-0 items-center justify-center rounded-[4px]",
-              cfg.dot,
-            )}>
-              <Icon className="size-[10px] text-white" strokeWidth={2.5} />
-            </div>
+            {/* Naked icon matching status page exactly */}
+            <Icon className={cn("size-[18px] shrink-0 animate-pulse", cfg.color)} strokeWidth={2.5} />
 
             {/* Primary bold message - truncates on very small screens */}
             <span className="min-w-0 truncate text-sm font-semibold text-foreground/80 sm:truncate">
