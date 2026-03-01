@@ -1,5 +1,17 @@
 import { LegalLayout } from "@/components/legal/LegalLayout";
 import { createClient } from "@/lib/supabase/server";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Terms of Service",
+  description:
+    "Read the terms and conditions for using Envault's secure environment variable management service.",
+  openGraph: {
+    images: [
+      "/api/og?title=Terms%20of%20Service&description=Terms%20and%20conditions%20for%20using%20Envault",
+    ],
+  },
+};
 
 const sections = [
   { id: "agreement", title: "Agreement to Terms" },
@@ -62,19 +74,20 @@ export default async function TermsPage() {
           termination of your account on our Service.
         </p>
         <p className="text-muted-foreground mb-4 leading-relaxed">
-          You are responsible for safeguarding any authentication credentials used
-          to access the Service, whether passwords, passkeys, OAuth tokens, or
-          API keys. This includes credentials for third-party services. You agree
-          not to disclose your credentials to any third party. You must notify us
-          immediately upon becoming aware of any breach of security or unauthorized
-          use of your account.
+          You are responsible for safeguarding any authentication credentials
+          used to access the Service, whether passwords, passkeys, OAuth tokens,
+          or API keys. This includes credentials for third-party services. You
+          agree not to disclose your credentials to any third party. You must
+          notify us immediately upon becoming aware of any breach of security or
+          unauthorized use of your account.
         </p>
         <p className="text-muted-foreground leading-relaxed">
           Envault supports multiple authentication methods including traditional
-          passwords, WebAuthn passkeys, and OAuth providers (Gmail, GitHub). Your
-          choice of authentication method does not affect your responsibility to
-          maintain account security. If you link multiple OAuth providers, you agree
-          that any linked provider can be used to access your account.
+          passwords, WebAuthn passkeys, and OAuth providers (Gmail, GitHub).
+          Your choice of authentication method does not affect your
+          responsibility to maintain account security. If you link multiple
+          OAuth providers, you agree that any linked provider can be used to
+          access your account.
         </p>
       </section>
 
@@ -152,25 +165,26 @@ export default async function TermsPage() {
         <ul className="list-disc pl-6 space-y-3 text-muted-foreground">
           <li className="leading-relaxed">
             <strong>WebAuthn Passkeys:</strong> Passkey authentication is the
-            most secure method and eliminates phishing risks. You are responsible
-            for storing recovery codes securely if provided.
+            most secure method and eliminates phishing risks. You are
+            responsible for storing recovery codes securely if provided.
           </li>
           <li className="leading-relaxed">
-            <strong>OAuth Providers:</strong> When using OAuth (Gmail, GitHub, etc.),
-            you authorize Envault to receive your email and profile information from
-            the provider. You acknowledge that Envault does not control second-factor
-            authentication settings at the OAuth provider.
+            <strong>OAuth Providers:</strong> When using OAuth (Gmail, GitHub,
+            etc.), you authorize Envault to receive your email and profile
+            information from the provider. You acknowledge that Envault does not
+            control second-factor authentication settings at the OAuth provider.
           </li>
           <li className="leading-relaxed">
-            <strong>Account Linking:</strong> You can link multiple authentication
-            methods to your account. Any linked method can be used to access your
-            account. Linking a new provider does not require removing existing methods,
-            but you remain responsible for all linked accounts.
+            <strong>Account Linking:</strong> You can link multiple
+            authentication methods to your account. Any linked method can be
+            used to access your account. Linking a new provider does not require
+            removing existing methods, but you remain responsible for all linked
+            accounts.
           </li>
           <li className="leading-relaxed">
-            <strong>Session Management:</strong> You are responsible for logging out
-            on shared devices. Envault may terminate sessions for security reasons
-            without notice.
+            <strong>Session Management:</strong> You are responsible for logging
+            out on shared devices. Envault may terminate sessions for security
+            reasons without notice.
           </li>
         </ul>
       </section>
@@ -189,25 +203,27 @@ export default async function TermsPage() {
         </p>
         <ul className="list-disc pl-6 space-y-3 text-muted-foreground">
           <li className="leading-relaxed">
-            <strong>Environment Creation:</strong> You are responsible for properly
-            configuring environments and ensuring that sensitive production data is
-            not accidentally mixed with development environments.
+            <strong>Environment Creation:</strong> You are responsible for
+            properly configuring environments and ensuring that sensitive
+            production data is not accidentally mixed with development
+            environments.
           </li>
           <li className="leading-relaxed">
-            <strong>Environment-Level Permissions:</strong> Permissions set at the
-            environment level override project-level permissions. Team members may
-            have access to some environments but not others within a project.
+            <strong>Environment-Level Permissions:</strong> Permissions set at
+            the environment level override project-level permissions. Team
+            members may have access to some environments but not others within a
+            project.
           </li>
           <li className="leading-relaxed">
-            <strong>Default Environment:</strong> When initializing a project via
-            CLI, you must select or create a default environment. Operations without
-            an explicit environment flag will use this default.
+            <strong>Default Environment:</strong> When initializing a project
+            via CLI, you must select or create a default environment. Operations
+            without an explicit environment flag will use this default.
           </li>
           <li className="leading-relaxed">
-            <strong>Workspace Context:</strong> The CLI may remember your current
-            environment context to improve workflow efficiency. You are responsible
-            for verifying the correct environment is active before executing
-            operations.
+            <strong>Workspace Context:</strong> The CLI may remember your
+            current environment context to improve workflow efficiency. You are
+            responsible for verifying the correct environment is active before
+            executing operations.
           </li>
           <li className="leading-relaxed">
             <strong>Environment Deletion:</strong> Deleting an environment is
@@ -276,8 +292,8 @@ export default async function TermsPage() {
           </li>
           <li className="leading-relaxed">
             Role assignments (Owner, Editor, Viewer) determine what actions team
-            members can perform. Environment-level permissions may further restrict
-            access to specific environments.
+            members can perform. Environment-level permissions may further
+            restrict access to specific environments.
           </li>
           <li className="leading-relaxed">
             You agree to use team features only for legitimate collaboration

@@ -42,6 +42,7 @@ export async function proxy(request: NextRequest) {
     "/api/auth/webauthn/authenticate/verify",
     "/api/github/callback",
     "/api/github/webhook",
+    "/api/og",
   ];
 
   const isPublicApi = unauthenticatedApiRoutes.some((route) =>

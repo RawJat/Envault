@@ -64,5 +64,10 @@ export async function generateMetadata({
   return {
     title: page.data.title,
     description: page.data.description,
+    openGraph: {
+      images: [
+        `/api/og?title=${encodeURIComponent(page.data.title as string)}&section=Docs&description=${encodeURIComponent(page.data.description as string)}`,
+      ],
+    },
   };
 }

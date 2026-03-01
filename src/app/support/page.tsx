@@ -2,6 +2,18 @@ import { Navbar } from "@/components/landing/Navbar";
 import { Footer } from "@/components/landing/Footer";
 import { SupportView } from "@/components/support/support-view";
 import { createClient } from "@/lib/supabase/server";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Support",
+  description:
+    "Get help and support for Envault. Contact our team or view documentation.",
+  openGraph: {
+    images: [
+      "/api/og?title=Support&description=Get%20help%20and%20support%20for%20Envault",
+    ],
+  },
+};
 
 export default async function SupportPage() {
   const supabase = await createClient();
