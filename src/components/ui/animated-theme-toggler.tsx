@@ -62,7 +62,7 @@ export const AnimatedThemeToggler = ({
           },
           {
             duration,
-            easing: "ease-in-out",
+            easing: "cubic-bezier(0.16,1,0.3,1)",
             pseudoElement: "::view-transition-new(root)",
           },
         );

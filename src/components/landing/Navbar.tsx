@@ -43,7 +43,7 @@ export function Navbar({ user }: NavbarProps) {
   return (
     <motion.header
       className={cn(
-        "fixed top-0 left-0 right-0 h-16 z-50 transition-all duration-300",
+        "sticky top-0 left-0 right-0 h-16 z-50 transition-all duration-300 -mb-16",
         scrolled || isOpen
           ? "bg-background backdrop-blur-md border-b border-border/50"
           : "bg-transparent",
@@ -107,7 +107,7 @@ export function Navbar({ user }: NavbarProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed top-16 left-0 right-0 h-[calc(100vh-4rem)] z-50 bg-black/60 backdrop-blur-sm md:hidden flex flex-col cursor-pointer"
+            className="absolute top-16 left-0 right-0 h-[calc(100vh-4rem)] z-50 bg-black/60 backdrop-blur-sm md:hidden flex flex-col cursor-pointer"
             onClick={() => setIsOpen(false)}
           >
             <motion.div

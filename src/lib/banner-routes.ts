@@ -35,12 +35,14 @@ const HIDE_PREFIXES = [
 
 export function shouldShowBanner(pathname: string): boolean {
   // Always hide static / non-UI prefixes first.
-  if (pathname === "/") return false; // landing page exact match
   for (const hide of HIDE_PREFIXES) {
     if (hide !== "/" && (pathname === hide || pathname.startsWith(hide + "/"))) {
       return false;
     }
   }
+
+  // Explicitly allow banner on landing page
+  if (pathname === "/") return true;
 
   // Show for any explicitly listed prefix.
   for (const show of SHOW_PREFIXES) {
