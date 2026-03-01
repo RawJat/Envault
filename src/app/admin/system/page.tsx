@@ -3,11 +3,21 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import SystemStatusView from "./system-status-view";
-import type { Viewport } from "next";
+import type { Viewport, Metadata } from "next";
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+};
+
+export const metadata: Metadata = {
+  title: "Admin Dashboard",
+  description: "Envault system administration.",
+  openGraph: {
+    images: [
+      "/api/og?title=Admin%20Dashboard&description=Envault%20system%20administration",
+    ],
+  },
 };
 
 export default async function AdminStatusPage() {

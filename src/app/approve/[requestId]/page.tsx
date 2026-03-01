@@ -20,9 +20,22 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import type { Metadata } from "next";
 
 interface ApprovePageProps {
   params: Promise<{ requestId: string }>;
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: "Approve Access",
+    description: "Approve or deny project access requests.",
+    openGraph: {
+      images: [
+        "/api/og?title=Approve%20Access&description=Manage%20project%20collaboration%20requests",
+      ],
+    },
+  };
 }
 
 export default async function ApprovePage({ params }: ApprovePageProps) {

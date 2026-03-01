@@ -19,10 +19,26 @@ import {
 } from "@/components/ui/timeline";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/server";
-import { STATUS_CONFIG, INCIDENT_SEVERITY_LEVEL, INCIDENT_PHASE_CONFIG, type StatusLevel } from "@/lib/status-config";
+import {
+  STATUS_CONFIG,
+  INCIDENT_SEVERITY_LEVEL,
+  INCIDENT_PHASE_CONFIG,
+  type StatusLevel,
+} from "@/lib/status-config";
 import { StatusPill } from "@/components/ui/status-pill";
 
 import { FormattedDate } from "@/components/ui/formatted-date";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "System Status",
+  description: "Check the real-time status of Envault systems and incidents.",
+  openGraph: {
+    images: [
+      "/api/og?title=System%20Status&description=Real-time%20system%20status%20and%20incidents",
+    ],
+  },
+};
 
 interface Component {
   id: string;
@@ -65,10 +81,16 @@ export default async function StatusPage() {
 
   // Compute worst level across all component statuses + incident severities,
   // using the same priority order as system-status.ts so both data paths agree.
-  const levelOrder: StatusLevel[] = ["operational", "maintenance", "degraded", "outage"];
+  const levelOrder: StatusLevel[] = [
+    "operational",
+    "maintenance",
+    "degraded",
+    "outage",
+  ];
   const worstOf = (levels: StatusLevel[]): StatusLevel =>
     levels.reduce<StatusLevel>(
-      (worst, cur) => (levelOrder.indexOf(cur) > levelOrder.indexOf(worst) ? cur : worst),
+      (worst, cur) =>
+        levelOrder.indexOf(cur) > levelOrder.indexOf(worst) ? cur : worst,
       "operational",
     );
 
@@ -79,7 +101,10 @@ export default async function StatusPage() {
     (i: Incident) => INCIDENT_SEVERITY_LEVEL[i.severity] ?? "degraded",
   );
 
-  const currentLevel: StatusLevel = worstOf([...componentLevels, ...incidentLevels]);
+  const currentLevel: StatusLevel = worstOf([
+    ...componentLevels,
+    ...incidentLevels,
+  ]);
 
   const { message: statusMessage } = STATUS_CONFIG[currentLevel];
 
@@ -136,9 +161,17 @@ export default async function StatusPage() {
                         <div className="flex items-start gap-2 md:gap-3 flex-1 min-w-0">
                           <div className="flex h-7 items-center shrink-0">
                             {(() => {
-                              const level = INCIDENT_SEVERITY_LEVEL[incident.severity];
+                              const level =
+                                INCIDENT_SEVERITY_LEVEL[incident.severity];
                               const I = STATUS_CONFIG[level].icon;
-                              return <I className={cn("h-5 w-5 md:h-6 md:w-6", STATUS_CONFIG[level].color)} />;
+                              return (
+                                <I
+                                  className={cn(
+                                    "h-5 w-5 md:h-6 md:w-6",
+                                    STATUS_CONFIG[level].color,
+                                  )}
+                                />
+                              );
                             })()}
                           </div>
                           <h3 className="text-lg md:text-xl font-bold break-words">
@@ -173,7 +206,13 @@ export default async function StatusPage() {
                                       <TimelineSeparator className="w-px bg-border top-0 left-1/2 -translate-x-1/2 h-full" />
                                     )}
                                     <TimelineIcon className="bg-background border-2 border-border size-4 md:size-5 p-0 z-10 shrink-0">
-                                      <div className={cn("w-1.5 h-1.5 md:w-2 md:h-2 rounded-full", INCIDENT_PHASE_CONFIG[update.status].dot)} />
+                                      <div
+                                        className={cn(
+                                          "w-1.5 h-1.5 md:w-2 md:h-2 rounded-full",
+                                          INCIDENT_PHASE_CONFIG[update.status]
+                                            .dot,
+                                        )}
+                                      />
                                     </TimelineIcon>
                                   </TimelineHeader>
                                   <TimelineBody
@@ -194,8 +233,17 @@ export default async function StatusPage() {
                                             formatStr="MMM d, h:mm a"
                                           />
                                         </span>
-                                        <span className={cn("text-xs font-mono tracking-wider font-semibold", INCIDENT_PHASE_CONFIG[update.status].color)}>
-                                          {INCIDENT_PHASE_CONFIG[update.status].label}
+                                        <span
+                                          className={cn(
+                                            "text-xs font-mono tracking-wider font-semibold",
+                                            INCIDENT_PHASE_CONFIG[update.status]
+                                              .color,
+                                          )}
+                                        >
+                                          {
+                                            INCIDENT_PHASE_CONFIG[update.status]
+                                              .label
+                                          }
                                         </span>
                                       </div>
                                       <p className="text-sm md:text-base text-foreground/90 leading-relaxed break-words">
@@ -249,17 +297,18 @@ export default async function StatusPage() {
                       {component.status.replace("-", " ")}
                     </span>
                     {(() => {
-                        const Icon = STATUS_CONFIG[component.status].icon;
-                        return (
-                          <Icon
-                            className={cn(
-                              "h-3.5 w-3.5 md:h-4 md:w-4 transition-opacity",
-                              STATUS_CONFIG[component.status].color,
-                              component.status === "operational" && "opacity-0 group-hover:opacity-100",
-                            )}
-                          />
-                        );
-                      })()}
+                      const Icon = STATUS_CONFIG[component.status].icon;
+                      return (
+                        <Icon
+                          className={cn(
+                            "h-3.5 w-3.5 md:h-4 md:w-4 transition-opacity",
+                            STATUS_CONFIG[component.status].color,
+                            component.status === "operational" &&
+                              "opacity-0 group-hover:opacity-100",
+                          )}
+                        />
+                      );
+                    })()}
                   </div>
                 </div>
               ))}
@@ -277,7 +326,12 @@ export default async function StatusPage() {
 
             {pastIncidents.length === 0 ? (
               <div className="p-6 md:p-8 text-center rounded-lg border border-dashed bg-muted/20">
-                {(() => { const I = STATUS_CONFIG.operational.icon; return <I className="w-6 h-6 md:w-8 md:h-8 mx-auto text-muted-foreground mb-2 md:mb-3 opacity-50" />; })()}
+                {(() => {
+                  const I = STATUS_CONFIG.operational.icon;
+                  return (
+                    <I className="w-6 h-6 md:w-8 md:h-8 mx-auto text-muted-foreground mb-2 md:mb-3 opacity-50" />
+                  );
+                })()}
                 <p className="text-sm md:text-base text-muted-foreground">
                   No incidents reported in the past 90 days.
                 </p>
@@ -297,7 +351,9 @@ export default async function StatusPage() {
                           <div
                             className={cn(
                               "w-1.5 h-1.5 rounded-full shrink-0",
-                              STATUS_CONFIG[INCIDENT_SEVERITY_LEVEL[incident.severity]].dot,
+                              STATUS_CONFIG[
+                                INCIDENT_SEVERITY_LEVEL[incident.severity]
+                              ].dot,
                             )}
                           />
                           <span className="text-xs md:text-sm font-mono text-muted-foreground shrink-0">

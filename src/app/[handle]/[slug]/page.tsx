@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect, notFound } from "next/navigation";
 import ProjectDetailView from "@/components/editor/project-detail-view";
 import { getProjectEnvironments } from "@/lib/cli-environments";
+import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -10,6 +11,47 @@ export const revalidate = 0;
 interface PageProps {
   params: Promise<{ handle: string; slug: string }>;
   searchParams: Promise<{ env?: string }>;
+}
+
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { handle, slug } = await params;
+  let title = slug;
+
+  try {
+    const adminSupabase = createAdminClient();
+    const { data: profile } = await adminSupabase
+      .from("profiles")
+      .select("id")
+      .eq("username", handle)
+      .single();
+
+    if (profile?.id) {
+      const { data } = await adminSupabase
+        .from("projects")
+        .select("name")
+        .eq("slug", slug)
+        .eq("user_id", profile.id)
+        .single();
+
+      if (data?.name) {
+        title = data.name;
+      }
+    }
+  } catch {
+    // Fallback to slug
+  }
+
+  return {
+    title: `${title} by @${handle}`,
+    description: `Manage secrets and environment variables for ${title}`,
+    openGraph: {
+      images: [
+        `/api/og?title=${encodeURIComponent(title)}&section=${encodeURIComponent("@" + handle)}&description=${encodeURIComponent("Shared Envault project")}`,
+      ],
+    },
+  };
 }
 
 export default async function SharedProjectPage({

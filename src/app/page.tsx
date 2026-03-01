@@ -7,6 +7,17 @@ import { Footer } from "@/components/landing/Footer";
 import { RegMark } from "@/components/landing/RegMark";
 import { Testimonials } from "@/components/landing/Testimonials";
 import { createClient } from "@/lib/supabase/server";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Envault - Secure Environment Variable Management",
+  description: "End-to-end encrypted secret manager for your entire team.",
+  openGraph: {
+    images: [
+      "/api/og?title=Envault&description=Secure%20Environment%20Variable%20Management",
+    ],
+  },
+};
 
 export default async function LandingPage() {
   const supabase = await createClient();

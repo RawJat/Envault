@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect, notFound } from "next/navigation";
 import ProjectDetailView from "@/components/editor/project-detail-view";
 import { getProjectEnvironments } from "@/lib/cli-environments";
+import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -10,6 +11,45 @@ export const revalidate = 0;
 interface PageProps {
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ env?: string }>;
+}
+
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { slug } = await params;
+  let title = slug;
+
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (user) {
+      const { data } = await supabase
+        .from("projects")
+        .select("name")
+        .eq("slug", slug)
+        .eq("user_id", user.id)
+        .single();
+
+      if (data?.name) {
+        title = data.name;
+      }
+    }
+  } catch {
+    // Fallback to slug
+  }
+
+  return {
+    title,
+    description: `Manage secrets and environment variables for ${title}`,
+    openGraph: {
+      images: [
+        `/api/og?title=${encodeURIComponent(title)}&section=Project&description=${encodeURIComponent("Encypted environment variables")}`,
+      ],
+    },
+  };
 }
 
 export default async function ProjectPage({ params, searchParams }: PageProps) {

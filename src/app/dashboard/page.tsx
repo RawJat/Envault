@@ -1,28 +1,43 @@
-import DashboardLogic, { ProjectSkeletonGrid } from "@/components/dashboard/dashboard-view";
+import DashboardLogic, {
+  ProjectSkeletonGrid,
+} from "@/components/dashboard/dashboard-view";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Dashboard",
+  description: "View and manage all your secure environment variable projects.",
+  openGraph: {
+    images: [
+      "/api/og?title=Dashboard&description=Manage%20your%20secure%20projects",
+    ],
+  },
+};
 
 export default function Dashboard() {
-    return (
-        <Suspense fallback={
-            <div className="container mx-auto py-8 px-4 space-y-8">
-                <div className="flex items-center justify-between">
-                    <div className="space-y-2">
-                        <Skeleton className="h-10 w-48" />
-                        <Skeleton className="h-4 w-64" />
-                    </div>
-                </div>
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto py-8 px-4 space-y-8">
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <Skeleton className="h-10 w-48" />
+              <Skeleton className="h-4 w-64" />
+            </div>
+          </div>
 
-                <div className="space-y-4">
-                    <div className="flex gap-4">
-                        <Skeleton className="h-10 w-32" />
-                        <Skeleton className="h-10 w-32" />
-                    </div>
-                    <ProjectSkeletonGrid />
-                </div>
-            </ div>
-        }>
-            <DashboardLogic />
-        </Suspense>
-    );
+          <div className="space-y-4">
+            <div className="flex gap-4">
+              <Skeleton className="h-10 w-32" />
+              <Skeleton className="h-10 w-32" />
+            </div>
+            <ProjectSkeletonGrid />
+          </div>
+        </div>
+      }
+    >
+      <DashboardLogic />
+    </Suspense>
+  );
 }

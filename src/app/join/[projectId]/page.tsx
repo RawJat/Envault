@@ -14,9 +14,44 @@ import { createAccessRequest } from "@/app/invite-actions";
 import Link from "next/link";
 import { AuthLayout } from "@/components/auth/auth-layout";
 import { ShieldAlert, CheckCircle2, Clock, Lock } from "lucide-react";
+import type { Metadata } from "next";
 
 interface JoinPageProps {
   params: Promise<{ projectId: string }>;
+}
+
+export async function generateMetadata({
+  params,
+}: JoinPageProps): Promise<Metadata> {
+  const { projectId } = await params;
+  let title = "Join Project";
+  let description = "Join a secure Envault project.";
+
+  try {
+    const adminSupabase = createAdminClient();
+    const { data } = await adminSupabase
+      .from("projects")
+      .select("name")
+      .eq("id", projectId)
+      .single();
+
+    if (data?.name) {
+      title = `Join ${data.name}`;
+      description = `Request access to join ${data.name} on Envault.`;
+    }
+  } catch {
+    // Fallback
+  }
+
+  return {
+    title,
+    description,
+    openGraph: {
+      images: [
+        `/api/og?title=${encodeURIComponent(title)}&section=Project&description=${encodeURIComponent(description)}`,
+      ],
+    },
+  };
 }
 
 export default async function JoinPage({ params }: JoinPageProps) {

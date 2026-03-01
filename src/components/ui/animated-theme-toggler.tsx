@@ -78,7 +78,7 @@ export const AnimatedThemeToggler = ({
       <button
         ref={buttonRef}
         onClick={toggleTheme}
-        className={cn("cursor-pointer min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded-md", className)}
+        className={cn("cursor-pointer", className)}
         data-theme-toggle
         {...props}
       >
@@ -96,7 +96,7 @@ export const AnimatedThemeToggler = ({
         <button
           ref={buttonRef}
           onClick={toggleTheme}
-          className={cn("cursor-pointer min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded-md", className)}
+          className={cn("cursor-pointer", className)}
           data-theme-toggle
           {...props}
         >
