@@ -9,8 +9,8 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="md:col-span-2">
             <div className="flex items-center gap-2 mb-4">
-              <span className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl">
-                Envault
+              <span className="font-serif font-bold tracking-tight text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl">
+                Envault.
               </span>
             </div>
             <p className="font-mono text-sm text-muted-foreground mb-4 max-w-md">
