@@ -64,7 +64,13 @@ export async function generateMetadata({
   return {
     title: page.data.title,
     description: page.data.description,
+    alternates: {
+      canonical: slug ? `/docs/${slug.join("/")}` : "/docs",
+    },
     openGraph: {
+      url: slug
+        ? `https://www.envault.tech/docs/${slug.join("/")}`
+        : "https://www.envault.tech/docs",
       images: [
         `/api/og?title=${encodeURIComponent(page.data.title as string)}&section=Docs&description=${encodeURIComponent(page.data.description as string)}`,
       ],
