@@ -13,6 +13,7 @@ import { getServerOS } from "@/lib/os";
 import { ViewTransitions } from "next-view-transitions";
 import { headers } from "next/headers";
 import { SystemStatusBanner } from "@/components/ui/system-status-banner";
+import { RootRefreshHandler } from "@/components/RootRefreshHandler";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.envault.tech"),
@@ -137,6 +138,7 @@ export default async function RootLayout({
               }),
             }}
           />
+          <RootRefreshHandler />
           <ThemeProvider
             attribute="class"
             defaultTheme="light"
