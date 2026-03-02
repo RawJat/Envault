@@ -12,10 +12,6 @@ const SHOW_PREFIXES = [
   "/approve",
   "/admin",
   "/access",
-  "/login",
-  "/join",
-  "/forgot-password",
-  "/auth",
 ];
 
 // Explicit paths where the banner must NEVER appear (exact or prefix match).
@@ -31,6 +27,10 @@ const HIDE_PREFIXES = [
   "/robots.txt",
   "/sitemap.xml",
   "/llms-full.txt",
+  "/login",
+  "/join",
+  "/forgot-password",
+  "/auth",
 ];
 
 export function shouldShowBanner(pathname: string): boolean {
@@ -40,9 +40,8 @@ export function shouldShowBanner(pathname: string): boolean {
       return false;
     }
   }
-
-  // Explicitly allow banner on landing page
-  if (pathname === "/") return true;
+  // Explicitly hide banner on landing page
+  if (pathname === "/") return false;
 
   // Show for any explicitly listed prefix.
   for (const show of SHOW_PREFIXES) {
