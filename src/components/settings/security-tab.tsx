@@ -13,7 +13,7 @@ import {
   getPersonalAccessTokens,
   revokePersonalAccessToken,
 } from "@/app/actions";
-import { formatDistanceToNow } from "date-fns";
+import { RelativeDate } from "@/components/ui/relative-date";
 import {
   CornerDownLeft,
   Shield,
@@ -374,10 +374,7 @@ export function SecurityTab({ user }: { user: User | null }) {
                         <span className="truncate">
                           Active:{" "}
                           {token.last_used_at
-                            ? formatDistanceToNow(
-                                new Date(token.last_used_at),
-                                { addSuffix: true },
-                              )
+                            ? <RelativeDate date={token.last_used_at} addSuffix />
                             : "Never"}
                         </span>
                       </div>
@@ -386,9 +383,7 @@ export function SecurityTab({ user }: { user: User | null }) {
                         <span className="truncate">
                           Expires:{" "}
                           {token.expires_at
-                            ? formatDistanceToNow(new Date(token.expires_at), {
-                                addSuffix: true,
-                              })
+                            ? <RelativeDate date={token.expires_at} addSuffix />
                             : "Never"}
                         </span>
                       </div>

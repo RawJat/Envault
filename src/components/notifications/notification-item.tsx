@@ -1,6 +1,6 @@
 "use client"
 
-import { formatDistanceToNow } from 'date-fns'
+import { RelativeDate } from '@/components/ui/relative-date'
 import { Notification } from '@/lib/types/notifications'
 import { NotificationIcon } from './notification-icon'
 import { Button } from '@/components/ui/button'
@@ -69,7 +69,7 @@ export function NotificationItem({ notification, onClose }: NotificationItemProp
 
                 <div className="flex items-center justify-between mt-2">
                     <p className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                        <RelativeDate date={notification.created_at} addSuffix />
                     </p>
 
                     <Button

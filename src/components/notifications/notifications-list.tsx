@@ -8,7 +8,8 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Search, CheckCheck, Trash2, MoreHorizontal, Bell, CornerDownLeft } from 'lucide-react'
 import { Notification } from '@/lib/types/notifications'
 import { cn } from '@/lib/utils'
-import { formatDistanceToNow, isToday, isYesterday, isThisWeek, format } from 'date-fns'
+import { isToday, isYesterday, isThisWeek, format } from 'date-fns'
+import { RelativeDate } from '@/components/ui/relative-date'
 import { useRouter } from 'next/navigation'
 import { useHotkeys } from '@/hooks/use-hotkeys'
 import { Kbd } from '@/components/ui/kbd'
@@ -300,9 +301,7 @@ export function NotificationsList() {
                                                     <TooltipProvider>
                                                         <Tooltip delayDuration={300}>
                                                             <TooltipTrigger asChild>
-                                                                <span className="cursor-help">
-                                                                    {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
-                                                                </span>
+                                                                <RelativeDate date={notification.created_at} addSuffix />
                                                             </TooltipTrigger>
                                                             <TooltipContent>
                                                                 <p>{format(new Date(notification.created_at), "PPpp")}</p>
@@ -398,7 +397,7 @@ export function NotificationsList() {
                                                 {/* Card Footer */}
                                                 <div className="flex items-center justify-between pl-12">
                                                     <span className="text-xs text-muted-foreground">
-                                                        {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                                                        <RelativeDate date={notification.created_at} addSuffix />
                                                     </span>
                                                     <DropdownMenu>
                                                         <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>

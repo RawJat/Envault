@@ -1,7 +1,7 @@
 "use client";
 
 import { Link } from "next-view-transitions";
-import { formatDistanceToNow } from "date-fns";
+import { RelativeDate } from "@/components/ui/relative-date";
 import {
   Folder,
   MoreVertical,
@@ -191,16 +191,16 @@ export function ProjectCard({ project }: ProjectCardProps) {
                       {/* Editors can share (initiates an approval request to the owner) */}
                       {(project.role === "owner" ||
                         project.role === "editor") && (
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setShareDialogOpen(true);
-                          }}
-                        >
-                          <Share2 className="w-4 h-4 mr-2" />
-                          Share
-                        </DropdownMenuItem>
-                      )}
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShareDialogOpen(true);
+                            }}
+                          >
+                            <Share2 className="w-4 h-4 mr-2" />
+                            Share
+                          </DropdownMenuItem>
+                        )}
 
                       {project.role === "owner" && (
                         <DropdownMenuItem
@@ -226,11 +226,11 @@ export function ProjectCard({ project }: ProjectCardProps) {
                     <span className="cursor-default text-xs text-muted-foreground">
                       {project.createdAt
                         ? (() => {
-                            const date = new Date(project.createdAt);
-                            return isNaN(date.getTime())
-                              ? "Invalid date"
-                              : formatDistanceToNow(date, { addSuffix: true });
-                          })()
+                          const date = new Date(project.createdAt);
+                          return isNaN(date.getTime())
+                            ? "Invalid date"
+                            : <RelativeDate date={date} addSuffix />;
+                        })()
                         : "No date"}
                     </span>
                   </TooltipTrigger>

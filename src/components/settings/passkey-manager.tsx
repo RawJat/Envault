@@ -11,15 +11,8 @@ import {
 } from "@/components/ui/card";
 import { toast } from "sonner";
 import { startRegistration } from "@simplewebauthn/browser";
-import {
-  KeyRound,
-  Fingerprint,
-  Trash2,
-  Loader2,
-  Calendar,
-  Clock,
-} from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { Clock, Calendar, Fingerprint, Loader2, KeyRound, Trash2 } from "lucide-react";
+import { RelativeDate } from "@/components/ui/relative-date";
 import { createClient } from "@/lib/supabase/client";
 import { useEnvaultStore } from "@/lib/store";
 import {
@@ -189,10 +182,7 @@ export function PasskeyManager() {
                       <div className="flex items-center gap-1.5 overflow-hidden">
                         <Calendar className="w-3.5 h-3.5 shrink-0" />
                         <span className="truncate">
-                          Added{" "}
-                          {formatDistanceToNow(new Date(pk.created_at), {
-                            addSuffix: true,
-                          })}
+                          Added <RelativeDate date={pk.created_at} addSuffix />
                         </span>
                       </div>
                       <div className="hidden md:block w-1 h-1 rounded-full bg-muted-foreground/30 shrink-0" />
@@ -201,9 +191,7 @@ export function PasskeyManager() {
                         <span className="truncate">
                           Last used{" "}
                           {pk.last_used_at
-                            ? formatDistanceToNow(new Date(pk.last_used_at), {
-                                addSuffix: true,
-                              })
+                            ? <RelativeDate date={pk.last_used_at} addSuffix />
                             : "Never"}
                         </span>
                       </div>
