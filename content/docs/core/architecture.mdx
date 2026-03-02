@@ -3,9 +3,9 @@ title: Architecture
 description: Understanding Envault's security model and request flow
 ---
 
-import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
-import { Callout } from 'fumadocs-ui/components/callout';
-import { Mermaid } from '@/components/mermaid';
+import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
+import { Callout } from "fumadocs-ui/components/callout";
+import { Mermaid } from "@/components/mermaid";
 
 # Security Architecture
 
@@ -15,7 +15,8 @@ Envault prioritizes security above all else. Our architecture is designed to ens
 
 We use a multi-tiered encryption strategy known as **Envelope Encryption**. This limits the exposure of any single key and allows for easier key rotation.
 
-<Mermaid chart={`
+<Mermaid
+  chart={`
 graph TD
     User(["User / App"]) -->|Requests Secret| API[Envault API]
     API -->|1. Fetch Encrypted Data Key| DB[(Database)]
@@ -29,26 +30,29 @@ graph TD
     
     style MasterKey fill:#f9f,stroke:#333,stroke-width:2px,color:#000
     style DB fill:#bbf,stroke:#333,stroke-width:2px,color:#000
-`} />
+`}
+/>
 
 <Accordions>
-<Accordion title="1. Master Key (KEK)">
-A **32-byte key** stored in environment variables (`ENCRYPTION_KEY`) on the server.
-- **Purpose**: Encrypts and decrypts Data Keys.
-- **Storage**: Ephemeral (Environment Variable), never persisted to the database.
-- **Management**: Should be rotated periodically throughout the infrastructure provider.
-</Accordion>
-<Accordion title="2. Data Keys (DEK)">
-Unique keys generated for each project or secret bundle.
-- **Purpose**: Encrypts the actual secret values.
-- **Storage**: Stored in the database, **encrypted by the Master Key**.
-- **Rotation**: Can be re-encrypted if the Master Key changes.
-</Accordion>
-<Accordion title="3. Secret Payload">
-The actual environment variables (e.g., `DATABASE_URL`).
-- **Encryption**: **AES-256-GCM** (Galois/Counter Mode).
-- **Integrity**: GCM provides authenticated encryption, meaning any tampering with the ciphertext will be detected upon decryption.
-</Accordion>
+  <Accordion title="1. Master Key (KEK)">
+    A **32-byte key** stored in environment variables (`ENCRYPTION_KEY`) on the
+    server. - **Purpose**: Encrypts and decrypts Data Keys. - **Storage**:
+    Ephemeral (Environment Variable), never persisted to the database. -
+    **Management**: Should be rotated periodically throughout the infrastructure
+    provider.
+  </Accordion>
+  <Accordion title="2. Data Keys (DEK)">
+    Unique keys generated for each project or secret bundle. - **Purpose**:
+    Encrypts the actual secret values. - **Storage**: Stored in the database,
+    **encrypted by the Master Key**. - **Rotation**: Can be re-encrypted if the
+    Master Key changes.
+  </Accordion>
+  <Accordion title="3. Secret Payload">
+    The actual environment variables (e.g., `DATABASE_URL`). - **Encryption**:
+    **AES-256-GCM** (Galois/Counter Mode). - **Integrity**: GCM provides
+    authenticated encryption, meaning any tampering with the ciphertext will be
+    detected upon decryption.
+  </Accordion>
 </Accordions>
 
 ## Threat Model
@@ -56,8 +60,10 @@ The actual environment variables (e.g., `DATABASE_URL`).
 What happens if...
 
 ### The Database is Leaked?
+
 **Impact: Low.**
 Attacker gains access to:
+
 - Encrypted Secrets (Ciphertext)
 - Encrypted Data Keys
 - User Metadata
@@ -65,12 +71,16 @@ Attacker gains access to:
 They **cannot** decrypt any secrets because the **Master Key** is not in the database.
 
 ### The Server is Compromised?
+
 **Impact: Critical.**
 If an attacker gains full shell access to the running server, they can read the `ENCRYPTION_KEY` from the environment.
+
 - **Mitigation**: Use a hardened infrastructure provider (e.g., Vercel, AWS ECS). Restrict access to the production environment. Envault does **not** store decrypted secrets on disk.
 
 ### A Developer's Laptop is Stolen?
+
 **Impact: Medium.**
+
 - The attacker might have access to the local `.env` file if it was pulled.
 - **Mitigation**: `envault pull` does not persist credentials permanently. Revoke the user's access immediately via the dashboard to prevent fetching new secrets.
 
@@ -79,9 +89,15 @@ If an attacker gains full shell access to the running server, they can read the 
 Envault supports key rotation to minimize the impact of a potential key compromise.
 
 <Callout type="info">
-  To rotate the Master Key, you must provide the old key and the new key to a migration script that re-encrypts all Data Keys.
+  To rotate the Master Key, you must provide the old key and the new key to a
+  migration script that re-encrypts all Data Keys.
 </Callout>
 
 1.  **Generate New Key**: Create a new 32-byte random string.
-2.  **Run Migration**: The server decrypts all Data Keys with the *Old Master Key* and re-encrypts them with the *New Master Key*.
-3.  **Update Environment**: Update the `ENCRYPTION_KEY` variable on your deployment.
+2.  **Update Environment**: Update the `ENCRYPTION_KEY` variable on your deployment to the new key, and set the old key to `OLD_ENCRYPTION_KEY`.
+3.  **Run Scavenger Process**: Call the Supabase edge function to process the migration:
+    ```bash
+    curl -X POST 'https://<PROJECT_REF>.supabase.co/functions/v1/rotate-keys' \
+      -H 'Authorization: Bearer <YOUR_SUPABASE_SERVICE_ROLE_KEY>'
+    ```
+    This function decrypts all Data Keys with the _Old Master Key_ and re-encrypts them with the _New Master Key_.
