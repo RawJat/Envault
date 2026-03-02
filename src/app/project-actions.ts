@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { getProjectEnvironments } from "@/lib/cli-environments";
+import { headers } from "next/headers";
+import { writeRateLimit } from "@/lib/ratelimit";
 
 type ProjectUIMode = "simple" | "advanced";
 
@@ -51,6 +53,13 @@ export async function createProject(
 
   if (!user) {
     return { error: "Not authenticated" };
+  }
+
+  // Rate Limiting
+  const ip = (await headers()).get("x-forwarded-for") || "unknown";
+  const { success: rateLimitSuccess } = await writeRateLimit.limit(`create_proj_${ip}`);
+  if (!rateLimitSuccess) {
+    return { error: "Too many requests. Please try again later." };
   }
 
   const slugBase =
@@ -110,6 +119,13 @@ export async function renameProject(id: string, newName: string) {
 
   if (!user) {
     return { error: "Not authenticated" };
+  }
+
+  // Rate Limiting
+  const ip = (await headers()).get("x-forwarded-for") || "unknown";
+  const { success: rateLimitSuccess } = await writeRateLimit.limit(`rename_proj_${ip}`);
+  if (!rateLimitSuccess) {
+    return { error: "Too many requests. Please try again later." };
   }
 
   // Permission Check: Owner Only
@@ -182,7 +198,7 @@ export async function renameProject(id: string, newName: string) {
         `Your project has been renamed to "${data.name}"`,
         data.id,
         user.id,
-      ).catch(() => {});
+      ).catch(() => { });
     }
   }
 
@@ -393,6 +409,13 @@ export async function deleteProject(id: string) {
     return { error: "Not authenticated" };
   }
 
+  // Rate Limiting
+  const ip = (await headers()).get("x-forwarded-for") || "unknown";
+  const { success: rateLimitSuccess } = await writeRateLimit.limit(`delete_proj_${ip}`);
+  if (!rateLimitSuccess) {
+    return { error: "Too many requests. Please try again later." };
+  }
+
   // Permission Check: Owner Only
   const { getProjectRole } = await import("@/lib/permissions");
   const role = await getProjectRole(supabase, id, user.id);
@@ -426,12 +449,27 @@ export async function addVariable(
   environmentSlug?: string,
 ) {
   const supabase = await createClient();
+
+  // Input Validation
+  const { SecretSchema } = await import("@/lib/schemas");
+  const validation = SecretSchema.safeParse({ key, value });
+  if (!validation.success) {
+    return { error: validation.error.flatten().fieldErrors?.key?.[0] || validation.error.flatten().fieldErrors?.value?.[0] || "Invalid input" };
+  }
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) {
     return { error: "Not authenticated" };
+  }
+
+  // Rate Limiting
+  const ip = (await headers()).get("x-forwarded-for") || "unknown";
+  const { success: rateLimitSuccess } = await writeRateLimit.limit(`add_var_${ip}`);
+  if (!rateLimitSuccess) {
+    return { error: "Too many requests. Please try again later." };
   }
 
   // Permission Check: Owner or Editor
@@ -502,7 +540,7 @@ export async function addVariable(
           `A new secret <strong>${key}</strong> was added to <strong>${projectData.name}</strong>`,
           projectData.id,
           user.id,
-        ).catch(() => {});
+        ).catch(() => { });
       }
     }
   }
@@ -518,6 +556,17 @@ export async function updateVariable(
   environmentSlug?: string,
 ) {
   const supabase = await createClient();
+
+  // Input Validation - use partial schema since both are optional in the type
+  if (updates.key || updates.value) {
+    const { SecretSchema } = await import("@/lib/schemas");
+    // Merge with dummy data for safe parsing of partials if needed, or parse partial
+    const validation = SecretSchema.partial().safeParse(updates);
+    if (!validation.success) {
+      return { error: validation.error.flatten().fieldErrors?.key?.[0] || validation.error.flatten().fieldErrors?.value?.[0] || "Invalid input" };
+    }
+  }
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -594,7 +643,7 @@ export async function updateVariable(
           `A secret was updated in <strong>${projectData.name}</strong>`,
           projectData.id,
           user.id,
-        ).catch(() => {});
+        ).catch(() => { });
       }
     }
   }
@@ -667,7 +716,7 @@ export async function deleteVariable(
           `A secret was deleted from <strong>${projectData.name}</strong>`,
           projectData.id,
           user.id,
-        ).catch(() => {});
+        ).catch(() => { });
       }
     }
   }
@@ -700,6 +749,13 @@ export async function addVariablesBulk(
 
   if (!user) {
     return { added: 0, updated: 0, skipped: 0, error: "Not authenticated" };
+  }
+
+  // Rate Limiting
+  const ip = (await headers()).get("x-forwarded-for") || "unknown";
+  const { success: rateLimitSuccess } = await writeRateLimit.limit(`bulk_var_${ip}`);
+  if (!rateLimitSuccess) {
+    return { added: 0, updated: 0, skipped: 0, error: "Too many requests. Please try again later." };
   }
 
   const { getProjectRole } = await import("@/lib/permissions");
@@ -853,7 +909,7 @@ export async function addVariablesBulk(
             `Bulk import to <strong>${projectData.name}</strong> finished: ${summary}, ${skipped} unchanged.`,
             projectData.id,
             user.id,
-          ).catch(() => {});
+          ).catch(() => { });
         }
       }
     }

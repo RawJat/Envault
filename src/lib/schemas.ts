@@ -63,6 +63,7 @@ export const SecretSchema = z.object({
   key: z
     .string()
     .min(1, "Key is required")
+    .max(255, "Key is too long")
     // Safe chars: Alphanumeric, underscores, hyphens, dots.
     .regex(/^[a-zA-Z0-9_\-\.]+$/, "Invalid key format"),
   value: z

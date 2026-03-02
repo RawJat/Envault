@@ -1,13 +1,22 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
 import crypto from 'crypto'
+import { apiRateLimit } from '@/lib/ratelimit'
 
-export type AuthIdentity = 
+export type AuthIdentity =
     | { type: 'user'; userId: string }
     | { type: 'service'; projectId: string };
 
 export async function validateCliToken(request: Request): Promise<AuthIdentity | NextResponse> {
     const authHeader = request.headers.get('Authorization')
+
+    // Rate Limiting
+    const ip = request.headers.get("x-forwarded-for") || "unknown";
+    const { success: rateLimitSuccess } = await apiRateLimit.limit(`cli_${ip}`);
+    if (!rateLimitSuccess) {
+        return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+    }
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return NextResponse.json({ error: 'Missing or invalid authorization header' }, { status: 401 })
     }

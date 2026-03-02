@@ -3,6 +3,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { cacheDel, CacheKeys } from "@/lib/cache";
+import { headers } from "next/headers";
+import { writeRateLimit } from "@/lib/ratelimit";
 
 export async function shareSecret(secretId: string, email: string) {
   const supabase = await createClient();
@@ -11,6 +13,13 @@ export async function shareSecret(secretId: string, email: string) {
   } = await supabase.auth.getUser();
 
   if (!user) return { error: "Not authenticated" };
+
+  // Rate Limiting
+  const ip = (await headers()).get("x-forwarded-for") || "unknown";
+  const { success: rateLimitSuccess } = await writeRateLimit.limit(`share_${ip}`);
+  if (!rateLimitSuccess) {
+    return { error: "Too many requests. Please try again later." };
+  }
 
   // 1. Resolve Project ID for the secret to check permission
   const { data: secret } = await supabase
@@ -169,6 +178,13 @@ export async function unshareSecret(secretId: string, userId: string) {
   } = await supabase.auth.getUser();
 
   if (!user) return { error: "Not authenticated" };
+
+  // Rate Limiting
+  const ip = (await headers()).get("x-forwarded-for") || "unknown";
+  const { success: rateLimitSuccess } = await writeRateLimit.limit(`unshare_${ip}`);
+  if (!rateLimitSuccess) {
+    return { error: "Too many requests. Please try again later." };
+  }
 
   // 1. Resolve Project ID
   const { data: secret } = await supabase

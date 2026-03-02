@@ -3,11 +3,19 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { headers } from "next/headers";
+import { authRateLimit } from "@/lib/ratelimit";
 
 export async function signInWithGoogle(formData?: FormData) {
   const supabase = await createClient();
   const origin = (await headers()).get("origin");
   const next = (formData?.get("next") as string) || "/dashboard";
+
+  // Rate Limiting
+  const ip = (await headers()).get("x-forwarded-for") || "unknown";
+  const { success: rateLimitSuccess } = await authRateLimit.limit(ip);
+  if (!rateLimitSuccess) {
+    return { error: "Too many requests. Please try again later." };
+  }
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
@@ -33,6 +41,13 @@ export async function signInWithGithub(formData?: FormData) {
   const supabase = await createClient();
   const origin = (await headers()).get("origin");
   const next = (formData?.get("next") as string) || "/dashboard";
+
+  // Rate Limiting
+  const ip = (await headers()).get("x-forwarded-for") || "unknown";
+  const { success: rateLimitSuccess } = await authRateLimit.limit(ip);
+  if (!rateLimitSuccess) {
+    return { error: "Too many requests. Please try again later." };
+  }
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "github",
@@ -61,6 +76,13 @@ export async function signInWithPassword(formData: FormData) {
 
   const next = formData.get("next") as string;
 
+  // Rate Limiting
+  const ip = (await headers()).get("x-forwarded-for") || "unknown";
+  const { success: rateLimitSuccess } = await authRateLimit.limit(ip);
+  if (!rateLimitSuccess) {
+    return { error: "Too many requests. Please try again later." };
+  }
+
   const { error } = await supabase.auth.signInWithPassword({
     email,
     password,
@@ -82,6 +104,13 @@ export async function signUp(formData: FormData) {
   const password = formData.get("password") as string;
   const supabase = await createClient();
   const origin = (await headers()).get("origin");
+
+  // Rate Limiting
+  const ip = (await headers()).get("x-forwarded-for") || "unknown";
+  const { success: rateLimitSuccess } = await authRateLimit.limit(ip);
+  if (!rateLimitSuccess) {
+    return { error: "Too many requests. Please try again later." };
+  }
 
   const { error } = await supabase.auth.signUp({
     email,
@@ -203,6 +232,13 @@ export async function forgotPassword(formData: FormData) {
   const supabase = await createClient();
   const origin = (await headers()).get("origin");
 
+  // Rate Limiting
+  const ip = (await headers()).get("x-forwarded-for") || "unknown";
+  const { success: rateLimitSuccess } = await authRateLimit.limit(ip);
+  if (!rateLimitSuccess) {
+    return { error: "Too many requests. Please try again later." };
+  }
+
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${origin}/auth/callback?next=/auth/update-password`,
   });
@@ -217,6 +253,13 @@ export async function forgotPassword(formData: FormData) {
 export async function updatePassword(formData: FormData) {
   const password = formData.get("password") as string;
   const supabase = await createClient();
+
+  // Rate Limiting
+  const ip = (await headers()).get("x-forwarded-for") || "unknown";
+  const { success: rateLimitSuccess } = await authRateLimit.limit(ip);
+  if (!rateLimitSuccess) {
+    return { error: "Too many requests. Please try again later." };
+  }
 
   const { error } = await supabase.auth.updateUser({
     password,

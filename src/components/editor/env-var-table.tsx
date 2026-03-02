@@ -15,7 +15,7 @@ import {
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { toast } from "sonner";
 import { ShareSecretModal } from "@/components/dashboard/share-secret-modal";
-import { formatDistanceToNow } from "date-fns";
+import { RelativeDate } from "@/components/ui/relative-date";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -88,7 +88,7 @@ export function EnvVarTable({
 
   // Listen for contextual shortcuts
   React.useEffect(() => {
-    return () => {};
+    return () => { };
   }, []);
 
   const toggleVisibility = async (id: string, _isCurrentlyVisible: boolean) => {
@@ -237,15 +237,13 @@ export function EnvVarTable({
                                   <span className="text-xs text-muted-foreground">
                                     {variable.lastUpdatedAt
                                       ? (() => {
-                                          const date = new Date(
-                                            variable.lastUpdatedAt,
-                                          );
-                                          return isNaN(date.getTime())
-                                            ? "Invalid date"
-                                            : formatDistanceToNow(date, {
-                                                addSuffix: true,
-                                              });
-                                        })()
+                                        const date = new Date(
+                                          variable.lastUpdatedAt,
+                                        );
+                                        return isNaN(date.getTime())
+                                          ? "Invalid date"
+                                          : <RelativeDate date={date} addSuffix />
+                                      })()
                                       : "-"}
                                   </span>
                                 </div>
@@ -306,8 +304,8 @@ export function EnvVarTable({
                                 <span>
                                   {variable.lastUpdatedAt
                                     ? new Date(
-                                        variable.lastUpdatedAt,
-                                      ).toLocaleString()
+                                      variable.lastUpdatedAt,
+                                    ).toLocaleString()
                                     : "-"}
                                 </span>
                               </div>
@@ -490,7 +488,7 @@ export function EnvVarTable({
                       ) : (
                         <span>
                           Updated{" "}
-                          {formatDistanceToNow(date, { addSuffix: true })}
+                          <RelativeDate date={date} addSuffix />
                         </span>
                       );
                     })()}
