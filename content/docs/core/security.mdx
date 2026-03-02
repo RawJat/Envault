@@ -33,6 +33,19 @@ Envault supports key rotation for Data Keys. This limits the "blast radius" if a
 
 - **Passkeys (WebAuthn)**: Envault supports passwordless authentication using WebAuthn. This provides phishing-resistant, biometric login capabilities and significantly improves account security compared to traditional passwords.
 
+### Using Passkeys
+
+To start using passkeys, you must first log in using your existing email and password.
+
+1. Navigate to your **Settings** > **Security**.
+2. Under the **Passkeys** section, click **Register New Passkey**.
+3. Your browser or operating system will prompt you to authenticate (e.g., using TouchID or Windows Hello).
+4. Provide a recognizable name for the passkey (e.g., "MacBook Pro" or "YubiKey").
+
+Once enrolled, you can sign in without a password. On the login screen, enter your email address, click **Continue with Passkey**, and authenticate using your device.
+
+You can view and delete your registered passkeys from the **Settings** > **Security** page. If you delete your last remaining passkey, you will cleanly fall back to your password for future logins.
+
 ## CLI Security
 
 - **Rolling Sessions**: For interactive users, the Envault CLI stores long-lived Refresh Tokens securely within the native OS Secure Enclave (e.g., macOS Keychain, Windows Credential Manager) rather than plaintext files. Short-lived Access Tokens (valid for 1 hour) are used for API requests.
