@@ -23,7 +23,8 @@ import {
   type StatusLevel,
 } from "@/lib/status-config";
 import { StatusPill } from "@/components/ui/status-pill";
-import { FormattedDate } from "@/components/ui/formatted-date";
+import { DateDisplay } from "@/components/ui/date-display";
+
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -120,11 +121,9 @@ export default async function StatusPage() {
               </p>
               <div className="text-xs md:text-sm text-muted-foreground/60 font-mono">
                 Last updated:{" "}
-                <FormattedDate
-                  className="text-xs md:text-sm text-muted-foreground/60 font-mono"
-                  date={new Date()}
-                  formatStr="dd/MM/yyyy, h:mm a"
-                />
+                <span className="text-xs md:text-sm text-muted-foreground/60 font-mono">
+                  <DateDisplay date={new Date()} formatType="absolute" />
+                </span>
               </div>
             </div>
           </div>
@@ -217,10 +216,9 @@ export default async function StatusPage() {
                                     <div className="space-y-2">
                                       <div className="flex flex-row sm:items-baseline gap-1 sm:gap-3">
                                         <span className="text-xs font-mono text-muted-foreground">
-                                          <FormattedDate
-                                            className="text-xs font-mono text-muted-foreground"
+                                          <DateDisplay
                                             date={update.created_at}
-                                            formatStr="dd/MM/yyyy, h:mm a"
+                                            formatType="absolute"
                                           />
                                         </span>
                                         <span
@@ -347,11 +345,12 @@ export default async function StatusPage() {
                             )}
                           />
                           <span className="text-xs md:text-sm font-mono text-muted-foreground shrink-0">
-                            <FormattedDate
-                              className="text-xs md:text-sm font-mono text-muted-foreground"
-                              date={incident.created_at}
-                              formatStr="dd/MM/yyyy"
-                            />
+                            <span className="text-xs md:text-sm font-mono text-muted-foreground">
+                              <DateDisplay
+                                date={incident.created_at}
+                                formatType="date"
+                              />
+                            </span>
                           </span>
                         </div>
                         {/* Title + Badge row - wraps to second line on mobile, stays inline on sm+ */}
@@ -402,10 +401,9 @@ export default async function StatusPage() {
                                 <div className="space-y-2">
                                   <div className="flex flex-row sm:items-baseline gap-1 sm:gap-3">
                                     <span className="text-xs font-mono text-muted-foreground">
-                                      <FormattedDate
-                                        className="text-xs font-mono text-muted-foreground"
+                                      <DateDisplay
                                         date={update.created_at}
-                                        formatStr="dd/MM/yyyy, h:mm a"
+                                        formatType="absolute"
                                       />
                                     </span>
                                     <span className="text-xs font-mono tracking-wider text-muted-foreground">

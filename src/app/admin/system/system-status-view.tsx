@@ -10,7 +10,7 @@ import {
 import { useState, useEffect } from "react";
 import { useSearchParams, usePathname } from "next/navigation";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { DateDisplay } from "@/components/ui/date-display";
 import { Plus, CornerDownLeft } from "lucide-react";
 import { STATUS_CONFIG } from "@/lib/status-config";
 import { useHotkeys } from "@/hooks/use-hotkeys";
@@ -600,7 +600,8 @@ function IncidentManager({
                     selectedComponents.length === 0
                   }
                 >
-                  {isCreating ? "Creating..." : "Create Incident"} <Kbd>{getModifierKey("mod")}</Kbd>
+                  {isCreating ? "Creating..." : "Create Incident"}{" "}
+                  <Kbd>{getModifierKey("mod")}</Kbd>
                   <Kbd>
                     <CornerDownLeft className="w-3 h-3" />
                   </Kbd>
@@ -637,10 +638,11 @@ function IncidentManager({
                     </CardTitle>
                     <CardDescription className="mt-1">
                       Started{" "}
-                      {format(
-                        new Date(incident.created_at),
-                        "MMM d, yyyy h:mm a",
-                      )}
+                      <DateDisplay
+                        date={incident.created_at}
+                        addSuffix
+                        formatType="absolute"
+                      />
                     </CardDescription>
                   </div>
                   <UpdateIncidentDialog incident={incident} />
@@ -654,10 +656,11 @@ function IncidentManager({
                         <p className="font-semibold mb-1">Latest Update:</p>
                         <p>{incident.incident_updates[0].message}</p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {format(
-                            new Date(incident.incident_updates[0].created_at),
-                            "MMM d, h:mm a",
-                          )}
+                          <DateDisplay
+                            date={incident.incident_updates[0].created_at}
+                            addSuffix
+                            formatType="absolute"
+                          />
                         </p>
                       </div>
                     )}

@@ -25,6 +25,7 @@ import { createClient } from "@/lib/supabase/client";
 import { AccessRequestSkeleton } from "@/components/notifications/notification-skeleton";
 import { useHotkeys } from "@/hooks/use-hotkeys";
 import { Kbd } from "@/components/ui/kbd";
+import { DateDisplay } from "@/components/ui/date-display";
 
 interface AccessRequest {
   id: string;
@@ -226,8 +227,10 @@ export function AccessRequestsPanel() {
                       <span className="font-medium">{projectName}</span>
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {new Date(request.created_at).toLocaleDateString()} at{" "}
-                      {new Date(request.created_at).toLocaleTimeString()}
+                      <DateDisplay
+                        date={request.created_at}
+                        formatType="absolute"
+                      />
                     </p>
                   </div>
                 </div>

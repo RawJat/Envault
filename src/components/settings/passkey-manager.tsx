@@ -11,8 +11,15 @@ import {
 } from "@/components/ui/card";
 import { toast } from "sonner";
 import { startRegistration } from "@simplewebauthn/browser";
-import { Clock, Calendar, Fingerprint, Loader2, KeyRound, Trash2 } from "lucide-react";
-import { RelativeDate } from "@/components/ui/relative-date";
+import {
+  Clock,
+  Calendar,
+  Fingerprint,
+  Loader2,
+  KeyRound,
+  Trash2,
+} from "lucide-react";
+import { DateDisplay } from "@/components/ui/date-display";
 import { createClient } from "@/lib/supabase/client";
 import { useEnvaultStore } from "@/lib/store";
 import {
@@ -182,7 +189,12 @@ export function PasskeyManager() {
                       <div className="flex items-center gap-1.5 overflow-hidden">
                         <Calendar className="w-3.5 h-3.5 shrink-0" />
                         <span className="truncate">
-                          Added <RelativeDate date={pk.created_at} addSuffix />
+                          Added{" "}
+                          <DateDisplay
+                            date={pk.created_at}
+                            addSuffix
+                            formatType="relative"
+                          />
                         </span>
                       </div>
                       <div className="hidden md:block w-1 h-1 rounded-full bg-muted-foreground/30 shrink-0" />
@@ -190,9 +202,15 @@ export function PasskeyManager() {
                         <Clock className="w-3.5 h-3.5 shrink-0" />
                         <span className="truncate">
                           Last used{" "}
-                          {pk.last_used_at
-                            ? <RelativeDate date={pk.last_used_at} addSuffix />
-                            : "Never"}
+                          {pk.last_used_at ? (
+                            <DateDisplay
+                              date={pk.last_used_at}
+                              addSuffix
+                              formatType="relative"
+                            />
+                          ) : (
+                            "Never"
+                          )}
                         </span>
                       </div>
                     </div>
