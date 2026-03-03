@@ -1,8 +1,46 @@
+"use client";
+
 import { Link } from "next-view-transitions";
 import { Github, Twitter, Mail, Copyright } from "lucide-react";
 import { StatusBadge } from "@/components/landing/StatusBadge";
+import { usePathname } from "next/navigation";
+import { User } from "@supabase/supabase-js";
 
-export function Footer() {
+interface FooterProps {
+  user?: User | null;
+}
+
+const FooterLink = ({
+  href,
+  className,
+  children,
+  pathname,
+}: {
+  href: string;
+  className?: string;
+  children: React.ReactNode;
+  pathname: string;
+}) => {
+  if (pathname === href) {
+    return (
+      <button
+        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        className={className}
+      >
+        {children}
+      </button>
+    );
+  }
+  return (
+    <Link href={href} className={className}>
+      {children}
+    </Link>
+  );
+};
+
+export function Footer({ user }: FooterProps) {
+  const pathname = usePathname();
+
   return (
     <footer className="border-t bg-background/80 backdrop-blur-sm">
       <div className="container py-12">
@@ -48,28 +86,31 @@ export function Footer() {
             <h3 className="font-semibold mb-4">Product</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
-                <Link
+                <FooterLink
                   href="/docs"
                   className="hover:text-foreground transition-colors"
+                  pathname={pathname}
                 >
                   Documentation
-                </Link>
+                </FooterLink>
               </li>
               <li>
-                <Link
+                <FooterLink
                   href="/support"
                   className="hover:text-foreground transition-colors"
+                  pathname={pathname}
                 >
                   Support & FAQs
-                </Link>
+                </FooterLink>
               </li>
               <li>
-                <Link
-                  href="/login"
+                <FooterLink
+                  href={user ? "/dashboard" : "/login"}
                   className="hover:text-foreground transition-colors"
+                  pathname={pathname}
                 >
-                  Login
-                </Link>
+                  {user ? "Dashboard" : "Login"}
+                </FooterLink>
               </li>
             </ul>
           </div>
@@ -77,20 +118,22 @@ export function Footer() {
             <h3 className="font-semibold mb-4">Legal</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
-                <Link
+                <FooterLink
                   href="/privacy"
                   className="hover:text-foreground transition-colors"
+                  pathname={pathname}
                 >
                   Privacy Policy
-                </Link>
+                </FooterLink>
               </li>
               <li>
-                <Link
+                <FooterLink
                   href="/terms"
                   className="hover:text-foreground transition-colors"
+                  pathname={pathname}
                 >
                   Terms of Service
-                </Link>
+                </FooterLink>
               </li>
             </ul>
           </div>
