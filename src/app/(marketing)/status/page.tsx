@@ -1,5 +1,3 @@
-import { Navbar } from "@/components/landing/Navbar";
-import { Footer } from "@/components/landing/Footer";
 import { RegMark } from "@/components/landing/RegMark";
 import { getComponents, getIncidents } from "@/actions/status";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +16,6 @@ import {
   TimelineBody,
 } from "@/components/ui/timeline";
 import { cn } from "@/lib/utils";
-import { createClient } from "@/lib/supabase/server";
 import {
   STATUS_CONFIG,
   INCIDENT_SEVERITY_LEVEL,
@@ -26,7 +23,6 @@ import {
   type StatusLevel,
 } from "@/lib/status-config";
 import { StatusPill } from "@/components/ui/status-pill";
-
 import { FormattedDate } from "@/components/ui/formatted-date";
 import type { Metadata } from "next";
 
@@ -67,10 +63,6 @@ export const revalidate = 300; // 5 minutes ISR
 export default async function StatusPage() {
   const components = await getComponents();
   const allIncidents = await getIncidents(20);
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
   const activeIncidents = allIncidents.filter(
     (i: Incident) => i.status !== "resolved",
@@ -110,8 +102,6 @@ export default async function StatusPage() {
 
   return (
     <div className="flex min-h-screen flex-col font-sans selection:bg-primary/20 relative sharp bg-background text-foreground">
-      <Navbar user={user} />
-
       <main className="flex-1 relative pt-24 md:pt-32 pb-16 md:pb-24 px-4 md:px-6">
         <RegMark position="top-left" />
         <RegMark position="top-right" />
@@ -133,7 +123,7 @@ export default async function StatusPage() {
                 <FormattedDate
                   className="text-xs md:text-sm text-muted-foreground/60 font-mono"
                   date={new Date()}
-                  formatStr="MMM d, h:mm:ss a"
+                  formatStr="dd/MM/yyyy, h:mm a"
                 />
               </div>
             </div>
@@ -230,7 +220,7 @@ export default async function StatusPage() {
                                           <FormattedDate
                                             className="text-xs font-mono text-muted-foreground"
                                             date={update.created_at}
-                                            formatStr="MMM d, h:mm a"
+                                            formatStr="dd/MM/yyyy, h:mm a"
                                           />
                                         </span>
                                         <span
@@ -360,7 +350,7 @@ export default async function StatusPage() {
                             <FormattedDate
                               className="text-xs md:text-sm font-mono text-muted-foreground"
                               date={incident.created_at}
-                              formatStr="MMM d, yyyy"
+                              formatStr="dd/MM/yyyy"
                             />
                           </span>
                         </div>
@@ -415,7 +405,7 @@ export default async function StatusPage() {
                                       <FormattedDate
                                         className="text-xs font-mono text-muted-foreground"
                                         date={update.created_at}
-                                        formatStr="MMM d, h:mm a"
+                                        formatStr="dd/MM/yyyy, h:mm a"
                                       />
                                     </span>
                                     <span className="text-xs font-mono tracking-wider text-muted-foreground">
@@ -443,8 +433,6 @@ export default async function StatusPage() {
         <RegMark position="bottom-left" />
         <RegMark position="bottom-right" />
       </main>
-
-      <Footer />
     </div>
   );
 }
