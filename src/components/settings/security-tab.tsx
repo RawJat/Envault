@@ -64,6 +64,7 @@ import type { UserIdentity } from "@supabase/supabase-js";
 export function SecurityTab({ user }: { user: User | null }) {
   const [tokens, setTokens] = useState<Token[]>([]);
   const [loading, setLoading] = useState(true);
+  const [revokingId, setRevokingId] = useState<string | null>(null);
 
   const [identities, setIdentities] = useState<UserIdentity[]>([]);
   const [authLoading, setAuthLoading] = useState<string | null>(null);
@@ -149,13 +150,19 @@ export function SecurityTab({ user }: { user: User | null }) {
     return () => clearTimeout(timer);
   }, [fetchTokens]);
 
-  const handleRevoke = async (id: string) => {
-    const result = await revokePersonalAccessToken(id);
-    if (result.error) {
-      toast.error(result.error);
-    } else {
-      toast.success("Token revoked");
-      fetchTokens(); // Refresh list
+  const handleRevoke = async (id: string, e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    setRevokingId(id);
+    try {
+      const result = await revokePersonalAccessToken(id);
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        toast.success("Token revoked");
+        fetchTokens(); // Refresh list
+      }
+    } finally {
+      setRevokingId(null);
     }
   };
 
@@ -434,15 +441,21 @@ export function SecurityTab({ user }: { user: User | null }) {
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
                           <AlertDialogAction
-                            onClick={() => handleRevoke(token.id)}
+                            onClick={(e) => handleRevoke(token.id, e)}
+                            disabled={revokingId === token.id}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90 flex items-center gap-2"
                           >
+                            {revokingId === token.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : null}
                             Revoke Access
-                            <div className="hidden md:flex items-center gap-1">
-                              <Kbd variant="primary" size="xs">
-                                <CornerDownLeft className="h-3 w-3" />
-                              </Kbd>
-                            </div>
+                            {revokingId !== token.id && (
+                              <div className="hidden md:flex items-center gap-1">
+                                <Kbd variant="primary" size="xs">
+                                  <CornerDownLeft className="h-3 w-3" />
+                                </Kbd>
+                              </div>
+                            )}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>

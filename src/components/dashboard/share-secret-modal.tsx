@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { toast } from "sonner";
-import { X, Plus, CornerDownLeft, Command } from "lucide-react";
+import { X, Plus, CornerDownLeft, Command, Loader2 } from "lucide-react";
 import { Kbd } from "@/components/ui/kbd";
 import {
   AlertDialog,
@@ -73,6 +73,7 @@ export function ShareSecretModal({
   const [loading, setLoading] = useState(false);
   const [shares, setShares] = useState<SecretShare[]>([]);
   const [fetchLoading, setFetchLoading] = useState(false);
+  const [isRemoving, setIsRemoving] = useState<Record<string, boolean>>({});
 
   const fetchShares = useCallback(async () => {
     setFetchLoading(true);
@@ -128,16 +129,22 @@ export function ShareSecretModal({
     setLoading(false);
   };
 
-  const handleRemoveShare = async (userId: string) => {
-    const { unshareSecret } = await import("@/app/secret-actions");
-    const result = await unshareSecret(secretId, userId);
-    if (result.error) {
-      toast.error(result.error);
-    } else {
-      toast.success("Access revoked");
-      fetchShares();
-      // Notify dashboard to refresh projects (unsharing might change shared status)
-      document.dispatchEvent(new CustomEvent("project-role-changed"));
+  const handleRemoveShare = async (e: React.MouseEvent, userId: string) => {
+    e.preventDefault();
+    setIsRemoving((prev) => ({ ...prev, [userId]: true }));
+    try {
+      const { unshareSecret } = await import("@/app/secret-actions");
+      const result = await unshareSecret(secretId, userId);
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        toast.success("Access revoked");
+        fetchShares();
+        // Notify dashboard to refresh projects (unsharing might change shared status)
+        document.dispatchEvent(new CustomEvent("project-role-changed"));
+      }
+    } finally {
+      setIsRemoving((prev) => ({ ...prev, [userId]: false }));
     }
   };
 
@@ -184,7 +191,10 @@ export function ShareSecretModal({
                 className="sm:w-auto"
               >
                 {loading ? (
-                  "Adding..."
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Adding...
+                  </>
                 ) : (
                   <span className="flex items-center gap-2">
                     Add{" "}
@@ -276,9 +286,13 @@ export function ShareSecretModal({
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
                           <AlertDialogAction
-                            onClick={() => handleRemoveShare(share.user_id)}
+                            onClick={(e) => handleRemoveShare(e, share.user_id)}
+                            disabled={isRemoving[share.user_id]}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                           >
+                            {isRemoving[share.user_id] ? (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : null}
                             Remove Access
                           </AlertDialogAction>
                         </AlertDialogFooter>

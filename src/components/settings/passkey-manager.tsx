@@ -46,6 +46,7 @@ export function PasskeyManager() {
   const [passkeys, setPasskeys] = useState<Passkey[]>([]);
   const [loading, setLoading] = useState(true);
   const [registering, setRegistering] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const supabase = createClient();
   const { user } = useEnvaultStore();
 
@@ -132,7 +133,9 @@ export function PasskeyManager() {
     }
   };
 
-  const handleDeletePasskey = async (id: string) => {
+  const handleDeletePasskey = async (id: string, e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    setDeletingId(id);
     const { error } = await supabase.from("passkeys").delete().eq("id", id);
 
     if (error) {
@@ -141,6 +144,7 @@ export function PasskeyManager() {
       toast.success("Passkey deleted");
       refetchPasskeys();
     }
+    setDeletingId(null);
   };
 
   return (
@@ -239,8 +243,12 @@ export function PasskeyManager() {
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
                       <AlertDialogAction
                         onClick={() => handleDeletePasskey(pk.id)}
+                        disabled={deletingId === pk.id}
                         className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
                       >
+                        {deletingId === pk.id ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : null}
                         Delete Passkey
                       </AlertDialogAction>
                     </AlertDialogFooter>

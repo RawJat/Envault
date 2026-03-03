@@ -25,6 +25,7 @@ import {
   Command,
   Copy,
   AlertTriangle,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { NotificationPreferences } from "@/components/notifications/notification-preferences";
@@ -83,7 +84,6 @@ export default function SettingsView() {
   }, [activeTab, mounted, pathname, searchParams]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
@@ -93,7 +93,6 @@ export default function SettingsView() {
   const [username, setUsername] = useState(user?.username || "");
   useEffect(() => {
     if (user) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFirstName(user.firstName || "");
       setLastName(user.lastName || "");
       setUsername(user.username || "");
@@ -102,6 +101,8 @@ export default function SettingsView() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [isDeleteConfirmed, setIsDeleteConfirmed] = useState(false);
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   const handleUpdateProfile = async () => {
     if (!username || username.trim() === "") {
@@ -131,42 +132,48 @@ export default function SettingsView() {
       return;
     }
 
-    const supabase = createClient();
+    setIsUpdatingProfile(true);
 
-    // Check uniqueness if changing
-    if (username !== user?.username) {
-      const { data: existingProfile } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("username", username)
-        .maybeSingle();
+    try {
+      const supabase = createClient();
 
-      if (existingProfile && existingProfile.id !== user?.id) {
-        toast.error("This username is already taken. Please choose another.");
+      // Check uniqueness if changing
+      if (username !== user?.username) {
+        const { data: existingProfile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("username", username)
+          .maybeSingle();
+
+        if (existingProfile && existingProfile.id !== user?.id) {
+          toast.error("This username is already taken. Please choose another.");
+          return;
+        }
+      }
+
+      const { error } = await supabase.auth.updateUser({
+        data: {
+          first_name: firstName,
+          last_name: lastName,
+          username,
+          full_name: `${firstName} ${lastName}`.trim(),
+        },
+      });
+
+      if (error) {
+        toast.error("Failed to update profile");
         return;
       }
-    }
 
-    const { error } = await supabase.auth.updateUser({
-      data: {
-        first_name: firstName,
-        last_name: lastName,
+      updateUser({
+        firstName,
+        lastName,
         username,
-        full_name: `${firstName} ${lastName}`.trim(),
-      },
-    });
-
-    if (error) {
-      toast.error("Failed to update profile");
-      return;
+      });
+      toast.success("Profile updated successfully");
+    } finally {
+      setIsUpdatingProfile(false);
     }
-
-    updateUser({
-      firstName,
-      lastName,
-      username,
-    });
-    toast.success("Profile updated successfully");
   };
 
   const emailPrefix = user?.email?.split("@")[0] || "";
@@ -181,16 +188,22 @@ export default function SettingsView() {
     setDeleteDialogOpen(true);
   };
 
-  const handleDeleteAccountConfirm = async () => {
-    const result = await deleteAccountAction();
-    if (result?.error) {
-      toast.error(result.error);
+  const handleDeleteAccountConfirm = async (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    setIsDeletingAccount(true);
+    try {
+      const result = await deleteAccountAction();
+      if (result?.error) {
+        toast.error(result.error);
+        setDeleteDialogOpen(false);
+        return;
+      }
+      deleteAccount(); // Clear local store
+      toast.success("Account deleted");
       setDeleteDialogOpen(false);
-      return;
+    } finally {
+      setIsDeletingAccount(false);
     }
-    deleteAccount(); // Clear local store
-    toast.success("Account deleted");
-    setDeleteDialogOpen(false);
   };
 
   const handleCopyUserIdentifier = async () => {
@@ -423,20 +436,30 @@ export default function SettingsView() {
                         onClick={handleUpdateProfile}
                         className="px-8"
                         disabled={
-                          firstName === (user?.firstName || "") &&
-                          lastName === (user?.lastName || "") &&
-                          username === (user?.username || "")
+                          isUpdatingProfile ||
+                          (firstName === (user?.firstName || "") &&
+                            lastName === (user?.lastName || "") &&
+                            username === (user?.username || ""))
                         }
                       >
-                        Save Changes{" "}
-                        <span className="ml-2 flex items-center gap-1">
-                          <Kbd className="bg-primary-foreground/20 text-primary-foreground border-0">
-                            <ModKey />
-                          </Kbd>
-                          <Kbd className="bg-primary-foreground/20 text-primary-foreground border-0">
-                            S
-                          </Kbd>
-                        </span>
+                        {isUpdatingProfile ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            Save Changes{" "}
+                            <span className="ml-2 flex items-center gap-1">
+                              <Kbd className="bg-primary-foreground/20 text-primary-foreground border-0">
+                                <ModKey />
+                              </Kbd>
+                              <Kbd className="bg-primary-foreground/20 text-primary-foreground border-0">
+                                S
+                              </Kbd>
+                            </span>
+                          </>
+                        )}
                       </Button>
                     </div>
                   </CardContent>
@@ -577,12 +600,20 @@ export default function SettingsView() {
             <AlertDialogAction
               onClick={handleDeleteAccountConfirm}
               disabled={
+                isDeletingAccount ||
                 deleteConfirmation !== (user?.username || user?.email) ||
                 (projects.length > 0 && !isDeleteConfirmed)
               }
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
-              Delete Account
+              {isDeletingAccount ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete Account"
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
