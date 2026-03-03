@@ -11,6 +11,7 @@ import {
   Users,
   Copy,
   Pencil,
+  Loader2,
 } from "lucide-react";
 import * as React from "react";
 import { useRouter } from "next/navigation";
@@ -67,6 +68,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
   const [shareDialogOpen, setShareDialogOpen] = React.useState(false);
   const [renameDialogOpen, setRenameDialogOpen] = React.useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = React.useState("");
+  const [isDeleting, setIsDeleting] = React.useState(false);
   const router = useRouter();
 
   const handleDeleteClick = (e?: React.MouseEvent | React.KeyboardEvent) => {
@@ -75,6 +77,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
       e.stopPropagation();
     }
     setDeleteConfirmation("");
+    setIsDeleting(false);
     setDeleteDialogOpen(true);
   };
 
@@ -106,10 +109,17 @@ export function ProjectCard({ project }: ProjectCardProps) {
     };
   }, [project.id, project.role, project.slug]);
 
-  const handleDeleteConfirm = async () => {
+  const handleDeleteConfirm = async (
+    e?: React.MouseEvent<HTMLButtonElement>,
+  ) => {
+    if (e) {
+      e.preventDefault();
+    }
+    setIsDeleting(true);
     const result = await deleteProjectAction(project.id);
     if (result.error) {
       toast.error(result.error);
+      setIsDeleting(false);
       return;
     }
     deleteProject(project.id);
@@ -299,18 +309,24 @@ export function ProjectCard({ project }: ProjectCardProps) {
             <AlertDialogAction
               data-shortcut-submit="true"
               onClick={handleDeleteConfirm}
-              disabled={deleteConfirmation !== project.name}
+              disabled={deleteConfirmation !== project.name || isDeleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
-              Delete
-              <div className="hidden sm:flex items-center gap-1">
-                <Kbd variant="primary" size="xs">
-                  <ModKey />
-                </Kbd>
-                <Kbd variant="primary" size="xs">
-                  <CornerDownLeft className="h-3 w-3" />
-                </Kbd>
-              </div>
+              {isDeleting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Delete"
+              )}
+              {!isDeleting && (
+                <div className="hidden sm:flex items-center gap-1">
+                  <Kbd variant="primary" size="xs">
+                    <ModKey />
+                  </Kbd>
+                  <Kbd variant="primary" size="xs">
+                    <CornerDownLeft className="h-3 w-3" />
+                  </Kbd>
+                </div>
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

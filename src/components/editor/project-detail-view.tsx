@@ -18,6 +18,7 @@ import {
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { EnvVarTable } from "@/components/editor/env-var-table";
+import { EnvVarTableSkeleton } from "@/components/editor/env-var-table-skeleton";
 import { VariableDialog } from "@/components/editor/variable-dialog";
 import { ImportEnvDialog } from "@/components/editor/import-env-dialog";
 import { Project, useEnvaultStore } from "@/lib/store";
@@ -55,7 +56,7 @@ import { ShareProjectDialog } from "@/components/dashboard/share-project-dialog"
 import { RenameProjectDialog } from "@/components/dashboard/rename-project-dialog";
 import { GitHubIntegrationDialog } from "@/components/dashboard/github-integration-dialog";
 import { AppHeader } from "@/components/dashboard/app-header";
-import { Edit3, Github } from "lucide-react";
+import { Edit3, Github, Loader2 } from "lucide-react";
 
 interface ProjectDetailViewProps {
   project: Project;
@@ -80,7 +81,15 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [idCopied, setIdCopied] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const activeEnvironment = project.active_environment_slug || "development";
+  const [optimisticEnv, setOptimisticEnv] = useState(activeEnvironment);
+  const [isPending, startTransition] = React.useTransition();
+
+  useEffect(() => {
+    setOptimisticEnv(activeEnvironment);
+  }, [activeEnvironment]);
+
   const isAdvancedMode = project.ui_mode === "advanced";
   const availableEnvironments = React.useMemo(
     () => project.environments || [],
@@ -124,12 +133,35 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
       setDeleteDialogOpen(true);
     };
 
+    const handleSwitchTab = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const index = customEvent.detail.index;
+      if (
+        isAdvancedMode &&
+        availableEnvironments.length > 0 &&
+        index >= 0 &&
+        index < availableEnvironments.length
+      ) {
+        // Needs a reference to `handleEnvironmentChange`, so we will just duplicate logic here
+        // to avoid dependency nightmares, or just let 'optimisticEnv' logic run in handleEnvironmentChange
+        const envSlug = availableEnvironments[index].slug;
+        setOptimisticEnv(envSlug);
+        startTransition(() => {
+          router.replace(
+            `${projectBasePath}?env=${encodeURIComponent(envSlug)}`,
+            { scroll: false },
+          );
+        });
+      }
+    };
+
     document.addEventListener("open-new-variable", handleOpenAdd);
     document.addEventListener("universal-new", handleOpenAdd);
     document.addEventListener("universal-download", handleDownload);
     document.addEventListener("universal-import", handleOpenImport);
     document.addEventListener("universal-share", handleOpenShare);
     document.addEventListener("universal-delete", handleUniversalDelete);
+    document.addEventListener("switch-tab", handleSwitchTab);
 
     return () => {
       document.removeEventListener("open-new-variable", handleOpenAdd);
@@ -138,8 +170,16 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
       document.removeEventListener("universal-import", handleOpenImport);
       document.removeEventListener("universal-share", handleOpenShare);
       document.removeEventListener("universal-delete", handleUniversalDelete);
+      document.removeEventListener("switch-tab", handleSwitchTab);
     };
-  }, [project, canEdit]);
+  }, [
+    project.role,
+    canEdit,
+    isAdvancedMode,
+    availableEnvironments,
+    projectBasePath,
+    router,
+  ]);
 
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -147,10 +187,13 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
     setDeleteDialogOpen(true);
   };
 
-  const handleDeleteConfirm = async () => {
+  const handleDeleteConfirm = async (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    setIsDeleting(true);
     const result = await deleteProjectAction(project.id);
     if (result.error) {
       toast.error(result.error);
+      setIsDeleting(false);
       return;
     }
     deleteProject(project.id);
@@ -202,7 +245,12 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
 
   const handleEnvironmentChange = (envSlug: string) => {
     if (!isAdvancedMode) return;
-    router.replace(`${projectBasePath}?env=${encodeURIComponent(envSlug)}`);
+    setOptimisticEnv(envSlug);
+    startTransition(() => {
+      router.replace(`${projectBasePath}?env=${encodeURIComponent(envSlug)}`, {
+        scroll: false,
+      });
+    });
   };
 
   // Extract the settings dropdown content into a variable or separate component to pass to actions
@@ -268,13 +316,16 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
             {isAdvancedMode && availableEnvironments.length > 0 && (
               <div className="mt-3">
                 <Tabs
-                  value={activeEnvironment}
+                  value={optimisticEnv}
                   onValueChange={handleEnvironmentChange}
                 >
                   <TabsList>
-                    {availableEnvironments.map((env) => (
+                    {availableEnvironments.map((env, index) => (
                       <TabsTrigger key={env.id} value={env.slug}>
                         {env.name}
+                        <Kbd className="ml-2 px-1.5 text-[10px] bg-muted/50 border-0">
+                          {index + 1}
+                        </Kbd>
                       </TabsTrigger>
                     ))}
                   </TabsList>
@@ -378,12 +429,18 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
           </div>
         </div>
 
-        <EnvVarTable
-          projectId={projectId}
-          environmentSlug={activeEnvironment}
-          variables={project.variables}
-          userRole={project.role}
-        />
+        {isPending ? (
+          <div className="mt-8">
+            <EnvVarTableSkeleton />
+          </div>
+        ) : (
+          <EnvVarTable
+            projectId={projectId}
+            environmentSlug={activeEnvironment}
+            variables={project.variables}
+            userRole={project.role}
+          />
+        )}
       </main>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -425,18 +482,24 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
             <AlertDialogAction
               data-shortcut-submit="true"
               onClick={handleDeleteConfirm}
-              disabled={deleteConfirmation !== project.name}
+              disabled={deleteConfirmation !== project.name || isDeleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
-              Delete
-              <div className="hidden sm:flex items-center gap-1">
-                <Kbd variant="primary" size="xs">
-                  <ModKey />
-                </Kbd>
-                <Kbd variant="primary" size="xs">
-                  <CornerDownLeft className="h-3 w-3" />
-                </Kbd>
-              </div>
+              {isDeleting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Delete"
+              )}
+              {!isDeleting && (
+                <div className="hidden sm:flex items-center gap-1">
+                  <Kbd variant="primary" size="xs">
+                    <ModKey />
+                  </Kbd>
+                  <Kbd variant="primary" size="xs">
+                    <CornerDownLeft className="h-3 w-3" />
+                  </Kbd>
+                </div>
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
