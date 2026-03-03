@@ -14,11 +14,15 @@ import {
   ArrowUp,
   ArrowDown,
   Bell,
-  Star,
   Github,
   User,
   FilesIcon,
   Activity,
+  Shield,
+  FileText,
+  HelpCircle,
+  Key,
+  ShieldAlert,
 } from "lucide-react";
 import {
   Dialog,
@@ -96,6 +100,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
   const commands: CommandItem[] = React.useMemo(() => {
     const items: CommandItem[] = [];
 
+    // 1. App / Authenticated Routes
     if (user) {
       items.push(
         {
@@ -129,46 +134,75 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
         items.push({
           id: "nav-admin-system",
           type: "command",
-          icon: <Activity className="w-4 h-4" />,
-          label: "Go to System Status",
+          icon: <ShieldAlert className="w-4 h-4" />,
+          label: "Admin: System Status",
           action: () => handleNavigation("/admin/system"),
         });
       }
-    } else {
-      // Landing Page / Unauthenticated items
+    }
+
+    // 2. Landing / Marketing Routes
+    // Home is usually useful even if logged in to see the landing page, but mostly useful if not logged in.
+    if (!user) {
+      items.push({
+        id: "nav-home",
+        type: "command",
+        icon: <Home className="w-4 h-4" />,
+        label: "Go to Home",
+        action: () => handleNavigation("/"),
+      });
+    }
+
+    // These public routes can be useful even if logged in
+    items.push(
+      {
+        id: "nav-docs",
+        type: "command",
+        icon: <FilesIcon className="w-4 h-4" />,
+        label: "Documentation",
+        action: () => handleNavigation("/docs"),
+      },
+      {
+        id: "nav-support",
+        type: "command",
+        icon: <HelpCircle className="w-4 h-4" />,
+        label: "Support",
+        action: () => handleNavigation("/support"),
+      },
+      {
+        id: "nav-status",
+        type: "command",
+        icon: <Activity className="w-4 h-4" />,
+        label: "System Status",
+        action: () => handleNavigation("/status"),
+      },
+      {
+        id: "nav-privacy",
+        type: "command",
+        icon: <Shield className="w-4 h-4" />,
+        label: "Privacy Policy",
+        action: () => handleNavigation("/privacy"),
+      },
+      {
+        id: "nav-terms",
+        type: "command",
+        icon: <FileText className="w-4 h-4" />,
+        label: "Terms of Service",
+        action: () => handleNavigation("/terms"),
+      },
+      {
+        id: "nav-github",
+        type: "command",
+        icon: <Github className="w-4 h-4" />,
+        label: "GitHub Repository",
+        action: () =>
+          window.open("https://github.com/DinanthDash/Envault", "_blank"),
+      },
+    );
+
+    // 3. Auth Routes
+    if (!user) {
       items.push(
-        {
-          id: "nav-home",
-          type: "command",
-          icon: <Home className="w-4 h-4" />,
-          label: "Go to Home",
-          action: () => handleNavigation("/"),
-        },
-        {
-          id: "nav-docs",
-          type: "command",
-          icon: <FilesIcon className="w-4 h-4" />,
-          label: "Go to Docs",
-          action: () => handleNavigation("/docs"),
-        },
-        {
-          id: "nav-features",
-          type: "command",
-          icon: <Star className="w-4 h-4" />,
-          label: "View Features",
-          action: () => {
-            onOpenChange(false);
-            const el = document.getElementById("features");
-            if (el) el.scrollIntoView({ behavior: "smooth" });
-          },
-        },
-        {
-          id: "nav-github",
-          type: "command",
-          icon: <Github className="w-4 h-4" />,
-          label: "View GitHub Repository",
-          action: () => window.open("https://github.com", "_blank"),
-        },
         {
           id: "nav-login",
           type: "command",
@@ -176,21 +210,17 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
           label: "Login / Sign Up",
           action: () => handleNavigation("/login"),
         },
+        {
+          id: "nav-forgot-password",
+          type: "command",
+          icon: <Key className="w-4 h-4" />,
+          label: "Forgot Password",
+          action: () => handleNavigation("/forgot-password"),
+        },
       );
     }
 
-    // System Status - Show if not logged in OR if on landing page
-    if (!user || pathname === "/") {
-      items.push({
-        id: "nav-system-status",
-        type: "command",
-        icon: <Activity className="w-4 h-4" />,
-        label: "System Status",
-        action: () => handleNavigation("/status"),
-      });
-    }
-
-    // Shared items
+    // 4. System / Actions
     items.push({
       id: "action-theme",
       type: "command",
@@ -218,7 +248,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
     }
 
     return items;
-  }, [user, theme, setTheme, logout, onOpenChange, handleNavigation, pathname]);
+  }, [user, theme, setTheme, logout, handleNavigation]);
 
   const contextualCommands = React.useMemo(() => {
     const items: CommandItem[] = [];
@@ -363,7 +393,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
           </div>
         </DialogHeader>
         <div
-          className="h-auto min-h-[100px] max-h-[50vh] md:max-h-[300px] overflow-y-auto p-2"
+          className="relative h-auto min-h-[100px] max-h-[50vh] md:max-h-[300px] overflow-y-auto p-2"
           ref={scrollContainerRef}
           onMouseMove={handleMouseMove}
         >
