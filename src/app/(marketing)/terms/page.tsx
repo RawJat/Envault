@@ -1,5 +1,4 @@
 import { LegalLayout } from "@/components/legal/LegalLayout";
-import { createClient } from "@/lib/supabase/server";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -34,17 +33,11 @@ const sections = [
 ];
 
 export default async function TermsPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   return (
     <LegalLayout
       title="Terms of Service"
       lastUpdated="24 February 2026"
       sections={sections}
-      user={user}
     >
       <section
         id="agreement"
