@@ -13,7 +13,7 @@ import {
   getPersonalAccessTokens,
   revokePersonalAccessToken,
 } from "@/app/actions";
-import { RelativeDate } from "@/components/ui/relative-date";
+import { DateDisplay } from "@/components/ui/date-display";
 import {
   CornerDownLeft,
   Shield,
@@ -373,18 +373,30 @@ export function SecurityTab({ user }: { user: User | null }) {
                         <Clock className="w-3.5 h-3.5 shrink-0" />
                         <span className="truncate">
                           Active:{" "}
-                          {token.last_used_at
-                            ? <RelativeDate date={token.last_used_at} addSuffix />
-                            : "Never"}
+                          {token.last_used_at ? (
+                            <DateDisplay
+                              date={token.last_used_at}
+                              addSuffix
+                              formatType="relative"
+                            />
+                          ) : (
+                            "Never"
+                          )}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Calendar className="w-3.5 h-3.5 shrink-0" />
                         <span className="truncate">
                           Expires:{" "}
-                          {token.expires_at
-                            ? <RelativeDate date={token.expires_at} addSuffix />
-                            : "Never"}
+                          {token.expires_at ? (
+                            <DateDisplay
+                              date={token.expires_at}
+                              addSuffix
+                              formatType="relative"
+                            />
+                          ) : (
+                            "Never"
+                          )}
                         </span>
                       </div>
                     </div>

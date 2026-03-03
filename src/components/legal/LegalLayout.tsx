@@ -1,14 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Navbar } from "@/components/landing/Navbar";
-import { Footer } from "@/components/landing/Footer";
 import { RegMark } from "@/components/landing/RegMark";
 import { ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link } from "next-view-transitions";
-
-import { User } from "@supabase/supabase-js";
 
 interface Section {
   id: string;
@@ -20,7 +16,6 @@ interface LegalLayoutProps {
   lastUpdated: string;
   sections: Section[];
   children: React.ReactNode;
-  user?: User | null;
 }
 
 export function LegalLayout({
@@ -28,10 +23,22 @@ export function LegalLayout({
   lastUpdated,
   sections,
   children,
-  user,
 }: LegalLayoutProps) {
-  const [activeSection, setActiveSection] = useState<string>("");
+  const [activeSection, setActiveSection] = useState<string>(
+    sections[0]?.id || "",
+  );
   const [isScrolling, setIsScrolling] = useState(false);
+
+  useEffect(() => {
+    const handleWindowScroll = () => {
+      if (window.scrollY < 100 && sections.length > 0 && !isScrolling) {
+        setActiveSection(sections[0].id);
+      }
+    };
+
+    window.addEventListener("scroll", handleWindowScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleWindowScroll);
+  }, [sections, isScrolling]);
 
   useEffect(() => {
     const observerOptions = {
@@ -107,8 +114,6 @@ export function LegalLayout({
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <Navbar user={user} />
-
       {/* Blueprint Grid Container */}
       <div className="relative flex-1 pt-24">
         {/* Grid Accents */}
@@ -117,7 +122,7 @@ export function LegalLayout({
 
         {/* Breadcrumbs */}
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
+          initial={{ opacity: 1, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
           className="container max-w-7xl px-4 md:px-6 py-4 border-b border-border/50"
@@ -139,7 +144,7 @@ export function LegalLayout({
 
             {/* Main Content Area */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 1, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
               className="max-w-3xl"
@@ -162,7 +167,7 @@ export function LegalLayout({
 
             {/* Sticky Sidebar Navigation */}
             <motion.aside
-              initial={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 1, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
               className="hidden lg:block"
@@ -203,13 +208,9 @@ export function LegalLayout({
                         {/* Active indicator */}
                         {isActive && (
                           <motion.div
-                            layoutId="activeSection"
-                            className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-8 bg-primary rounded-full"
-                            transition={{
-                              type: "spring",
-                              stiffness: 380,
-                              damping: 30,
-                            }}
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "2rem", opacity: 1 }}
+                            className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 bg-primary rounded-full"
                           />
                         )}
                       </button>
@@ -236,8 +237,6 @@ export function LegalLayout({
           <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border/20 to-transparent" />
         </div>
       </div>
-
-      <Footer />
     </div>
   );
 }
