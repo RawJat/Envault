@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   description:
     "Read the terms and conditions for using Envault's secure environment variable management service.",
   openGraph: {
+    siteName: "Envault",
     images: [
       "/api/og?title=Terms%20of%20Service&description=Terms%20and%20conditions%20for%20using%20Envault",
     ],

@@ -71,6 +71,7 @@ export async function generateMetadata({
       url: slug
         ? `https://www.envault.tech/docs/${slug.join("/")}`
         : "https://www.envault.tech/docs",
+      siteName: "Envault",
       images: [
         `/api/og?title=${encodeURIComponent(page.data.title as string)}&section=Docs&description=${encodeURIComponent(page.data.description as string)}`,
       ],

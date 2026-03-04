@@ -31,6 +31,7 @@ export async function generateMetadata(): Promise<Metadata> {
     title: "Approve Access",
     description: "Approve or deny project access requests.",
     openGraph: {
+      siteName: "Envault",
       images: [
         "/api/og?title=Approve%20Access&description=Manage%20project%20collaboration%20requests",
       ],

@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: "Privacy Policy",
   description: "Learn how Envault collects, uses, and protects your data.",
   openGraph: {
+    siteName: "Envault",
     images: [
       "/api/og?title=Privacy%20Policy&description=Learn%20how%20we%20protect%20your%20data",
     ],
