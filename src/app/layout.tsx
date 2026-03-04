@@ -13,6 +13,7 @@ import { getServerOS } from "@/lib/os";
 import { ViewTransitions } from "next-view-transitions";
 import { headers } from "next/headers";
 import { SystemStatusBanner } from "@/components/ui/system-status-banner";
+import { GlobalScene } from "@/components/landing/GlobalScene";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.envault.tech"),
@@ -146,6 +147,7 @@ export default async function RootLayout({
             <TooltipProvider>
               <ShortcutProvider>
                 <HmacProvider>
+                  <GlobalScene />
                   {children}
                   <Toaster />
                   {user && (
