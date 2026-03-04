@@ -398,7 +398,7 @@ function OrbitingDebris() {
   );
 }
 
-function SceneContent() {
+export function SceneContent() {
   return (
     <>
       <PerspectiveCamera makeDefault position={[0, 0, 12]} />

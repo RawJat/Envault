@@ -8,7 +8,6 @@ import { useState } from "react"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
-import { Scene } from "./Scene"
 
 function InstallTerminal({ command, label }: { command: string; label: string }) {
     const [copied, setCopied] = useState(false)
@@ -58,9 +57,6 @@ function InstallTerminal({ command, label }: { command: string; label: string })
 export function Hero() {
     return (
         <section className="relative h-screen w-full flex items-center justify-center overflow-hidden">
-            <div className="absolute inset-y-0 right-0 w-1/2 hidden md:block pointer-events-none z-0">
-                <Scene />
-            </div>
             <div className="container relative z-20 px-4 md:px-6 grid md:grid-cols-2 gap-12 items-center pt-16">
                 <div className="flex flex-col items-start text-left space-y-8 max-w-2xl">
                     <motion.div

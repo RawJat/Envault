@@ -1,6 +1,5 @@
 import { ShieldCheck } from "lucide-react"
 import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler"
-import { Scene } from "@/components/landing/Scene"
 import { Link } from "next-view-transitions"
 
 interface AuthLayoutProps {
@@ -37,10 +36,6 @@ export function AuthLayout({ children }: AuthLayoutProps) {
                 {children}
             </div>
 
-            {/* 3D Background */}
-            <div className="absolute inset-y-0 left-0 w-1/2 hidden lg:block pointer-events-none z-0">
-                <Scene isAuthPage={true} />
-            </div>
         </main>
     )
 }
