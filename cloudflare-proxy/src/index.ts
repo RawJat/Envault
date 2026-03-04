@@ -34,22 +34,23 @@ const worker = {
     }
 
     // --- WebSocket Passthrough ---
-    // Supabase Realtime uses WebSocket connections. Cloudflare Workers support
-    // native WebSocket proxying by passing the request directly via fetch().
-    // We must detect upgrade requests and use the special CF worker upgrade flow.
+    // Supabase Realtime uses WebSocket connections. We must detect upgrade
+    // requests BEFORE any header rewrites (Origin, X-Forwarded-Host) because
+    // Supabase Realtime validates the Origin strictly and will reject connections
+    // with a rewritten/unexpected Origin header.
+    // For WebSocket, just rewrite the hostname and pass headers as-is.
     const upgradeHeader = request.headers.get("Upgrade");
     if (upgradeHeader?.toLowerCase() === "websocket") {
-      // For WebSocket, switch protocol to wss:// if needed
-      if (url.protocol === "https:") {
-        url.protocol = "wss:";
-      } else if (url.protocol === "http:") {
-        url.protocol = "ws:";
-      }
-      // Forward the WebSocket upgrade directly - Cloudflare handles this natively
-      return fetch(url.toString(), {
-        method: request.method,
-        headers: headers,
-        body: undefined,
+      const wsUrl = new URL(request.url);
+      wsUrl.hostname = targetUrl.hostname;
+      wsUrl.protocol = targetUrl.protocol === "https:" ? "wss:" : "ws:";
+      wsUrl.port = targetUrl.port;
+
+      const wsHeaders = new Headers(request.headers);
+      wsHeaders.delete("Host"); // Let fetch set the correct Host from the URL
+
+      return fetch(wsUrl.toString(), {
+        headers: wsHeaders,
       });
     }
 
