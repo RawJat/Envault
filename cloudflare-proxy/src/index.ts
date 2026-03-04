@@ -33,6 +33,26 @@ const worker = {
       headers.set("X-Forwarded-For", clientIp);
     }
 
+    // --- WebSocket Passthrough ---
+    // Supabase Realtime uses WebSocket connections. Cloudflare Workers support
+    // native WebSocket proxying by passing the request directly via fetch().
+    // We must detect upgrade requests and use the special CF worker upgrade flow.
+    const upgradeHeader = request.headers.get("Upgrade");
+    if (upgradeHeader?.toLowerCase() === "websocket") {
+      // For WebSocket, switch protocol to wss:// if needed
+      if (url.protocol === "https:") {
+        url.protocol = "wss:";
+      } else if (url.protocol === "http:") {
+        url.protocol = "ws:";
+      }
+      // Forward the WebSocket upgrade directly - Cloudflare handles this natively
+      return fetch(url.toString(), {
+        method: request.method,
+        headers: headers,
+        body: undefined,
+      });
+    }
+
     // --- Fix OAuth Redirect Callbacks ---
     // Supabase Auth binds the OAuth callback (PKCE) domain to the Host header.
     // We inject X-Forwarded-Host so Supabase uses the real frontend domain
@@ -74,15 +94,15 @@ const worker = {
     }
 
     // Only set X-Forwarded-Host if we have a verified trusted client host.
-    // Leave it absent for server-to-server calls (Vercel → proxy) so Supabase
+    // Leave it absent for server-to-server calls (Vercel -> proxy) so Supabase
     // uses its own configured Site URL for any internal redirects.
     if (clientHost) {
       headers.set("X-Forwarded-Host", clientHost);
     }
 
     try {
-      // The Cloudflare fetch directly accepts the modified target URL string
-      // alongside the original request options.
+      // Use redirect: "manual" so OAuth 302 redirects are passed through to
+      // the browser rather than being followed internally by the Worker.
       const response = await fetch(url.toString(), {
         method: request.method,
         headers: headers,
@@ -93,9 +113,22 @@ const worker = {
         redirect: "manual",
       });
 
+      // Opaque redirect responses (from redirect: "manual") cannot be wrapped
+      // in a new Response - return them directly as-is so the browser follows
+      // the 302 redirect correctly.
+      if (
+        response.type === "opaqueredirect" ||
+        response.status === 301 ||
+        response.status === 302 ||
+        response.status === 303 ||
+        response.status === 307 ||
+        response.status === 308
+      ) {
+        return response;
+      }
+
       // We wrap the response to ensure headers are immutable when passing back,
-      // though typically returning fetch() result directly works in CF Workers,
-      // wrapping it allows header modifications if needed in the future.
+      // allowing us to inject CORS headers if needed.
       const proxyResponse = new Response(response.body, response);
 
       // Force CORS headers on the proxy response if needed
@@ -104,8 +137,6 @@ const worker = {
         proxyResponse.headers.set("Access-Control-Allow-Credentials", "true");
       }
 
-      // The Supabase API already outputs broad CORS headers,
-      // returning it as-is is usually perfectly fine.
       return proxyResponse;
     } catch (error) {
       const e = error as Error;
