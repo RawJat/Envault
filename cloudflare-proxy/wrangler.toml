@@ -1,7 +1,0 @@
-name = "envault-supabase-proxy"
-main = "src/index.ts"
-compatibility_date = "2024-04-05"
-
-routes = [
-  { pattern = "api.envault.tech", custom_domain = true, zone_name = "envault.tech" }
-]

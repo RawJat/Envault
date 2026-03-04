@@ -5,15 +5,6 @@ const withMDX = createMDX();
 
 const isDev = process.env.NODE_ENV === "development";
 
-let supabaseHostname = "*.supabase.co";
-try {
-  if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
-    supabaseHostname = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname;
-  }
-} catch {
-  // Ignore and fallback to default
-}
-
 const nextConfig: NextConfig = {
   // React Compiler is great for production but adds overhead per-file in dev.
   // Disable it in dev to speed up Turbopack compilation.
@@ -69,11 +60,11 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com",
+              "script-src 'self' 'unsafe-inline'",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob: https:",
-              `connect-src 'self' https://${supabaseHostname} wss://${supabaseHostname} https://vitals.vercel-insights.com https://api.iconify.design`,
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://vitals.vercel-insights.com https://api.iconify.design",
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'",
