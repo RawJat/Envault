@@ -34,35 +34,51 @@ const worker = {
     }
 
     // --- Fix OAuth Redirect Callbacks ---
-    // Supabase Auth binds the OAuth callback (PKCE) domain to the `Host` header
-    // of the request that initiated it. If we don't override this, GitHub/Google
-    // will redirect the user back to "api.envault.tech" instead of "envault.tech".
-    // Try to extract the true frontend domain from Origin, then Referer.
-    let clientHost = url.hostname; // Fallback to current request
+    // Supabase Auth binds the OAuth callback (PKCE) domain to the Host header.
+    // We inject X-Forwarded-Host so Supabase uses the real frontend domain
+    // (e.g. www.envault.tech) instead of the proxy domain (api.envault.tech).
+    //
+    // SECURITY: Only trust Origins/Referers from OUR domains.
+    // Never use a foreign Referer like https://github.com/ - that would cause
+    // Supabase to redirect token responses to GitHub, which returns HTML,
+    // breaking JSON parsing during the OAuth code exchange (auth-code-error).
+    const TRUSTED_DOMAINS = ["envault.tech", "localhost"];
+    const isTrustedHost = (host: string) =>
+      TRUSTED_DOMAINS.some((d) => host === d || host.endsWith(`.${d}`));
+
+    let clientHost: string | null = null;
     const origin = headers.get("Origin");
     const referer = headers.get("Referer");
 
     if (origin) {
       try {
         const originUrl = new URL(origin);
-        clientHost = originUrl.host;
-        // Bypassing Passkey/WebAuthn strict CORS Origin checks:
-        // Supabase expects auth requests to match the backend Origin.
-        headers.set("Origin", targetUrl.origin);
+        if (isTrustedHost(originUrl.hostname)) {
+          clientHost = originUrl.host;
+          // Rewrite Origin to the backend URL so Supabase CORS/WebAuthn checks pass.
+          headers.set("Origin", targetUrl.origin);
+        }
       } catch {
         // Ignore invalid origins
       }
     } else if (referer) {
       try {
         const refererUrl = new URL(referer);
-        clientHost = refererUrl.host;
+        // Only use Referer if it's from our own app, never from OAuth providers.
+        if (isTrustedHost(refererUrl.hostname)) {
+          clientHost = refererUrl.host;
+        }
       } catch {
         // Ignore invalid referers
       }
     }
 
-    // Force the Supabase Auth server to construct callback URLs using the true frontend domain
-    headers.set("X-Forwarded-Host", clientHost);
+    // Only set X-Forwarded-Host if we have a verified trusted client host.
+    // Leave it absent for server-to-server calls (Vercel → proxy) so Supabase
+    // uses its own configured Site URL for any internal redirects.
+    if (clientHost) {
+      headers.set("X-Forwarded-Host", clientHost);
+    }
 
     try {
       // The Cloudflare fetch directly accepts the modified target URL string
