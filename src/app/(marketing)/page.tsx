@@ -14,6 +14,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     url: "https://www.envault.tech",
+    siteName: "Envault",
     images: [
       "/api/og?title=Envault&description=Secure%20Environment%20Variable%20Management",
     ],

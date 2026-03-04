@@ -47,6 +47,7 @@ export async function generateMetadata({
     title,
     description,
     openGraph: {
+      siteName: "Envault",
       images: [
         `/api/og?title=${encodeURIComponent(title)}&section=Project&description=${encodeURIComponent(description)}`,
       ],

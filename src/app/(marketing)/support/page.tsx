@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   description:
     "Get help and support for Envault. Contact our team or view documentation.",
   openGraph: {
+    siteName: "Envault",
     images: [
       "/api/og?title=Support&description=Get%20help%20and%20support%20for%20Envault",
     ],
