@@ -33,6 +33,11 @@ const worker = {
       headers.set("X-Forwarded-For", clientIp);
     }
 
+    // Tell Supabase Auth what the TRUE external hostname is,
+    // otherwise OAuth providers (GitHub/Google) will display the proxy URL
+    // instead of envault.tech to the user.
+    headers.set("X-Forwarded-Host", url.hostname);
+
     // Passkey WebAuthn requires the Origin header to match on the relying party.
     // Supabase enforces strict Origin checking for auth requests.
     // If the origin exists, we rewrite it from the frontend URL to the backend URL
@@ -40,10 +45,11 @@ const worker = {
     const origin = headers.get("Origin");
     if (origin) {
       try {
-        new URL(origin); // validate it's a URL
-        // Do not blindly rewrite origin if it doesn't match our frontend domains
-        // But for proxy purposes, forwarding the targetOrigin satisfies Supabase CORS
-        headers.set("Origin", targetUrl.origin);
+        const originUrl = new URL(origin); // validate it's a URL
+        // Forward the original application hostname to Supabase so OAuth providers
+        // (e.g. GitHub/Google) display "envault.tech" instead of "api.envault.tech"
+        // and route callbacks back to the correct frontend URL.
+        headers.set("X-Forwarded-Host", originUrl.host);
       } catch {
         // Ignore invalid origins
       }
