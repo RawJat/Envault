@@ -64,3 +64,6 @@ cli-wrapper/bin/envault
 cli-wrapper/bin/README.md
 cli-wrapper/*.zip
 cli-wrapper/test_extract/
+
+# Cloudflare Proxy
+cloudflare-proxy/.wrangler/

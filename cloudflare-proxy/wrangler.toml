@@ -1,0 +1,11 @@
+name = "envault-supabase-proxy"
+main = "src/index.ts"
+compatibility_date = "2024-04-05"
+
+# This is an optional setting to let wrangler know it should bundle the worker.
+# We're writing it in TypeScript so wrangler will compile it automatically.
+
+# Define your secrets in dashboard or .dev.vars for local testing.
+# We add a placeholder here for the type definition in wrangler types.
+[vars]
+# SUPABASE_URL = "https://your-project-ref.supabase.co" # Set this in dashboard or .dev.vars
