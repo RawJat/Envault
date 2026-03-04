@@ -11,10 +11,18 @@ export async function GET(request: Request) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      // Vercel and Cloudflare both modify headers. The safest approach
-      // is to always redirect to the request's native origin (which corresponds
-      // to the domain the user's browser is actively visiting, e.g. envault.tech)
-      return NextResponse.redirect(`${origin}${next}`);
+      const forwardedHost = request.headers.get("x-forwarded-host"); // original origin before Vercel load balancer
+      const isLocalEnv = process.env.NODE_ENV === "development";
+
+      if (isLocalEnv) {
+        return NextResponse.redirect(`${origin}${next}`);
+      } else if (forwardedHost) {
+        return NextResponse.redirect(`https://${forwardedHost}${next}`);
+      } else {
+        return NextResponse.redirect(`${origin}${next}`);
+      }
+    } else {
+      console.error("OAuth Exchange Error:", error.message);
     }
   }
 
