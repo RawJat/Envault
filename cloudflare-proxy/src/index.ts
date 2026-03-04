@@ -33,27 +33,36 @@ const worker = {
       headers.set("X-Forwarded-For", clientIp);
     }
 
-    // Tell Supabase Auth what the TRUE external hostname is,
-    // otherwise OAuth providers (GitHub/Google) will display the proxy URL
-    // instead of envault.tech to the user.
-    headers.set("X-Forwarded-Host", url.hostname);
-
-    // Passkey WebAuthn requires the Origin header to match on the relying party.
-    // Supabase enforces strict Origin checking for auth requests.
-    // If the origin exists, we rewrite it from the frontend URL to the backend URL
-    // so Supabase accepts the request.
+    // --- Fix OAuth Redirect Callbacks ---
+    // Supabase Auth binds the OAuth callback (PKCE) domain to the `Host` header
+    // of the request that initiated it. If we don't override this, GitHub/Google
+    // will redirect the user back to "api.envault.tech" instead of "envault.tech".
+    // Try to extract the true frontend domain from Origin, then Referer.
+    let clientHost = url.hostname; // Fallback to current request
     const origin = headers.get("Origin");
+    const referer = headers.get("Referer");
+
     if (origin) {
       try {
-        const originUrl = new URL(origin); // validate it's a URL
-        // Forward the original application hostname to Supabase so OAuth providers
-        // (e.g. GitHub/Google) display "envault.tech" instead of "api.envault.tech"
-        // and route callbacks back to the correct frontend URL.
-        headers.set("X-Forwarded-Host", originUrl.host);
+        const originUrl = new URL(origin);
+        clientHost = originUrl.host;
+        // Bypassing Passkey/WebAuthn strict CORS Origin checks:
+        // Supabase expects auth requests to match the backend Origin.
+        headers.set("Origin", targetUrl.origin);
       } catch {
         // Ignore invalid origins
       }
+    } else if (referer) {
+      try {
+        const refererUrl = new URL(referer);
+        clientHost = refererUrl.host;
+      } catch {
+        // Ignore invalid referers
+      }
     }
+
+    // Force the Supabase Auth server to construct callback URLs using the true frontend domain
+    headers.set("X-Forwarded-Host", clientHost);
 
     try {
       // The Cloudflare fetch directly accepts the modified target URL string
@@ -65,7 +74,7 @@ const worker = {
           request.method !== "GET" && request.method !== "HEAD"
             ? request.body
             : undefined,
-        redirect: "follow",
+        redirect: "manual",
       });
 
       // We wrap the response to ensure headers are immutable when passing back,
