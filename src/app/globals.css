@@ -56,11 +56,7 @@
   body,
   :root,
   * {
-    font-family: 'Google Sans', sans-serif;
-  }
-
-  html {
-    scroll-behavior: smooth;
+    font-family: "Google Sans", sans-serif;
   }
 
   body {
@@ -71,6 +67,7 @@
 ::view-transition-old(root),
 ::view-transition-new(root) {
   mix-blend-mode: normal;
+  background: hsl(var(--background));
 }
 
 /* Custom smooth easing for the auth scene planet transition */
@@ -81,7 +78,6 @@
 }
 
 @layer utilities {
-
   /* Exclude Three.js Canvas from View Transitions */
   canvas {
     view-transition-name: none !important;

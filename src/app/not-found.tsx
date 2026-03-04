@@ -41,7 +41,7 @@ export default async function NotFound() {
         <RegMark position="bottom-right" />
       </main>
 
-      <Footer />
+      <Footer user={user} />
     </div>
   );
 }

@@ -10,8 +10,8 @@ import {
 import { useState, useEffect } from "react";
 import { useSearchParams, usePathname } from "next/navigation";
 import { toast } from "sonner";
-import { format } from "date-fns";
-import { Plus, CornerDownLeft } from "lucide-react";
+import { DateDisplay } from "@/components/ui/date-display";
+import { Plus, CornerDownLeft, Loader2 } from "lucide-react";
 import { STATUS_CONFIG } from "@/lib/status-config";
 import { useHotkeys } from "@/hooks/use-hotkeys";
 import { Kbd } from "@/components/ui/kbd";
@@ -275,6 +275,7 @@ function CreateComponentDialog() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
 
   // Listen for keyboard shortcut event
   useEffect(() => {
@@ -289,6 +290,8 @@ function CreateComponentDialog() {
   }, []);
 
   const handleCreate = async () => {
+    if (isCreating) return;
+
     // Validate required fields
     if (!name.trim()) {
       toast.error("Component name is required");
@@ -298,6 +301,8 @@ function CreateComponentDialog() {
       toast.error("Component description is required");
       return;
     }
+
+    setIsCreating(true);
 
     try {
       await createComponent(name.trim(), description.trim());
@@ -309,6 +314,8 @@ function CreateComponentDialog() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       toast.error(e.message);
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -363,12 +370,22 @@ function CreateComponentDialog() {
             </Button>
             <Button
               type="submit"
-              disabled={!name.trim() || !description.trim()}
+              disabled={isCreating || !name.trim() || !description.trim()}
+              className="flex items-center gap-2"
             >
-              Create Component <Kbd>{getModifierKey("mod")}</Kbd>
-              <Kbd>
-                <CornerDownLeft className="w-3 h-3" />
-              </Kbd>
+              {isCreating ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  Create Component <Kbd>{getModifierKey("mod")}</Kbd>
+                  <Kbd>
+                    <CornerDownLeft className="w-3 h-3" />
+                  </Kbd>
+                </>
+              )}
             </Button>
           </DialogFooter>
         </form>
@@ -599,11 +616,21 @@ function IncidentManager({
                     !message.trim() ||
                     selectedComponents.length === 0
                   }
+                  className="flex items-center gap-2"
                 >
-                  {isCreating ? "Creating..." : "Create Incident"} <Kbd>{getModifierKey("mod")}</Kbd>
-                  <Kbd>
-                    <CornerDownLeft className="w-3 h-3" />
-                  </Kbd>
+                  {isCreating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      Create Incident <Kbd>{getModifierKey("mod")}</Kbd>
+                      <Kbd>
+                        <CornerDownLeft className="w-3 h-3" />
+                      </Kbd>
+                    </>
+                  )}
                 </Button>
               </DialogFooter>
             </form>
@@ -637,10 +664,11 @@ function IncidentManager({
                     </CardTitle>
                     <CardDescription className="mt-1">
                       Started{" "}
-                      {format(
-                        new Date(incident.created_at),
-                        "MMM d, yyyy h:mm a",
-                      )}
+                      <DateDisplay
+                        date={incident.created_at}
+                        addSuffix
+                        formatType="absolute"
+                      />
                     </CardDescription>
                   </div>
                   <UpdateIncidentDialog incident={incident} />
@@ -654,10 +682,11 @@ function IncidentManager({
                         <p className="font-semibold mb-1">Latest Update:</p>
                         <p>{incident.incident_updates[0].message}</p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {format(
-                            new Date(incident.incident_updates[0].created_at),
-                            "MMM d, h:mm a",
-                          )}
+                          <DateDisplay
+                            date={incident.incident_updates[0].created_at}
+                            addSuffix
+                            formatType="absolute"
+                          />
                         </p>
                       </div>
                     )}
@@ -680,13 +709,18 @@ function UpdateIncidentDialog({
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState(incident.status);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const handleUpdate = async () => {
+    if (isUpdating) return;
+
     // Validate required fields
     if (!message.trim()) {
       toast.error("Update message is required");
       return;
     }
+
+    setIsUpdating(true);
 
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -702,6 +736,8 @@ function UpdateIncidentDialog({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       toast.error(e.message);
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -747,11 +783,24 @@ function UpdateIncidentDialog({
             </div>
           </div>
           <DialogFooter>
-            <Button type="submit" disabled={!message.trim()}>
-              Post Update <Kbd>{getModifierKey("mod")}</Kbd>
-              <Kbd>
-                <CornerDownLeft className="w-3 h-3" />
-              </Kbd>
+            <Button
+              type="submit"
+              disabled={isUpdating || !message.trim()}
+              className="flex items-center gap-2"
+            >
+              {isUpdating ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                <>
+                  Post Update <Kbd>{getModifierKey("mod")}</Kbd>
+                  <Kbd>
+                    <CornerDownLeft className="w-3 h-3" />
+                  </Kbd>
+                </>
+              )}
             </Button>
           </DialogFooter>
         </form>

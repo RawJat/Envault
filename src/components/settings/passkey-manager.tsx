@@ -12,14 +12,14 @@ import {
 import { toast } from "sonner";
 import { startRegistration } from "@simplewebauthn/browser";
 import {
-  KeyRound,
-  Fingerprint,
-  Trash2,
-  Loader2,
-  Calendar,
   Clock,
+  Calendar,
+  Fingerprint,
+  Loader2,
+  KeyRound,
+  Trash2,
 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { DateDisplay } from "@/components/ui/date-display";
 import { createClient } from "@/lib/supabase/client";
 import { useEnvaultStore } from "@/lib/store";
 import {
@@ -46,6 +46,7 @@ export function PasskeyManager() {
   const [passkeys, setPasskeys] = useState<Passkey[]>([]);
   const [loading, setLoading] = useState(true);
   const [registering, setRegistering] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const supabase = createClient();
   const { user } = useEnvaultStore();
 
@@ -132,7 +133,9 @@ export function PasskeyManager() {
     }
   };
 
-  const handleDeletePasskey = async (id: string) => {
+  const handleDeletePasskey = async (id: string, e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    setDeletingId(id);
     const { error } = await supabase.from("passkeys").delete().eq("id", id);
 
     if (error) {
@@ -141,6 +144,7 @@ export function PasskeyManager() {
       toast.success("Passkey deleted");
       refetchPasskeys();
     }
+    setDeletingId(null);
   };
 
   return (
@@ -190,9 +194,11 @@ export function PasskeyManager() {
                         <Calendar className="w-3.5 h-3.5 shrink-0" />
                         <span className="truncate">
                           Added{" "}
-                          {formatDistanceToNow(new Date(pk.created_at), {
-                            addSuffix: true,
-                          })}
+                          <DateDisplay
+                            date={pk.created_at}
+                            addSuffix
+                            formatType="relative"
+                          />
                         </span>
                       </div>
                       <div className="hidden md:block w-1 h-1 rounded-full bg-muted-foreground/30 shrink-0" />
@@ -200,11 +206,15 @@ export function PasskeyManager() {
                         <Clock className="w-3.5 h-3.5 shrink-0" />
                         <span className="truncate">
                           Last used{" "}
-                          {pk.last_used_at
-                            ? formatDistanceToNow(new Date(pk.last_used_at), {
-                                addSuffix: true,
-                              })
-                            : "Never"}
+                          {pk.last_used_at ? (
+                            <DateDisplay
+                              date={pk.last_used_at}
+                              addSuffix
+                              formatType="relative"
+                            />
+                          ) : (
+                            "Never"
+                          )}
                         </span>
                       </div>
                     </div>
@@ -233,8 +243,12 @@ export function PasskeyManager() {
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
                       <AlertDialogAction
                         onClick={() => handleDeletePasskey(pk.id)}
+                        disabled={deletingId === pk.id}
                         className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
                       >
+                        {deletingId === pk.id ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : null}
                         Delete Passkey
                       </AlertDialogAction>
                     </AlertDialogFooter>

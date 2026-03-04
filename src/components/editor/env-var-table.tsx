@@ -11,11 +11,12 @@ import {
   Share2,
   User,
   CornerDownLeft,
+  Loader2,
 } from "lucide-react";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { toast } from "sonner";
 import { ShareSecretModal } from "@/components/dashboard/share-secret-modal";
-import { formatDistanceToNow } from "date-fns";
+import { DateDisplay } from "@/components/ui/date-display";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -73,6 +74,7 @@ export function EnvVarTable({
   const [variableToDelete, setVariableToDelete] = React.useState<string | null>(
     null,
   );
+  const [isDeleting, setIsDeleting] = React.useState(false);
   const router = useRouter();
 
   // Local state for visibility toggles map: variableId -> boolean (true = visible)
@@ -108,6 +110,7 @@ export function EnvVarTable({
   const handleDeleteConfirm = async () => {
     if (!variableToDelete) return;
 
+    setIsDeleting(true);
     const result = await deleteVariableAction(
       variableToDelete,
       projectId,
@@ -115,11 +118,13 @@ export function EnvVarTable({
     );
     if (result.error) {
       toast.error(result.error);
+      setIsDeleting(false);
       return;
     }
     toast.success("Variable deleted");
     setDeleteDialogOpen(false);
     setVariableToDelete(null);
+    setIsDeleting(false);
     router.refresh();
   };
 
@@ -240,11 +245,15 @@ export function EnvVarTable({
                                           const date = new Date(
                                             variable.lastUpdatedAt,
                                           );
-                                          return isNaN(date.getTime())
-                                            ? "Invalid date"
-                                            : formatDistanceToNow(date, {
-                                                addSuffix: true,
-                                              });
+                                          return isNaN(date.getTime()) ? (
+                                            "Invalid date"
+                                          ) : (
+                                            <DateDisplay
+                                              date={date}
+                                              addSuffix
+                                              formatType="relative"
+                                            />
+                                          );
                                         })()
                                       : "-"}
                                   </span>
@@ -304,11 +313,14 @@ export function EnvVarTable({
                                   Time:
                                 </span>
                                 <span>
-                                  {variable.lastUpdatedAt
-                                    ? new Date(
-                                        variable.lastUpdatedAt,
-                                      ).toLocaleString()
-                                    : "-"}
+                                  {variable.lastUpdatedAt ? (
+                                    <DateDisplay
+                                      date={variable.lastUpdatedAt}
+                                      formatType="absolute"
+                                    />
+                                  ) : (
+                                    "-"
+                                  )}
                                 </span>
                               </div>
                             </TooltipContent>
@@ -490,7 +502,11 @@ export function EnvVarTable({
                       ) : (
                         <span>
                           Updated{" "}
-                          {formatDistanceToNow(date, { addSuffix: true })}
+                          <DateDisplay
+                            date={date}
+                            addSuffix
+                            formatType="relative"
+                          />
                         </span>
                       );
                     })()}
@@ -523,12 +539,19 @@ export function EnvVarTable({
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
+              disabled={isDeleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90 flex items-center gap-2"
             >
-              Delete
-              <Kbd variant="primary" size="xs">
-                <CornerDownLeft className="h-3 w-3" />
-              </Kbd>
+              {isDeleting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Delete"
+              )}
+              {!isDeleting && (
+                <Kbd variant="primary" size="xs">
+                  <CornerDownLeft className="h-3 w-3" />
+                </Kbd>
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

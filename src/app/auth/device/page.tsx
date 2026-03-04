@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   title: "Device Authentication",
   description: "Authenticate your Envault CLI session.",
   openGraph: {
+    siteName: "Envault",
     images: [
       "/api/og?title=Device%20Authentication&description=Authenticate%20your%20Envault%20CLI%20session",
     ],

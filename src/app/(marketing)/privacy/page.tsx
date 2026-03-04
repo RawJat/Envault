@@ -1,11 +1,11 @@
 import { LegalLayout } from "@/components/legal/LegalLayout";
-import { createClient } from "@/lib/supabase/server";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
   description: "Learn how Envault collects, uses, and protects your data.",
   openGraph: {
+    siteName: "Envault",
     images: [
       "/api/og?title=Privacy%20Policy&description=Learn%20how%20we%20protect%20your%20data",
     ],
@@ -30,17 +30,11 @@ const sections = [
 ];
 
 export default async function PrivacyPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   return (
     <LegalLayout
       title="Privacy Policy"
       lastUpdated="24 February 2026"
       sections={sections}
-      user={user}
     >
       <section
         id="introduction"

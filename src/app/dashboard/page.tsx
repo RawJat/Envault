@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   title: "Dashboard",
   description: "View and manage all your secure environment variable projects.",
   openGraph: {
+    siteName: "Envault",
     images: [
       "/api/og?title=Dashboard&description=Manage%20your%20secure%20projects",
     ],

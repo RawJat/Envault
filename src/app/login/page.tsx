@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   description:
     "Sign in to your Envault account to access your secure environment variables.",
   openGraph: {
+    siteName: "Envault",
     images: [
       "/api/og?title=Login&description=Sign%20in%20to%20your%20Envault%20account",
     ],

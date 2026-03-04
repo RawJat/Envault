@@ -166,6 +166,20 @@ export function AuthForm() {
     }
   }
 
+  async function onGoogleSignIn(formData: FormData) {
+    const result = await signInWithGoogle(formData);
+    if (result?.error) {
+      toast.error(result.error);
+    }
+  }
+
+  async function onGithubSignIn(formData: FormData) {
+    const result = await signInWithGithub(formData);
+    if (result?.error) {
+      toast.error(result.error);
+    }
+  }
+
   return (
     <div className="w-[90vw] sm:w-full sm:max-w-md mx-auto px-0 md:px-4">
       <div className="w-full max-w-md mx-auto">
@@ -190,7 +204,7 @@ export function AuthForm() {
                   <TabsTrigger value="signup">Sign Up</TabsTrigger>
                 </TabsList>
 
-                <form action={signInWithGoogle} className="mb-2">
+                <form action={onGoogleSignIn} className="mb-2">
                   <input
                     type="hidden"
                     name="next"
@@ -220,7 +234,7 @@ export function AuthForm() {
                     Sign in with Google
                   </Button>
                 </form>
-                <form action={signInWithGithub} className="mb-4">
+                <form action={onGithubSignIn} className="mb-4">
                   <input
                     type="hidden"
                     name="next"

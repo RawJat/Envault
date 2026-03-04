@@ -1,5 +1,3 @@
-import { Navbar } from "@/components/landing/Navbar";
-import { Footer } from "@/components/landing/Footer";
 import { RegMark } from "@/components/landing/RegMark";
 import { getComponents, getIncidents } from "@/actions/status";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +16,6 @@ import {
   TimelineBody,
 } from "@/components/ui/timeline";
 import { cn } from "@/lib/utils";
-import { createClient } from "@/lib/supabase/server";
 import {
   STATUS_CONFIG,
   INCIDENT_SEVERITY_LEVEL,
@@ -26,14 +23,15 @@ import {
   type StatusLevel,
 } from "@/lib/status-config";
 import { StatusPill } from "@/components/ui/status-pill";
+import { DateDisplay } from "@/components/ui/date-display";
 
-import { FormattedDate } from "@/components/ui/formatted-date";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "System Status",
   description: "Check the real-time status of Envault systems and incidents.",
   openGraph: {
+    siteName: "Envault",
     images: [
       "/api/og?title=System%20Status&description=Real-time%20system%20status%20and%20incidents",
     ],
@@ -67,10 +65,6 @@ export const revalidate = 300; // 5 minutes ISR
 export default async function StatusPage() {
   const components = await getComponents();
   const allIncidents = await getIncidents(20);
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
   const activeIncidents = allIncidents.filter(
     (i: Incident) => i.status !== "resolved",
@@ -110,8 +104,6 @@ export default async function StatusPage() {
 
   return (
     <div className="flex min-h-screen flex-col font-sans selection:bg-primary/20 relative sharp bg-background text-foreground">
-      <Navbar user={user} />
-
       <main className="flex-1 relative pt-24 md:pt-32 pb-16 md:pb-24 px-4 md:px-6">
         <RegMark position="top-left" />
         <RegMark position="top-right" />
@@ -130,11 +122,9 @@ export default async function StatusPage() {
               </p>
               <div className="text-xs md:text-sm text-muted-foreground/60 font-mono">
                 Last updated:{" "}
-                <FormattedDate
-                  className="text-xs md:text-sm text-muted-foreground/60 font-mono"
-                  date={new Date()}
-                  formatStr="MMM d, h:mm:ss a"
-                />
+                <span className="text-xs md:text-sm text-muted-foreground/60 font-mono">
+                  <DateDisplay date={new Date()} formatType="absolute" />
+                </span>
               </div>
             </div>
           </div>
@@ -227,10 +217,9 @@ export default async function StatusPage() {
                                     <div className="space-y-2">
                                       <div className="flex flex-row sm:items-baseline gap-1 sm:gap-3">
                                         <span className="text-xs font-mono text-muted-foreground">
-                                          <FormattedDate
-                                            className="text-xs font-mono text-muted-foreground"
+                                          <DateDisplay
                                             date={update.created_at}
-                                            formatStr="MMM d, h:mm a"
+                                            formatType="absolute"
                                           />
                                         </span>
                                         <span
@@ -357,11 +346,12 @@ export default async function StatusPage() {
                             )}
                           />
                           <span className="text-xs md:text-sm font-mono text-muted-foreground shrink-0">
-                            <FormattedDate
-                              className="text-xs md:text-sm font-mono text-muted-foreground"
-                              date={incident.created_at}
-                              formatStr="MMM d, yyyy"
-                            />
+                            <span className="text-xs md:text-sm font-mono text-muted-foreground">
+                              <DateDisplay
+                                date={incident.created_at}
+                                formatType="date"
+                              />
+                            </span>
                           </span>
                         </div>
                         {/* Title + Badge row - wraps to second line on mobile, stays inline on sm+ */}
@@ -412,10 +402,9 @@ export default async function StatusPage() {
                                 <div className="space-y-2">
                                   <div className="flex flex-row sm:items-baseline gap-1 sm:gap-3">
                                     <span className="text-xs font-mono text-muted-foreground">
-                                      <FormattedDate
-                                        className="text-xs font-mono text-muted-foreground"
+                                      <DateDisplay
                                         date={update.created_at}
-                                        formatStr="MMM d, h:mm a"
+                                        formatType="absolute"
                                       />
                                     </span>
                                     <span className="text-xs font-mono tracking-wider text-muted-foreground">
@@ -443,8 +432,6 @@ export default async function StatusPage() {
         <RegMark position="bottom-left" />
         <RegMark position="bottom-right" />
       </main>
-
-      <Footer />
     </div>
   );
 }

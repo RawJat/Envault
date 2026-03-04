@@ -14,15 +14,58 @@ import {
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { User } from "@supabase/supabase-js";
+import { usePathname } from "next/navigation";
 
 interface NavbarProps {
   user?: User | null;
 }
 
+const NavItem = ({
+  href,
+  className,
+  children,
+  pathname,
+  setIsOpen,
+}: {
+  href: string;
+  className?: string;
+  children: React.ReactNode;
+  pathname: string;
+  setIsOpen?: (open: boolean) => void;
+}) => {
+  if (pathname === href) {
+    return (
+      <button
+        onClick={() => {
+          if (setIsOpen) setIsOpen(false);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }}
+        className={className}
+      >
+        {children}
+      </button>
+    );
+  }
+  return (
+    <Link href={href} className={className}>
+      {children}
+    </Link>
+  );
+};
+
 export function Navbar({ user }: NavbarProps) {
   const { scrollY } = useScroll();
   const [scrolled, setScrolled] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const pathname = usePathname();
+  const [prevPathname, setPrevPathname] = useState(pathname);
+
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname);
+    setIsOpen(false);
+  }
+
+  // removed inline NavItem
 
   useMotionValueEvent(scrollY, "change", (latest) => {
     setScrolled(latest > 50);
@@ -50,31 +93,34 @@ export function Navbar({ user }: NavbarProps) {
       )}
     >
       <div className="container h-full flex items-center justify-between px-4 md:px-6 relative z-50">
-        <Link
+        <NavItem
           href="/"
           className="flex items-center gap-2 font-bold text-2xl font-serif"
-          onClick={() => setIsOpen(false)}
+          pathname={pathname}
+          setIsOpen={setIsOpen}
         >
           <ShieldCheck className="w-6 h-6 text-primary" />
           Envault
-        </Link>
+        </NavItem>
 
         <div className="flex items-center gap-4">
           {/* Desktop Navigation */}
           <nav className="hidden md:flex gap-6 text-sm font-medium items-center">
-            <Link
+            <NavItem
               href="/docs"
               className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
+              pathname={pathname}
             >
               Docs
-            </Link>
-            <Link
+            </NavItem>
+            <NavItem
               href="/support"
               className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
+              pathname={pathname}
             >
               Support
-            </Link>
-            <Link href={user ? "/dashboard" : "/login"}>
+            </NavItem>
+            <NavItem href={user ? "/dashboard" : "/login"} pathname={pathname}>
               <Button
                 variant={scrolled ? "default" : "secondary"}
                 size="sm"
@@ -82,7 +128,7 @@ export function Navbar({ user }: NavbarProps) {
               >
                 {user ? "Dashboard" : "Login"}
               </Button>
-            </Link>
+            </NavItem>
           </nav>
 
           <AnimatedThemeToggler className="hidden md:flex items-center justify-center" />
@@ -119,30 +165,33 @@ export function Navbar({ user }: NavbarProps) {
               onClick={(e) => e.stopPropagation()}
             >
               <nav className="flex flex-col gap-4 text-lg font-medium">
-                <Link
+                <NavItem
                   href="/docs"
-                  className="text-muted-foreground hover:text-foreground transition-colors border-b border-muted/20"
-                  onClick={() => setIsOpen(false)}
+                  className="text-muted-foreground hover:text-foreground transition-colors border-b border-muted/20 text-left"
+                  pathname={pathname}
+                  setIsOpen={setIsOpen}
                 >
                   Docs
-                </Link>
-                <Link
+                </NavItem>
+                <NavItem
                   href="/support"
-                  className="text-muted-foreground hover:text-foreground transition-colors border-b border-muted/20"
-                  onClick={() => setIsOpen(false)}
+                  className="text-muted-foreground hover:text-foreground transition-colors border-b border-muted/20 text-left"
+                  pathname={pathname}
+                  setIsOpen={setIsOpen}
                 >
                   Support
-                </Link>
+                </NavItem>
               </nav>
               <div className="flex flex-col gap-2">
-                <Link
+                <NavItem
                   href={user ? "/dashboard" : "/login"}
-                  onClick={() => setIsOpen(false)}
+                  pathname={pathname}
+                  setIsOpen={setIsOpen}
                 >
                   <Button className="w-full" size="lg">
                     {user ? "Dashboard" : "Login"}
                   </Button>
-                </Link>
+                </NavItem>
               </div>
             </motion.div>
           </motion.div>

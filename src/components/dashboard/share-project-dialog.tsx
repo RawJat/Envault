@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Copy, Share2, Check, CornerDownLeft } from "lucide-react";
+import { Copy, Share2, Check, CornerDownLeft, Loader2 } from "lucide-react";
 import { MemberSkeleton } from "@/components/notifications/notification-skeleton";
 import {
   inviteUser,
@@ -361,7 +361,10 @@ export function ShareProjectDialog({
                     className="sm:w-auto"
                   >
                     {loading ? (
-                      "Sending..."
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Sending...
+                      </>
                     ) : (
                       <span className="flex items-center gap-2">
                         Send Invitation{" "}

@@ -1,5 +1,4 @@
 import { LegalLayout } from "@/components/legal/LegalLayout";
-import { createClient } from "@/lib/supabase/server";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -7,6 +6,7 @@ export const metadata: Metadata = {
   description:
     "Read the terms and conditions for using Envault's secure environment variable management service.",
   openGraph: {
+    siteName: "Envault",
     images: [
       "/api/og?title=Terms%20of%20Service&description=Terms%20and%20conditions%20for%20using%20Envault",
     ],
@@ -34,17 +34,11 @@ const sections = [
 ];
 
 export default async function TermsPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   return (
     <LegalLayout
       title="Terms of Service"
       lastUpdated="24 February 2026"
       sections={sections}
-      user={user}
     >
       <section
         id="agreement"
