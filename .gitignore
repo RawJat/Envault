@@ -67,3 +67,4 @@ cli-wrapper/test_extract/
 
 # Cloudflare Proxy
 cloudflare-proxy/.wrangler/
+cloudflare-proxy/.dev.vars
