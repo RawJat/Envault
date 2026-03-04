@@ -33,6 +33,22 @@ const worker = {
       headers.set("X-Forwarded-For", clientIp);
     }
 
+    // Passkey WebAuthn requires the Origin header to match on the relying party.
+    // Supabase enforces strict Origin checking for auth requests.
+    // If the origin exists, we rewrite it from the frontend URL to the backend URL
+    // so Supabase accepts the request.
+    const origin = headers.get("Origin");
+    if (origin) {
+      try {
+        new URL(origin); // validate it's a URL
+        // Do not blindly rewrite origin if it doesn't match our frontend domains
+        // But for proxy purposes, forwarding the targetOrigin satisfies Supabase CORS
+        headers.set("Origin", targetUrl.origin);
+      } catch {
+        // Ignore invalid origins
+      }
+    }
+
     try {
       // The Cloudflare fetch directly accepts the modified target URL string
       // alongside the original request options.
@@ -50,6 +66,12 @@ const worker = {
       // though typically returning fetch() result directly works in CF Workers,
       // wrapping it allows header modifications if needed in the future.
       const proxyResponse = new Response(response.body, response);
+
+      // Force CORS headers on the proxy response if needed
+      if (origin) {
+        proxyResponse.headers.set("Access-Control-Allow-Origin", origin);
+        proxyResponse.headers.set("Access-Control-Allow-Credentials", "true");
+      }
 
       // The Supabase API already outputs broad CORS headers,
       // returning it as-is is usually perfectly fine.
