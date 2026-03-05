@@ -66,5 +66,4 @@ cli-wrapper/*.zip
 cli-wrapper/test_extract/
 
 # Cloudflare Proxy
-cloudflare-proxy/.wrangler/
-cloudflare-proxy/.dev.vars
+workers/cloudflare-cron/.wrangler/
