@@ -104,9 +104,12 @@ export function ShareProjectDialog({
       if (!response.ok) {
         throw new Error("Failed to fetch members");
       }
-      const { members, requests } = await response.json();
-      setMembers(members);
-      setPendingRequests(requests);
+      const { members, requests } = (await response.json()) as {
+        members?: Array<Record<string, unknown>>;
+        requests?: Array<Record<string, unknown>>;
+      };
+      setMembers((members || []) as unknown as Member[]);
+      setPendingRequests((requests || []) as unknown as PendingRequest[]);
     } catch (error) {
       console.error("Failed to fetch members and requests:", error);
     } finally {

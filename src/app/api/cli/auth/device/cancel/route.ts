@@ -3,7 +3,9 @@ import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json().catch(() => ({}));
+    const body = (await request.json().catch(() => ({}))) as {
+      device_code?: string;
+    };
     const { device_code } = body;
 
     if (!device_code) {

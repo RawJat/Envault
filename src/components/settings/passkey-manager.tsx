@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { toast } from "sonner";
 import { startRegistration } from "@simplewebauthn/browser";
+import type { PublicKeyCredentialCreationOptionsJSON } from "@simplewebauthn/browser";
 import {
   Clock,
   Calendar,
@@ -91,10 +92,10 @@ export function PasskeyManager() {
       // 1. Get registration options from server
       const resp = await fetch("/api/auth/webauthn/register/options");
       if (!resp.ok) {
-        const error = await resp.json();
+        const error = (await resp.json()) as { error?: string };
         throw new Error(error.error || "Failed to get registration options");
       }
-      const options = await resp.json();
+      const options = (await resp.json()) as PublicKeyCredentialCreationOptionsJSON;
 
       // 2. Pass options to browser authenticator via SimpleWebAuthn
       const attResp = await startRegistration({ optionsJSON: options });
@@ -108,7 +109,7 @@ export function PasskeyManager() {
         body: JSON.stringify(attResp),
       });
 
-      const verification = await verifyResp.json();
+      const verification = (await verifyResp.json()) as { success?: boolean; error?: string };
       if (verifyResp.ok && verification.success) {
         toast.success("Passkey added successfully");
         refetchPasskeys();

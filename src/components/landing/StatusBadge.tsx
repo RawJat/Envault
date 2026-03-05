@@ -10,7 +10,7 @@ export function StatusBadge() {
 
   useEffect(() => {
     fetch("/api/system-status", { cache: "default" })
-      .then((r) => r.json())
+      .then((r) => r.json() as Promise<SystemStatusSummary>)
       .then((data: SystemStatusSummary) => {
         // Guard against unexpected/missing level values from stale cache
         const safeLevel = data.level in STATUS_CONFIG ? data.level : "operational";

@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev --turbo",
     "generate:llms": "tsx scripts/generate-llms-full.ts",
-    "build": "npm run generate:llms && npx @cloudflare/next-on-pages",
+    "build": "npm run generate:llms && next build",
     "start": "next start",
     "lint": "eslint",
     "test:email": "tsx scripts/send-test-email.ts"

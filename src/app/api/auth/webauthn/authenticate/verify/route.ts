@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { verifyAuthenticationResponse } from "@simplewebauthn/server";
+import type { AuthenticationResponseJSON } from "@simplewebauthn/server";
 import { getRpId, getExpectedOrigin } from "@/lib/webauthn";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getRedisClient } from "@/lib/redis";
@@ -7,7 +8,11 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function POST(req: Request) {
   try {
-    const { response, sessionId } = await req.json();
+    const data = await req.json();
+    const { response, sessionId } = data as {
+      response: AuthenticationResponseJSON;
+      sessionId: string;
+    };
 
     if (!sessionId) {
       return NextResponse.json(
@@ -57,7 +62,6 @@ export async function POST(req: Request) {
         id: response.id,
         publicKey: publicKeyBuffer,
         counter: passkeyData.counter,
-        transports: response.response.transports,
       },
     });
 

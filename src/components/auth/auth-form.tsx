@@ -8,6 +8,7 @@ import * as z from "zod";
 import { Loader2, Lock, Command, Fingerprint } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { startAuthentication } from "@simplewebauthn/browser";
+import type { PublicKeyCredentialRequestOptionsJSON } from "@simplewebauthn/browser";
 import { Link } from "next-view-transitions";
 
 import { Button } from "@/components/ui/button";
@@ -125,7 +126,10 @@ export function AuthForm() {
       if (!resp.ok) {
         throw new Error("Failed to get authentication options");
       }
-      const { options, sessionId } = await resp.json();
+      const { options, sessionId } = (await resp.json()) as {
+        options: PublicKeyCredentialRequestOptionsJSON;
+        sessionId: string;
+      };
 
       const asseResp = await startAuthentication({ optionsJSON: options });
 
@@ -135,7 +139,7 @@ export function AuthForm() {
         body: JSON.stringify({ response: asseResp, sessionId }),
       });
 
-      const verification = await verifyResp.json();
+      const verification = (await verifyResp.json()) as { success?: boolean; error?: string };
       if (verifyResp.ok && verification.success) {
         toast.success("Signed in with Passkey");
         const next = searchParams.get("next");

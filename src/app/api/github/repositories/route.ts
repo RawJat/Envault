@@ -36,7 +36,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const { token } = await tokenResponse.json();
+    const { token } = (await tokenResponse.json()) as { token: string };
 
     // 3. Fetch the repositories accessible to this installation
     const reposResponse = await fetch(
@@ -57,7 +57,13 @@ export async function GET(request: Request) {
       );
     }
 
-    const reposData = await reposResponse.json();
+    const reposData = (await reposResponse.json()) as {
+      repositories?: Array<{
+        id: number;
+        full_name: string;
+        pushed_at: string;
+      }>;
+    };
 
     // Sort by last push date descending (most recently active first)
     const sorted = (reposData.repositories ?? []).sort(
@@ -66,11 +72,13 @@ export async function GET(request: Request) {
     );
 
     return NextResponse.json({
-      repositories: sorted.map((r: { id: number; full_name: string; pushed_at: string }) => ({
-        id: r.id,
-        full_name: r.full_name,
-        pushed_at: r.pushed_at,
-      })),
+      repositories: sorted.map(
+        (r: { id: number; full_name: string; pushed_at: string }) => ({
+          id: r.id,
+          full_name: r.full_name,
+          pushed_at: r.pushed_at,
+        }),
+      ),
     });
   } catch {
     return NextResponse.json(

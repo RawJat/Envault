@@ -89,7 +89,10 @@ export function AccessRequestsPanel() {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ userId: request.user_id }),
             });
-            const { email, username } = await response.json();
+            const { email, username } = (await response.json()) as {
+              email?: string;
+              username?: string;
+            };
             return {
               ...request,
               requester_email: email,

@@ -1,5 +1,8 @@
 import { NextResponse, NextRequest, userAgent } from "next/server";
-import { verifyRegistrationResponse } from "@simplewebauthn/server";
+import {
+  verifyRegistrationResponse,
+  RegistrationResponseJSON,
+} from "@simplewebauthn/server";
 import { getRpId, getExpectedOrigin } from "@/lib/webauthn";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -12,7 +15,7 @@ export async function POST(req: NextRequest) {
       os.name || "Unknown Device"
     }`;
 
-    const body = await req.json();
+    const body = (await req.json()) as RegistrationResponseJSON;
 
     const supabase = await createClient();
     const {

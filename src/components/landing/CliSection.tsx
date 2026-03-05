@@ -37,7 +37,7 @@ export function CliSection() {
 
         // Fetch latest version from internal API
         fetch('/api/cli-version')
-            .then(res => res.json())
+            .then(res => res.json() as Promise<{ version?: string }>)
             .then(data => {
                 if (data.version) {
                     setVersion(data.version)

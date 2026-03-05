@@ -28,7 +28,7 @@ export function SystemStatusBanner({ show }: SystemStatusBannerProps) {
   useEffect(() => {
     if (!show || dismissed) return;
     fetch("/api/system-status", { cache: "default" })
-      .then((r) => r.json())
+      .then((r) => r.json() as Promise<SystemStatusSummary>)
       .then((data: SystemStatusSummary) => setStatus(data))
       .catch(() => { });
   }, [show, dismissed]);

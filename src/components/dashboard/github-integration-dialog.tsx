@@ -52,9 +52,9 @@ export function GitHubIntegrationDialog({
   const router = useRouter();
   const supabase = createClient();
   const [isLoading, setIsLoading] = useState(false);
-  const [repos, setRepos] = useState<Array<{ id: number; full_name: string; pushed_at?: string }>>(
-    [],
-  );
+  const [repos, setRepos] = useState<
+    Array<{ id: number; full_name: string; pushed_at?: string }>
+  >([]);
   const [isFetchingRepos, setIsFetchingRepos] = useState(false);
   // Keep a live copy of the project so we can refresh it client-side after
   // the GitHub callback without depending on the server component re-rendering.
@@ -101,8 +101,8 @@ export function GitHubIntegrationDialog({
         const body = await res.text();
         throw new Error(`Failed to fetch repositories: ${body}`);
       }
-      const data = await res.json();
-      setRepos(data.repositories || []);
+      const data = (await res.json()) as { repositories?: Array<{ id: number; full_name: string; pushed_at?: string }> };
+      setRepos((data.repositories || []) as Array<{ id: number; full_name: string; pushed_at?: string }>);
     } catch {
       toast.error("Failed to load GitHub repositories");
     } finally {
@@ -126,7 +126,9 @@ export function GitHubIntegrationDialog({
       // and let the user pick a repo directly.
       const { error } = await supabase
         .from("projects")
-        .update({ github_installation_id: existingProjects.github_installation_id })
+        .update({
+          github_installation_id: existingProjects.github_installation_id,
+        })
         .eq("id", liveProject.id);
 
       if (!error) {
@@ -264,7 +266,10 @@ export function GitHubIntegrationDialog({
                 {isFetchingRepos ? (
                   <div className="divide-y">
                     {Array.from({ length: 4 }).map((_, i) => (
-                      <div key={i} className="flex items-center justify-between p-3">
+                      <div
+                        key={i}
+                        className="flex items-center justify-between p-3"
+                      >
                         <div className="flex flex-col gap-1.5">
                           <Skeleton className="h-3.5 w-40" />
                           <Skeleton className="h-3 w-20" />
@@ -285,7 +290,9 @@ export function GitHubIntegrationDialog({
                       className="flex items-center justify-between gap-3 p-3 hover:bg-muted/50 transition-colors"
                     >
                       <div className="flex flex-col min-w-0">
-                        <span className="text-sm font-medium truncate">{repo.full_name}</span>
+                        <span className="text-sm font-medium truncate">
+                          {repo.full_name}
+                        </span>
                         {repo.pushed_at && (
                           <span className="text-xs text-muted-foreground">
                             last commit {formatRelativeTime(repo.pushed_at)}
@@ -339,8 +346,10 @@ export function GitHubIntegrationDialog({
               </div>
               <p className="text-sm text-muted-foreground">
                 Anyone who is a collaborator on{" "}
-                <strong className="break-all">{liveProject.github_repo_full_name}</strong> will
-                automatically be granted Viewer access when they run{" "}
+                <strong className="break-all">
+                  {liveProject.github_repo_full_name}
+                </strong>{" "}
+                will automatically be granted Viewer access when they run{" "}
                 <code className="bg-muted px-1 py-0.5 rounded">
                   envault pull
                 </code>
@@ -351,7 +360,11 @@ export function GitHubIntegrationDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" className="w-full sm:w-auto" onClick={() => onOpenChange(false)}>
+          <Button
+            variant="outline"
+            className="w-full sm:w-auto"
+            onClick={() => onOpenChange(false)}
+          >
             Close
           </Button>
         </DialogFooter>
