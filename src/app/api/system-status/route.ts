@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { getSystemStatus } from "@/lib/system-status";
 
 // Edge runtime: runs closest to the user, minimal cold starts.
-export const runtime = "edge";
 
 // ISR-style: CDN serves stale for up to 5 min while revalidating in bg.
 export const revalidate = 60;
