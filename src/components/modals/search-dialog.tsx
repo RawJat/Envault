@@ -127,9 +127,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
       );
 
       // Check for admin role
-      const isAdmin =
-        user.user_metadata?.is_admin === true ||
-        user.app_metadata?.is_admin === true;
+      const isAdmin = user.app_metadata?.is_admin === true;
       if (isAdmin) {
         items.push({
           id: "nav-admin-system",

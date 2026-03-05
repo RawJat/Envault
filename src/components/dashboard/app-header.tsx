@@ -131,8 +131,7 @@ export function AppHeader({
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {(user?.app_metadata?.is_admin === true ||
-                user?.user_metadata?.is_admin === true) && (
+              {user?.app_metadata?.is_admin === true && (
                 <>
                   <DropdownMenuItem asChild>
                     <Link

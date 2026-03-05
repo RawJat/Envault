@@ -33,9 +33,7 @@ export default async function AdminStatusPage() {
   }
 
   // Admin Check
-  const isAdmin =
-    user.user_metadata?.is_admin === true ||
-    user.app_metadata?.is_admin === true;
+  const isAdmin = user.app_metadata?.is_admin === true;
   if (!isAdmin) {
     redirect("/dashboard"); // Or a 403 page
   }
