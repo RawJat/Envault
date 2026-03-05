@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { verifyHmacSignature } from "@/lib/hmac";
 import { shouldShowBanner } from "@/lib/banner-routes";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const method = request.method.toUpperCase();
   const authHeader = request.headers.get("authorization") || "";

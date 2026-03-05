@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthSync } from "@/components/auth/auth-sync";
 import { createClient } from "@/lib/supabase/server";
+import { Analytics } from "@vercel/analytics/react";
 import { NotificationProvider } from "@/components/notifications/notification-provider";
 import { ShortcutProvider } from "@/components/providers/shortcut-provider";
 import { HmacProvider } from "@/components/hmac-provider";
@@ -158,6 +159,7 @@ export default async function RootLayout({
                       <NotificationProvider />
                     </>
                   )}
+                  <Analytics />
                 </HmacProvider>
               </ShortcutProvider>
             </TooltipProvider>
