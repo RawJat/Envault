@@ -67,3 +67,5 @@ cli-wrapper/test_extract/
 
 # Cloudflare Proxy
 workers/cloudflare-cron/.wrangler/
+
+.open-next
