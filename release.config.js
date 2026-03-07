@@ -5,7 +5,13 @@ const config = {
     // Plugins to run
     plugins: [
         // 1. Analyze commits to determine version bump (patch/minor/major)
-        '@semantic-release/commit-analyzer',
+        ['@semantic-release/commit-analyzer', {
+            releaseRules: [
+                { type: 'refactor', release: 'patch' },
+                { type: 'perf', release: 'patch' },
+                { type: 'build', release: 'patch' },
+            ]
+        }],
 
         // 2. Generate release notes
         '@semantic-release/release-notes-generator',

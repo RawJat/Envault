@@ -9,6 +9,7 @@ on:
       - 'cli-wrapper/**'
       - '.github/workflows/publish.yml'
       - 'release.config.js'
+  workflow_dispatch:
 
 permissions:
   contents: write # Required to commit version bumps
