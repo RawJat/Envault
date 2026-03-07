@@ -401,19 +401,44 @@ func checkParity() []AuditIssue {
 	}
 
 	// 2. Attempt to read the local env file.
-	localEnv, err := godotenv.Read(auditEnvFile)
+	// When the user has not explicitly set --file and the default '.env' does
+	// not exist, walk a prioritised list of well-known env file names so that
+	// projects using .env.local, .env.development, etc. are handled without
+	// requiring a manual --file flag.
+	resolvedEnvFile := auditEnvFile
+	if _, statErr := os.Stat(resolvedEnvFile); os.IsNotExist(statErr) {
+		candidates := []string{
+			".env.local",
+			".env.development.local",
+			".env.development",
+			".env.test.local",
+			".env.test",
+			".env.production.local",
+			".env.production",
+			".env.staging",
+			".env.preview",
+		}
+		for _, c := range candidates {
+			if _, cErr := os.Stat(c); cErr == nil {
+				resolvedEnvFile = c
+				break
+			}
+		}
+	}
+
+	localEnv, err := godotenv.Read(resolvedEnvFile)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return []AuditIssue{{
 				Level:   "error",
 				Code:    "ENV_FILE_MISSING",
-				Message: fmt.Sprintf("Local env file '%s' not found.", auditEnvFile),
+				Message: fmt.Sprintf("Local env file not found. Looked for '%s' and common variants (.env.local, .env.development, etc.).", auditEnvFile),
 			}}
 		}
 		return []AuditIssue{{
 			Level:   "error",
 			Code:    "ENV_FILE_PARSE_ERROR",
-			Message: fmt.Sprintf("Could not parse '%s': %s", auditEnvFile, sanitizeParseErr(err)),
+			Message: fmt.Sprintf("Could not parse '%s': %s", resolvedEnvFile, sanitizeParseErr(err)),
 		}}
 	}
 
@@ -431,7 +456,7 @@ func checkParity() []AuditIssue {
 		issues = append(issues, AuditIssue{
 			Level:   "error",
 			Code:    "MISSING_KEYS",
-			Message: fmt.Sprintf("%d key(s) defined in '%s' are missing from '%s'.", len(missingKeys), auditTemplate, auditEnvFile),
+			Message: fmt.Sprintf("%d key(s) defined in '%s' are missing from '%s'.", len(missingKeys), auditTemplate, resolvedEnvFile),
 			Keys:    missingKeys,
 		})
 	}
@@ -448,7 +473,7 @@ func checkParity() []AuditIssue {
 		issues = append(issues, AuditIssue{
 			Level:   "warning",
 			Code:    "ORPHANED_KEYS",
-			Message: fmt.Sprintf("%d key(s) in '%s' are not defined in the template '%s'.", len(orphanedKeys), auditEnvFile, auditTemplate),
+			Message: fmt.Sprintf("%d key(s) in '%s' are not defined in the template '%s'.", len(orphanedKeys), resolvedEnvFile, auditTemplate),
 			Keys:    orphanedKeys,
 		})
 	}

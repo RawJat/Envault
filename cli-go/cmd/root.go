@@ -25,7 +25,7 @@ var rootCmd = &cobra.Command{
 across your development workflow.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if showVersion {
-			fmt.Printf("envault v%s (%s) built at %s\n", version, commit, date)
+			fmt.Printf("envault v%s\n", version)
 			return
 		}
 		_ = cmd.Help()
@@ -68,7 +68,7 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print the version number of Envault CLI",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("envault v%s (%s) built at %s\n", version, commit, date)
+		fmt.Printf("envault v%s\n", version)
 	},
 }
 

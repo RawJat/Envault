@@ -79,6 +79,8 @@ func FetchLatestAndCache() {
 }
 
 func ShouldNotifyIfUpdateAvailable(currentVersion string) {
+	isDev := currentVersion == "dev"
+
 	cache, err := readCache()
 
 	PerformBackgroundCheck()
@@ -92,14 +94,18 @@ func ShouldNotifyIfUpdateAvailable(currentVersion string) {
 	if !strings.HasPrefix(latest, "v") {
 		latest = "v" + latest
 	}
-	
-	currentSemver := currentVersion
-	if !strings.HasPrefix(currentSemver, "v") && currentSemver != "dev" {
-		currentSemver = "v" + currentSemver
+
+	if isDev {
+		// In dev builds, just print a minimal one-liner to stderr
+		if semver.IsValid(latest) {
+			fmt.Fprintf(os.Stderr, "  [dev] latest release: %s\n", latest)
+		}
+		return
 	}
 
-	if currentSemver == "dev" {
-		currentSemver = "v0.0.0" // Treat dev as version 0 for semver
+	currentSemver := currentVersion
+	if !strings.HasPrefix(currentSemver, "v") {
+		currentSemver = "v" + currentSemver
 	}
 
 	if semver.IsValid(latest) && semver.IsValid(currentSemver) && semver.Compare(latest, currentSemver) > 0 {
