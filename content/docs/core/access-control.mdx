@@ -64,12 +64,20 @@ Every action taken by a user is logged. Owners can view the **Audit Log** in the
 
 ## Just-in-Time (JIT) Access via GitHub
 
-When a project is linked to a GitHub repository, Envault can automatically grant **Viewer** access to developers the moment they run `envault pull` - no manual invite needed.
+When a project is linked to a GitHub repository, Envault can automatically grant **Viewer** access to developers the moment they run `envault pull` — no manual invite or owner approval needed.
 
 **How it works:**
 1. A developer runs `envault pull` without an existing project membership.
 2. Envault checks if their GitHub account is a collaborator on the linked repository.
-3. If yes → they are auto-granted the `viewer` role and receive their secrets.
+3. If yes → they are **permanently registered** as a `Viewer` in the project's access list and immediately receive their secrets.
 4. If no → the CLI offers to submit an access request to the project owner.
+
+<Callout type="info">
+  **GitHub Collaborators bypass the "Pending Approval" flow entirely.** Once
+  auto-granted, the user is a full `Viewer` member of the project. They will
+  see the project in their "Shared with me" dashboard, can run subsequent CLI
+  commands like `envault status` without errors, and the Project Owner can view
+  and manage their permissions in the project's access list.
+</Callout>
 
 See the [GitHub Integration](/docs/guides/github-integration) guide for setup instructions.
