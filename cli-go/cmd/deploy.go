@@ -37,6 +37,23 @@ var deployCmd = &cobra.Command{
 		targetEnv := resolveTargetEnvironment()
 		targetFile := resolveEnvFile(targetEnv, fileFlag)
 
+		// Hard gate: if the source file is tracked by git, the secrets are
+		// already (or will be) in git history. Block the deploy and tell the
+		// user exactly how to fix it - there is no safe way to proceed silently.
+		if isTrackedByGit(targetFile) {
+			fmt.Println()
+			fmt.Println(ui.ColorRed("  ✖  BLOCKED: " + targetFile + " is tracked in your git repository."))
+			fmt.Println(ui.ColorRed("     Your secrets may already be exposed in your git history."))
+			fmt.Println(ui.ColorYellow("     You must stop tracking this file before using Envault:"))
+			fmt.Println(ui.ColorCyan("       git rm --cached " + targetFile))
+			fmt.Println(ui.ColorCyan("       echo '" + targetFile + "' >> .gitignore"))
+			fmt.Println(ui.ColorCyan("       git commit -m 'stop tracking " + targetFile + "'"))
+			fmt.Println()
+			fmt.Println(ui.ColorYellow("     If secrets have already been committed, consider rotating them in Envault."))
+			fmt.Println()
+			os.Exit(1)
+		}
+
 		// 2. Read .env manually to be lenient
 		content, err := os.ReadFile(targetFile)
 		if err != nil {

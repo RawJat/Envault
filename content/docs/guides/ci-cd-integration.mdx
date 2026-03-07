@@ -21,6 +21,38 @@ The safest way to inject secrets is to wrap your build command with `envault run
   **Security Guardrail**: To prevent accidental leakage of Service Tokens on developer machines, the CLI aggressively blocks Service Token (`ENVAULT_TOKEN`) usage unless a standard CI/CD environment variable (like `CI=true` or `GITHUB_ACTIONS=true`) is detected. Local authentication must use `envault login`.
 </Callout>
 
+### Automatic local safeguards
+
+Before you ever reach a CI pipeline, Envault enforces secret hygiene directly on the developer's machine through three automatic layers:
+
+| Trigger | Safeguard |
+|---|---|
+| `envault pull` | **Blocks** writing if the target `.env` file is already git-tracked |
+| `envault pull` | **Auto-adds** the file to `.gitignore` if not already covered |
+| `envault pull` / `envault init` | **Auto-installs** a git pre-commit hook that runs `envault audit --strict` before every commit |
+| `envault deploy` | **Blocks** reading if the source `.env` file is git-tracked |
+
+These gates fire silently on first use - no configuration required. The pre-commit hook prints the absolute path of the binary it uses, so version mismatches are always visible.
+
+<Callout type="info">
+  The pre-commit hook can also be installed manually: `envault audit --install-hook`. If you move the binary after installation, re-run that command to update the embedded path.
+</Callout>
+
+### Linting env files in CI
+
+For additional enforcement in pull request checks or deployment gates, use `envault audit --format=json`. The command exits non-zero on any error, making it a clean pipeline step:
+
+```yaml
+steps:
+  - uses: actions/checkout@v3
+  - name: Install Envault CLI
+    run: curl -sL https://envault.app/install.sh | bash
+  - name: Audit env files
+    run: envault audit --strict --format=json
+```
+
+The `--strict` flag escalates warnings (orphaned keys, missing template) to errors. Omit it if you only want to block on hard errors (tracked files, missing `.gitignore` coverage).
+
 ## GitHub Actions
 
 Here is a complete workflow example for a Next.js application.
