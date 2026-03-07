@@ -1,5 +1,5 @@
 const config = {
-    // Release from main branch
+    // Release from main branch only
     branches: ['main'],
 
     // Plugins to run
