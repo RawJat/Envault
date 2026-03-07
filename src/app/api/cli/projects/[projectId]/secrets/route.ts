@@ -8,6 +8,7 @@ import { PushSecretsSchema } from "@/lib/schemas";
 import { getProjectRole } from "@/lib/permissions";
 import { resolveProjectEnvironment } from "@/lib/cli-environments";
 import { isGitHubCollaborator, getGitHubUsername } from "@/lib/github";
+import { cacheSet, CacheKeys, CACHE_TTL } from "@/lib/cache";
 
 export async function GET(
   request: Request,
@@ -139,12 +140,38 @@ export async function GET(
             );
 
             if (isCollaborator) {
-              // Auto-approve: add as viewer and return secrets
-              await supabase.from("project_members").insert({
-                project_id: projectId,
-                user_id: userId,
-                role: "viewer",
-              });
+              // Auto-approve: upsert as viewer so repeat calls are idempotent.
+              // `added_by` is set to the user themselves (self-granted via GitHub JIT).
+              const { error: memberError } = await supabase
+                .from("project_members")
+                .upsert(
+                  {
+                    project_id: projectId,
+                    user_id: userId,
+                    role: "viewer",
+                    added_by: userId,
+                  },
+                  { onConflict: "project_id,user_id" },
+                );
+
+              if (memberError) {
+                console.error(
+                  `[JIT] Failed to persist viewer role for user ${userId} on project ${projectId}:`,
+                  memberError.message,
+                );
+                return NextResponse.json(
+                  { error: "Failed to grant access. Please try again." },
+                  { status: 500 },
+                );
+              }
+
+              // Populate the role cache so subsequent status/pull calls don't
+              // hit the DB for this entry within the same cache window.
+              await cacheSet(
+                CacheKeys.userProjectRole(userId, projectId),
+                "viewer",
+                CACHE_TTL.PROJECT_ROLE,
+              );
 
               // Clean up any pending access request so the dashboard doesn't
               // show them as stuck - JIT approval supersedes a manual request.
