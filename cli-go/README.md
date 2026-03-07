@@ -25,6 +25,7 @@ The Envault CLI has been rewritten in Go to provide:
 - 🛡️ **Role-Based Access**: Verifies permissions (Editor/Viewer) for all operations.
 - 🚥 **Graceful Interrupts**: Cleanly handles `Ctrl+C` in all interactive flows.
 - 📁 **Auto-Linking**: Automatically triggers project initialization if no project is linked.
+- 🚨 **Automatic Git Hygiene**: `init`/`pull` install a pre-commit hook (envault audit) and `pull`/`deploy` will refuse to run on git-tracked `.env` files, auto-updating `.gitignore` when appropriate.
 - 🔄 **Automatic Updates**: Non-blocking background checks to notify you when a new version is available.
 
 ## Installation

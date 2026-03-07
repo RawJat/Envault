@@ -146,7 +146,7 @@ export async function GET(request: Request) {
                     fontFamily: "monospace",
                   }}
                 >
-                  bash — ~
+                  bash - ~
                 </span>
               </div>
             </div>

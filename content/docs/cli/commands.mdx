@@ -4,6 +4,7 @@ description: Full command reference for Envault CLI
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
+import { XCircle, ShieldOff, FileX, GitBranch } from "lucide-react";
 
 # CLI Commands
 
@@ -73,9 +74,31 @@ File resolution (if `--file` not provided):
 2. auto-detected `.env*` file
 3. fallback `.env`
 
+### Automatic safety on every pull
+
+Every time `pull` writes secrets to disk it runs three automatic safeguards:
+
+1. <XCircle className="inline w-4 h-4 mr-1 text-red-500" /> **Tracked-file hard block** — if the target file is already tracked in your git repository the command **refuses to write** anything. Overwriting a tracked file would silently include secrets in your next commit. The CLI prints the exact commands needed to untrack it before retrying.
+
+2. <FileX className="inline w-4 h-4 mr-1 text-yellow-500" /> **Auto-gitignore** — if the target file is not already covered by `.gitignore` (or `.gitignore` does not exist), the CLI adds an entry automatically. You will see a confirmation line whenever this happens.
+
+3. <GitBranch className="inline w-4 h-4 mr-1 text-green-500" /> **Pre-commit hook** — if a git repository is present and the audit hook has not been installed, it is installed automatically. If no git repository is detected yet the CLI reminds you to run `envault audit --install-hook` after `git init`.
+
+<Callout type="warn">
+  If `pull` is blocked because the target file is tracked, remove it from the git index first:
+
+  ```bash
+  git rm --cached .env
+  echo '.env' >> .gitignore
+  git commit -m 'stop tracking .env'
+  ```
+
+  Then re-run `envault pull`.
+</Callout>
+
 ### Access Request Flow
 
-If the project has a GitHub repository linked and you are a collaborator on that repository, `pull` automatically and **permanently** grants you `Viewer` membership in that project. Your account is recorded in the project's access list — no manual invite or owner approval required. Subsequent commands like `envault status` work immediately, and the project appears in your "Shared with me" dashboard.
+If the project has a GitHub repository linked and you are a collaborator on that repository, `pull` automatically and **permanently** grants you `Viewer` membership in that project. Your account is recorded in the project's access list - no manual invite or owner approval required. Subsequent commands like `envault status` work immediately, and the project appears in your "Shared with me" dashboard.
 
 If you do not have access and are not a recognized GitHub collaborator, the CLI prompts:
 
@@ -113,6 +136,18 @@ Flags:
 - `--file <path>`: local env file override
 - `--dry-run`: print what would be pushed
 - `-f, --force`: skip confirmation
+
+### Tracked-file hard block
+
+Before reading a single byte from your env file, `deploy` checks whether that file is tracked in git. If it is, the command **refuses to run** and prints:
+
+> <XCircle className="inline w-4 h-4 mr-1 text-red-500" /> **BLOCKED: `.env` is tracked in your git repository.** Your secrets may already be exposed in your git history.
+
+The CLI prints the exact `git rm --cached` commands needed to fix the situation and reminds you to rotate any secrets that may have been visible in your history.
+
+<Callout type="warn">
+  Once a secret has appeared in a git commit it is part of the repository history even after deletion. If `deploy` is blocked by this check, rotate the affected secrets in Envault after untracking the file.
+</Callout>
 
 ---
 
@@ -172,6 +207,48 @@ Offline behavior:
 - On timeout/network transport failures, `run` falls back to the last cached secrets for the same project+environment.
 - Auth/authorization/API errors (`401/403/404`) do not trigger cache fallback.
 - Optional override for slow networks/bootstrap: set `ENVAULT_RUN_TIMEOUT_SECONDS` (for example `10`) to increase the `run` fetch timeout.
+
+---
+
+## `audit`
+
+Make sure your local environment files are structurally valid and safe to commit. `audit` performs four checks:
+
+| Check | What it catches |
+|---|---|
+| **Git safety** | `.gitignore` missing or doesn't cover `.env` files |
+| **Git safety** | Any `.env` file (non-template) tracked in the git index |
+| **Key parity** | Keys in your local file that are missing from the template |
+| **Key parity** | Keys with empty or placeholder values (`TODO`, `your_api_key`, `<insert here>`, etc.) |
+
+```bash
+# run a quick check in your repository
+envault audit
+
+# specify a different file or template
+envault audit --file .env.staging --template .env.staging.example
+```
+
+### Strict mode & machine output
+
+- `--strict` upgrades all warnings to errors and will exit non-zero if any issue is found.
+- `--format=json` emits a structured JSON object suitable for CI pipelines.
+
+### Pre-commit hook
+
+The audit check can be embedded into a git pre-commit hook so every attempted commit is validated automatically:
+
+```bash
+envault audit --install-hook
+```
+
+The hook is idempotent (safe to run multiple times), preserves any existing content in `.git/hooks/pre-commit`, and embeds the **absolute path** of the binary that installed it - so git always invokes the correct version regardless of what is on `$PATH` at commit time.
+
+**You typically do not need to run this manually.** The hook is installed automatically when you run `envault init` (if a git repository is present) and whenever `envault pull` writes secrets for the first time in a new repository.
+
+<Callout type="info">
+  If you move or reinstall the Envault binary after installing the hook, re-run `envault audit --install-hook` to update the embedded path.
+</Callout>
 
 ---
 

@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/DinanathDash/Envault/cli-go/internal/project"
@@ -69,6 +70,25 @@ var initCmd = &cobra.Command{
 		}
 
 		fmt.Println(ui.ColorGreen(fmt.Sprintf("\n✔ Project linked! (ID: %s)", projectId)))
+
+		// Automatically install the audit pre-commit hook so the user never
+		// has to remember the separate --install-hook command.
+		alreadyInstalled, _, hookErr := installPreCommitHook()
+		switch {
+		case hookErr != nil && strings.Contains(hookErr.Error(), "no .git directory"):
+			// No git repo yet - print a clear, actionable reminder instead of silently skipping.
+			// The user may git init later and forget to add protection.
+			fmt.Println(ui.ColorYellow("  ⚠ No git repository detected."))
+			fmt.Println(ui.ColorYellow("    After running git init, protect your secrets by running:"))
+			fmt.Println(ui.ColorCyan("      envault audit --install-hook"))
+		case hookErr != nil:
+			// Any other filesystem error - surface as a soft warning.
+			fmt.Println(ui.ColorYellow(fmt.Sprintf("  ⚠ Could not install pre-commit hook: %v", hookErr)))
+		case alreadyInstalled:
+			fmt.Println(ui.ColorDim("  ✔ envault audit pre-commit hook already installed."))
+		default:
+			fmt.Println(ui.ColorGreen("  ✔ envault audit pre-commit hook installed - your commits are now protected."))
+		}
 	},
 }
 

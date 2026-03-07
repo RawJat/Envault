@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/DinanathDash/Envault/cli-go/internal/api"
@@ -146,7 +147,22 @@ var pullCmd = &cobra.Command{
 			return
 		}
 
-		// 4. Write to .env
+		// 4. Hard gate: refuse to write if the target file is already tracked by git.
+		// Writing secrets into a tracked file would silently include them in the next commit.
+		if isTrackedByGit(targetFile) {
+			s.Stop()
+			fmt.Println()
+			fmt.Println(ui.ColorRed("  ✖  BLOCKED: " + targetFile + " is tracked in your git repository."))
+			fmt.Println(ui.ColorYellow("     Writing secrets into a tracked file would expose them in your git history."))
+			fmt.Println(ui.ColorYellow("     Fix this before pulling:"))
+			fmt.Println(ui.ColorCyan("       git rm --cached " + targetFile))
+			fmt.Println(ui.ColorCyan("       echo '" + targetFile + "' >> .gitignore"))
+			fmt.Println(ui.ColorCyan("       git commit -m 'stop tracking " + targetFile + "'"))
+			fmt.Println()
+			os.Exit(1)
+		}
+
+		// 5. Write to .env
 		f, err := os.Create(targetFile)
 		if err != nil {
 			s.Stop()
@@ -166,6 +182,28 @@ var pullCmd = &cobra.Command{
 
 		s.Stop()
 		fmt.Println(ui.ColorGreen(fmt.Sprintf("✔ Pulled %d secrets from %s into %s.", len(secretsResp.Secrets), targetEnv, targetFile)))
+
+		// Safety checkpoint: real secrets are now on disk.
+		// 1. Ensure .gitignore covers the written file - create/update it automatically.
+		giAdded, giErr := ensureGitignoreEntry(targetFile)
+		if giErr != nil {
+			fmt.Println(ui.ColorYellow(fmt.Sprintf("  ⚠ Could not update .gitignore: %v", giErr)))
+		} else if giAdded {
+			fmt.Println(ui.ColorGreen("  ✔ Added '" + targetFile + "' to .gitignore - it will not be committed."))
+		}
+
+		// 2. Attempt to install the pre-commit hook.
+		alreadyInstalled, _, hookErr := installPreCommitHook()
+		switch {
+		case hookErr != nil && strings.Contains(hookErr.Error(), "no .git directory"):
+			// No git repo yet - warn the user to run the hook installer after git init.
+			fmt.Println(ui.ColorYellow("  ⚠ No git repository detected. After git init, run:"))
+			fmt.Println(ui.ColorCyan("      envault audit --install-hook"))
+		case hookErr != nil:
+			fmt.Println(ui.ColorYellow(fmt.Sprintf("  ⚠ Could not install pre-commit hook: %v", hookErr)))
+		case !alreadyInstalled:
+			fmt.Println(ui.ColorGreen("  ✔ Pre-commit hook installed - secrets are protected from accidental commits."))
+		}
 	},
 }
 

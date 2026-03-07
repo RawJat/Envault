@@ -4,6 +4,7 @@ description: Manage team permissions with fine-grained roles.
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
+import { ArrowRight } from "lucide-react";
 
 Envault allows you to control who has access to which projects using a **Role-Based Access Control (RBAC)** system.
 
@@ -64,13 +65,13 @@ Every action taken by a user is logged. Owners can view the **Audit Log** in the
 
 ## Just-in-Time (JIT) Access via GitHub
 
-When a project is linked to a GitHub repository, Envault can automatically grant **Viewer** access to developers the moment they run `envault pull` — no manual invite or owner approval needed.
+When a project is linked to a GitHub repository, Envault can automatically grant **Viewer** access to developers the moment they run `envault pull` - no manual invite or owner approval needed.
 
 **How it works:**
 1. A developer runs `envault pull` without an existing project membership.
 2. Envault checks if their GitHub account is a collaborator on the linked repository.
-3. If yes → they are **permanently registered** as a `Viewer` in the project's access list and immediately receive their secrets.
-4. If no → the CLI offers to submit an access request to the project owner.
+3. If yes <ArrowRight className="inline w-4 h-4 mx-1" /> they are **permanently registered** as a `Viewer` in the project's access list and immediately receive their secrets.
+4. If no <ArrowRight className="inline w-4 h-4 mx-1" /> the CLI offers to submit an access request to the project owner.
 
 <Callout type="info">
   **GitHub Collaborators bypass the "Pending Approval" flow entirely.** Once
