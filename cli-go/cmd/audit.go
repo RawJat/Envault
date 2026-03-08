@@ -99,13 +99,18 @@ func installPreCommitHook() (alreadyInstalled bool, binPath string, err error) {
 		return false, "", fmt.Errorf("no .git directory found")
 	}
 
-	// Resolve the absolute path of the currently running binary.
-	execPath, execErr := os.Executable()
-	if execErr != nil {
-		return false, "", fmt.Errorf("could not determine executable path: %w", execErr)
-	}
-	if resolved, resolveErr := filepath.EvalSymlinks(execPath); resolveErr == nil {
-		execPath = resolved
+	// Prefer the PATH-based lookup so the hook embeds the stable symlink
+	// (e.g. /opt/homebrew/bin/envault) rather than the versioned Cellar path
+	// (/opt/homebrew/Cellar/envault/1.20.0/bin/envault).  Using the symlink
+	// means the hook survives `brew upgrade envault` without needing
+	// re-installation.  Fall back to os.Executable() when not on PATH.
+	execPath, lookErr := exec.LookPath("envault")
+	if lookErr != nil {
+		var execErr error
+		execPath, execErr = os.Executable()
+		if execErr != nil {
+			return false, "", fmt.Errorf("could not determine executable path: %w", execErr)
+		}
 	}
 	execPath, _ = filepath.Abs(execPath)
 
@@ -161,9 +166,9 @@ func runInstallHook() {
 	alreadyInstalled, binPath, err := installPreCommitHook()
 	if err != nil {
 		if strings.Contains(err.Error(), "no .git directory") {
-			fmt.Println(ui.ColorRed("✖ No .git directory found. Run this command from the root of a git repository."))
+			fmt.Fprintln(os.Stderr, ui.ColorRed("✖ No .git directory found. Run this command from the root of a git repository."))
 		} else {
-			fmt.Println(ui.ColorRed(fmt.Sprintf("✖ %v", err)))
+			fmt.Fprintln(os.Stderr, ui.ColorRed(fmt.Sprintf("✖ %v", err)))
 		}
 		os.Exit(1)
 	}

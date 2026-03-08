@@ -1,11 +1,14 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/url"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/DinanathDash/Envault/cli-go/internal/api"
@@ -22,16 +25,31 @@ var deployCmd = &cobra.Command{
 	Aliases: []string{"push"},
 	Short:   "Push secrets from .env to Envault",
 	Run: func(cmd *cobra.Command, args []string) {
+		// Graceful cancellation: cancel context on Ctrl+C / SIGTERM so that
+		// in-flight HTTP requests are aborted cleanly.
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+		defer signal.Stop(sigCh)
+		go func() {
+			select {
+			case <-sigCh:
+				cancel()
+			case <-ctx.Done():
+			}
+		}()
+
 		// 1. Get Project ID
 		projectId := ensureProjectID()
 
 		if projectId == "" {
-			fmt.Println(ui.ColorYellow("No project linked."))
+			fmt.Fprintln(os.Stderr, ui.ColorYellow("No project linked."))
 			projectId = selectProjectAndPersistOrExit()
-			fmt.Println(ui.ColorGreen(fmt.Sprintf("✔ Project linked! (ID: %s)\n", projectId)))
+			fmt.Fprintln(os.Stderr, ui.ColorGreen(fmt.Sprintf("✔ Project linked! (ID: %s)\n", projectId)))
 		}
 		if !isValidProjectID(projectId) {
-			fmt.Println(ui.ColorRed("Invalid project ID. Expected a UUID."))
+			fmt.Fprintln(os.Stderr, ui.ColorRed("Invalid project ID. Expected a UUID."))
 			os.Exit(1)
 		}
 		targetEnv := resolveTargetEnvironment()
@@ -41,16 +59,16 @@ var deployCmd = &cobra.Command{
 		// already (or will be) in git history. Block the deploy and tell the
 		// user exactly how to fix it - there is no safe way to proceed silently.
 		if isTrackedByGit(targetFile) {
-			fmt.Println()
-			fmt.Println(ui.ColorRed("  ✖  BLOCKED: " + targetFile + " is tracked in your git repository."))
-			fmt.Println(ui.ColorRed("     Your secrets may already be exposed in your git history."))
-			fmt.Println(ui.ColorYellow("     You must stop tracking this file before using Envault:"))
-			fmt.Println(ui.ColorCyan("       git rm --cached " + targetFile))
-			fmt.Println(ui.ColorCyan("       echo '" + targetFile + "' >> .gitignore"))
-			fmt.Println(ui.ColorCyan("       git commit -m 'stop tracking " + targetFile + "'"))
-			fmt.Println()
-			fmt.Println(ui.ColorYellow("     If secrets have already been committed, consider rotating them in Envault."))
-			fmt.Println()
+			fmt.Fprintln(os.Stderr)
+			fmt.Fprintln(os.Stderr, ui.ColorRed("  ✖  BLOCKED: "+targetFile+" is tracked in your git repository."))
+			fmt.Fprintln(os.Stderr, ui.ColorRed("     Your secrets may already be exposed in your git history."))
+			fmt.Fprintln(os.Stderr, ui.ColorYellow("     You must stop tracking this file before using Envault:"))
+			fmt.Fprintln(os.Stderr, ui.ColorCyan("       git rm --cached "+targetFile))
+			fmt.Fprintln(os.Stderr, ui.ColorCyan("       echo '"+targetFile+"' >> .gitignore"))
+			fmt.Fprintln(os.Stderr, ui.ColorCyan("       git commit -m 'stop tracking "+targetFile+"'"))
+			fmt.Fprintln(os.Stderr)
+			fmt.Fprintln(os.Stderr, ui.ColorYellow("     If secrets have already been committed, consider rotating them in Envault."))
+			fmt.Fprintln(os.Stderr)
 			os.Exit(1)
 		}
 
@@ -58,10 +76,10 @@ var deployCmd = &cobra.Command{
 		content, err := os.ReadFile(targetFile)
 		if err != nil {
 			if os.IsNotExist(err) {
-				fmt.Println(ui.ColorRed(fmt.Sprintf("Local env file not found: %s", targetFile)))
-				fmt.Println(ui.ColorYellow("Provide a file explicitly with --file, or map one with `envault env map --env <name> --file <path>`."))
+				fmt.Fprintln(os.Stderr, ui.ColorRed(fmt.Sprintf("Local env file not found: %s", targetFile)))
+				fmt.Fprintln(os.Stderr, ui.ColorYellow("Provide a file explicitly with --file, or map one with `envault env map --env <name> --file <path>`."))
 			} else {
-				fmt.Println(ui.ColorRed(fmt.Sprintf("Error reading %s: %v", targetFile, err)))
+				fmt.Fprintln(os.Stderr, ui.ColorRed(fmt.Sprintf("Error reading %s: %v", targetFile, err)))
 			}
 			os.Exit(1)
 		}
@@ -86,12 +104,12 @@ var deployCmd = &cobra.Command{
 
 		envMap, err := godotenv.Unmarshal(strings.Join(validLines, "\n"))
 		if err != nil {
-			fmt.Println(ui.ColorRed("Error parsing .env file"))
+			fmt.Fprintln(os.Stderr, ui.ColorRed("Error parsing .env file"))
 			os.Exit(1)
 		}
 
 		if len(envMap) == 0 {
-			fmt.Println(ui.ColorYellow(fmt.Sprintf("No secrets found in %s", targetFile)))
+			fmt.Fprintln(os.Stderr, ui.ColorYellow(fmt.Sprintf("No secrets found in %s", targetFile)))
 			return
 		}
 
@@ -100,7 +118,7 @@ var deployCmd = &cobra.Command{
 			secrets = append(secrets, Secret{Key: k, Value: v})
 		}
 
-		if diff, err := computeDiff(projectId, targetEnv, targetFile); err == nil {
+		if diff, err := computeDiff(ctx, projectId, targetEnv, targetFile); err == nil {
 			fmt.Printf(
 				"%s %d additions, %d deletions, %d modifications, %d unchanged\n",
 				ui.ColorBold("Diff Summary:"),
@@ -134,7 +152,11 @@ var deployCmd = &cobra.Command{
 			client := api.NewClient()
 			projectName := "Envault"
 
-			projectsBytes, err := client.Get("/projects")
+			projectsBytes, err := client.GetWithContext(ctx, "/projects")
+			if ctx.Err() != nil {
+				fmt.Fprintln(os.Stderr, ui.ColorYellow("\nOperation cancelled."))
+				os.Exit(130)
+			}
 			if err == nil {
 				var pResp ProjectResponse
 				if err := json.Unmarshal(projectsBytes, &pResp); err == nil {
@@ -162,19 +184,19 @@ var deployCmd = &cobra.Command{
 				ui.ColorCyan(fmt.Sprintf("%s/project/%s", appUrl, projectId)),
 			)
 
-			fmt.Println(ui.WarningBoxStyle.Render(warningMsg))
+			fmt.Fprintln(os.Stderr, ui.WarningBoxStyle.Render(warningMsg))
 
 			confirm := false
 			prompt := &survey.Confirm{
 				Message: fmt.Sprintf("Deploy %d secrets to %s environment?", len(secrets), targetEnv),
 			}
 			if err := survey.AskOne(prompt, &confirm); err != nil {
-				fmt.Println(ui.ColorYellow("\nOperation cancelled."))
+				fmt.Fprintln(os.Stderr, ui.ColorYellow("\nOperation cancelled."))
 				return
 			}
 
 			if !confirm {
-				fmt.Println(ui.ColorYellow("Operation cancelled."))
+				fmt.Fprintln(os.Stderr, ui.ColorYellow("Operation cancelled."))
 				return
 			}
 		}
@@ -189,11 +211,15 @@ var deployCmd = &cobra.Command{
 		}
 
 		path := fmt.Sprintf("/projects/%s/secrets?environment=%s", projectId, url.QueryEscape(targetEnv))
-		_, err = client.Post(path, payload)
+		_, err = client.PostWithContext(ctx, path, payload)
 		if err != nil {
 			s.Stop()
-			fmt.Println(ui.ColorRed("Deploy failed."))
-			fmt.Println(ui.ColorRed(classifyAPIError(err)))
+			if ctx.Err() != nil {
+				fmt.Fprintln(os.Stderr, ui.ColorYellow("\nOperation cancelled. Verify the Envault dashboard to confirm whether secrets were updated."))
+				os.Exit(130)
+			}
+			fmt.Fprintln(os.Stderr, ui.ColorRed("Deploy failed."))
+			fmt.Fprintln(os.Stderr, ui.ColorRed(classifyAPIError(err)))
 			os.Exit(1)
 		}
 

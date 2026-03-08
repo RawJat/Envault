@@ -29,12 +29,12 @@ var runCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		projectID := ensureProjectID()
 		if projectID == "" {
-			fmt.Println(ui.ColorYellow("No project linked."))
+			fmt.Fprintln(os.Stderr, ui.ColorYellow("No project linked."))
 			projectID = selectProjectAndPersistOrExit()
-			fmt.Println(ui.ColorGreen(fmt.Sprintf("✔ Project linked! (ID: %s)\n", projectID)))
+			fmt.Fprintln(os.Stderr, ui.ColorGreen(fmt.Sprintf("✔ Project linked! (ID: %s)\n", projectID)))
 		}
 		if !isValidProjectID(projectID) {
-			fmt.Println(ui.ColorRed("Invalid project ID. Expected a UUID."))
+			fmt.Fprintln(os.Stderr, ui.ColorRed("Invalid project ID. Expected a UUID."))
 			os.Exit(1)
 		}
 
@@ -50,9 +50,9 @@ var runCmd = &cobra.Command{
 			if api.IsFallbackEligible(err) {
 				cachedSecrets, loadedAt, cacheErr := offlinecache.Load(projectID, targetEnv)
 				if cacheErr != nil {
-					fmt.Println(ui.ColorRed("Run failed."))
-					fmt.Println(ui.ColorRed(fmt.Sprintf("Network error: %v", err)))
-					fmt.Println(ui.ColorRed(fmt.Sprintf("Offline cache unavailable: %v", cacheErr)))
+					fmt.Fprintln(os.Stderr, ui.ColorRed("Run failed."))
+					fmt.Fprintln(os.Stderr, ui.ColorRed(fmt.Sprintf("Network error: %v", err)))
+					fmt.Fprintln(os.Stderr, ui.ColorRed(fmt.Sprintf("Offline cache unavailable: %v", cacheErr)))
 					os.Exit(1)
 				}
 
@@ -63,13 +63,13 @@ var runCmd = &cobra.Command{
 				usedOfflineCache = true
 				cachedAt = loadedAt
 			} else {
-				fmt.Println(ui.ColorRed("Run failed."))
-				fmt.Println(ui.ColorRed(classifyAPIError(err)))
+				fmt.Fprintln(os.Stderr, ui.ColorRed("Run failed."))
+				fmt.Fprintln(os.Stderr, ui.ColorRed(classifyAPIError(err)))
 				os.Exit(1)
 			}
 		} else {
 			if err := json.Unmarshal(respBytes, &secretsResp); err != nil {
-				fmt.Println(ui.ColorRed(fmt.Sprintf("Error parsing response: %v", err)))
+				fmt.Fprintln(os.Stderr, ui.ColorRed(fmt.Sprintf("Error parsing response: %v", err)))
 				os.Exit(1)
 			}
 
@@ -115,7 +115,7 @@ var runCmd = &cobra.Command{
 			if exitErr, ok := err.(*exec.ExitError); ok {
 				os.Exit(exitErr.ExitCode())
 			}
-			fmt.Println(ui.ColorRed(fmt.Sprintf("Failed to execute command: %v", err)))
+			fmt.Fprintln(os.Stderr, ui.ColorRed(fmt.Sprintf("Failed to execute command: %v", err)))
 			os.Exit(1)
 		}
 	},

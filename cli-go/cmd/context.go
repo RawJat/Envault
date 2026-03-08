@@ -194,14 +194,14 @@ func selectProjectAndPersistOrExit() string {
 	selected, err := project.SelectProject()
 	if err != nil {
 		if err == project.ErrUserCancelled {
-			fmt.Println("\nOperation cancelled.")
+			fmt.Fprintln(os.Stderr, "\nOperation cancelled.")
 			os.Exit(0)
 		}
-		fmt.Printf("Error selecting project: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error selecting project: %v\n", err)
 		os.Exit(1)
 	}
 	if selected == "" {
-		fmt.Println("Operation cancelled.")
+		fmt.Fprintln(os.Stderr, "Operation cancelled.")
 		os.Exit(0)
 	}
 

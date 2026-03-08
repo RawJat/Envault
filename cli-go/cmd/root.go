@@ -10,12 +10,13 @@ import (
 )
 
 var (
-	cfgFile string
-	envFlag string
+	cfgFile     string
+	envFlag     string
 	showVersion bool
-	version = "dev"
-	commit  = "none"
-	date    = "unknown"
+	verbose     bool
+	version     = "dev"
+	commit      = "none"
+	date        = "unknown"
 )
 
 var rootCmd = &cobra.Command{
@@ -51,6 +52,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.envault/config.toml)")
 	rootCmd.PersistentFlags().StringVarP(&envFlag, "env", "e", "", "Target environment (development, preview, production, etc.)")
 	rootCmd.PersistentFlags().BoolVarP(&showVersion, "version", "v", false, "Print the version number of Envault CLI")
+	rootCmd.PersistentFlags().BoolVar(&verbose, "verbose", false, "Print diagnostic information to stderr")
 
 	rootCmd.AddCommand(versionCmd)
 	rootCmd.AddCommand(updateCheckCmd)
@@ -92,6 +94,8 @@ func initConfig() {
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err == nil {
-		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
+		if verbose {
+			fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
+		}
 	}
 }

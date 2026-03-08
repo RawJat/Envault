@@ -34,7 +34,7 @@ var statusCmd = &cobra.Command{
 		cfg, _ := project.ReadConfig()
 		projectID := ensureProjectID()
 		if projectID != "" && !isValidProjectID(projectID) {
-			fmt.Println(ui.ColorRed("Invalid project ID. Expected a UUID."))
+			fmt.Fprintln(os.Stderr, ui.ColorRed("Invalid project ID. Expected a UUID."))
 			os.Exit(1)
 		}
 		resolvedEnv := resolveTargetEnvironment()
@@ -46,14 +46,14 @@ var statusCmd = &cobra.Command{
 
 		statusBytes, err := client.Get(path)
 		if err != nil {
-			fmt.Println(ui.ColorRed("Status failed."))
-			fmt.Println(ui.ColorRed(classifyAPIError(err)))
+			fmt.Fprintln(os.Stderr, ui.ColorRed("Status failed."))
+			fmt.Fprintln(os.Stderr, ui.ColorRed(classifyAPIError(err)))
 			os.Exit(1)
 		}
 
 		var status statusResponse
 		if err := json.Unmarshal(statusBytes, &status); err != nil {
-			fmt.Println(ui.ColorRed(fmt.Sprintf("Failed to parse /status response: %v", err)))
+			fmt.Fprintln(os.Stderr, ui.ColorRed(fmt.Sprintf("Failed to parse /status response: %v", err)))
 			os.Exit(1)
 		}
 

@@ -1,12 +1,15 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/url"
 	"os"
+	"os/signal"
 	"sort"
 	"strings"
+	"syscall"
 
 	"github.com/DinanathDash/Envault/cli-go/internal/api"
 	"github.com/DinanathDash/Envault/cli-go/internal/ui"
@@ -27,24 +30,41 @@ var diffCmd = &cobra.Command{
 	Use:   "diff",
 	Short: "Compare local env file with remote vault secrets",
 	Run: func(cmd *cobra.Command, args []string) {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+		defer signal.Stop(sigCh)
+		go func() {
+			select {
+			case <-sigCh:
+				cancel()
+			case <-ctx.Done():
+			}
+		}()
+
 		projectID := ensureProjectID()
 		if projectID == "" {
-			fmt.Println(ui.ColorYellow("No project linked."))
+			fmt.Fprintln(os.Stderr, ui.ColorYellow("No project linked."))
 			projectID = selectProjectAndPersistOrExit()
-			fmt.Println(ui.ColorGreen(fmt.Sprintf("✔ Project linked! (ID: %s)\n", projectID)))
+			fmt.Fprintln(os.Stderr, ui.ColorGreen(fmt.Sprintf("✔ Project linked! (ID: %s)\n", projectID)))
 		}
 		if !isValidProjectID(projectID) {
-			fmt.Println(ui.ColorRed("Invalid project ID. Expected a UUID."))
+			fmt.Fprintln(os.Stderr, ui.ColorRed("Invalid project ID. Expected a UUID."))
 			os.Exit(1)
 		}
 
 		targetEnv := resolveTargetEnvironment()
 		targetFile := resolveEnvFile(targetEnv, fileFlag)
 
-		result, err := computeDiff(projectID, targetEnv, targetFile)
+		result, err := computeDiff(ctx, projectID, targetEnv, targetFile)
 		if err != nil {
-			fmt.Println(ui.ColorRed("Diff failed."))
-			fmt.Println(ui.ColorRed(err.Error()))
+			if ctx.Err() != nil {
+				fmt.Fprintln(os.Stderr, ui.ColorYellow("\nOperation cancelled."))
+				os.Exit(130)
+			}
+			fmt.Fprintln(os.Stderr, ui.ColorRed("Diff failed."))
+			fmt.Fprintln(os.Stderr, ui.ColorRed(err.Error()))
 			os.Exit(1)
 		}
 
@@ -75,7 +95,7 @@ var diffCmd = &cobra.Command{
 	},
 }
 
-func computeDiff(projectID, targetEnv, targetFile string) (diffResult, error) {
+func computeDiff(ctx context.Context, projectID, targetEnv, targetFile string) (diffResult, error) {
 	localEnv, err := readEnvFile(targetFile)
 	if err != nil {
 		return diffResult{}, err
@@ -83,7 +103,7 @@ func computeDiff(projectID, targetEnv, targetFile string) (diffResult, error) {
 
 	client := api.NewClient()
 	path := fmt.Sprintf("/projects/%s/secrets?environment=%s", projectID, url.QueryEscape(targetEnv))
-	respBytes, err := client.Get(path)
+	respBytes, err := client.GetWithContext(ctx, path)
 	if err != nil {
 		return diffResult{}, fmt.Errorf("%s", classifyAPIError(err))
 	}
