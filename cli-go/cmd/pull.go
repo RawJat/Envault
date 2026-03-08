@@ -1,12 +1,16 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
 	"os"
+	"os/signal"
+	"path/filepath"
 	"strings"
+	"syscall"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/DinanathDash/Envault/cli-go/internal/api"
@@ -38,16 +42,31 @@ var pullCmd = &cobra.Command{
 	Use:   "pull",
 	Short: "Fetch secrets and write to .env",
 	Run: func(cmd *cobra.Command, args []string) {
+		// Graceful cancellation: cancel the context on Ctrl+C / SIGTERM so that
+		// in-flight HTTP requests are aborted cleanly.
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+		defer signal.Stop(sigCh)
+		go func() {
+			select {
+			case <-sigCh:
+				cancel()
+			case <-ctx.Done():
+			}
+		}()
+
 		// 1. Get Project ID
 		projectId := ensureProjectID()
 
 		if projectId == "" {
-			fmt.Println(ui.ColorYellow("No project linked."))
+			fmt.Fprintln(os.Stderr, ui.ColorYellow("No project linked."))
 			projectId = selectProjectAndPersistOrExit()
-			fmt.Println(ui.ColorGreen(fmt.Sprintf("✔ Project linked! (ID: %s)\n", projectId)))
+			fmt.Fprintln(os.Stderr, ui.ColorGreen(fmt.Sprintf("✔ Project linked! (ID: %s)\n", projectId)))
 		}
 		if !isValidProjectID(projectId) {
-			fmt.Println(ui.ColorRed("Invalid project ID. Expected a UUID."))
+			fmt.Fprintln(os.Stderr, ui.ColorRed("Invalid project ID. Expected a UUID."))
 			os.Exit(1)
 		}
 		targetEnv := resolveTargetEnvironment()
@@ -59,8 +78,12 @@ var pullCmd = &cobra.Command{
 			client := api.NewClient()
 			projectName := "Envault"
 
-			// Try to get project name (best effort)
-			projectsBytes, err := client.Get("/projects")
+			// Try to get project name (best effort, ignore errors)
+			projectsBytes, err := client.GetWithContext(ctx, "/projects")
+			if ctx.Err() != nil {
+				fmt.Fprintln(os.Stderr, ui.ColorYellow("\nOperation cancelled."))
+				os.Exit(130)
+			}
 			if err == nil {
 				var pResp ProjectResponse
 				// API might return {data: []} or just [] or {projects: []} depending on endpoint
@@ -90,19 +113,19 @@ var pullCmd = &cobra.Command{
 				ui.ColorCyan(fmt.Sprintf("%s/project/%s", appUrl, projectId)),
 			)
 
-			fmt.Println(ui.WarningBoxStyle.Render(warningMsg))
+			fmt.Fprintln(os.Stderr, ui.WarningBoxStyle.Render(warningMsg))
 
 			confirm := false
 			prompt := &survey.Confirm{
 				Message: fmt.Sprintf("Are you sure you want to overwrite %s for %s?", targetFile, targetEnv),
 			}
 			if err := survey.AskOne(prompt, &confirm); err != nil {
-				fmt.Println(ui.ColorYellow("\nOperation cancelled."))
+				fmt.Fprintln(os.Stderr, ui.ColorYellow("\nOperation cancelled."))
 				return
 			}
 
 			if !confirm {
-				fmt.Println(ui.ColorYellow("Operation cancelled."))
+				fmt.Fprintln(os.Stderr, ui.ColorYellow("Operation cancelled."))
 				return
 			}
 		}
@@ -113,37 +136,40 @@ var pullCmd = &cobra.Command{
 		s.Start()
 
 		path := fmt.Sprintf("/projects/%s/secrets?environment=%s", projectId, url.QueryEscape(targetEnv))
-		respBytes, err := client.Get(path)
+		respBytes, err := client.GetWithContext(ctx, path)
 		if err != nil {
 			s.Stop()
-				// Check specifically for the ACCESS_REQUIRED JIT error
-				var apiErr *api.APIError
-				if errors.As(err, &apiErr) && apiErr.StatusCode == 403 {
-					var errBody struct {
-						Error   string `json:"error"`
-						Message string `json:"message"`
-					}
-					if jsonErr := json.Unmarshal([]byte(apiErr.Body), &errBody); jsonErr == nil && errBody.Error == "ACCESS_REQUIRED" {
-						handleAccessRequired(client, projectId)
-						return
-					}
+			if ctx.Err() != nil {
+				fmt.Fprintln(os.Stderr, ui.ColorYellow("\nOperation cancelled."))
+				os.Exit(130)
+			}
+			// Check specifically for the ACCESS_REQUIRED JIT error
+			var apiErr *api.APIError
+			if errors.As(err, &apiErr) && apiErr.StatusCode == 403 {
+				var errBody struct {
+					Error   string `json:"error"`
+					Message string `json:"message"`
 				}
+				if jsonErr := json.Unmarshal([]byte(apiErr.Body), &errBody); jsonErr == nil && errBody.Error == "ACCESS_REQUIRED" {
+					handleAccessRequired(ctx, client, projectId)
+					return
+				}
+			}
+			fmt.Fprintln(os.Stderr, ui.ColorRed("Pull failed."))
+			fmt.Fprintln(os.Stderr, ui.ColorRed(classifyAPIError(err)))
+			os.Exit(1)
 		}
 
 		var secretsResp SecretsResponse
 		if err := json.Unmarshal(respBytes, &secretsResp); err != nil {
 			s.Stop()
-			fmt.Println(ui.ColorRed(fmt.Sprintf("Error parsing response: %v", err)))
+			fmt.Fprintln(os.Stderr, ui.ColorRed(fmt.Sprintf("Error parsing response: %v", err)))
 			os.Exit(1)
 		}
 
 		if len(secretsResp.Secrets) == 0 {
 			s.Stop()
-			// Info style?
-			// ora.info check... Node uses spinner.info
-			// ui package doesn't have Info/Warn specific spinners.
-			// Just print text.
-			fmt.Println(ui.ColorBlue("ℹ No secrets found for this project."))
+			fmt.Fprintln(os.Stderr, ui.ColorBlue("ℹ No secrets found for this project."))
 			return
 		}
 
@@ -151,33 +177,52 @@ var pullCmd = &cobra.Command{
 		// Writing secrets into a tracked file would silently include them in the next commit.
 		if isTrackedByGit(targetFile) {
 			s.Stop()
-			fmt.Println()
-			fmt.Println(ui.ColorRed("  ✖  BLOCKED: " + targetFile + " is tracked in your git repository."))
-			fmt.Println(ui.ColorYellow("     Writing secrets into a tracked file would expose them in your git history."))
-			fmt.Println(ui.ColorYellow("     Fix this before pulling:"))
-			fmt.Println(ui.ColorCyan("       git rm --cached " + targetFile))
-			fmt.Println(ui.ColorCyan("       echo '" + targetFile + "' >> .gitignore"))
-			fmt.Println(ui.ColorCyan("       git commit -m 'stop tracking " + targetFile + "'"))
-			fmt.Println()
+			fmt.Fprintln(os.Stderr)
+			fmt.Fprintln(os.Stderr, ui.ColorRed("  ✖  BLOCKED: "+targetFile+" is tracked in your git repository."))
+			fmt.Fprintln(os.Stderr, ui.ColorYellow("     Writing secrets into a tracked file would expose them in your git history."))
+			fmt.Fprintln(os.Stderr, ui.ColorYellow("     Fix this before pulling:"))
+			fmt.Fprintln(os.Stderr, ui.ColorCyan("       git rm --cached "+targetFile))
+			fmt.Fprintln(os.Stderr, ui.ColorCyan("       echo '"+targetFile+"' >> .gitignore"))
+			fmt.Fprintln(os.Stderr, ui.ColorCyan("       git commit -m 'stop tracking "+targetFile+"'"))
+			fmt.Fprintln(os.Stderr)
 			os.Exit(1)
 		}
 
-		// 5. Write to .env
-		f, err := os.Create(targetFile)
+		// 5. Write to .env atomically via a temp file so that a crash or
+		// Ctrl+C mid-write never leaves the target file half-written.
+		dir := filepath.Dir(targetFile)
+		if dir == "" {
+			dir = "."
+		}
+		tmpFile, err := os.CreateTemp(dir, ".envault-pull-*.tmp")
 		if err != nil {
 			s.Stop()
-			fmt.Println(ui.ColorRed(fmt.Sprintf("Error creating %s: %v", targetFile, err)))
+			fmt.Fprintln(os.Stderr, ui.ColorRed(fmt.Sprintf("Error creating temp file: %v", err)))
 			os.Exit(1)
 		}
-		defer f.Close()
+		tmpPath := tmpFile.Name()
 
 		for _, secret := range secretsResp.Secrets {
-			_, err := f.WriteString(fmt.Sprintf("%s=%s\n", secret.Key, secret.Value))
-			if err != nil {
+			if _, err := fmt.Fprintf(tmpFile, "%s=%s\n", secret.Key, secret.Value); err != nil {
+				_ = tmpFile.Close()
+				_ = os.Remove(tmpPath)
 				s.Stop()
-				fmt.Println(ui.ColorRed(fmt.Sprintf("Error writing to %s: %v", targetFile, err)))
+				fmt.Fprintln(os.Stderr, ui.ColorRed(fmt.Sprintf("Error writing secrets: %v", err)))
 				os.Exit(1)
 			}
+		}
+		if err := tmpFile.Close(); err != nil {
+			_ = os.Remove(tmpPath)
+			s.Stop()
+			fmt.Fprintln(os.Stderr, ui.ColorRed(fmt.Sprintf("Error finalizing temp file: %v", err)))
+			os.Exit(1)
+		}
+		_ = os.Chmod(tmpPath, 0600) // .env files: readable by owner only
+		if err := os.Rename(tmpPath, targetFile); err != nil {
+			_ = os.Remove(tmpPath)
+			s.Stop()
+			fmt.Fprintln(os.Stderr, ui.ColorRed(fmt.Sprintf("Error writing to %s: %v", targetFile, err)))
+			os.Exit(1)
 		}
 
 		s.Stop()
@@ -187,7 +232,7 @@ var pullCmd = &cobra.Command{
 		// 1. Ensure .gitignore covers the written file - create/update it automatically.
 		giAdded, giErr := ensureGitignoreEntry(targetFile)
 		if giErr != nil {
-			fmt.Println(ui.ColorYellow(fmt.Sprintf("  ⚠ Could not update .gitignore: %v", giErr)))
+			fmt.Fprintln(os.Stderr, ui.ColorYellow(fmt.Sprintf("  ⚠ Could not update .gitignore: %v", giErr)))
 		} else if giAdded {
 			fmt.Println(ui.ColorGreen("  ✔ Added '" + targetFile + "' to .gitignore - it will not be committed."))
 		}
@@ -197,10 +242,10 @@ var pullCmd = &cobra.Command{
 		switch {
 		case hookErr != nil && strings.Contains(hookErr.Error(), "no .git directory"):
 			// No git repo yet - warn the user to run the hook installer after git init.
-			fmt.Println(ui.ColorYellow("  ⚠ No git repository detected. After git init, run:"))
-			fmt.Println(ui.ColorCyan("      envault audit --install-hook"))
+			fmt.Fprintln(os.Stderr, ui.ColorYellow("  ⚠ No git repository detected. After git init, run:"))
+			fmt.Fprintln(os.Stderr, ui.ColorCyan("      envault audit --install-hook"))
 		case hookErr != nil:
-			fmt.Println(ui.ColorYellow(fmt.Sprintf("  ⚠ Could not install pre-commit hook: %v", hookErr)))
+			fmt.Fprintln(os.Stderr, ui.ColorYellow(fmt.Sprintf("  ⚠ Could not install pre-commit hook: %v", hookErr)))
 		case !alreadyInstalled:
 			fmt.Println(ui.ColorGreen("  ✔ Pre-commit hook installed - secrets are protected from accidental commits."))
 		}
@@ -209,8 +254,8 @@ var pullCmd = &cobra.Command{
 
 // handleAccessRequired prompts the user to request access to the project
 // when the server returns ACCESS_REQUIRED (no existing membership + GitHub check failed/skipped).
-func handleAccessRequired(client *api.Client, projectId string) {
-	fmt.Println(ui.ColorYellow("\n⚠  You do not have access to this project."))
+func handleAccessRequired(ctx context.Context, client *api.Client, projectId string) {
+	fmt.Fprintln(os.Stderr, ui.ColorYellow("\n⚠  You do not have access to this project."))
 
 	confirm := false
 	prompt := &survey.Confirm{
@@ -218,7 +263,7 @@ func handleAccessRequired(client *api.Client, projectId string) {
 		Default: false,
 	}
 	if err := survey.AskOne(prompt, &confirm); err != nil || !confirm {
-		fmt.Println(ui.ColorYellow("Access request cancelled."))
+		fmt.Fprintln(os.Stderr, ui.ColorYellow("Access request cancelled."))
 		return
 	}
 
@@ -226,16 +271,20 @@ func handleAccessRequired(client *api.Client, projectId string) {
 	s.Start()
 
 	path := fmt.Sprintf("/projects/%s/request-access", projectId)
-	_, err := client.Post(path, nil)
+	_, err := client.PostWithContext(ctx, path, nil)
 	s.Stop()
 
 	if err != nil {
+		if ctx.Err() != nil {
+			fmt.Fprintln(os.Stderr, ui.ColorYellow("\nOperation cancelled."))
+			os.Exit(130)
+		}
 		var apiErr *api.APIError
 		if errors.As(err, &apiErr) && apiErr.StatusCode == 409 {
-			fmt.Println(ui.ColorBlue("ℹ  You already have a pending access request for this project."))
+			fmt.Fprintln(os.Stderr, ui.ColorBlue("ℹ  You already have a pending access request for this project."))
 			return
 		}
-		fmt.Println(ui.ColorRed(fmt.Sprintf("Failed to send access request: %v", err)))
+		fmt.Fprintln(os.Stderr, ui.ColorRed(fmt.Sprintf("Failed to send access request: %v", err)))
 		return
 	}
 

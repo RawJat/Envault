@@ -155,6 +155,21 @@ func (c *Client) GetWithTimeout(path string, timeout time.Duration) ([]byte, err
 	return c.doReqWithHTTP("GET", path, nil, true, clientWithTimeout(c.HTTP, timeout))
 }
 
+func (c *Client) GetWithContext(ctx context.Context, path string) ([]byte, error) {
+	return c.doReqCtx(ctx, "GET", path, nil, true, c.HTTP)
+}
+
+func (c *Client) GetWithContextAndTimeout(ctx context.Context, path string, timeout time.Duration) ([]byte, error) {
+	if timeout <= 0 {
+		return c.GetWithContext(ctx, path)
+	}
+	return c.doReqCtx(ctx, "GET", path, nil, true, clientWithTimeout(c.HTTP, timeout))
+}
+
+func (c *Client) PostWithContext(ctx context.Context, path string, body interface{}) ([]byte, error) {
+	return c.doReqCtx(ctx, "POST", path, body, true, c.HTTP)
+}
+
 func clientWithTimeout(base *http.Client, timeout time.Duration) *http.Client {
 	if base == nil {
 		return &http.Client{Timeout: timeout}
@@ -169,6 +184,10 @@ func clientWithTimeout(base *http.Client, timeout time.Duration) *http.Client {
 }
 
 func (c *Client) doReqWithHTTP(method, path string, body interface{}, canRetry bool, httpClient *http.Client) ([]byte, error) {
+	return c.doReqCtx(context.Background(), method, path, body, canRetry, httpClient)
+}
+
+func (c *Client) doReqCtx(ctx context.Context, method, path string, body interface{}, canRetry bool, httpClient *http.Client) ([]byte, error) {
 	if httpClient == nil {
 		httpClient = c.HTTP
 	}
@@ -177,18 +196,16 @@ func (c *Client) doReqWithHTTP(method, path string, body interface{}, canRetry b
 	}
 
 	var bodyReader io.Reader
-	var reqBody []byte
 
 	if body != nil {
-		var err error
-		reqBody, err = json.Marshal(body)
+		reqBody, err := json.Marshal(body)
 		if err != nil {
 			return nil, err
 		}
 		bodyReader = bytes.NewBuffer(reqBody)
 	}
 
-	req, err := http.NewRequest(method, c.BaseURL+path, bodyReader)
+	req, err := http.NewRequestWithContext(ctx, method, c.BaseURL+path, bodyReader)
 	if err != nil {
 		return nil, err
 	}
@@ -206,10 +223,10 @@ func (c *Client) doReqWithHTTP(method, path string, body interface{}, canRetry b
 
 	if resp.StatusCode == 401 && canRetry {
 		if c.Token != "" && !strings.HasPrefix(c.Token, "envault_svc_") {
-			bodyBytes, _ := io.ReadAll(resp.Body) // consume old body
+			bodyBytes, _ := io.ReadAll(resp.Body)
 			errRefresh := c.refreshToken(httpClient)
 			if errRefresh == nil {
-				return c.doReqWithHTTP(method, path, body, false, httpClient)
+				return c.doReqCtx(ctx, method, path, body, false, httpClient)
 			}
 			return nil, fmt.Errorf("Refresh Token Exchange Failed: %v | (Original Auth Error: %s)", errRefresh, string(bodyBytes))
 		}

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/DinanathDash/Envault/cli-go/internal/project"
@@ -23,13 +24,13 @@ var envMapCmd = &cobra.Command{
 		target := strings.TrimSpace(envFlag)
 		file := strings.TrimSpace(envMapFile)
 		if target == "" || file == "" {
-			fmt.Println(ui.ColorRed("Both --env and --file are required."))
+			fmt.Fprintln(os.Stderr, ui.ColorRed("Both --env and --file are required."))
 			return
 		}
 
 		cfg, err := project.ReadConfig()
 		if err != nil {
-			fmt.Println(ui.ColorRed(fmt.Sprintf("Error reading config: %v", err)))
+			fmt.Fprintln(os.Stderr, ui.ColorRed(fmt.Sprintf("Error reading config: %v", err)))
 			return
 		}
 		if cfg.EnvironmentFiles == nil {
@@ -41,7 +42,7 @@ var envMapCmd = &cobra.Command{
 		}
 
 		if err := project.WriteConfig(cfg); err != nil {
-			fmt.Println(ui.ColorRed(fmt.Sprintf("Error writing config: %v", err)))
+			fmt.Fprintln(os.Stderr, ui.ColorRed(fmt.Sprintf("Error writing config: %v", err)))
 			return
 		}
 
@@ -55,23 +56,23 @@ var envUnmapCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		target := strings.TrimSpace(envFlag)
 		if target == "" {
-			fmt.Println(ui.ColorRed("--env is required."))
+			fmt.Fprintln(os.Stderr, ui.ColorRed("--env is required."))
 			return
 		}
 
 		cfg, err := project.ReadConfig()
 		if err != nil {
-			fmt.Println(ui.ColorRed(fmt.Sprintf("Error reading config: %v", err)))
+			fmt.Fprintln(os.Stderr, ui.ColorRed(fmt.Sprintf("Error reading config: %v", err)))
 			return
 		}
 		if cfg.EnvironmentFiles == nil {
-			fmt.Println(ui.ColorYellow("No mappings found."))
+			fmt.Fprintln(os.Stderr, ui.ColorYellow("No mappings found."))
 			return
 		}
 		delete(cfg.EnvironmentFiles, target)
 
 		if err := project.WriteConfig(cfg); err != nil {
-			fmt.Println(ui.ColorRed(fmt.Sprintf("Error writing config: %v", err)))
+			fmt.Fprintln(os.Stderr, ui.ColorRed(fmt.Sprintf("Error writing config: %v", err)))
 			return
 		}
 
@@ -85,18 +86,18 @@ var envDefaultCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		target := strings.TrimSpace(envFlag)
 		if target == "" {
-			fmt.Println(ui.ColorRed("--env is required."))
+			fmt.Fprintln(os.Stderr, ui.ColorRed("--env is required."))
 			return
 		}
 
 		cfg, err := project.ReadConfig()
 		if err != nil {
-			fmt.Println(ui.ColorRed(fmt.Sprintf("Error reading config: %v", err)))
+			fmt.Fprintln(os.Stderr, ui.ColorRed(fmt.Sprintf("Error reading config: %v", err)))
 			return
 		}
 		cfg.DefaultEnvironment = target
 		if err := project.WriteConfig(cfg); err != nil {
-			fmt.Println(ui.ColorRed(fmt.Sprintf("Error writing config: %v", err)))
+			fmt.Fprintln(os.Stderr, ui.ColorRed(fmt.Sprintf("Error writing config: %v", err)))
 			return
 		}
 
