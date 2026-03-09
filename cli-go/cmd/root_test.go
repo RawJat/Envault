@@ -254,7 +254,7 @@ func TestPullCmd_SecretWrittenToEnvFile(t *testing.T) {
 
 func TestPullCmd_SIGINTExitsWithCode130(t *testing.T) {
 	// Use a channel to confirm the server received the request before we send
-	// SIGINT — this ensures signal.Notify is set up inside the process.
+	// SIGINT - this ensures signal.Notify is set up inside the process.
 	requestArrived := make(chan struct{}, 1)
 	slowSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		select {
@@ -284,7 +284,7 @@ func TestPullCmd_SIGINTExitsWithCode130(t *testing.T) {
 		t.Fatalf("cmd.Start: %v", err)
 	}
 
-	// Wait until the server receives the request — at this point signal.Notify
+	// Wait until the server receives the request - at this point signal.Notify
 	// is definitely registered inside the process (it runs before the HTTP call).
 	select {
 	case <-requestArrived:

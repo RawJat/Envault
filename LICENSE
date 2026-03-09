@@ -1,21 +1,53 @@
-MIT License
+Functional Source License, Version 1.1-MIT
 
-Copyright (c) 2026 Dinanath Dash
+Copyright (c) 2026 Dinanath (dinanath.dev)
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Licensor: Dinanath (dinanath.dev)
+Licensed Work: Envault
+Change Date: 24 months from the date of each specific published commit or release
+Change License: MIT License
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+For information about alternative licensing arrangements for the Licensed Work, please visit: https://envault.tech/licensing
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+---
+
+TERMS AND CONDITIONS
+
+1. GRANT OF LICENSE
+
+Subject to the terms and conditions of this License, Licensor hereby grants to each recipient of the Licensed Work a non-exclusive, worldwide, royalty-free, fully paid-up, non-transferable license to use, display, non-commercially perform, internally distribute, and reproduce the Licensed Work and derivative works thereof for any purpose, including for internal business purposes, development, testing, and local deployment, except that Licensee may not offer the Licensed Work or any derivative thereof as a competing commercial service.
+
+2. RESTRICTIONS
+
+Licensee may not:
+(a) Use the Licensed Work or any portion thereof to provide a commercial service to third parties, including offering the Licensed Work or any modification or derivative thereof as a Software-as-a-Service (SaaS) offering or competing commercial service;
+(b) Remove or alter any proprietary notices, labels, or marks on the Licensed Work;
+(c) Sublicense, transfer, lease, or lend the Licensed Work to any third party;
+(d) Use the Licensed Work in violation of applicable law or regulation; or
+(e) Use the Licensed Work in a manner that is competitive with Licensor's business interests.
+
+For the purposes of this License, a "competing commercial service" means any product or service that competes directly with the Licensed Work and is offered for commercial purposes by any entity other than Licensor.
+
+3. CHANGE OF LICENSE
+
+On the Change Date for each version, the Licensed Work (including all prior versions) shall automatically convert to be licensed under the Change License (MIT License), at which point this License shall immediately terminate and the Change License shall apply retroactively to the Licensed Work and all versions thereof.
+
+4. COMING INTO COMPLIANCE
+
+If Licensee violates the restrictions in Section 2, Licensee may remedy such violation, at its sole expense, within thirty (30) days, and upon timely remedy, such violation shall not be deemed a material breach hereunder.
+
+5. DISCLAIMER OF WARRANTY
+
+THE LICENSED WORK IS PROVIDED ON AN "AS-IS" BASIS AT LICENSOR'S SOLE RISK AND WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OR CONDITIONS OF TITLE, MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT.
+
+6. LIMITATION OF LIABILITY
+
+IN NO EVENT SHALL LICENSOR BE LIABLE TO ANY PARTY FOR ANY INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, PUNITIVE, OR CONSEQUENTIAL DAMAGES ARISING FROM OR RELATING TO THIS LICENSE OR THE LICENSED WORK, EVEN IF LICENSOR HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+
+7. SEVERABILITY
+
+If any provision of this License is held to be invalid or unenforceable, the remaining provisions shall remain in full force and effect.
+
+8. ENTIRE AGREEMENT
+
+This License constitutes the entire agreement between the parties relating to the Licensed Work and supersedes all prior or contemporaneous agreements, whether written or oral, relating to the subject matter.

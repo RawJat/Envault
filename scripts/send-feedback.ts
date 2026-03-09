@@ -30,7 +30,7 @@ async function main() {
 
       <p>I'm reaching out from the Envault team because we really value
       the opinions of our users. If you have a few minutes, we'd love to
-      hear your thoughts on your experience so far—what's working well,
+      hear your thoughts on your experience so far-what's working well,
       what could be better, or any feature you'd like to see.</p>
 
       <p>Your feedback goes straight to the people building Envault, and

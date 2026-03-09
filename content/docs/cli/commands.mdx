@@ -78,11 +78,11 @@ File resolution (if `--file` not provided):
 
 Every time `pull` writes secrets to disk it runs three automatic safeguards:
 
-1. <XCircle className="inline w-4 h-4 mr-1 text-red-500" /> **Tracked-file hard block** — if the target file is already tracked in your git repository the command **refuses to write** anything. Overwriting a tracked file would silently include secrets in your next commit. The CLI prints the exact commands needed to untrack it before retrying.
+1. <XCircle className="inline w-4 h-4 mr-1 text-red-500" /> **Tracked-file hard block** - if the target file is already tracked in your git repository the command **refuses to write** anything. Overwriting a tracked file would silently include secrets in your next commit. The CLI prints the exact commands needed to untrack it before retrying.
 
-2. <FileX className="inline w-4 h-4 mr-1 text-yellow-500" /> **Auto-gitignore** — if the target file is not already covered by `.gitignore` (or `.gitignore` does not exist), the CLI adds an entry automatically. You will see a confirmation line whenever this happens.
+2. <FileX className="inline w-4 h-4 mr-1 text-yellow-500" /> **Auto-gitignore** - if the target file is not already covered by `.gitignore` (or `.gitignore` does not exist), the CLI adds an entry automatically. You will see a confirmation line whenever this happens.
 
-3. <GitBranch className="inline w-4 h-4 mr-1 text-green-500" /> **Pre-commit hook** — if a git repository is present and the audit hook has not been installed, it is installed automatically. If no git repository is detected yet the CLI reminds you to run `envault audit --install-hook` after `git init`.
+3. <GitBranch className="inline w-4 h-4 mr-1 text-green-500" /> **Pre-commit hook** - if a git repository is present and the audit hook has not been installed, it is installed automatically. If no git repository is detected yet the CLI reminds you to run `envault audit --install-hook` after `git init`.
 
 <Callout type="warn">
   If `pull` is blocked because the target file is tracked, remove it from the git index first:

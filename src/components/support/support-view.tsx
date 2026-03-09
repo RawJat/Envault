@@ -36,7 +36,7 @@ const faqs = [
   {
     question: "Can I self-host Envault?",
     answer:
-      "Yes, Envault is completely open-source. You can clone the repository from GitHub and deploy it to your own infrastructure (like Vercel, Supabase, or custom servers) for complete control over your data.",
+      "Yes, Envault is source-available under the Functional Source License (FSL). You can clone the repository from GitHub and deploy it to your own infrastructure (like Vercel, Supabase, or custom servers) for complete control over your data. Commercial use to offer a competing service is restricted under FSL.",
   },
   {
     question: "How does team collaboration work?",
@@ -171,8 +171,7 @@ export function SupportView({ inDashboard = false }: SupportViewProps) {
           </div>
           <h3 className="text-xl font-semibold mb-2">Community</h3>
           <p className="text-muted-foreground mb-4">
-            Join our open-source community to discuss features, report bugs, and
-            contribute to Envault.
+            Read the code, report issues, and follow development on GitHub.
           </p>
           <div className="flex gap-3">
             <Button variant="outline" size="sm" asChild className="gap-2">

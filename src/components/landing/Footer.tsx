@@ -119,6 +119,15 @@ export function Footer({ user }: FooterProps) {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
                 <FooterLink
+                  href="/licensing"
+                  className="hover:text-foreground transition-colors"
+                  pathname={pathname}
+                >
+                  Licensing
+                </FooterLink>
+              </li>
+              <li>
+                <FooterLink
                   href="/privacy"
                   className="hover:text-foreground transition-colors"
                   pathname={pathname}
@@ -147,9 +156,18 @@ export function Footer({ user }: FooterProps) {
               rel="noreferrer"
               className="font-medium underline underline-offset-4"
             >
-              Dinanath Dash
+              Dinanath
             </a>
-            . Open source on{" "}
+            {" "}&amp;{" "}
+            <a
+              href="https://github.com/RawJat"
+              target="_blank"
+              rel="noreferrer"
+              className="font-medium underline underline-offset-4"
+            >
+              Rajat
+            </a>
+            . Source-available on{" "}
             <a
               href="https://github.com/dinanathdash/envault"
               target="_blank"

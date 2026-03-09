@@ -1,4 +1,5 @@
 import { LegalLayout } from "@/components/legal/LegalLayout";
+import { Link } from "next-view-transitions";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -16,6 +17,7 @@ const sections = [
   { id: "introduction", title: "Introduction" },
   { id: "information-we-collect", title: "Information We Collect" },
   { id: "data-security", title: "Data Security & Encryption" },
+  { id: "licensing", title: "Source Code & Licensing" },
   { id: "authentication-methods", title: "Modern Authentication Methods" },
   { id: "environment-management", title: "Environment Management Data" },
   { id: "cli-data", title: "CLI Data Collection" },
@@ -132,11 +134,49 @@ export default async function PrivacyPage() {
       </section>
 
       <section
+        id="licensing"
+        className="scroll-mt-28 mb-12 pb-8 border-b border-border/30"
+      >
+        <h2 className="text-2xl font-semibold mb-4 font-serif">
+          4. Source Code & Licensing
+        </h2>
+        <p className="text-muted-foreground mb-4 leading-relaxed">
+          Envault&apos;s source code is publicly available and licensed under the{" "}
+          <strong>Functional Source License (FSL), Version 1.1-MIT</strong>.
+          This means:
+        </p>
+        <ul className="list-disc pl-6 space-y-3 text-muted-foreground mb-4">
+          <li className="leading-relaxed">
+            You can review our source code for security auditing and verification
+            of our encryption implementation.
+          </li>
+          <li className="leading-relaxed">
+            You can self-host Envault for your organization&apos;s internal use.
+          </li>
+          <li className="leading-relaxed">
+            The code will convert to the MIT License after 24 months from each
+            release, becoming fully permissive (MIT).
+          </li>
+        </ul>
+        <p className="text-muted-foreground leading-relaxed">
+          For more information about what you can and cannot do under our
+          licensing model, visit our{" "}
+          <Link
+            href="/licensing"
+            className="font-mono text-sm text-foreground hover:text-primary transition-colors underline underline-offset-4"
+          >
+            Licensing Page
+          </Link>
+          .
+        </p>
+      </section>
+
+      <section
         id="authentication-methods"
         className="scroll-mt-28 mb-12 pb-8 border-b border-border/30"
       >
         <h2 className="text-2xl font-semibold mb-4 font-serif">
-          4. Modern Authentication Methods
+          5. Modern Authentication Methods
         </h2>
         <p className="text-muted-foreground mb-4 leading-relaxed">
           Envault supports multiple secure authentication methods to protect
@@ -174,7 +214,7 @@ export default async function PrivacyPage() {
         className="scroll-mt-28 mb-12 pb-8 border-b border-border/30"
       >
         <h2 className="text-2xl font-semibold mb-4 font-serif">
-          5. Environment Management Data
+          6. Environment Management Data
         </h2>
         <p className="text-muted-foreground mb-4 leading-relaxed">
           Envault enables managing multiple environments (development, staging,
@@ -212,7 +252,7 @@ export default async function PrivacyPage() {
         className="scroll-mt-28 mb-12 pb-8 border-b border-border/30"
       >
         <h2 className="text-2xl font-semibold mb-4 font-serif">
-          6. CLI Data Collection
+          7. CLI Data Collection
         </h2>
         <p className="text-muted-foreground mb-4 leading-relaxed">
           When you use the Envault CLI, we may collect certain information to
@@ -250,7 +290,7 @@ export default async function PrivacyPage() {
         className="scroll-mt-28 mb-12 pb-8 border-b border-border/30"
       >
         <h2 className="text-2xl font-semibold mb-4 font-serif">
-          7. Team Collaboration Data
+          8. Team Collaboration Data
         </h2>
         <p className="text-muted-foreground mb-4 leading-relaxed">
           Envault enables secure team collaboration. When you participate in
@@ -289,7 +329,7 @@ export default async function PrivacyPage() {
         className="scroll-mt-28 mb-12 pb-8 border-b border-border/30"
       >
         <h2 className="text-2xl font-semibold mb-4 font-serif">
-          8. Notification Data
+          9. Notification Data
         </h2>
         <p className="text-muted-foreground mb-4 leading-relaxed">
           Envault provides notifications for team collaboration, security
@@ -325,7 +365,7 @@ export default async function PrivacyPage() {
         className="scroll-mt-28 mb-12 pb-8 border-b border-border/30"
       >
         <h2 className="text-2xl font-semibold mb-4 font-serif">
-          9. Use of Data
+          10. Use of Data
         </h2>
         <p className="text-muted-foreground mb-4 leading-relaxed">
           Envault uses the collected data for various purposes:
@@ -352,7 +392,7 @@ export default async function PrivacyPage() {
         className="scroll-mt-28 mb-12 pb-8 border-b border-border/30"
       >
         <h2 className="text-2xl font-semibold mb-4 font-serif">
-          10. Third-Party Service Providers
+          11. Third-Party Service Providers
         </h2>
         <p className="text-muted-foreground leading-relaxed mb-4">
           We may employ third party companies and individuals to facilitate our
@@ -412,7 +452,7 @@ export default async function PrivacyPage() {
         className="scroll-mt-28 mb-12 pb-8 border-b border-border/30"
       >
         <h2 className="text-2xl font-semibold mb-4 font-serif">
-          11. Data Retention
+          12. Data Retention
         </h2>
         <p className="text-muted-foreground leading-relaxed mb-4">
           We will retain your Personal Data only for as long as is necessary for
@@ -470,7 +510,7 @@ export default async function PrivacyPage() {
         className="scroll-mt-28 mb-12 pb-8 border-b border-border/30"
       >
         <h2 className="text-2xl font-semibold mb-4 font-serif">
-          12. Your Data Rights
+          13. Your Data Rights
         </h2>
         <p className="text-muted-foreground mb-4 leading-relaxed">
           Depending on your location, you may have the following rights
@@ -494,7 +534,7 @@ export default async function PrivacyPage() {
         className="scroll-mt-28 mb-12 pb-8 border-b border-border/30"
       >
         <h2 className="text-2xl font-semibold mb-4 font-serif">
-          13. Changes to This Privacy Policy
+          14. Changes to This Privacy Policy
         </h2>
         <p className="text-muted-foreground leading-relaxed">
           We may update our Privacy Policy from time to time. We will notify you
@@ -509,7 +549,7 @@ export default async function PrivacyPage() {
 
       <section id="contact" className="scroll-mt-28 mb-12">
         <h2 className="text-2xl font-semibold mb-4 font-serif">
-          14. Contact Us
+          15. Contact Us
         </h2>
         <p className="text-muted-foreground leading-relaxed">
           If you have any questions about this privacy policy, please contact us
