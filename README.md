@@ -150,10 +150,8 @@ Follow these steps to get the project running locally.
     npm run test:email -- your-email@example.com
     ```
 
-## Contributing
-
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to submit a pull request and our code of conduct.
-
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Envault is source-available under the Functional Source License (FSL). You are free to read the code, audit it for security, and self-host it for your own internal use. You are strictly prohibited from using this code to offer a competing commercial service. After 24 months, the license for specific versions automatically converts to the MIT License.
+
+See the [LICENSE](LICENSE) file for the complete license text.

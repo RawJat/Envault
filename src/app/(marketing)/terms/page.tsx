@@ -1,4 +1,5 @@
 import { LegalLayout } from "@/components/legal/LegalLayout";
+import { Link } from "next-view-transitions";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -17,6 +18,7 @@ const sections = [
   { id: "agreement", title: "Agreement to Terms" },
   { id: "accounts", title: "Accounts" },
   { id: "intellectual-property", title: "Intellectual Property" },
+  { id: "licensing", title: "Source-Available License" },
   { id: "user-responsibilities", title: "User Responsibilities & Encryption" },
   { id: "authentication-methods", title: "Authentication Methods" },
   { id: "environment-management", title: "Environment Management" },
@@ -104,11 +106,53 @@ export default async function TermsPage() {
       </section>
 
       <section
+        id="licensing"
+        className="scroll-mt-28 mb-12 pb-8 border-b border-border/30"
+      >
+        <h2 className="text-2xl font-semibold mb-4 font-serif">
+          4. Source-Available License
+        </h2>
+        <p className="text-muted-foreground mb-4 leading-relaxed">
+          Envault&apos;s source code is licensed under the{" "}
+          <strong>Functional Source License (FSL), Version 1.1-MIT</strong>. This
+          source-available license allows you to:
+        </p>
+        <ul className="list-disc pl-6 space-y-2 text-muted-foreground mb-4 leading-relaxed">
+          <li>Read, review, and audit the source code</li>
+          <li>Self-host Envault for your internal use</li>
+          <li>Modify the code for your own needs</li>
+          <li>Use the CLI and integrate it into your applications</li>
+        </ul>
+        <p className="text-muted-foreground mb-4 leading-relaxed">
+          However, you <strong>cannot</strong> use Envault&apos;s code to offer a
+          competing commercial service or SaaS without permission.
+        </p>
+        <p className="text-muted-foreground leading-relaxed">
+          The license automatically converts to MIT after 24 months from each
+          release date. For more details, see our{" "}
+          <Link
+            href="/licensing"
+            className="font-mono text-sm text-foreground hover:text-primary transition-colors underline underline-offset-4"
+          >
+            Licensing Page
+          </Link>{" "}
+          or the{" "}
+          <Link
+            href="/LICENSE"
+            className="font-mono text-sm text-foreground hover:text-primary transition-colors underline underline-offset-4"
+          >
+            LICENSE
+          </Link>{" "}
+          file.
+        </p>
+      </section>
+
+      <section
         id="user-responsibilities"
         className="scroll-mt-28 mb-12 pb-8 border-b border-border/30"
       >
         <h2 className="text-2xl font-semibold mb-4 font-serif">
-          4. User Responsibilities & Encryption
+          5. User Responsibilities & Encryption
         </h2>
         <div className="bg-accent/30 border border-border/50 rounded-lg p-6 mb-4">
           <p className="text-muted-foreground leading-relaxed mb-4">
@@ -149,7 +193,7 @@ export default async function TermsPage() {
         className="scroll-mt-28 mb-12 pb-8 border-b border-border/30"
       >
         <h2 className="text-2xl font-semibold mb-4 font-serif">
-          5. Authentication Methods
+          6. Authentication Methods
         </h2>
         <p className="text-muted-foreground mb-4 leading-relaxed">
           Envault offers multiple authentication methods for your security and
@@ -188,7 +232,7 @@ export default async function TermsPage() {
         className="scroll-mt-28 mb-12 pb-8 border-b border-border/30"
       >
         <h2 className="text-2xl font-semibold mb-4 font-serif">
-          6. Environment Management
+          7. Environment Management
         </h2>
         <p className="text-muted-foreground mb-4 leading-relaxed">
           Envault enables you to organize secrets across multiple environments
@@ -233,7 +277,7 @@ export default async function TermsPage() {
         className="scroll-mt-28 mb-12 pb-8 border-b border-border/30"
       >
         <h2 className="text-2xl font-semibold mb-4 font-serif">
-          7. CLI Usage Terms
+          8. CLI Usage Terms
         </h2>
         <p className="text-muted-foreground mb-4 leading-relaxed">
           Envault provides a Command Line Interface (CLI) tool for managing
@@ -269,7 +313,7 @@ export default async function TermsPage() {
         className="scroll-mt-28 mb-12 pb-8 border-b border-border/30"
       >
         <h2 className="text-2xl font-semibold mb-4 font-serif">
-          8. Team Collaboration
+          9. Team Collaboration
         </h2>
         <p className="text-muted-foreground mb-4 leading-relaxed">
           Envault enables secure team collaboration through project sharing and
@@ -309,7 +353,7 @@ export default async function TermsPage() {
         className="scroll-mt-28 mb-12 pb-8 border-b border-border/30"
       >
         <h2 className="text-2xl font-semibold mb-4 font-serif">
-          9. Key Management & Security
+          10. Key Management & Security
         </h2>
         <div className="bg-accent/30 border border-border/50 rounded-lg p-6 mb-4">
           <p className="text-muted-foreground leading-relaxed mb-4">
@@ -346,7 +390,7 @@ export default async function TermsPage() {
         className="scroll-mt-28 mb-12 pb-8 border-b border-border/30"
       >
         <h2 className="text-2xl font-semibold mb-4 font-serif">
-          10. Notifications & Communications
+          11. Notifications & Communications
         </h2>
         <p className="text-muted-foreground leading-relaxed">
           Envault provides notification features for team collaboration,
@@ -380,7 +424,7 @@ export default async function TermsPage() {
         className="scroll-mt-28 mb-12 pb-8 border-b border-border/30"
       >
         <h2 className="text-2xl font-semibold mb-4 font-serif">
-          11. Links To Other Web Sites
+          12. Links To Other Web Sites
         </h2>
         <p className="text-muted-foreground leading-relaxed">
           Our Service may contain links to third-party web sites or services
@@ -400,7 +444,7 @@ export default async function TermsPage() {
         className="scroll-mt-28 mb-12 pb-8 border-b border-border/30"
       >
         <h2 className="text-2xl font-semibold mb-4 font-serif">
-          12. Termination
+          13. Termination
         </h2>
         <p className="text-muted-foreground leading-relaxed">
           We may terminate or suspend your account immediately, without prior
@@ -416,7 +460,7 @@ export default async function TermsPage() {
         className="scroll-mt-28 mb-12 pb-8 border-b border-border/30"
       >
         <h2 className="text-2xl font-semibold mb-4 font-serif">
-          13. Limitation of Liability
+          14. Limitation of Liability
         </h2>
         <p className="text-muted-foreground leading-relaxed">
           In no event shall Envault, nor its directors, employees, partners,
@@ -440,7 +484,7 @@ export default async function TermsPage() {
         className="scroll-mt-28 mb-12 pb-8 border-b border-border/30"
       >
         <h2 className="text-2xl font-semibold mb-4 font-serif">
-          14. Disclaimer
+          15. Disclaimer
         </h2>
         <p className="text-muted-foreground leading-relaxed">
           Your use of the Service is at your sole risk. The Service is provided
@@ -464,7 +508,7 @@ export default async function TermsPage() {
         className="scroll-mt-28 mb-12 pb-8 border-b border-border/30"
       >
         <h2 className="text-2xl font-semibold mb-4 font-serif">
-          15. Governing Law
+          16. Governing Law
         </h2>
         <p className="text-muted-foreground leading-relaxed">
           These Terms shall be governed and construed in accordance with the
@@ -480,7 +524,7 @@ export default async function TermsPage() {
         id="changes"
         className="scroll-mt-28 mb-12 pb-8 border-b border-border/30"
       >
-        <h2 className="text-2xl font-semibold mb-4 font-serif">16. Changes</h2>
+        <h2 className="text-2xl font-semibold mb-4 font-serif">17. Changes</h2>
         <p className="text-muted-foreground leading-relaxed">
           We reserve the right, at our sole discretion, to modify or replace
           these Terms at any time. If a revision is material we will try to
@@ -495,7 +539,7 @@ export default async function TermsPage() {
 
       <section id="contact" className="scroll-mt-28 mb-12">
         <h2 className="text-2xl font-semibold mb-4 font-serif">
-          17. Contact Us
+          18. Contact Us
         </h2>
         <p className="text-muted-foreground leading-relaxed">
           If you have any questions about these Terms, please contact us at{" "}
