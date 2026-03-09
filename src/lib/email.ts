@@ -102,6 +102,7 @@ export async function sendAccessRequestEmail(
     const { error } = await resend.emails.send({
       from: SENDERS.notifications,
       to,
+      replyTo: requesterEmail,
       subject: `Access Request: ${projectName}`,
       html,
     });
@@ -178,6 +179,7 @@ export async function sendInviteEmail(
   to: string,
   projectName: string,
   token: string,
+  senderEmail?: string,
 ) {
   if (process.env.NODE_ENV === "development" && !process.env.RESEND_API_KEY) {
     console.warn(
@@ -227,6 +229,7 @@ export async function sendInviteEmail(
     const { error } = await resend.emails.send({
       from: SENDERS.invites,
       to,
+      replyTo: senderEmail || to,
       subject: `You've been invited to join ${projectName} on Envault`,
       html,
     });
