@@ -114,6 +114,13 @@ export function Navbar({ user }: NavbarProps) {
               Docs
             </NavItem>
             <NavItem
+              href="/changelog"
+              className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
+              pathname={pathname}
+            >
+              Changelog
+            </NavItem>
+            <NavItem
               href="/support"
               className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
               pathname={pathname}
@@ -139,7 +146,7 @@ export function Navbar({ user }: NavbarProps) {
             <HamburgerMenu
               open={isOpen}
               onToggle={setIsOpen}
-              className="rounded-none"
+              className="rounded-none hover:bg-transparent"
             />
           </div>
         </div>
@@ -172,6 +179,14 @@ export function Navbar({ user }: NavbarProps) {
                   setIsOpen={setIsOpen}
                 >
                   Docs
+                </NavItem>
+                <NavItem
+                  href="/changelog"
+                  className="text-muted-foreground hover:text-foreground transition-colors border-b border-muted/20 text-left"
+                  pathname={pathname}
+                  setIsOpen={setIsOpen}
+                >
+                  Changelog
                 </NavItem>
                 <NavItem
                   href="/support"

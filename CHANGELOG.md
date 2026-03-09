@@ -1,0 +1,224 @@
+# Changelog
+
+All notable changes to Envault are documented here. This file is maintained by [Changesets](https://github.com/changesets/changesets) going forward.
+
+---
+
+## 1.2.0 — 2026-03-09
+
+> Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
+
+### Features
+
+- **GitHub Auto-Approval:** Viewer access requests are now automatically approved when a GitHub App installation is detected, eliminating manual review friction for low-privilege roles.
+- **CLI Verbose Mode:** Added `--verbose` / `-v` flag to CLI commands for detailed diagnostic output and improved error reporting during troubleshooting.
+- **Feedback System:** Introduced a `send-feedback` script with a dedicated Resend-powered email pipeline, including reply-to address support for two-way communication.
+- **Key Hygiene Automation:** Added a cleanup action that automatically removes retired encryption keys and completed background rotation jobs, keeping the vault lean.
+- **FSL License Transition:** Migrated to the Functional Source License (FSL-1.1-MIT), reflecting Envault's transition to a source-available commercial model. Updated all file headers and documentation.
+- **CLI Audit Command:** Implemented `envault audit` for automated git hygiene checks, scanning repositories for accidentally committed `.env` files.
+- **Site-wide OpenGraph:** Added `siteName` to all OpenGraph metadata entries for richer link previews across social platforms.
+- **Orb Animation Optimisation:** Refactored the hero orb animation to use an efficient lazy-loading strategy, significantly reducing initial page load cost.
+
+### Improvements
+
+- **Type Safety:** Strengthened API route and component type annotations across the codebase, eliminating implicit `any` and improving IDE inference.
+- **Admin Role Simplification:** Consolidated admin role checks into a single shared utility, reducing duplication across server components.
+
+---
+
+## 1.1.0 — 2026-03-03
+
+> Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
+
+### Features
+
+- **Responsive Navbar:** Fully rebuilt navigation with mobile hamburger menu, smooth overlay animations, and scroll-aware styling transitions.
+- **Animated Theme Toggler:** Introduced a custom animated light/dark mode toggle with smooth icon morphing, integrated into both desktop and mobile layouts.
+- **View Transitions:** Integrated `next-view-transitions` for native browser transition animations between routes, removing flicker and improving perceived performance.
+- **OG Image Generation API:** Implemented a `/api/og` route using `@vercel/og` for dynamic Open Graph image generation, wired across all major pages.
+- **System Status Banner:** Added a global system status banner that appears contextually on relevant routes, surfacing active incidents to users without requiring navigation.
+- **`RootRefreshHandler`:** Introduced a component that triggers a full page reload when users navigate away from the docs route via browser history, ensuring clean state.
+- **Global Search Command Palette:** Improved the global search dialog UX with keyboard navigation, accessibility enhancements, and smoother open/close transitions.
+
+### Fixes
+
+- Resolved view transition flicker on navigations triggered by the browser back button.
+- Fixed jumping icon animations in the status page cards, replaced with smooth slide transitions.
+- Fixed footer logo to match the landing page aesthetic.
+
+### Refactors
+
+- Consolidated date formatting across the application into a single unified `DateDisplay` component.
+- Moved marketing pages into a shared route group (`(marketing)`) for persistent layouts and cleaner routing.
+- Removed Supabase client dependencies from legal pages, reducing unnecessary server round-trips.
+
+---
+
+## 1.0.0 — 2026-02-28
+
+> Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
+
+### Features
+
+- **Non-Blocking CLI Updates:** CLI now checks for updates in the background without blocking command execution. Update notifications appear after the command completes.
+- **GitHub App Integration:** Implemented full GitHub App installation flow for linking repositories to Envault projects, enabling automated access management.
+- **CLI Auto-Refresh Sessions:** Implemented rolling session auto-refresh for the CLI with CI/CD service token guardrails, allowing Envault to be used in automated pipelines without re-authentication.
+- **CLI Workspace Mode:** Enhanced `envault init` with workspace-aware project creation — supports selecting a default environment during setup for streamlined multi-environment workflows.
+- **CLI Environment Management:** Added dedicated CLI commands for managing project environments, enabling environment-scoped secret operations without opening the web UI.
+- **JIT Access:** Introduced a JIT access request workflow — users can request project access which owners approve or deny, with pending requests auto-cleaned on approval.
+- **System Status Page:** Launched a dedicated `/status` page with real-time health indicators, incident timeline, and admin management view.
+- **Shared Data Validation Schemas:** Centralised Zod schemas for shared API validation across CLI and web application endpoints.
+- **Email Digest Cron Job:** Added a `/api/cron` endpoint for scheduled email digests, secured with Vercel cron authentication.
+- **Resend Multi-Sender Support:** Refactored email configuration to route different notification types through dedicated Resend sender identities.
+
+### Security
+
+- **HTTPS Enforcement for CLI:** CLI API connections now enforce HTTPS in all production environments.
+- **Production Security Headers:** Added strict security headers (`X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, CSP extensions) to the Next.js configuration.
+
+---
+
+## 0.9.0 — 2026-02-22
+
+> Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
+
+### Features
+
+- **WebAuthn / Passkeys:** Implemented full WebAuthn (FIDO2) passwordless authentication — users can register biometric or hardware passkeys and log in without a password.
+- **HMAC Request Signing:** Introduced HMAC-SHA256 signing for sensitive API requests, with a client-side `HmacProvider` injecting signatures into request headers, enforced by a strict CSP.
+- **Slug-Based Project Routing:** Migrated project URLs from internal IDs to human-readable slugs (`/[handle]/[project-slug]`), matching GitHub-style semantic routing.
+- **User Profiles:** Introduced user profile records (handle, display name, avatar) created automatically on signup, powering the new URL scheme.
+- **Email via Resend:** Integrated the Resend email API with branded templates for signup confirmation, password reset, and reauthentication flows.
+- **Support Page:** Added a dedicated `/support` page with integrated troubleshooting options, accessible from the footer and settings.
+
+### Changes
+
+- Removed the reauthentication flow, replaced by the WebAuthn/passkey architecture.
+- Consolidated key rotation to use chunked processing with a Redis-backed job queue for reliable large-vault rotations.
+
+---
+
+## 0.8.0 — 2026-02-12
+
+> Authors: Dinanath Dash (DinanathDash)
+
+### Features
+
+- **Status Page Incident Timeline:** Refactored the status page incident view into a dedicated `Timeline` component with visual severity indicators and chronological ordering.
+- **Comprehensive System Status:** Launched the foundational system status infrastructure with an admin view for creating and managing incidents.
+- **Page Transitions:** Implemented full-page enter/exit transition animations using Framer Motion, wired to the Next.js App Router's navigation events.
+- **Go CLI:** Published the Envault Go CLI (`cli-go`) — a high-performance binary for managing secrets from the terminal. Distributed via an npm wrapper (`@dinanathdash/envault`) and Homebrew.
+- **CLI JIT Offline Cache:** CLI now caches project and secret metadata locally for resilience when the Envault API is temporarily unreachable.
+
+### Security
+
+- Removed global middleware; authentication enforcement moved to per-route server components for more granular, predictable access control.
+
+---
+
+## 0.7.0 — 2026-02-07
+
+> Authors: Dinanath Dash (DinanathDash)
+
+### Features
+
+- **Fumadocs Integration:** Migrated documentation to [Fumadocs](https://fumadocs.vercel.app/), enabling MDX-powered docs with full-text search, versioning, and a structured sidebar.
+- **Mermaid Diagram Support:** Added `mermaid` rendering support inside documentation pages for architecture and flow diagrams.
+- **`AnimatedWorkflow` Component:** Built an interactive animated workflow diagram for the landing page, visually communicating the Envault secret sync flow.
+- **Custom 404 Page:** Implemented a branded, animated Not Found page with navigation recovery options.
+- **Middleware — Auth & Routing:** Added global Next.js middleware for session-based authentication gating and static file exclusion rules.
+
+---
+
+## 0.6.0 — 2026-02-04
+
+> Authors: Dinanath Dash (DinanathDash)
+
+### Features
+
+- **Keyboard-First Navigation:** Implemented a comprehensive, conflict-free hotkey system across the entire application with configurable bindings and a visual shortcut reference.
+- **`Kbd` Hints:** Added inline keyboard shortcut hints (`<Kbd>`) throughout the UI so users can discover shortcuts contextually.
+- **Global Search Dialog:** Introduced a `⌘ + K` command palette for instant navigation across projects and settings.
+- **Notification System:** Built a full notification system with database schema, real-time subscription via Supabase, dedicated UI panel, and skeleton loaders.
+- **Redis Permissions Caching:** Introduced Redis-backed caching for role/permission lookups, significantly reducing database load for high-frequency access control checks.
+- **CLI `init` Refactor:** Reworked the CLI `init` command to offer interactive project selection and improved device authentication window lifecycle management.
+
+---
+
+## 0.5.0 — 2026-02-03
+
+> Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
+
+### Features
+
+- **Project & Secret Sharing:** Implemented full project and secret sharing flows with access request forms, approval dialogs, and a join page for invited users.
+- **Role-Based Access Control (RBAC):** Formalised Owner / Editor / Viewer roles with Row-Level Security enforcement in Supabase.
+- **Env Variable Editor Overhaul:** Enhanced the environment variable table with bulk import, inline editing, store-based state management, and improved UX feedback.
+- **Tailwind CSS v4 Upgrade:** Migrated the entire styling system to Tailwind CSS v4, updating all configuration files, CSS imports, and component classes.
+- **Email Templates:** Updated and expanded email templates for access invitations and project notifications.
+- **Dependabot:** Added Dependabot configuration for automated dependency update PRs across both `root` and `cli` directories.
+
+### Fixes
+
+- Resolved RLS policy recursion causing performance degradation on permission-heavy queries.
+
+---
+
+## 0.4.0 — 2026-02-01
+
+> Authors: Dinanath Dash (DinanathDash)
+
+### Features
+
+- **CLI Device Authentication:** Implemented the OAuth 2.0 Device Authorization flow for CLI login — users authenticate in the browser and the CLI polls for token confirmation.
+- **CLI API Routes:** Added dedicated Next.js API routes for CLI interactions: `/api/cli/projects`, `/api/cli/secrets`, `/api/cli/me`, and `/api/cli/environments`.
+- **Clipboard Support for Login:** CLI login now copies the device code to the clipboard automatically on supported platforms.
+- **`envault deploy` & `envault pull`:** Added CLI commands to push local `.env` files to a project environment and pull secrets to a local file.
+
+---
+
+## 0.3.0 — 2026-01-25
+
+> Authors: Dinanath Dash (DinanathDash)
+
+### Features
+
+- **Preloader & Skeleton UIs:** Added a full-screen preloader with global loading state, and skeleton components for the dashboard and project views to improve perceived performance.
+- **Open Graph & Twitter Cards:** Implemented OG/Twitter image metadata across all pages, including a new `open-graph.png` asset.
+- **Amber Theme:** Applied a cohesive amber/gold accent theme to the landing page for a distinctive premium aesthetic.
+- **Session Monitoring Optimisation:** Scoped session monitoring to non-public routes, stopping unnecessary auth pings on the marketing site.
+- **Upstash Redis Integration:** Integrated Upstash Redis for high-performance key caching and job queue management in key rotation workflows.
+- **Vercel Analytics:** Added Vercel Analytics for privacy-friendly pageview tracking.
+
+---
+
+## 0.2.0 — 2026-01-06
+
+> Authors: Dinanath Dash (DinanathDash)
+
+### Features
+
+- **Key Wrapping & Rotation:** Implemented a full hierarchical encryption model — a Master Key encrypts unique per-project Data Keys. Data Keys can be rotated with a background scavenger process that re-encrypts all secrets using chunked processing.
+- **GitHub Authentication:** Added GitHub OAuth as an alternative sign-in provider via Supabase Auth.
+- **Variable Visibility Toggle:** Users can now reveal/mask individual secret values inline within the environment variable table.
+- **Tooltip Component:** Added a reusable `<Tooltip>` component used throughout the variable table and action buttons.
+- **.env File Download:** Implemented one-click `.env` file download for a project environment, generating a correctly formatted plaintext file.
+- **Password Reset & Email Confirmation:** Built complete auth recovery flows including forgot-password, email confirmation, and password update pages with new UI components.
+- **Project Governance Documents:** Added `SECURITY.md`, `CODE_OF_CONDUCT.md`, and updated `README.md` with full architecture documentation.
+
+---
+
+## 0.1.0 — 2026-01-03
+
+> Authors: Dinanath Dash (DinanathDash)
+
+### Initial Release
+
+- **Core Application Scaffold:** Bootstrapped with Next.js 15 App Router, TypeScript, Tailwind CSS, and Shadcn UI component library.
+- **User Authentication:** Full email/password authentication powered by Supabase Auth, including signup, login, and session management via SSR-compatible cookies.
+- **Project Management:** Users can create, view, and delete projects — organisational units for grouping related environment variables.
+- **Environment Variable Vault:** Core secret storage with AES-256-GCM authenticated encryption. Each secret is encrypted with a project-scoped Data Key before being persisted to the database.
+- **Bulk `.env` Import:** Paste or upload a raw `.env` file and Envault parses, encrypts, and stores all key-value pairs in a single operation.
+- **UI Component Library:** Established the full Shadcn/Radix UI component foundation: `Button`, `Dialog`, `Input`, `Card`, `Badge`, `DropdownMenu`, `Avatar`, and more.
+- **Async Secret Decryption:** Secrets are decrypted on-demand in the browser — plaintext values are never persisted to the client beyond the active session.
+- **User Sign-Out:** Secure server-side sign-out with session invalidation and redirect to the login page.

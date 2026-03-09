@@ -96,6 +96,15 @@ export function Footer({ user }: FooterProps) {
               </li>
               <li>
                 <FooterLink
+                  href="/changelog"
+                  className="hover:text-foreground transition-colors"
+                  pathname={pathname}
+                >
+                  Changelog
+                </FooterLink>
+              </li>
+              <li>
+                <FooterLink
                   href="/support"
                   className="hover:text-foreground transition-colors"
                   pathname={pathname}
@@ -157,8 +166,8 @@ export function Footer({ user }: FooterProps) {
               className="font-medium underline underline-offset-4"
             >
               Dinanath
-            </a>
-            {" "}&amp;{" "}
+            </a>{" "}
+            &amp;{" "}
             <a
               href="https://github.com/RawJat"
               target="_blank"

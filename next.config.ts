@@ -6,6 +6,8 @@ const withMDX = createMDX();
 const isDev = process.env.NODE_ENV === "development";
 
 const nextConfig: NextConfig = {
+  transpilePackages: ["next-mdx-remote"],
+
   // React Compiler is great for production but adds overhead per-file in dev.
   // Disable it in dev to speed up Turbopack compilation.
   reactCompiler: !isDev,
