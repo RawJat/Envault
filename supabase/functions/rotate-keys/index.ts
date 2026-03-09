@@ -91,9 +91,12 @@ Deno.serve(async (req: Request) => {
     // Actions:
     // 'roll_key': Explicitly creates a new key and sets it as active.
     // 'scavenge': Default. Finds secrets encrypted with OLD keys and rotates them to the ACTIVE key.
+    // 'cleanup': Deletes old retired keys and completed jobs to prevent table bloat.
 
     if (action === "roll_key") {
       return await rollKey(supabaseClient);
+    } else if (action === "cleanup") {
+      return await performCleanup(supabaseClient);
     } else {
       return await runScavenger(supabaseClient);
     }
@@ -323,4 +326,114 @@ async function runScavenger(supabase: SupabaseClient) {
     }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" } },
   );
+}
+
+/**
+ * [ACTION] Cleanup
+ * Deletes old retired keys (keeps the most recent 3) to prevent table bloat.
+ * This is typically run on a schedule separate from key rotation.
+ */
+async function performCleanup(supabase: SupabaseClient) {
+  console.log("[Cleanup] Starting cleanup of retired keys...");
+
+  let deletedKeysCount = 0;
+  let deletedJobsCount = 0;
+
+  try {
+    // 1. Cleanup Retired Keys (Keep last 3)
+    const { data: retiredKeys, error: keysError } = await supabase
+      .from("encryption_keys")
+      .select("id, created_at")
+      .eq("status", "retired")
+      .order("created_at", { ascending: false });
+
+    if (keysError) {
+      throw new Error(`Failed to fetch retired keys: ${keysError.message}`);
+    }
+
+    if (retiredKeys && retiredKeys.length > 3) {
+      const keysToDelete = retiredKeys.slice(3).map((k: any) => k.id);
+
+      if (keysToDelete.length > 0) {
+        const { error: delKeyError } = await supabase
+          .from("encryption_keys")
+          .delete()
+          .in("id", keysToDelete);
+
+        if (delKeyError) {
+          console.error(
+            `[Cleanup] Failed to delete keys: ${delKeyError.message}`,
+          );
+        } else {
+          deletedKeysCount = keysToDelete.length;
+          console.log(
+            `[Cleanup] Successfully deleted ${deletedKeysCount} retired keys.`,
+          );
+        }
+      }
+    }
+
+    // 2. Cleanup Completed Rotation Jobs (Keep last 3)
+    // Note: This table may or may not exist in current schema,
+    // so we wrap it in a try-catch to gracefully skip if it doesn't exist.
+    try {
+      const { data: completedJobs, error: jobsError } = await supabase
+        .from("key_rotation_jobs")
+        .select("id")
+        .eq("status", "completed")
+        .order("created_at", { ascending: false });
+
+      if (!jobsError && completedJobs && completedJobs.length > 3) {
+        const jobsToDelete = completedJobs.slice(3).map((j: any) => j.id);
+
+        if (jobsToDelete.length > 0) {
+          const { error: delJobError } = await supabase
+            .from("key_rotation_jobs")
+            .delete()
+            .in("id", jobsToDelete);
+
+          if (delJobError) {
+            console.error(
+              `[Cleanup] Failed to delete jobs: ${delJobError.message}`,
+            );
+          } else {
+            deletedJobsCount = jobsToDelete.length;
+            console.log(
+              `[Cleanup] Successfully deleted ${deletedJobsCount} completed jobs.`,
+            );
+          }
+        }
+      }
+    } catch (e) {
+      console.warn(
+        "[Cleanup] key_rotation_jobs table not found or unavailable; skipping job cleanup.",
+        e,
+      );
+    }
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        action: "cleanup",
+        deleted_keys: deletedKeysCount,
+        deleted_jobs: deletedJobsCount,
+        message: `Cleanup completed: deleted ${deletedKeysCount} keys and ${deletedJobsCount} jobs.`,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  } catch (error: unknown) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown cleanup error";
+    return new Response(
+      JSON.stringify({
+        success: false,
+        action: "cleanup",
+        error: errorMessage,
+      }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      },
+    );
+  }
 }
