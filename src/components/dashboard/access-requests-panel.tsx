@@ -20,8 +20,9 @@ import {
   Command,
 } from "lucide-react";
 import { toast } from "sonner";
-import { approveRequest, rejectRequest } from "@/app/invite-actions";
+import { rejectRequest } from "@/app/invite-actions";
 import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
 import { AccessRequestSkeleton } from "@/components/notifications/notification-skeleton";
 import { useHotkeys } from "@/hooks/use-hotkeys";
 import { Kbd } from "@/components/ui/kbd";
@@ -34,8 +35,8 @@ interface AccessRequest {
   status: string;
   created_at: string;
   projects:
-    | { name: string; user_id: string }
-    | { name: string; user_id: string }[];
+  | { name: string; user_id: string }
+  | { name: string; user_id: string }[];
   requester_email?: string;
   requester_username?: string;
 }
@@ -51,6 +52,7 @@ export function AccessRequestsPanel() {
   const [requests, setRequests] = useState<AccessRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
+  const router = useRouter();
 
   const fetchRequests = useCallback(async (shouldSetLoading = true) => {
     if (shouldSetLoading) setLoading(true);
@@ -114,23 +116,8 @@ export function AccessRequestsPanel() {
     fetchRequests(false);
   }, [fetchRequests]);
 
-  const handleApprove = async (requestId: string, projectName: string) => {
-    setProcessingIds((prev) => new Set(prev).add(requestId));
-
-    const result = await approveRequest(requestId, "viewer", true);
-
-    if (result.error) {
-      toast.error(result.error);
-    } else {
-      toast.success(`Access granted to ${projectName}`);
-      fetchRequests(); // Refresh list
-    }
-
-    setProcessingIds((prev) => {
-      const newSet = new Set(prev);
-      newSet.delete(requestId);
-      return newSet;
-    });
+  const handleApproveRedirect = (requestId: string) => {
+    router.push(`/approve/${requestId}`);
   };
 
   const handleReject = async (requestId: string, projectName: string) => {
@@ -156,10 +143,7 @@ export function AccessRequestsPanel() {
   useHotkeys("mod+enter", () => {
     if (requests.length > 0 && !processingIds.has(requests[0].id)) {
       const first = requests[0];
-      const project = Array.isArray(first.projects)
-        ? first.projects[0]
-        : first.projects;
-      handleApprove(first.id, project?.name || "Project");
+      handleApproveRedirect(first.id);
     }
   });
 
@@ -241,7 +225,7 @@ export function AccessRequestsPanel() {
                   <Button
                     size="sm"
                     variant="default"
-                    onClick={() => handleApprove(request.id, projectName)}
+                    onClick={() => handleApproveRedirect(request.id)}
                     disabled={isProcessing}
                   >
                     {isProcessing ? (
@@ -249,7 +233,7 @@ export function AccessRequestsPanel() {
                     ) : (
                       <>
                         <Check className="h-4 w-4 mr-1" />
-                        Approve
+                        Configure Access
                         {index === 0 && (
                           <div className="ml-2 hidden md:flex items-center gap-1">
                             <Kbd variant="primary" size="xs">

@@ -46,7 +46,7 @@ export default async function ApprovePage({ params }: ApprovePageProps) {
   // Fetch request details
   const { data: request, error: requestError } = await supabase
     .from("access_requests")
-    .select("*, projects!inner(user_id, name)")
+    .select("*, projects!inner(user_id, name, ui_mode)")
     .eq("id", requestId)
     .single();
 
@@ -87,8 +87,10 @@ export default async function ApprovePage({ params }: ApprovePageProps) {
   interface RequestProject {
     user_id: string;
     name: string;
+    ui_mode: string;
   }
-  const projectOwner = (request.projects as unknown as RequestProject).user_id;
+  const projectInfo = request.projects as unknown as RequestProject;
+  const projectOwner = projectInfo.user_id;
   if (projectOwner !== user.id) {
     redirect("/dashboard");
   }
@@ -100,6 +102,17 @@ export default async function ApprovePage({ params }: ApprovePageProps) {
     request.user_id,
   );
   const requesterEmail = requester?.user?.email || "Unknown User";
+
+  // Fetch project environments ONLY if advanced mode
+  let environments: string[] = [];
+  if (projectInfo.ui_mode === "advanced") {
+    const { data: environmentsData } = await admin
+      .from("project_environments")
+      .select("slug")
+      .eq("project_id", request.project_id);
+
+    environments = environmentsData?.map((e) => e.slug) || [];
+  }
 
   return (
     <AuthLayout>
@@ -120,13 +133,13 @@ export default async function ApprovePage({ params }: ApprovePageProps) {
               </span>{" "}
               wants to collaborate on{" "}
               <span className="font-medium text-foreground">
-                {(request.projects as unknown as RequestProject).name}
+                {projectInfo.name}
               </span>
               .
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <ApproveForm requestId={requestId} />
+            <ApproveForm requestId={requestId} environments={environments} />
             <Button variant="ghost" asChild className="w-full h-11">
               <Link href="/dashboard">Back to Dashboard</Link>
             </Button>

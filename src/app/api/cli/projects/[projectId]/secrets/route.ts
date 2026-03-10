@@ -108,13 +108,15 @@ export async function GET(
       // Check if member
       const { data: member } = await supabase
         .from("project_members")
-        .select("role")
+        .select("role, allowed_environments")
         .eq("project_id", projectId)
         .eq("user_id", userId)
         .single();
 
       if (member) {
-        hasFullProjectAccess = true; // Member
+        if (!member.allowed_environments || member.allowed_environments.includes(resolvedEnvironment.environment.slug)) {
+          hasFullProjectAccess = true; // Member authorized for this environment
+        }
       }
     }
 
@@ -489,6 +491,22 @@ export async function POST(
         { error: "Unauthorized: Read-only access" },
         { status: 403 },
       );
+    }
+
+    if (role !== "owner") {
+      const { data: member } = await supabase
+        .from("project_members")
+        .select("allowed_environments")
+        .eq("project_id", projectId)
+        .eq("user_id", userId)
+        .single();
+
+      if (member && member.allowed_environments && !member.allowed_environments.includes(resolvedEnvironment.environment.slug)) {
+        return NextResponse.json(
+          { error: "Unauthorized: You do not have access to this environment" },
+          { status: 403 }
+        );
+      }
     }
   }
 

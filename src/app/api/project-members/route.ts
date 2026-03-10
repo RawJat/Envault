@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
   // Fetch members using admin to bypass RLS
   const { data: membersData } = await admin
     .from("project_members")
-    .select("id, user_id, role, created_at")
+    .select("id, user_id, role, created_at, allowed_environments")
     .eq("project_id", projectId);
 
   // Fetch pending requests using admin
@@ -91,6 +91,7 @@ export async function GET(request: NextRequest) {
     created_at: string;
     email: string | undefined;
     avatar: string | undefined;
+    allowed_environments: string[] | null;
   }
 
   interface RequestWithUserData {
@@ -123,6 +124,7 @@ export async function GET(request: NextRequest) {
       created_at: new Date().toISOString(),
       email: emails[project.user_id],
       avatar: avatars[project.user_id],
+      allowed_environments: null,
     });
   }
 
