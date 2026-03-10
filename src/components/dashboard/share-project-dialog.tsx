@@ -22,8 +22,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { Copy, Share2, Check, CornerDownLeft, Loader2 } from "lucide-react";
+import { Copy, Share2, Check, CornerDownLeft, Loader2, Plus, X, ChevronDown } from "lucide-react";
 import { MemberSkeleton } from "@/components/notifications/notification-skeleton";
 import {
   inviteUser,
@@ -55,6 +61,7 @@ interface Member {
   created_at: string;
   email?: string;
   avatar?: string;
+  allowed_environments?: string[] | null;
 }
 
 interface PendingRequest {
@@ -91,6 +98,18 @@ export function ShareProjectDialog({
   >(new Map());
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [applying, setApplying] = useState(false);
+
+  const [expandedMembers, setExpandedMembers] = useState<Set<string>>(new Set());
+  const [shakeIds, setShakeIds] = useState<Set<string>>(new Set());
+  const [modalShake, setModalShake] = useState(false);
+
+  const toggleExpand = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setExpandedMembers((prev) => {
+      if (prev.has(id)) return new Set();
+      return new Set([id]);
+    });
+  };
 
   const isOwner = project.role === "owner" || !project.role;
   const hasChanges = pendingChanges.size > 0;
@@ -155,16 +174,33 @@ export function ShareProjectDialog({
     if (action === "pending") {
       // Remove change if set back to pending
       newChanges.delete(request.user_id);
+      setExpandedMembers(prev => {
+        const next = new Set(prev);
+        next.delete(request.id);
+        return next;
+      });
     } else {
+      const existingChange = newChanges.get(request.user_id);
       newChanges.set(request.user_id, {
         userId: request.user_id,
         type: action,
         currentRole: "pending",
-        newRole: action === "approve" ? "viewer" : undefined,
+        newRole: action === "approve" ? (existingChange?.newRole || "viewer") : undefined,
         email: request.email,
         avatar: request.avatar,
         requestId: request.id,
+        allowedEnvironments: action === "approve" ? existingChange?.allowedEnvironments : undefined,
       });
+
+      if (action === "approve") {
+        setExpandedMembers(new Set([request.id]));
+      } else {
+        setExpandedMembers(prev => {
+          const next = new Set(prev);
+          next.delete(request.id);
+          return next;
+        });
+      }
     }
 
     setPendingChanges(newChanges);
@@ -202,7 +238,76 @@ export function ShareProjectDialog({
     setPendingChanges(newChanges);
   };
 
+  const handleModifyEnvironments = (
+    member: Member,
+    newEnvironments: string[] | null
+  ) => {
+    if (member.role === "owner") return;
+
+    const newChanges = new Map(pendingChanges);
+    const existingChange = newChanges.get(member.user_id);
+
+    if (existingChange) {
+      newChanges.set(member.user_id, {
+        ...existingChange,
+        allowedEnvironments: newEnvironments || undefined,
+      });
+    } else {
+      newChanges.set(member.user_id, {
+        userId: member.user_id,
+        type: "role_change",
+        currentRole: member.role,
+        newRole: member.role,
+        email: member.email,
+        avatar: member.avatar,
+        allowedEnvironments: newEnvironments || undefined,
+      });
+    }
+
+    setPendingChanges(newChanges);
+  };
+
   const handleSave = () => {
+    // Validate that all "approve" and "role_change" actions have a valid role
+    const invalidRoleChanges = Array.from(pendingChanges.values()).filter(
+      (c) => c.type === "approve" && !c.newRole
+    );
+
+    // Validate that advanced projects with environments selected don't leave members with 0 environments
+    // but only validate if the role isn't 'revoke' and it's an advanced project
+    const invalidEnvChanges = project.ui_mode === "advanced" && project.environments && project.environments.length > 0
+      ? Array.from(pendingChanges.values()).filter(
+        (c) => {
+          if (c.type === "revoke") return false;
+          // For active members (role_change) or approves, they must end up with at least 1 env
+          if (c.type === "approve" || c.type === "role_change") {
+            const finalEnvs = c.allowedEnvironments !== undefined
+              ? c.allowedEnvironments
+              : getCurrentEnvironments(c.userId, null); // We don't have direct access to their member object here easily, but if they changed it, it's in c.allowedEnvironments
+
+            // If they explicitly wiped out environments, flag them
+            if (c.allowedEnvironments !== undefined && c.allowedEnvironments.length === 0) return true;
+          }
+          return false;
+        }
+      )
+      : [];
+
+    const allInvalidChanges = [...invalidRoleChanges, ...invalidEnvChanges];
+
+    if (allInvalidChanges.length > 0) {
+      const firstInvalidId = allInvalidChanges[0].requestId || allInvalidChanges[0].userId; // active members use userId for the accordion ID
+
+      if (firstInvalidId) {
+        setExpandedMembers(new Set([firstInvalidId]));
+      }
+      const invalidUserIds = new Set(allInvalidChanges.map(c => c.userId));
+      setShakeIds(invalidUserIds);
+      setTimeout(() => setShakeIds(new Set()), 500);
+      toast.error("Please explicitly assign a role and at least one environment to all active members.");
+      return;
+    }
+
     setShowConfirmation(true);
   };
 
@@ -215,18 +320,36 @@ export function ShareProjectDialog({
     for (const change of changes) {
       try {
         switch (change.type) {
-          case "approve":
-            await approveRequest(change.requestId!, "viewer", true);
+          case "approve": {
+            const res = await approveRequest(
+              change.requestId!,
+              "viewer",
+              true,
+              change.allowedEnvironments
+            );
+            if (res?.error) throw new Error(res.error);
             break;
-          case "deny":
-            await rejectRequest(change.requestId!);
+          }
+          case "deny": {
+            const res = await rejectRequest(change.requestId!);
+            if (res?.error) throw new Error(res.error);
             break;
-          case "role_change":
-            await updateMemberRole(project.id, change.userId, change.newRole!);
+          }
+          case "role_change": {
+            const res = await updateMemberRole(
+              project.id,
+              change.userId,
+              change.newRole!,
+              change.allowedEnvironments
+            );
+            if (res?.error) throw new Error(res.error);
             break;
-          case "revoke":
-            await removeMember(project.id, change.userId);
+          }
+          case "revoke": {
+            const res = await removeMember(project.id, change.userId);
+            if (res?.error) throw new Error(res.error);
             break;
+          }
         }
         successCount++;
       } catch (error) {
@@ -267,6 +390,22 @@ export function ShareProjectDialog({
     return originalValue || "";
   };
 
+  const getAllProjectEnvSlugs = () =>
+    project.environments?.map((e) => e.slug) || [];
+
+  const getCurrentEnvironments = (
+    userId: string,
+    originalEnv: string[] | null | undefined
+  ): string[] => {
+    const change = pendingChanges.get(userId);
+    if (change && change.allowedEnvironments !== undefined) {
+      return change.allowedEnvironments;
+    }
+    return originalEnv === null || originalEnv === undefined
+      ? getAllProjectEnvSlugs()
+      : originalEnv;
+  };
+
   // Shortcut for saving changes
   useHotkeys(
     "mod+s",
@@ -291,7 +430,32 @@ export function ShareProjectDialog({
             </Button>
           </DialogTrigger>
         ) : null}
-        <DialogContent className="w-[95vw] max-w-md sm:w-full">
+        <DialogContent
+          className={`w-[calc(100vw-2rem)] sm:max-w-md max-h-[90vh] overflow-y-auto ${modalShake ? 'animate-shake-dialog' : ''}`}
+          onInteractOutside={(e) => {
+            if (hasChanges) {
+              e.preventDefault();
+              toast.error("You have unsaved changes.");
+              setModalShake(false);
+              setTimeout(() => {
+                setModalShake(true);
+                setTimeout(() => setModalShake(false), 400);
+              }, 10);
+            }
+          }}
+          onEscapeKeyDown={(e) => {
+            if (hasChanges) {
+              e.preventDefault();
+              toast.error("You have unsaved changes.");
+              setModalShake(false);
+              setTimeout(() => {
+                setModalShake(true);
+                setTimeout(() => setModalShake(false), 400);
+              }, 10);
+            }
+          }}
+          hideClose={hasChanges}
+        >
           <DialogHeader>
             <DialogTitle className="text-lg sm:text-xl">
               Share {project.name}
@@ -403,51 +567,146 @@ export function ShareProjectDialog({
                           Pending Requests
                         </h4>
                         <div className="grid gap-2">
-                          {pendingRequests.map((request) => (
-                            <div
-                              key={request.id}
-                              className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 border rounded-lg bg-muted/30"
-                            >
-                              <div className="flex items-center space-x-3 flex-1 min-w-0">
-                                <UserAvatar
-                                  className="h-8 w-8 shrink-0"
-                                  user={{
-                                    email: request.email || "unknown",
-                                    avatar: request.avatar,
+                          {pendingRequests.map((request) => {
+                            const isExpanded = expandedMembers.has(request.id);
+                            const currentAction = getCurrentValue(request.user_id, "pending");
+                            const existingChange = pendingChanges.get(request.user_id);
+                            const currentRole = existingChange?.newRole || "viewer";
+
+                            const currentEnvs = existingChange?.allowedEnvironments || [];
+                            const availableEnvs = getAllProjectEnvSlugs().filter(e => !currentEnvs.includes(e));
+
+                            return (
+                              <div key={request.id} className={`flex flex-col border rounded-lg overflow-hidden transition-all bg-muted/30 ${shakeIds.has(request.user_id) ? "animate-shake border-destructive/50 ring-1 ring-destructive/50" : ""}`}>
+                                <div
+                                  className={`flex flex-col sm:flex-row sm:items-center gap-3 justify-between p-3 ${currentAction === "approve" ? "cursor-pointer hover:bg-muted/50" : ""}`}
+                                  onClick={(e) => {
+                                    if (currentAction === "approve") toggleExpand(e, request.id);
                                   }}
-                                />
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium leading-none truncate">
-                                    {request.email || "Unknown User"}
-                                  </p>
-                                </div>
-                              </div>
-                              {isOwner && (
-                                <Select
-                                  value={getCurrentValue(
-                                    request.user_id,
-                                    "pending",
-                                  )}
-                                  onValueChange={(
-                                    value: "pending" | "approve" | "deny",
-                                  ) => handleRequestAction(request, value)}
                                 >
-                                  <SelectTrigger className="w-full sm:w-32">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="pending">
-                                      Pending
-                                    </SelectItem>
-                                    <SelectItem value="approve">
-                                      Approve
-                                    </SelectItem>
-                                    <SelectItem value="deny">Deny</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              )}
-                            </div>
-                          ))}
+                                  <div className="flex items-center space-x-3 flex-1 min-w-0">
+                                    <UserAvatar className="h-8 w-8 shrink-0" user={{ email: request.email || "unknown", avatar: request.avatar }} />
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-medium leading-none truncate">{request.email || "Unknown User"}</p>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center space-x-3 justify-end shrink-0 pl-2">
+                                    {isOwner && (
+                                      <Select
+                                        value={currentAction}
+                                        onValueChange={(value: "pending" | "approve" | "deny") => handleRequestAction(request, value)}
+                                      >
+                                        <SelectTrigger className="w-full sm:w-32" onClick={(e) => e.stopPropagation()}>
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="pending">Pending</SelectItem>
+                                          <SelectItem value="approve">Approve</SelectItem>
+                                          <SelectItem value="deny">Deny</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    )}
+                                    {currentAction === "approve" && (
+                                      <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Expanded Content */}
+                                {currentAction === "approve" && (
+                                  <div className={`grid transition-all duration-200 ease-in-out ${isExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
+                                    <div className="overflow-hidden">
+                                      <div className="p-3 pt-0 flex flex-col gap-4 border-t bg-muted/10 mt-2">
+                                        <div className="flex flex-col gap-2">
+                                          <label className="text-sm font-medium">Assign Role</label>
+                                          <Select
+                                            value={currentRole as string}
+                                            onValueChange={(value: "viewer" | "editor") => {
+                                              const newChanges = new Map(pendingChanges);
+                                              const c = newChanges.get(request.user_id);
+                                              if (c) {
+                                                newChanges.set(request.user_id, { ...c, newRole: value });
+                                                setPendingChanges(newChanges);
+                                              }
+                                            }}
+                                          >
+                                            <SelectTrigger className="w-full">
+                                              <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              <SelectItem value="viewer">Viewer</SelectItem>
+                                              <SelectItem value="editor">Editor</SelectItem>
+                                            </SelectContent>
+                                          </Select>
+                                        </div>
+
+                                        {project.ui_mode === "advanced" && project.environments && project.environments.length > 0 && (
+                                          <div className="flex flex-col gap-2">
+                                            <label className="text-sm font-medium">Environment Access</label>
+                                            <div className="flex min-h-[44px] w-full items-center justify-between rounded-md border border-input bg-background px-3 py-1.5 text-sm ring-offset-background placeholder:text-muted-foreground focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+                                              <div className="flex flex-wrap gap-1.5 items-center flex-1">
+                                                {currentEnvs.length === 0 && (
+                                                  <span className="text-muted-foreground">None selected</span>
+                                                )}
+                                                {currentEnvs.map((env) => (
+                                                  <Badge key={env} variant="secondary" className="pl-2 pr-1 h-6">
+                                                    {env}
+                                                    <button
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        const newChanges = new Map(pendingChanges);
+                                                        const c = newChanges.get(request.user_id);
+                                                        if (c) {
+                                                          newChanges.set(request.user_id, { ...c, allowedEnvironments: currentEnvs.filter(e => e !== env) });
+                                                          setPendingChanges(newChanges);
+                                                        }
+                                                      }}
+                                                      className="ml-1.5 rounded-full p-0.5 hover:bg-muted-foreground/20"
+                                                      type="button"
+                                                    >
+                                                      <X className="h-3 w-3" />
+                                                    </button>
+                                                  </Badge>
+                                                ))}
+                                              </div>
+
+                                              {availableEnvs.length > 0 && (
+                                                <DropdownMenu>
+                                                  <DropdownMenuTrigger asChild>
+                                                    <button onClick={(e) => e.stopPropagation()} type="button" className="ml-2 h-6 w-6 shrink-0 bg-transparent text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors">
+                                                      <Plus className="h-4 w-4" />
+                                                    </button>
+                                                  </DropdownMenuTrigger>
+                                                  <DropdownMenuContent align="end">
+                                                    {availableEnvs.map(env => (
+                                                      <DropdownMenuItem
+                                                        key={env}
+                                                        onClick={(e) => {
+                                                          e.stopPropagation();
+                                                          const newChanges = new Map(pendingChanges);
+                                                          const c = newChanges.get(request.user_id);
+                                                          if (c) {
+                                                            newChanges.set(request.user_id, { ...c, allowedEnvironments: [...currentEnvs, env] });
+                                                            setPendingChanges(newChanges);
+                                                          }
+                                                        }}
+                                                      >
+                                                        {env}
+                                                      </DropdownMenuItem>
+                                                    ))}
+                                                  </DropdownMenuContent>
+                                                </DropdownMenu>
+                                              )}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
@@ -457,57 +716,116 @@ export function ShareProjectDialog({
                       <div className="space-y-2">
                         <h4 className="text-sm font-medium">Active Members</h4>
                         <div className="grid gap-2">
-                          {members.map((member) => (
-                            <div
-                              key={member.id}
-                              className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 border rounded-lg"
-                            >
-                              <div className="flex items-center space-x-3 flex-1 min-w-0">
-                                <UserAvatar
-                                  className="h-8 w-8 shrink-0"
-                                  user={{
-                                    email: member.email || "unknown",
-                                    avatar: member.avatar,
+                          {members.map((member) => {
+                            const isExpanded = expandedMembers.has(member.id);
+                            const currentRole = getCurrentValue(member.user_id, member.role);
+                            const currentEnvs = getCurrentEnvironments(member.user_id, member.allowed_environments);
+                            const availableEnvs = getAllProjectEnvSlugs().filter(e => !currentEnvs.includes(e));
+                            const isOwnerRole = currentRole === "owner";
+
+                            return (
+                              <div key={member.id} className={`flex flex-col border rounded-lg overflow-hidden transition-all bg-card ${shakeIds.has(member.user_id) ? "animate-shake border-destructive/50 ring-1 ring-destructive/50" : ""}`}>
+                                <div
+                                  className={`flex flex-col sm:flex-row sm:items-center gap-3 justify-between p-3 ${!isOwnerRole && isOwner ? "cursor-pointer hover:bg-muted/50" : ""}`}
+                                  onClick={(e) => {
+                                    if (!isOwnerRole && isOwner) toggleExpand(e, member.id);
                                   }}
-                                />
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium leading-none truncate">
-                                    {member.email || "Unknown User"}
-                                  </p>
-                                </div>
-                              </div>
-                              {isOwner && member.role !== "owner" ? (
-                                <Select
-                                  value={getCurrentValue(
-                                    member.user_id,
-                                    member.role,
-                                  )}
-                                  onValueChange={(
-                                    value: "viewer" | "editor" | "revoke",
-                                  ) => handleMemberRoleChange(member, value)}
                                 >
-                                  <SelectTrigger className="w-full sm:w-32">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="viewer">
-                                      Viewer
-                                    </SelectItem>
-                                    <SelectItem value="editor">
-                                      Editor
-                                    </SelectItem>
-                                    <SelectItem value="revoke">
-                                      Revoke
-                                    </SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              ) : (
-                                <Badge variant="outline" className="capitalize">
-                                  {member.role}
-                                </Badge>
-                              )}
-                            </div>
-                          ))}
+                                  <div className="flex items-center space-x-3 flex-1 min-w-0">
+                                    <UserAvatar className="h-8 w-8 shrink-0" user={{ email: member.email || "unknown", avatar: member.avatar }} />
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-medium leading-none truncate">{member.email || "Unknown User"}</p>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center space-x-3 justify-end shrink-0 pl-2">
+                                    <Badge variant={isOwnerRole ? "default" : "outline"} className="capitalize shrink-0">
+                                      {currentRole === "revoke" ? "revoking" : currentRole}
+                                    </Badge>
+                                    {isOwner && !isOwnerRole && (
+                                      <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Expanded Content */}
+                                {isOwner && !isOwnerRole && (
+                                  <div className={`grid transition-all duration-200 ease-in-out ${isExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
+                                    <div className="overflow-hidden">
+                                      <div className="p-3 pt-0 flex flex-col gap-4 border-t bg-muted/10 mt-2">
+                                        <div className="flex flex-col gap-2">
+                                          <label className="text-sm font-medium">Assign Role</label>
+                                          <Select
+                                            value={currentRole}
+                                            onValueChange={(value: "viewer" | "editor" | "revoke") => handleMemberRoleChange(member, value)}
+                                          >
+                                            <SelectTrigger className="w-full">
+                                              <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              <SelectItem value="viewer">Viewer</SelectItem>
+                                              <SelectItem value="editor">Editor</SelectItem>
+                                              <SelectItem value="revoke" className="text-destructive focus:bg-destructive/10">Revoke Access</SelectItem>
+                                            </SelectContent>
+                                          </Select>
+                                        </div>
+
+                                        {project.ui_mode === "advanced" && project.environments && project.environments.length > 0 && currentRole !== "revoke" && (
+                                          <div className="flex flex-col gap-2">
+                                            <label className="text-sm font-medium">Environment Access</label>
+                                            <div className="flex min-h-[44px] w-full items-center justify-between rounded-md border border-input bg-background px-3 py-1.5 text-sm ring-offset-background placeholder:text-muted-foreground focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+                                              <div className="flex flex-wrap gap-1.5 items-center flex-1">
+                                                {currentEnvs.length === 0 && (
+                                                  <span className="text-muted-foreground">None selected</span>
+                                                )}
+                                                {currentEnvs.map(env => (
+                                                  <Badge key={env} variant="secondary" className="pl-2 pr-1 h-6">
+                                                    {env}
+                                                    <button
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleModifyEnvironments(member, currentEnvs.filter(e => e !== env));
+                                                      }}
+                                                      className="ml-1.5 rounded-full p-0.5 hover:bg-muted-foreground/20"
+                                                      type="button"
+                                                    >
+                                                      <X className="h-3 w-3" />
+                                                    </button>
+                                                  </Badge>
+                                                ))}
+                                              </div>
+
+                                              {availableEnvs.length > 0 && (
+                                                <DropdownMenu>
+                                                  <DropdownMenuTrigger asChild>
+                                                    <button onClick={(e) => e.stopPropagation()} type="button" className="ml-2 h-6 w-6 shrink-0 bg-transparent text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors">
+                                                      <Plus className="h-4 w-4" />
+                                                    </button>
+                                                  </DropdownMenuTrigger>
+                                                  <DropdownMenuContent align="end">
+                                                    {availableEnvs.map(env => (
+                                                      <DropdownMenuItem
+                                                        key={env}
+                                                        onClick={(e) => {
+                                                          e.stopPropagation();
+                                                          handleModifyEnvironments(member, [...currentEnvs, env]);
+                                                        }}
+                                                      >
+                                                        {env}
+                                                      </DropdownMenuItem>
+                                                    ))}
+                                                  </DropdownMenuContent>
+                                                </DropdownMenu>
+                                              )}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
@@ -536,7 +854,7 @@ export function ShareProjectDialog({
             </TabsContent>
           </Tabs>
         </DialogContent>
-      </Dialog>
+      </Dialog >
 
       <ShareConfirmationDialog
         open={showConfirmation}

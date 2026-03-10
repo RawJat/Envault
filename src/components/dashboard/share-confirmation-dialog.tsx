@@ -18,6 +18,7 @@ export interface PendingChange {
     email?: string
     avatar?: string
     requestId?: string
+    allowedEnvironments?: string[]
 }
 
 interface ShareConfirmationDialogProps {
@@ -42,7 +43,7 @@ export function ShareConfirmationDialog({
 
     return (
         <AlertDialog open={open} onOpenChange={onOpenChange}>
-            <AlertDialogContent className="w-[95vw] max-w-lg sm:w-full">
+            <AlertDialogContent className="w-[calc(100vw-2rem)] sm:max-w-lg max-h-[90vh] overflow-y-auto">
                 <AlertDialogHeader>
                     <AlertDialogTitle className="text-lg sm:text-xl">Confirm Changes</AlertDialogTitle>
                     <AlertDialogDescription className="text-sm">
@@ -95,7 +96,18 @@ export function ShareConfirmationDialog({
                             <div className="space-y-1 pl-6">
                                 {roleChanges.map((change) => (
                                     <p key={change.userId} className="text-sm text-muted-foreground">
-                                        {change.email || 'User'}: <span className="capitalize">{change.currentRole}</span> → <span className="font-medium capitalize">{change.newRole}</span>
+                                        {change.email || 'User'}:{' '}
+                                        {change.currentRole !== change.newRole ? (
+                                            <>
+                                                <span className="capitalize">{change.currentRole}</span> →{' '}
+                                                <span className="font-medium capitalize">{change.newRole}</span>
+                                            </>
+                                        ) : (
+                                            <span className="font-medium capitalize">{change.currentRole}</span>
+                                        )}
+                                        {change.allowedEnvironments !== undefined && (
+                                            <span className="ml-2 text-xs opacity-70 italic">(env access updated)</span>
+                                        )}
                                     </p>
                                 ))}
                             </div>

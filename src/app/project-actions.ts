@@ -205,7 +205,7 @@ export async function renameProject(id: string, newName: string) {
         `Your project has been renamed to "${data.name}"`,
         data.id,
         user.id,
-      ).catch(() => {});
+      ).catch(() => { });
     }
   }
 
@@ -369,6 +369,22 @@ export async function getProjects(bypassCache: boolean = false) {
     ownerUsernameMap.set(profile.id, profile.username);
   });
 
+  // Step 3.8: Fetch project environments
+  const { data: allEnvironments } = await supabase
+    .from("project_environments")
+    .select("id, project_id, name, slug, is_default");
+
+  // Group environments by project
+  const environmentMap = new Map<string, Array<{ id: string, slug: string, name: string, is_default: boolean }>>();
+
+  if (allEnvironments) {
+    allEnvironments.forEach(env => {
+      const projEnvs = environmentMap.get(env.project_id) || [];
+      projEnvs.push(env);
+      environmentMap.set(env.project_id, projEnvs);
+    });
+  }
+
   // Step 4: Enrich projects with the data
   const enrichedProjects = allProjects.map((p) => {
     let role: "owner" | "editor" | "viewer" = "viewer";
@@ -398,6 +414,11 @@ export async function getProjects(bypassCache: boolean = false) {
       variables: [],
       role,
       isShared,
+      environments: environmentMap.get(p.id) || [
+        { id: "dev-fallback", slug: "development", name: "Development", is_default: true },
+        { id: "prev-fallback", slug: "preview", name: "Preview", is_default: false },
+        { id: "prod-fallback", slug: "production", name: "Production", is_default: false },
+      ],
     };
   });
 
@@ -558,7 +579,7 @@ export async function addVariable(
           `A new secret <strong>${key}</strong> was added to <strong>${projectData.name}</strong>`,
           projectData.id,
           user.id,
-        ).catch(() => {});
+        ).catch(() => { });
       }
     }
   }
@@ -686,7 +707,7 @@ export async function updateVariable(
           `A secret was updated in <strong>${projectData.name}</strong>`,
           projectData.id,
           user.id,
-        ).catch(() => {});
+        ).catch(() => { });
       }
     }
   }
@@ -782,7 +803,7 @@ export async function deleteVariable(
           `A secret was deleted from <strong>${projectData.name}</strong>`,
           projectData.id,
           user.id,
-        ).catch(() => {});
+        ).catch(() => { });
       }
     }
   }
@@ -982,7 +1003,7 @@ export async function addVariablesBulk(
             `Bulk import to <strong>${projectData.name}</strong> finished: ${summary}, ${skipped} unchanged.`,
             projectData.id,
             user.id,
-          ).catch(() => {});
+          ).catch(() => { });
         }
       }
     }
