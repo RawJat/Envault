@@ -103,9 +103,38 @@ export default async function ProjectPage({ params, searchParams }: PageProps) {
     envList.find((env) => env.is_default) ||
     envList[0];
 
-  const activeEnvironment = preferredEnvironment;
+  let activeEnvironment = preferredEnvironment;
   if (!activeEnvironment) {
     notFound();
+  }
+
+  let allowedEnvironments: string[] | null = null;
+  if (role !== "owner") {
+    const { data: member } = await supabase
+      .from("project_members")
+      .select("allowed_environments")
+      .eq("project_id", id)
+      .eq("user_id", user.id)
+      .single();
+
+    if (member && Array.isArray(member.allowed_environments)) {
+      allowedEnvironments = member.allowed_environments as string[];
+
+      if (!allowedEnvironments.includes(activeEnvironment.slug)) {
+        if (requestedEnvSlug && requestedEnvSlug === activeEnvironment.slug) {
+          notFound();
+        } else {
+          const firstAllowed = envList.find((env) =>
+            allowedEnvironments!.includes(env.slug)
+          );
+          if (firstAllowed) {
+            activeEnvironment = firstAllowed;
+          } else {
+            notFound();
+          }
+        }
+      }
+    }
   }
 
   // Fetch secrets separately
@@ -252,12 +281,14 @@ export default async function ProjectPage({ params, searchParams }: PageProps) {
     default_environment_slug:
       project.default_environment_slug || activeEnvironment.slug,
     active_environment_slug: activeEnvironment.slug,
-    environments: envList.map((env) => ({
-      id: env.id,
-      slug: env.slug,
-      name: env.name,
-      is_default: env.is_default,
-    })),
+    environments: envList
+      .filter((env) => !allowedEnvironments || allowedEnvironments.includes(env.slug))
+      .map((env) => ({
+        id: env.id,
+        slug: env.slug,
+        name: env.name,
+        is_default: env.is_default,
+      })),
     createdAt: project.created_at,
     role: role,
     variables: await Promise.all(

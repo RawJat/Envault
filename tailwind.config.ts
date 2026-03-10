@@ -80,10 +80,22 @@ const config: Config = {
                     from: { height: "var(--radix-accordion-content-height)" },
                     to: { height: "0" },
                 },
+                "shake": {
+                    "0%, 100%": { transform: "translateX(0)" },
+                    "10%, 30%, 50%, 70%, 90%": { transform: "translateX(-4px)" },
+                    "20%, 40%, 60%, 80%": { transform: "translateX(4px)" },
+                },
+                "shake-dialog": {
+                    "0%, 100%": { transform: "translate(-50%, -50%)" },
+                    "10%, 30%, 50%, 70%, 90%": { transform: "translate(calc(-50% - 4px), -50%)" },
+                    "20%, 40%, 60%, 80%": { transform: "translate(calc(-50% + 4px), -50%)" },
+                },
             },
             animation: {
                 "accordion-down": "accordion-down 0.4s cubic-bezier(0.16,1,0.3,1)",
                 "accordion-up": "accordion-up 0.4s cubic-bezier(0.16,1,0.3,1)",
+                "shake": "shake 0.4s ease-in-out",
+                "shake-dialog": "shake-dialog 0.4s ease-in-out",
             },
         },
     },

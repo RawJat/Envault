@@ -118,6 +118,7 @@ export async function approveRequest(
   requestId: string,
   role: "viewer" | "editor",
   notifyUser: boolean = false,
+  allowedEnvironments?: string[],
 ) {
   const supabase = await createClient();
   const {
@@ -165,12 +166,18 @@ export async function approveRequest(
   }
 
   // 1. Add to Project Members (Use Admin for reliability)
-  const { error: memberError } = await admin.from("project_members").insert({
+  const insertData: any = {
     project_id: request.project_id!,
     user_id: request.user_id,
     role: role,
     added_by: user.id,
-  });
+  };
+
+  if (allowedEnvironments !== undefined) {
+    insertData.allowed_environments = allowedEnvironments;
+  }
+
+  const { error: memberError } = await admin.from("project_members").insert(insertData);
 
   if (memberError) {
     return { error: memberError.message };
@@ -359,6 +366,7 @@ export async function updateMemberRole(
   projectId: string,
   memberUserId: string,
   newRole: "viewer" | "editor",
+  allowedEnvironments?: string[],
 ) {
   const supabase = await createClient();
   const {
@@ -373,13 +381,36 @@ export async function updateMemberRole(
 
   if (role !== "owner") return { error: "Unauthorized" };
 
-  const { error } = await supabase
-    .from("project_members")
-    .update({ role: newRole })
-    .eq("project_id", projectId)
-    .eq("user_id", memberUserId);
+  const updateData: any = { role: newRole };
 
-  if (error) return { error: error.message };
+  if (allowedEnvironments !== undefined) {
+    updateData.allowed_environments = allowedEnvironments;
+  }
+
+  console.log("updateMemberRole: Attempting to update", {
+    projectId,
+    memberUserId,
+    updateData,
+  });
+
+  const { data, error } = await supabase
+    .from("project_members")
+    .update(updateData)
+    .eq("project_id", projectId)
+    .eq("user_id", memberUserId)
+    .select();
+
+  console.log("updateMemberRole: Supabase response", { data, error });
+
+  if (error) {
+    console.error("updateMemberRole error:", error);
+    return { error: error.message };
+  }
+
+  if (!data || data.length === 0) {
+    console.error("updateMemberRole: No rows updated. Possibly an RLS issue or mismatched IDs.");
+    return { error: "No rows were updated. Check permissions or if the user exists in the project." };
+  }
 
   // Invalidate caches for the member whose role changed
   await cacheDel(CacheKeys.userProjectRole(memberUserId, projectId));
