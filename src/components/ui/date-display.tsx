@@ -2,7 +2,6 @@
 
 import { formatDistanceToNow, format } from "date-fns";
 import { useEffect, useState } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 interface DateDisplayProps {
@@ -27,8 +26,12 @@ export function DateDisplay({
 
   if (!mounted) {
     return (
-      <Skeleton
-        className={cn("h-4 w-24 inline-block align-middle", className)}
+      <span
+        className={cn(
+          "inline-block h-4 w-24 animate-pulse rounded-md bg-muted align-middle",
+          className,
+        )}
+        aria-hidden="true"
       />
     );
   }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { auditReadRateLimit } from "@/lib/ratelimit";
 import { getProjectRole } from "@/lib/permissions";
 
@@ -23,6 +24,7 @@ export async function GET(
     }
 
     const supabase = await createClient();
+    const adminSupabase = createAdminClient();
 
     const {
       data: { user },
@@ -65,16 +67,19 @@ export async function GET(
         let actorEmail = "";
 
         if (log.actor_type === "user") {
-          // To fetch emails, we could use the edge function or profiles table if exists
-          // Envault sets up a `rpc_get_user_id` sometimes, but typically profiles are available.
           const { data: profileData } = await supabase
             .from("profiles")
-            .select("email, full_name, avatar_url")
+            .select("username")
             .eq("id", log.actor_id)
-            .single();
+            .maybeSingle();
           if (profileData) {
-            actorName = profileData.full_name || "User";
-            actorEmail = profileData.email || "";
+            actorName = profileData.username || "User";
+          }
+
+          const { data: authUserData } =
+            await adminSupabase.auth.admin.getUserById(log.actor_id);
+          if (authUserData?.user?.email) {
+            actorEmail = authUserData.user.email;
           }
         } else {
           const { data: tokenData } = await supabase
