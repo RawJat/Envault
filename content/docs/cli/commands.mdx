@@ -78,22 +78,49 @@ File resolution (if `--file` not provided):
 
 Every time `pull` writes secrets to disk it runs three automatic safeguards:
 
-1. <XCircle className="inline w-4 h-4 mr-1 text-red-500" /> **Tracked-file hard block** - if the target file is already tracked in your git repository the command **refuses to write** anything. Overwriting a tracked file would silently include secrets in your next commit. The CLI prints the exact commands needed to untrack it before retrying.
+1. <XCircle className="inline w-4 h-4 mr-1 text-red-500" /> **Tracked-file hard block**
+   - If the target file is already tracked in your git repository the command **refuses
+   to write** anything. Overwriting a tracked file would silently include secrets
+   in your next commit. The CLI prints the exact commands needed to untrack it before
+   retrying.
 
-2. <FileX className="inline w-4 h-4 mr-1 text-yellow-500" /> **Auto-gitignore** - if the target file is not already covered by `.gitignore` (or `.gitignore` does not exist), the CLI adds an entry automatically. You will see a confirmation line whenever this happens.
+2. <FileX className="inline w-4 h-4 mr-1 text-yellow-500" /> **Auto-gitignore** -
+   If the target file is not already covered by `.gitignore` (or `.gitignore` does
+   not exist), the CLI adds an entry automatically. You will see a confirmation line
+   whenever this happens.
 
-3. <GitBranch className="inline w-4 h-4 mr-1 text-green-500" /> **Pre-commit hook** - if a git repository is present and the audit hook has not been installed, it is installed automatically. If no git repository is detected yet the CLI reminds you to run `envault audit --install-hook` after `git init`.
+3. <GitBranch className="inline w-4 h-4 mr-1 text-green-500" /> **Pre-commit hook**
+   - If a git repository is present and the audit hook has not been installed, it
+   is installed automatically. If no git repository is detected yet the CLI reminds
+   you to run `envault audit --install-hook` after `git init`.
+
+### Secret ordering
+
+Secrets returned by `pull` are always sorted **alphabetically (A–Z) by key** before being written to disk. This ordering is consistent across all surfaces:
+
+- Local `.env` file written by `envault pull`
+- `.env` file downloaded from the dashboard
+- Variables displayed in the in-app project table
+- Import dialog preview and processing order
+
+This makes diffs, version-control reviews, and manual comparisons predictable regardless of the insertion order in the vault.
+
+<Callout type="info">
+  The sort is locale-aware, so keys with underscores or mixed-case prefixes
+  (e.g., `NEXT_PUBLIC_*`) sort correctly relative to other ASCII characters.
+</Callout>
 
 <Callout type="warn">
   If `pull` is blocked because the target file is tracked, remove it from the git index first:
 
-  ```bash
-  git rm --cached .env
-  echo '.env' >> .gitignore
-  git commit -m 'stop tracking .env'
-  ```
+```bash
+git rm --cached .env
+echo '.env' >> .gitignore
+git commit -m 'stop tracking .env'
+```
 
-  Then re-run `envault pull`.
+Then re-run `envault pull`.
+
 </Callout>
 
 ### Access Request Flow
@@ -141,12 +168,15 @@ Flags:
 
 Before reading a single byte from your env file, `deploy` checks whether that file is tracked in git. If it is, the command **refuses to run** and prints:
 
-> <XCircle className="inline w-4 h-4 mr-1 text-red-500" /> **BLOCKED: `.env` is tracked in your git repository.** Your secrets may already be exposed in your git history.
+> <XCircle className="inline w-4 h-4 mr-1 text-red-500" /> **BLOCKED: `.env` is tracked
+> in your git repository.** Your secrets may already be exposed in your git history.
 
 The CLI prints the exact `git rm --cached` commands needed to fix the situation and reminds you to rotate any secrets that may have been visible in your history.
 
 <Callout type="warn">
-  Once a secret has appeared in a git commit it is part of the repository history even after deletion. If `deploy` is blocked by this check, rotate the affected secrets in Envault after untracking the file.
+  Once a secret has appeared in a git commit it is part of the repository
+  history even after deletion. If `deploy` is blocked by this check, rotate the
+  affected secrets in Envault after untracking the file.
 </Callout>
 
 ---
@@ -214,11 +244,11 @@ Offline behavior:
 
 Make sure your local environment files are structurally valid and safe to commit. `audit` performs four checks:
 
-| Check | What it catches |
-|---|---|
-| **Git safety** | `.gitignore` missing or doesn't cover `.env` files |
-| **Git safety** | Any `.env` file (non-template) tracked in the git index |
-| **Key parity** | Keys in your local file that are missing from the template |
+| Check          | What it catches                                                                       |
+| -------------- | ------------------------------------------------------------------------------------- |
+| **Git safety** | `.gitignore` missing or doesn't cover `.env` files                                    |
+| **Git safety** | Any `.env` file (non-template) tracked in the git index                               |
+| **Key parity** | Keys in your local file that are missing from the template                            |
 | **Key parity** | Keys with empty or placeholder values (`TODO`, `your_api_key`, `<insert here>`, etc.) |
 
 ```bash
@@ -247,7 +277,8 @@ The hook is idempotent (safe to run multiple times), preserves any existing cont
 **You typically do not need to run this manually.** The hook is installed automatically when you run `envault init` (if a git repository is present) and whenever `envault pull` writes secrets for the first time in a new repository.
 
 <Callout type="info">
-  If you move or reinstall the Envault binary after installing the hook, re-run `envault audit --install-hook` to update the embedded path.
+  If you move or reinstall the Envault binary after installing the hook, re-run
+  `envault audit --install-hook` to update the embedded path.
 </Callout>
 
 ---

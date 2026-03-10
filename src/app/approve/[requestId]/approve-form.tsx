@@ -1,0 +1,91 @@
+"use client";
+
+import * as React from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Loader2 } from "lucide-react";
+import { approveRequest, rejectRequest } from "@/app/invite-actions";
+import { toast } from "sonner";
+
+interface ApproveFormProps {
+  requestId: string;
+}
+
+export function ApproveForm({ requestId }: ApproveFormProps) {
+  const router = useRouter();
+  const [isApproving, setIsApproving] = React.useState(false);
+  const [isDenying, setIsDenying] = React.useState(false);
+  const [role, setRole] = React.useState<"viewer" | "editor">("viewer");
+
+  const handleApprove = async () => {
+    setIsApproving(true);
+    const result = await approveRequest(requestId, role, true);
+    if (result.error) {
+      toast.error(result.error);
+      setIsApproving(false);
+      return;
+    }
+    router.push("/dashboard?approved=true");
+  };
+
+  const handleDeny = async () => {
+    setIsDenying(true);
+    await rejectRequest(requestId);
+    router.push("/dashboard?denied=true");
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col gap-2">
+        <label className="text-sm font-medium">Assign Role</label>
+        <Select
+          value={role}
+          onValueChange={(v) => setRole(v as "viewer" | "editor")}
+        >
+          <SelectTrigger className="w-full h-11">
+            <SelectValue placeholder="Select a role" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="viewer">Viewer</SelectItem>
+            <SelectItem value="editor">Editor</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button
+          className="w-full h-11 text-base"
+          onClick={handleApprove}
+          disabled={isApproving || isDenying}
+        >
+          {isApproving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {isApproving ? "Approving..." : "Approve Access"}
+        </Button>
+      </div>
+
+      <div className="relative py-2">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-background px-2 text-muted-foreground">OR</span>
+        </div>
+      </div>
+
+      <Button
+        type="button"
+        variant="destructive"
+        className="w-full h-11 text-base"
+        onClick={handleDeny}
+        disabled={isApproving || isDenying}
+      >
+        {isDenying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        {isDenying ? "Denying..." : "Deny Request"}
+      </Button>
+    </div>
+  );
+}

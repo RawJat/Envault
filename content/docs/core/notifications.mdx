@@ -114,4 +114,14 @@ For high‑volume installations, review the `supabase/migrations/20260224000001_
 
 ---
 
+## Notification Action Links
+
+All **"View Project"** buttons and deep-links in in-app notifications and email templates navigate using the human-readable project **slug** (e.g., `/project/my-project`), not the internal UUID. This means:
+
+- Clicking a "Secrets Pulled via CLI" notification takes you directly to `/project/<slug>`.
+- Email action links (CLI activity, project activity, invitation accepted, etc.) all resolve to the same slug-based URL.
+- The link remains valid after the project is renamed, as long as the slug is preserved.
+
+---
+
 For more details about how notifications integrate with other parts of the system, see the [API overview](/docs/api/overview) or inspect the source code under `src/lib/notifications.ts`.
