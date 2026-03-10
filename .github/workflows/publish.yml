@@ -5,34 +5,34 @@ on:
     branches:
       - main
     paths:
-      - 'cli-go/**'
-      - 'cli-wrapper/**'
-      - '.github/workflows/publish.yml'
-      - 'release.config.js'
+      - "cli-go/**"
+      - "cli-wrapper/**"
+      - ".github/workflows/publish.yml"
+      - "release.config.js"
   workflow_dispatch:
 
 permissions:
-  contents: write # Required to commit version bumps
+  contents: write
   issues: write
   pull-requests: write
-  id-token: write # Required for NPM OIDC publishing
+  id-token: write
   packages: write
 
 jobs:
   release:
-    name: Release
+    name: Release CLI
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Required for commit analysis
+          fetch-depth: 0
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.25'
+          go-version: "1.25"
           cache-dependency-path: cli-go/go.sum
 
       - name: Install GoReleaser
@@ -44,13 +44,42 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          registry-url: 'https://registry.npmjs.org'
+          registry-url: "https://registry.npmjs.org"
 
-      - name: Install dependencies
+      - name: Install semantic-release dependencies
         run: |
-            npm install --no-save semantic-release @semantic-release/commit-analyzer @semantic-release/release-notes-generator @semantic-release/npm @semantic-release/git @semantic-release/exec
+          npm install --no-save semantic-release @semantic-release/commit-analyzer @semantic-release/release-notes-generator @semantic-release/npm @semantic-release/git @semantic-release/exec
 
-      - name: Semantic Release to Wrapper & GoReleaser
+      - name: Ensure release scope is CLI-only
+        id: cli_scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          LAST_TAG="$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)"
+          if [ -z "${LAST_TAG}" ]; then
+            echo "No previous CLI tag found; allowing initial CLI release."
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          NON_CLI_FILES="$(git diff --name-only "${LAST_TAG}..HEAD" -- . \
+            ':(exclude)cli-go/**' \
+            ':(exclude)cli-wrapper/**' \
+            ':(exclude).github/workflows/publish.yml' \
+            ':(exclude)release.config.js')"
+
+          if [ -n "${NON_CLI_FILES}" ]; then
+            echo "Non-CLI changes detected since ${LAST_TAG}; skipping CLI auto-release to keep release notes CLI-only."
+            printf '%s\n' "${NON_CLI_FILES}"
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "CLI-only diff since ${LAST_TAG}; proceeding with CLI auto-release."
+          echo "should_release=true" >> "$GITHUB_OUTPUT"
+
+      - name: Semantic Release (CLI only)
+        if: steps.cli_scope.outputs.should_release == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}

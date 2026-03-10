@@ -16,23 +16,90 @@ export interface ChangelogEntry {
   authors: Author[];
 }
 
-const CATEGORY_PATTERNS: [RegExp, string][] = [
-  [/security|hmac|csp|passkey|webauthn|oauth|encrypt/i, "Security"],
-  [/cli/i, "CLI"],
-  [/github|integration/i, "Integrations"],
-  [/email|resend|digest/i, "Email"],
-  [/api|route|endpoint/i, "API"],
-  [/ui|component|design|animation|navbar|theme/i, "UI"],
-  [/doc|documentation|fumadoc/i, "Docs"],
-  [/fix|resolve|patch/i, "Fix"],
-  [/performance|cach|redis|optim/i, "Performance"],
-];
+const CATEGORY_ORDER = [
+  "Security",
+  "CLI",
+  "Integrations",
+  "Email",
+  "API",
+  "UI",
+  "Docs",
+  "Fix",
+  "Performance",
+  "Release",
+] as const;
 
-function detectCategory(text: string): string {
-  for (const [pattern, label] of CATEGORY_PATTERNS) {
-    if (pattern.test(text)) return label;
+const CATEGORY_PATTERNS: Record<(typeof CATEGORY_ORDER)[number], RegExp[]> = {
+  Security: [
+    /\bsecurity\b/gi,
+    /\bhmac\b/gi,
+    /\bcsp\b/gi,
+    /\bpasskey\b/gi,
+    /\bwebauthn\b/gi,
+    /\boauth\b/gi,
+    /\bencrypt/gi,
+    /\baudit\b/gi,
+    /\bauthori[sz]ation\b/gi,
+    /\baccess control\b/gi,
+  ],
+  CLI: [/\bcli\b/gi, /\bcommand\b/gi, /\bgoreleaser\b/gi, /\bnpm wrapper\b/gi],
+  Integrations: [/\bgithub\b/gi, /\bintegration/gi, /\bapp installation\b/gi],
+  Email: [/\bemail\b/gi, /\bresend\b/gi, /\bdigest\b/gi],
+  API: [/\bapi\b/gi, /\broute\b/gi, /\bendpoint\b/gi],
+  UI: [/\bui\b/gi, /\bcomponent\b/gi, /\bdesign\b/gi, /\banimation\b/gi, /\bnavbar\b/gi, /\btheme\b/gi],
+  Docs: [/\bdoc(s|umentation)?\b/gi, /\bfumadoc/i, /\bchangelog\b/gi, /\brelease guide\b/gi],
+  Fix: [/\bfix(es|ed)?\b/gi, /\bresolve(d)?\b/gi, /\bpatch(ed)?\b/gi],
+  Performance: [/\bperformance\b/gi, /\bcach/gi, /\bredis\b/gi, /\boptim/gi],
+  Release: [/\brelease\b/gi, /\bversion\b/gi],
+};
+
+function countMatches(text: string, pattern: RegExp): number {
+  const matches = text.match(pattern);
+  return matches ? matches.length : 0;
+}
+
+function normalizeCategory(value: string): string | null {
+  const normalized = value.trim().toLowerCase();
+  return (
+    CATEGORY_ORDER.find((category) => category.toLowerCase() === normalized) ??
+    null
+  );
+}
+
+function detectCategory(heading: string, body: string): string {
+  // Optional explicit override in heading: "## 1.2.1 — 2026-03-10 [Security]"
+  const explicitMatch = heading.match(/\[([a-z ]+)\]/i);
+  if (explicitMatch) {
+    const explicit = normalizeCategory(explicitMatch[1]);
+    if (explicit) return explicit;
   }
-  return "Release";
+
+  const scores = new Map<string, number>();
+  for (const category of CATEGORY_ORDER) scores.set(category, 0);
+
+  for (const category of CATEGORY_ORDER) {
+    if (category === "Release") continue;
+    const patterns = CATEGORY_PATTERNS[category];
+    let score = 0;
+    for (const pattern of patterns) {
+      // Heading relevance is weighted higher than body mentions.
+      score += countMatches(heading, pattern) * 3;
+      score += countMatches(body, pattern);
+    }
+    scores.set(category, score);
+  }
+
+  let bestCategory = "Release";
+  let bestScore = 0;
+  for (const category of CATEGORY_ORDER) {
+    const score = scores.get(category) ?? 0;
+    if (score > bestScore) {
+      bestScore = score;
+      bestCategory = category;
+    }
+  }
+
+  return bestCategory;
 }
 
 function formatDisplayDate(rawDate: Date): string {
@@ -82,7 +149,7 @@ export function parseChangelog(): ChangelogEntry[] {
     // Strip trailing --- separators that MDX would render as <hr>
     body = body.replace(/\n+---\s*$/, "").trim();
 
-    const category = detectCategory(body + " " + heading);
+    const category = detectCategory(heading, body);
     const slug = `v${version}`;
 
     entries.push({ version, date, rawDate, category, body, slug, authors });

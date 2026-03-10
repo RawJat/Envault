@@ -1,6 +1,29 @@
 # Changelog
 
-All notable changes to Envault are documented here. This file is maintained by [Changesets](https://github.com/changesets/changesets) going forward.
+All notable changes to Envault are documented here.
+
+---
+
+## Unreleased
+
+- No unreleased changes yet.
+
+---
+
+## 1.2.1 — 2026-03-10
+
+> Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
+
+### Features
+
+- **Immutable Audit Logs:** Added a full audit logging system with UI and API coverage, persistence schema support, and rate-limited access patterns for safer forensic visibility.
+- **Owner-Only Audit Access Controls:** Tightened access enforcement so sensitive audit operations align with strict owner-level authorization and policy boundaries.
+
+### Improvements
+
+- **Approval/Join Request UX Refactor:** Split approval and join request flows into dedicated client components with cleaner loading states and toast feedback, reducing complexity and improving operator clarity.
+- **Changelog Integration Foundation:** Added structured changelog/timeline integration for tracking post-`1.2.0` product updates in a consistent format.
+- **Hybrid Release Workflow:** Removed app-level changeset/Husky release gates and moved to manual app versioning/changelog, while keeping CLI release automation through CI.
 
 ---
 

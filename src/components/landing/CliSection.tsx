@@ -10,7 +10,7 @@ import { toast } from "sonner"
 export function CliSection() {
     const [copied, setCopied] = useState(false)
     const [cursorVisible, setCursorVisible] = useState(true)
-    const [version, setVersion] = useState("1.1.0") // Default fallback
+    const [version, setVersion] = useState<string | null>(null)
     const [authCode, setAuthCode] = useState("HZ4E-QSRZ")
 
     // Animation states
@@ -164,7 +164,7 @@ export function CliSection() {
                                 </Button>
                             </Link>
                             <div className="text-sm text-muted-foreground">
-                                v{version} released
+                                {version ? `v${version} released` : "Latest CLI release"}
                             </div>
                         </div>
                     </div>

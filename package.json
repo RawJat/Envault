@@ -1,6 +1,6 @@
 {
   "name": "envault",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,11 +9,7 @@
     "build": "npm run generate:llms && next build",
     "start": "next start",
     "lint": "eslint",
-    "test:email": "tsx scripts/send-test-email.ts",
-    "prepare": "husky",
-    "changeset": "changeset",
-    "version-packages": "changeset version",
-    "release": "changeset publish"
+    "test:email": "tsx scripts/send-test-email.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -80,8 +76,6 @@
     "zustand": "^5.0.11"
   },
   "devDependencies": {
-    "@changesets/changelog-github": "^0.6.0",
-    "@changesets/cli": "^2.30.0",
     "@types/crypto-js": "^4.2.2",
     "@types/node": "^25.2.0",
     "@types/react": "^19.2.10",
@@ -90,7 +84,6 @@
     "dotenv": "^17.3.1",
     "eslint": "^9.39.3",
     "eslint-config-next": "^16.1.6",
-    "husky": "^9.1.7",
     "playwright": "^1.58.2",
     "tsx": "^4.21.0",
     "typescript": "^5"
