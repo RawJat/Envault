@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { parseChangelog } from "@/lib/changelog-parser";
-import { serialize } from "next-mdx-remote/serialize";
 import {
   ChangelogTimeline,
   type TimelineEntry,
@@ -23,22 +22,14 @@ export const metadata: Metadata = {
 export default async function ChangelogPage() {
   const raw = parseChangelog();
 
-  const entries: TimelineEntry[] = await Promise.all(
-    raw.map(async (entry) => {
-      const mdxSource = await serialize(entry.body, {
-        parseFrontmatter: false,
-      });
-      return {
-        version: entry.version,
-        date: entry.date,
-        category: entry.category,
-        body: entry.body,
-        slug: entry.slug,
-        authors: entry.authors,
-        mdxSource,
-      };
-    }),
-  );
+  const entries: TimelineEntry[] = raw.map((entry) => ({
+    version: entry.version,
+    date: entry.date,
+    category: entry.category,
+    body: entry.body,
+    slug: entry.slug,
+    authors: entry.authors,
+  }));
 
   return <ChangelogTimeline entries={entries} />;
 }

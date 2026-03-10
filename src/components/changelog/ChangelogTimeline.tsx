@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useRef, useEffect, useState } from "react";
-import { MDXRemote, MDXRemoteSerializeResult } from "next-mdx-remote";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import Link from "next/link";
@@ -19,7 +18,6 @@ export interface TimelineEntry {
   body: string;
   slug: string;
   authors: Author[];
-  mdxSource: MDXRemoteSerializeResult;
 }
 
 interface TimelineProps {
@@ -50,38 +48,150 @@ function getBadgeStyle(category: string): string {
   return BADGE_STYLES[category.toLowerCase()] ?? BADGE_STYLES.release;
 }
 
-// ─── MDX prose components ─────────────────────────────────────────────────────
+function renderInlineMarkdown(text: string, keyPrefix: string): React.ReactNode[] {
+  const nodes: React.ReactNode[] = [];
+  const tokenPattern = /\*\*([^*]+)\*\*|`([^`]+)`|\[([^\]]+)\]\(([^)]+)\)/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  let tokenIndex = 0;
 
-const mdxComponents = {
-  h3: ({ children }: { children?: React.ReactNode }) => (
-    <h3 className="text-sm font-semibold text-foreground/80 mt-4 mb-2 uppercase tracking-wider font-mono first:mt-0">
-      {children}
-    </h3>
-  ),
-  ul: ({ children }: { children?: React.ReactNode }) => (
-    <ul className="space-y-1.5 my-2">{children}</ul>
-  ),
-  li: ({ children }: { children?: React.ReactNode }) => (
-    <li className="text-sm text-muted-foreground flex gap-2 leading-relaxed before:content-['▸'] before:text-primary/50 before:mt-0.5 before:shrink-0">
-      <span>{children}</span>
-    </li>
-  ),
-  strong: ({ children }: { children?: React.ReactNode }) => (
-    <strong className="font-semibold text-foreground/90">{children}</strong>
-  ),
-  p: ({ children }: { children?: React.ReactNode }) => (
-    <p className="text-sm text-muted-foreground leading-relaxed my-1.5">
-      {children}
-    </p>
-  ),
-  code: ({ children }: { children?: React.ReactNode }) => (
-    <code className="text-xs font-mono bg-muted/60 text-primary px-1 py-0.5 rounded-sm">
-      {children}
-    </code>
-  ),
-  blockquote: () => null,
-  hr: () => null,
-};
+  while ((match = tokenPattern.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      nodes.push(text.slice(lastIndex, match.index));
+    }
+
+    if (match[1]) {
+      nodes.push(
+        <strong
+          key={`${keyPrefix}-strong-${tokenIndex}`}
+          className="font-semibold text-foreground/90"
+        >
+          {match[1]}
+        </strong>,
+      );
+    } else if (match[2]) {
+      nodes.push(
+        <code
+          key={`${keyPrefix}-code-${tokenIndex}`}
+          className="text-xs font-mono bg-muted/60 text-primary px-1 py-0.5 rounded-sm"
+        >
+          {match[2]}
+        </code>,
+      );
+    } else if (match[3] && match[4]) {
+      const href = match[4];
+      const textValue = match[3];
+      const isInternal = href.startsWith("/");
+
+      nodes.push(
+        isInternal ? (
+          <Link
+            key={`${keyPrefix}-link-${tokenIndex}`}
+            href={href}
+            className="text-primary hover:underline underline-offset-4"
+          >
+            {textValue}
+          </Link>
+        ) : (
+          <a
+            key={`${keyPrefix}-link-${tokenIndex}`}
+            href={href}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="text-primary hover:underline underline-offset-4"
+          >
+            {textValue}
+          </a>
+        ),
+      );
+    }
+
+    lastIndex = tokenPattern.lastIndex;
+    tokenIndex += 1;
+  }
+
+  if (lastIndex < text.length) {
+    nodes.push(text.slice(lastIndex));
+  }
+
+  return nodes;
+}
+
+function renderMarkdownBody(markdown: string): React.ReactNode {
+  const lines = markdown
+    .split("\n")
+    .map((line) => line.trimEnd())
+    .filter((line) => line !== "---");
+  const blocks: React.ReactNode[] = [];
+
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i].trim();
+
+    if (!line) {
+      i += 1;
+      continue;
+    }
+
+    if (line.startsWith("### ")) {
+      blocks.push(
+        <h3
+          key={`h3-${i}`}
+          className="text-sm font-semibold text-foreground/80 mt-4 mb-2 uppercase tracking-wider font-mono first:mt-0"
+        >
+          {line.slice(4)}
+        </h3>,
+      );
+      i += 1;
+      continue;
+    }
+
+    if (line.startsWith("- ")) {
+      const items: string[] = [];
+      while (i < lines.length && lines[i].trim().startsWith("- ")) {
+        items.push(lines[i].trim().slice(2));
+        i += 1;
+      }
+
+      blocks.push(
+        <ul key={`ul-${i}`} className="space-y-1.5 my-2">
+          {items.map((item, itemIndex) => (
+            <li
+              key={`li-${i}-${itemIndex}`}
+              className="text-sm text-muted-foreground flex gap-2 leading-relaxed before:content-['▸'] before:text-primary/50 before:mt-0.5 before:shrink-0"
+            >
+              <span>{renderInlineMarkdown(item, `li-${i}-${itemIndex}`)}</span>
+            </li>
+          ))}
+        </ul>,
+      );
+      continue;
+    }
+
+    const paragraphLines: string[] = [];
+    while (
+      i < lines.length &&
+      lines[i].trim() &&
+      !lines[i].trim().startsWith("### ") &&
+      !lines[i].trim().startsWith("- ")
+    ) {
+      paragraphLines.push(lines[i].trim());
+      i += 1;
+    }
+
+    const paragraph = paragraphLines.join(" ");
+    blocks.push(
+      <p
+        key={`p-${i}`}
+        className="text-sm text-muted-foreground leading-relaxed my-1.5"
+      >
+        {renderInlineMarkdown(paragraph, `p-${i}`)}
+      </p>,
+    );
+  }
+
+  return blocks;
+}
 
 // ─── Circuit-path SVG ─────────────────────────────────────────────────────────
 
@@ -452,10 +562,7 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
                           </span>
                         </div>
                         <div>
-                          <MDXRemote
-                            {...entry.mdxSource}
-                            components={mdxComponents}
-                          />
+                          {renderMarkdownBody(entry.body)}
                         </div>
                         {entry.authors.length > 0 && (
                           <div className="mt-5 pt-4 border-t border-border/30 flex items-center gap-4 flex-wrap">
@@ -487,10 +594,7 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
                         </span>
                       </div>
                       <div>
-                        <MDXRemote
-                          {...entry.mdxSource}
-                          components={mdxComponents}
-                        />
+                        {renderMarkdownBody(entry.body)}
                       </div>
                       {entry.authors.length > 0 && (
                         <div className="mt-4 pt-4 border-t border-border/30 flex items-center gap-4 flex-wrap">
