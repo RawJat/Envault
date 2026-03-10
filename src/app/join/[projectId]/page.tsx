@@ -10,9 +10,9 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { createAccessRequest } from "@/app/invite-actions";
 import Link from "next/link";
 import { AuthLayout } from "@/components/auth/auth-layout";
+import { JoinForm } from "./join-form";
 import { ShieldAlert, CheckCircle2, Clock, Lock } from "lucide-react";
 import type { Metadata } from "next";
 
@@ -49,7 +49,9 @@ export async function generateMetadata({
     openGraph: {
       siteName: "Envault",
       images: [
-        `/api/og?title=${encodeURIComponent(title)}&section=Project&description=${encodeURIComponent(description)}`,
+        `/api/og?title=${encodeURIComponent(
+          title,
+        )}&section=Project&description=${encodeURIComponent(description)}`,
       ],
     },
   };
@@ -182,27 +184,7 @@ export default async function JoinPage({ params }: JoinPageProps) {
           </CardHeader>
           <CardContent className="space-y-4">
             {!existingRequest ? (
-              <form
-                action={async () => {
-                  "use server";
-                  const result = await createAccessRequest(projectId);
-                  if (result?.error) {
-                    console.error(
-                      "Failed to create access request:",
-                      result.error,
-                    );
-                    // Instead of redirect, perhaps redirect with error
-                    redirect(
-                      `/dashboard?error=${encodeURIComponent(result.error)}`,
-                    );
-                  }
-                  redirect("/dashboard?requested=true");
-                }}
-              >
-                <Button type="submit" className="w-full h-11 text-base">
-                  Request Access
-                </Button>
-              </form>
+              <JoinForm projectId={projectId} />
             ) : (
               <Button
                 disabled

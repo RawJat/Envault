@@ -346,7 +346,9 @@ export async function sendDigestEmail(
     const html = getEmailHtml({
       heading: `${period} Activity Digest`,
       content: `
-        <p>Here is a summary of activity in your Envault projects for the last ${frequency === "daily" ? "24 hours" : "7 days"}.</p>
+        <p>Here is a summary of activity in your Envault projects for the last ${
+          frequency === "daily" ? "24 hours" : "7 days"
+        }.</p>
         <div style="margin-top: 24px; text-align: left;">
           ${listItems}
           ${moreText}
@@ -446,6 +448,7 @@ export async function sendProjectActivityEmail(
   message: string,
   projectId: string,
   userId?: string,
+  projectSlug?: string,
 ) {
   if (process.env.NODE_ENV === "development" && !process.env.RESEND_API_KEY) {
     console.log(`Skipping Project Activity email in DEV: ${title}`);
@@ -467,13 +470,17 @@ export async function sendProjectActivityEmail(
     }
   }
 
+  const projectUrl = projectSlug
+    ? `/project/${projectSlug}`
+    : `/project/${projectId}`;
+
   try {
     const html = getEmailHtml({
       heading: title,
       content: `<p>${message}</p>`,
       action: {
         text: `View ${projectName}`,
-        url: `${APP_URL}/project/${projectId}`,
+        url: `${APP_URL}${projectUrl}`,
       },
       logoUrl: LOGO_URL,
     });
@@ -508,6 +515,7 @@ export async function sendCliActivityEmail(
   deviceName: string,
   projectId: string,
   userId?: string,
+  projectSlug?: string,
 ) {
   if (process.env.NODE_ENV === "development" && !process.env.RESEND_API_KEY) {
     console.log(`Skipping CLI Activity email in DEV (${action})`);
@@ -536,8 +544,16 @@ export async function sendCliActivityEmail(
 
   const description =
     action === "pulled"
-      ? `<strong>${secretCount}</strong> secret${secretCount !== 1 ? "s" : ""} were pulled from <strong>${projectName}</strong> via the CLI on <strong>${deviceName}</strong>.`
-      : `<strong>${secretCount}</strong> secret${secretCount !== 1 ? "s" : ""} were pushed to <strong>${projectName}</strong> via the CLI from <strong>${deviceName}</strong>.`;
+      ? `<strong>${secretCount}</strong> secret${
+          secretCount !== 1 ? "s" : ""
+        } were pulled from <strong>${projectName}</strong> via the CLI on <strong>${deviceName}</strong>.`
+      : `<strong>${secretCount}</strong> secret${
+          secretCount !== 1 ? "s" : ""
+        } were pushed to <strong>${projectName}</strong> via the CLI from <strong>${deviceName}</strong>.`;
+
+  const projectUrl = projectSlug
+    ? `/project/${projectSlug}`
+    : `/project/${projectId}`;
 
   try {
     const html = getEmailHtml({
@@ -545,7 +561,7 @@ export async function sendCliActivityEmail(
       content: `<p>${description}</p><p>If this wasn't you, revoke CLI access from your settings.</p>`,
       action: {
         text: `View ${projectName}`,
-        url: `${APP_URL}/project/${projectId}`,
+        url: `${APP_URL}${projectUrl}`,
       },
       footerText:
         "You're receiving this because CLI activity notifications are enabled.",
@@ -555,7 +571,9 @@ export async function sendCliActivityEmail(
     const { error } = await resend.emails.send({
       from: SENDERS.cli,
       to,
-      subject: `CLI ${action === "pulled" ? "Pull" : "Push"}: ${projectName} - Envault`,
+      subject: `CLI ${
+        action === "pulled" ? "Pull" : "Push"
+      }: ${projectName} - Envault`,
       html,
     });
     if (error) {

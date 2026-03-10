@@ -151,8 +151,9 @@ export async function createNotification({
 
   // Atomically increment cached unread count
   try {
-    const { cacheIncr, cacheDel, CacheKeys, CACHE_TTL } =
-      await import("./cache");
+    const { cacheIncr, cacheDel, CacheKeys, CACHE_TTL } = await import(
+      "./cache"
+    );
     await cacheIncr(CacheKeys.userUnreadCount(userId), CACHE_TTL.UNREAD_COUNT);
 
     // Invalidate list cache so next fetch gets this new notification
@@ -250,6 +251,7 @@ export async function createSecretAddedNotification(
   projectName: string,
   projectId: string,
   addedBy: string,
+  projectSlug: string,
 ) {
   return createNotification({
     userId,
@@ -262,7 +264,7 @@ export async function createSecretAddedNotification(
       secretKey,
       addedBy,
     },
-    actionUrl: `/dashboard/${projectId}`,
+    actionUrl: `/project/${projectSlug}`,
     actionType: "view_project",
   });
 }
@@ -276,6 +278,7 @@ export async function createSecretUpdatedNotification(
   projectName: string,
   projectId: string,
   updatedBy: string,
+  projectSlug: string,
 ) {
   return createNotification({
     userId,
@@ -288,7 +291,7 @@ export async function createSecretUpdatedNotification(
       secretKey,
       updatedBy,
     },
-    actionUrl: `/dashboard/${projectId}`,
+    actionUrl: `/project/${projectSlug}`,
     actionType: "view_project",
   });
 }
@@ -302,6 +305,7 @@ export async function createSecretDeletedNotification(
   projectName: string,
   projectId: string,
   deletedBy: string,
+  projectSlug: string,
 ) {
   return createNotification({
     userId,
@@ -314,7 +318,7 @@ export async function createSecretDeletedNotification(
       secretKey,
       deletedBy,
     },
-    actionUrl: `/dashboard/${projectId}`,
+    actionUrl: `/project/${projectSlug}`,
     actionType: "view_project",
   });
 }
@@ -329,6 +333,7 @@ export async function createBulkOperationNotification(
   projectName: string,
   projectId: string,
   performedBy: string,
+  projectSlug: string,
 ) {
   return createNotification({
     userId,
@@ -342,7 +347,7 @@ export async function createBulkOperationNotification(
       count,
       performedBy,
     },
-    actionUrl: `/dashboard/${projectId}`,
+    actionUrl: `/project/${projectSlug}`,
     actionType: "view_project",
   });
 }
@@ -359,6 +364,7 @@ export async function createProjectCreatedNotification(
   projectName: string,
   projectId: string,
   createdBy: string,
+  projectSlug: string,
 ) {
   return createNotification({
     userId,
@@ -370,7 +376,7 @@ export async function createProjectCreatedNotification(
       projectId,
       createdBy,
     },
-    actionUrl: `/dashboard/${projectId}`,
+    actionUrl: `/project/${projectSlug}`,
     actionType: "view_project",
   });
 }
@@ -384,6 +390,7 @@ export async function createProjectRenamedNotification(
   newName: string,
   projectId: string,
   renamedBy: string,
+  projectSlug: string,
 ) {
   return createNotification({
     userId,
@@ -397,7 +404,7 @@ export async function createProjectRenamedNotification(
       newName,
       renamedBy,
     },
-    actionUrl: `/dashboard/${projectId}`,
+    actionUrl: `/project/${projectSlug}`,
     actionType: "view_project",
   });
 }
@@ -432,6 +439,7 @@ export async function createMemberJoinedNotification(
   projectName: string,
   projectId: string,
   role: string,
+  projectSlug: string,
 ) {
   return createNotification({
     userId,
@@ -444,7 +452,7 @@ export async function createMemberJoinedNotification(
       memberEmail,
       role,
     },
-    actionUrl: `/dashboard/${projectId}`,
+    actionUrl: `/project/${projectSlug}`,
     actionType: "view_project",
   });
 }
@@ -457,6 +465,7 @@ export async function createMemberLeftNotification(
   memberEmail: string,
   projectName: string,
   projectId: string,
+  projectSlug: string,
 ) {
   return createNotification({
     userId,
@@ -468,7 +477,7 @@ export async function createMemberLeftNotification(
       projectId,
       memberEmail,
     },
-    actionUrl: `/dashboard/${projectId}`,
+    actionUrl: `/project/${projectSlug}`,
     actionType: "view_project",
   });
 }
@@ -483,6 +492,7 @@ export async function createRoleChangedNotification(
   oldRole: string,
   newRole: string,
   changedBy: string,
+  projectSlug: string,
 ) {
   const isUpgrade =
     ["viewer", "editor", "owner"].indexOf(newRole) >
@@ -500,7 +510,7 @@ export async function createRoleChangedNotification(
       newRole,
       changedBy,
     },
-    actionUrl: `/dashboard/${projectId}`,
+    actionUrl: `/project/${projectSlug}`,
     actionType: "view_project",
   });
 }
@@ -518,15 +528,18 @@ export async function createSecretsPulledNotification(
   projectId: string,
   deviceName: string,
   count: number,
+  projectSlug: string,
 ) {
   return createNotification({
     userId,
     type: "secrets_pulled",
     title: "Secrets Pulled via CLI",
-    message: `${count} secret${count !== 1 ? "s" : ""} pulled from ${projectName} on ${deviceName}`,
+    message: `${count} secret${
+      count !== 1 ? "s" : ""
+    } pulled from ${projectName} on ${deviceName}`,
     variant: "info",
     metadata: { projectId, deviceName, count },
-    actionUrl: `/project/${projectId}`,
+    actionUrl: `/project/${projectSlug}`,
     actionType: "view_project",
   });
 }
@@ -540,15 +553,18 @@ export async function createSecretsPushedNotification(
   projectId: string,
   deviceName: string,
   count: number,
+  projectSlug: string,
 ) {
   return createNotification({
     userId,
     type: "secrets_pushed",
     title: "Secrets Pushed via CLI",
-    message: `${count} secret${count !== 1 ? "s" : ""} pushed to ${projectName} from ${deviceName}`,
+    message: `${count} secret${
+      count !== 1 ? "s" : ""
+    } pushed to ${projectName} from ${deviceName}`,
     variant: "info",
     metadata: { projectId, deviceName, count },
-    actionUrl: `/project/${projectId}`,
+    actionUrl: `/project/${projectSlug}`,
     actionType: "view_project",
   });
 }
@@ -744,6 +760,7 @@ export async function createInvitationAcceptedNotification(
   accepterEmail: string,
   projectName: string,
   projectId: string,
+  projectSlug: string,
 ) {
   return createNotification({
     userId: ownerId,
@@ -752,7 +769,7 @@ export async function createInvitationAcceptedNotification(
     message: `${accepterEmail} accepted the invitation to join ${projectName}`,
     variant: "success",
     metadata: { projectId, accepterEmail },
-    actionUrl: `/project/${projectId}`,
+    actionUrl: `/project/${projectSlug}`,
     actionType: "view_project",
   });
 }

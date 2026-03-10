@@ -3,8 +3,8 @@ title: API Overview
 description: Programmatic access to Envault
 ---
 
-import { Callout } from 'fumadocs-ui/components/callout';
-import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+import { Callout } from "fumadocs-ui/components/callout";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 
 # API Access
 
@@ -15,7 +15,8 @@ Envault provides a REST API for programmatic access to secrets. This is useful f
 All API requests must include the `Authorization` header with a valid **Service Token**.
 
 <Callout type="warn">
-  Do not use your personal User JWT for automated scripts. Generate a Service Token from the project settings.
+  Do not use your personal User JWT for automated scripts. Generate a Service
+  Token from the project settings.
 </Callout>
 
 ```http
@@ -32,13 +33,23 @@ https://your-envault-instance.com/api/v1
 
 The API uses standard HTTP status codes.
 
-| Code | Meaning | Description |
-| :--- | :--- | :--- |
-| `200` | OK | Request succeeded. |
-| `401` | Unauthorized | Invalid or missing API token. |
-| `403` | Forbidden | Token lacks permission for this resource. |
-| `404` | Not Found | Project or secret not found. |
-| `500` | Server Error | Something went wrong on our end. |
+| Code  | Meaning           | Description                               |
+| :---- | :---------------- | :---------------------------------------- |
+| `200` | OK                | Request succeeded.                        |
+| `401` | Unauthorized      | Invalid or missing API token.             |
+| `403` | Forbidden         | Token lacks permission for this resource. |
+| `404` | Not Found         | Project or secret not found.              |
+| `429` | Too Many Requests | You have exceeded the rate limit.         |
+| `500` | Server Error      | Something went wrong on our end.          |
+
+## Rate Limits
+
+To ensure system stability, Envault enforces strict rate limits on API access using a sliding window algorithm:
+
+- **Personal/Human Tokens**: 60 requests per minute per user/IP.
+- **Service Tokens**: 600 requests per minute per project context.
+
+If you exceed these limits, you will receive a `429 Too Many Requests` response.
 
 ## Endpoints
 
@@ -50,8 +61,8 @@ Retrieve all decrypted secrets for a specific project environment.
 
 **Parameters**
 
-| Name | Type | Description |
-| :--- | :--- | :--- |
+| Name          | Type     | Description                                                                       |
+| :------------ | :------- | :-------------------------------------------------------------------------------- |
 | `environment` | `string` | The environment to fetch (e.g., `production`, `preview`). Default: `development`. |
 
 **Response**

@@ -101,7 +101,10 @@ export function ImportEnvDialog({
 
   const parseContent = (content: string) => {
     const result = parseEnvContent(content);
-    setParsedVariables(result.variables);
+    const sorted = [...result.variables].sort((a, b) =>
+      a.key.localeCompare(b.key),
+    );
+    setParsedVariables(sorted);
     setParseErrors(result.errors);
   };
 
@@ -385,8 +388,8 @@ export function ImportEnvDialog({
                                     status === "New"
                                       ? "bg-green-500/10 text-green-600 dark:text-green-400"
                                       : status === "Update"
-                                        ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
-                                        : "bg-gray-500/10 text-gray-600 dark:text-gray-400"
+                                      ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                                      : "bg-gray-500/10 text-gray-600 dark:text-gray-400"
                                   }`}
                                 >
                                   {status}
@@ -425,8 +428,8 @@ export function ImportEnvDialog({
                                 status === "New"
                                   ? "bg-green-500/10 text-green-600 dark:text-green-400"
                                   : status === "Update"
-                                    ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
-                                    : "bg-gray-500/10 text-gray-600 dark:text-gray-400"
+                                  ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                                  : "bg-gray-500/10 text-gray-600 dark:text-gray-400"
                               }`}
                             >
                               {status}
