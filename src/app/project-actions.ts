@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { getProjectEnvironments } from "@/lib/cli-environments";
 import { headers } from "next/headers";
 import { writeRateLimit } from "@/lib/ratelimit";
+import { logAuditEvent } from "@/lib/audit-logger";
 
 type ProjectUIMode = "simple" | "advanced";
 
@@ -57,7 +58,9 @@ export async function createProject(
 
   // Rate Limiting
   const ip = (await headers()).get("x-forwarded-for") || "unknown";
-  const { success: rateLimitSuccess } = await writeRateLimit.limit(`create_proj_${ip}`);
+  const { success: rateLimitSuccess } = await writeRateLimit.limit(
+    `create_proj_${ip}`,
+  );
   if (!rateLimitSuccess) {
     return { error: "Too many requests. Please try again later." };
   }
@@ -93,7 +96,8 @@ export async function createProject(
       name,
       slug: finalSlug,
       ui_mode: options?.uiMode || "simple",
-      default_environment_slug: options?.defaultEnvironmentSlug || "development",
+      default_environment_slug:
+        options?.defaultEnvironmentSlug || "development",
     })
     .select()
     .single();
@@ -123,7 +127,9 @@ export async function renameProject(id: string, newName: string) {
 
   // Rate Limiting
   const ip = (await headers()).get("x-forwarded-for") || "unknown";
-  const { success: rateLimitSuccess } = await writeRateLimit.limit(`rename_proj_${ip}`);
+  const { success: rateLimitSuccess } = await writeRateLimit.limit(
+    `rename_proj_${ip}`,
+  );
   if (!rateLimitSuccess) {
     return { error: "Too many requests. Please try again later." };
   }
@@ -178,8 +184,9 @@ export async function renameProject(id: string, newName: string) {
   }
 
   // Invalidate user's project list cache and specific project cache
-  const { cacheDel, CacheKeys, invalidateProjectCaches } =
-    await import("@/lib/cache");
+  const { cacheDel, CacheKeys, invalidateProjectCaches } = await import(
+    "@/lib/cache"
+  );
   await cacheDel(CacheKeys.userProjects(user.id));
   await invalidateProjectCaches(id);
 
@@ -198,7 +205,7 @@ export async function renameProject(id: string, newName: string) {
         `Your project has been renamed to "${data.name}"`,
         data.id,
         user.id,
-      ).catch(() => { });
+      ).catch(() => {});
     }
   }
 
@@ -217,8 +224,9 @@ export async function getProjects(bypassCache: boolean = false) {
   }
 
   // Check cache first
-  const { cacheGet, cacheSet, CacheKeys, CACHE_TTL } =
-    await import("@/lib/cache");
+  const { cacheGet, cacheSet, CacheKeys, CACHE_TTL } = await import(
+    "@/lib/cache"
+  );
   const cacheKey = CacheKeys.userProjects(user.id);
 
   if (!bypassCache) {
@@ -411,7 +419,9 @@ export async function deleteProject(id: string) {
 
   // Rate Limiting
   const ip = (await headers()).get("x-forwarded-for") || "unknown";
-  const { success: rateLimitSuccess } = await writeRateLimit.limit(`delete_proj_${ip}`);
+  const { success: rateLimitSuccess } = await writeRateLimit.limit(
+    `delete_proj_${ip}`,
+  );
   if (!rateLimitSuccess) {
     return { error: "Too many requests. Please try again later." };
   }
@@ -433,8 +443,9 @@ export async function deleteProject(id: string) {
   }
 
   // Invalidate caches for owner and all members
-  const { cacheDel, CacheKeys, invalidateProjectCaches } =
-    await import("@/lib/cache");
+  const { cacheDel, CacheKeys, invalidateProjectCaches } = await import(
+    "@/lib/cache"
+  );
   await cacheDel(CacheKeys.userProjects(user.id));
   await invalidateProjectCaches(id);
 
@@ -454,7 +465,12 @@ export async function addVariable(
   const { SecretSchema } = await import("@/lib/schemas");
   const validation = SecretSchema.safeParse({ key, value });
   if (!validation.success) {
-    return { error: validation.error.flatten().fieldErrors?.key?.[0] || validation.error.flatten().fieldErrors?.value?.[0] || "Invalid input" };
+    return {
+      error:
+        validation.error.flatten().fieldErrors?.key?.[0] ||
+        validation.error.flatten().fieldErrors?.value?.[0] ||
+        "Invalid input",
+    };
   }
 
   const {
@@ -467,7 +483,9 @@ export async function addVariable(
 
   // Rate Limiting
   const ip = (await headers()).get("x-forwarded-for") || "unknown";
-  const { success: rateLimitSuccess } = await writeRateLimit.limit(`add_var_${ip}`);
+  const { success: rateLimitSuccess } = await writeRateLimit.limit(
+    `add_var_${ip}`,
+  );
   if (!rateLimitSuccess) {
     return { error: "Too many requests. Please try again later." };
   }
@@ -540,10 +558,21 @@ export async function addVariable(
           `A new secret <strong>${key}</strong> was added to <strong>${projectData.name}</strong>`,
           projectData.id,
           user.id,
-        ).catch(() => { });
+        ).catch(() => {});
       }
     }
   }
+
+  const clientIp = (await headers()).get("x-forwarded-for") || "unknown";
+  logAuditEvent({
+    projectId,
+    actorId: user.id,
+    actorType: "user",
+    action: "secret.create",
+    targetResourceId: data.id,
+    ipAddress: clientIp,
+    metadata: { key },
+  });
 
   revalidatePath("/project/[slug]", "page");
   return { data };
@@ -563,7 +592,12 @@ export async function updateVariable(
     // Merge with dummy data for safe parsing of partials if needed, or parse partial
     const validation = SecretSchema.partial().safeParse(updates);
     if (!validation.success) {
-      return { error: validation.error.flatten().fieldErrors?.key?.[0] || validation.error.flatten().fieldErrors?.value?.[0] || "Invalid input" };
+      return {
+        error:
+          validation.error.flatten().fieldErrors?.key?.[0] ||
+          validation.error.flatten().fieldErrors?.value?.[0] ||
+          "Invalid input",
+      };
     }
   }
 
@@ -573,6 +607,15 @@ export async function updateVariable(
 
   if (!user) {
     return { error: "Not authenticated" };
+  }
+
+  // Rate Limiting
+  const ip = (await headers()).get("x-forwarded-for") || "unknown";
+  const { success: rateLimitSuccess } = await writeRateLimit.limit(
+    `update_var_${ip}`,
+  );
+  if (!rateLimitSuccess) {
+    return { error: "Too many requests. Please try again later." };
   }
 
   // Permission Check: Owner or Editor
@@ -643,10 +686,24 @@ export async function updateVariable(
           `A secret was updated in <strong>${projectData.name}</strong>`,
           projectData.id,
           user.id,
-        ).catch(() => { });
+        ).catch(() => {});
       }
     }
   }
+
+  const clientIp = (await headers()).get("x-forwarded-for") || "unknown";
+  logAuditEvent({
+    projectId,
+    actorId: user.id,
+    actorType: "user",
+    action: "secret.update",
+    targetResourceId: id,
+    ipAddress: clientIp,
+    metadata: {
+      key: updates.key,
+      value_updated: !!updates.value,
+    },
+  });
 
   revalidatePath("/project/[slug]", "page");
   return { success: true };
@@ -664,6 +721,15 @@ export async function deleteVariable(
 
   if (!user) {
     return { error: "Not authenticated" };
+  }
+
+  // Rate Limiting
+  const ip = (await headers()).get("x-forwarded-for") || "unknown";
+  const { success: rateLimitSuccess } = await writeRateLimit.limit(
+    `delete_var_${ip}`,
+  );
+  if (!rateLimitSuccess) {
+    return { error: "Too many requests. Please try again later." };
   }
 
   const { getProjectRole } = await import("@/lib/permissions");
@@ -716,7 +782,7 @@ export async function deleteVariable(
           `A secret was deleted from <strong>${projectData.name}</strong>`,
           projectData.id,
           user.id,
-        ).catch(() => { });
+        ).catch(() => {});
       }
     }
   }
@@ -753,9 +819,16 @@ export async function addVariablesBulk(
 
   // Rate Limiting
   const ip = (await headers()).get("x-forwarded-for") || "unknown";
-  const { success: rateLimitSuccess } = await writeRateLimit.limit(`bulk_var_${ip}`);
+  const { success: rateLimitSuccess } = await writeRateLimit.limit(
+    `bulk_var_${ip}`,
+  );
   if (!rateLimitSuccess) {
-    return { added: 0, updated: 0, skipped: 0, error: "Too many requests. Please try again later." };
+    return {
+      added: 0,
+      updated: 0,
+      skipped: 0,
+      error: "Too many requests. Please try again later.",
+    };
   }
 
   const { getProjectRole } = await import("@/lib/permissions");
@@ -909,11 +982,22 @@ export async function addVariablesBulk(
             `Bulk import to <strong>${projectData.name}</strong> finished: ${summary}, ${skipped} unchanged.`,
             projectData.id,
             user.id,
-          ).catch(() => { });
+          ).catch(() => {});
         }
       }
     }
   }
+
+  const clientIp = (await headers()).get("x-forwarded-for") || "unknown";
+  logAuditEvent({
+    projectId,
+    actorId: user.id,
+    actorType: "user",
+    action: "secret.bulk_import",
+    targetResourceId: projectId,
+    ipAddress: clientIp,
+    metadata: { added, updated, skipped },
+  });
 
   revalidatePath("/project/[slug]", "page");
   return { added, updated, skipped };

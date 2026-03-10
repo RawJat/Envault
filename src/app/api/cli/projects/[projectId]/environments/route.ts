@@ -3,20 +3,43 @@ import { validateCliToken } from "@/lib/cli-auth";
 import { NextResponse } from "next/server";
 import { getProjectRole } from "@/lib/permissions";
 import { getProjectEnvironments } from "@/lib/cli-environments";
+import { humanApiLimit, machineApiLimit } from "@/lib/ratelimit";
+import { headers } from "next/headers";
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ projectId: string }> },
 ) {
   const result = await validateCliToken(request);
-  if ('status' in result) {
+  if ("status" in result) {
     return result;
+  }
+
+  // Bifurcated Rate Limiting
+  const ip = (await headers()).get("x-forwarded-for") || "unknown";
+  if (result.type === "service") {
+    const { success } = await machineApiLimit.limit(
+      `cli_machine_${result.tokenId}`,
+    );
+    if (!success)
+      return NextResponse.json(
+        { error: "Too many requests." },
+        { status: 429 },
+      );
+  } else {
+    const identifier = result.userId || ip;
+    const { success } = await humanApiLimit.limit(`cli_human_${identifier}`);
+    if (!success)
+      return NextResponse.json(
+        { error: "Too many requests." },
+        { status: 429 },
+      );
   }
 
   const { projectId } = await params;
   const supabase = createAdminClient();
 
-  if (result.type === 'service') {
+  if (result.type === "service") {
     if (result.projectId !== projectId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }

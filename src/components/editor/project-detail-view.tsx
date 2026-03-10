@@ -56,7 +56,7 @@ import { ShareProjectDialog } from "@/components/dashboard/share-project-dialog"
 import { RenameProjectDialog } from "@/components/dashboard/rename-project-dialog";
 import { GitHubIntegrationDialog } from "@/components/dashboard/github-integration-dialog";
 import { AppHeader } from "@/components/dashboard/app-header";
-import { Edit3, Github, Loader2 } from "lucide-react";
+import { Edit3, Github, Loader2, ShieldCheck } from "lucide-react";
 
 interface ProjectDetailViewProps {
   project: Project;
@@ -212,7 +212,8 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
   };
 
   const handleDownloadEnv = async () => {
-    const content = project.variables
+    const content = [...project.variables]
+      .sort((a, b) => a.key.localeCompare(b.key))
       .map((v) => `${v.key}=${v.value}`)
       .join("\n");
 
@@ -277,6 +278,15 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
             {project.role === "owner" && (
               <DropdownMenuItem onClick={() => setGithubDialogOpen(true)}>
                 <Github className="w-4 h-4 mr-2" /> GitHub Integration
+              </DropdownMenuItem>
+            )}
+            {project.role === "owner" && (
+              <DropdownMenuItem
+                onClick={() =>
+                  router.push(`/project/${project.slug}/audit-logs`)
+                }
+              >
+                <ShieldCheck className="w-4 h-4 mr-2" /> Audit Logs
               </DropdownMenuItem>
             )}
             {project.role === "owner" && (

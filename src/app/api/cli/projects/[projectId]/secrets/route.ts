@@ -9,14 +9,38 @@ import { getProjectRole } from "@/lib/permissions";
 import { resolveProjectEnvironment } from "@/lib/cli-environments";
 import { isGitHubCollaborator, getGitHubUsername } from "@/lib/github";
 import { cacheSet, CacheKeys, CACHE_TTL } from "@/lib/cache";
+import { humanApiLimit, machineApiLimit } from "@/lib/ratelimit";
+import { logAuditEvent } from "@/lib/audit-logger";
+import { headers } from "next/headers";
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ projectId: string }> },
 ) {
   const result = await validateCliToken(request);
-  if ('status' in result) {
+  if ("status" in result) {
     return result;
+  }
+
+  // Bifurcated Rate Limiting
+  const ip = (await headers()).get("x-forwarded-for") || "unknown";
+  if (result.type === "service") {
+    const { success } = await machineApiLimit.limit(
+      `cli_machine_${result.tokenId}`,
+    );
+    if (!success)
+      return NextResponse.json(
+        { error: "Too many requests." },
+        { status: 429 },
+      );
+  } else {
+    const identifier = result.userId || ip;
+    const { success } = await humanApiLimit.limit(`cli_human_${identifier}`);
+    if (!success)
+      return NextResponse.json(
+        { error: "Too many requests." },
+        { status: 429 },
+      );
   }
 
   const { projectId } = await params;
@@ -44,10 +68,16 @@ export async function GET(
     );
   }
 
-  let targetSecrets: { id: string; key: string; value: string; _originalId?: string; _originalValue?: string }[] = [];
-  let userId = '';
+  let targetSecrets: {
+    id: string;
+    key: string;
+    value: string;
+    _originalId?: string;
+    _originalValue?: string;
+  }[] = [];
+  let userId = "";
 
-  if (result.type === 'service') {
+  if (result.type === "service") {
     if (result.projectId !== projectId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
@@ -136,7 +166,7 @@ export async function GET(
             const isCollaborator = await isGitHubCollaborator(
               installationId,
               repoFullName,
-              githubUsername
+              githubUsername,
             );
 
             if (isCollaborator) {
@@ -189,7 +219,10 @@ export async function GET(
                 .eq("environment_id", resolvedEnvironment.environment.id);
 
               if (jitError)
-                return NextResponse.json({ error: jitError.message }, { status: 500 });
+                return NextResponse.json(
+                  { error: jitError.message },
+                  { status: 500 },
+                );
 
               targetSecrets = jitSecrets || [];
             }
@@ -203,7 +236,7 @@ export async function GET(
               error: "ACCESS_REQUIRED",
               message: `You do not have access to this project. Run with --request-access to submit a request to the project owner.`,
             },
-            { status: 403 }
+            { status: 403 },
           );
         }
       }
@@ -284,40 +317,48 @@ export async function GET(
 
   await performRotation();
 
-  // Clean up internal keys before returning
-  const finalSecrets = decryptedSecrets.map((s) => ({
-    key: s.key,
-    value: s.value,
-  }));
+  // Clean up internal keys before returning, sorted A-Z
+  const finalSecrets = decryptedSecrets
+    .map((s) => ({ key: s.key, value: s.value }))
+    .sort((a, b) => a.key.localeCompare(b.key));
 
   // Notification for Pull
   const { data: projectData } = await supabase
     .from("projects")
-    .select("name")
+    .select("name, slug")
     .eq("id", projectId)
     .single();
   const projectName = projectData?.name || "Project";
+  const projectSlug = projectData?.slug || projectId;
 
   let notifUserId = userId;
-  if (!notifUserId && result.type === 'service') {
-    const { data: pData } = await supabase.from('projects').select('user_id').eq('id', projectId).single();
+  if (!notifUserId && result.type === "service") {
+    const { data: pData } = await supabase
+      .from("projects")
+      .select("user_id")
+      .eq("id", projectId)
+      .single();
     if (pData) notifUserId = pData.user_id;
   }
 
-  const { createSecretsPulledNotification } =
-    await import("@/lib/notifications");
+  const { createSecretsPulledNotification } = await import(
+    "@/lib/notifications"
+  );
   createSecretsPulledNotification(
     notifUserId,
     projectName,
     projectId,
     "CLI",
     decryptedSecrets.length,
+    projectSlug,
   ).catch((e) => console.error("Failed to create pull notification:", e));
 
   // CLI email if user has it toggled ON
   try {
     if (notifUserId) {
-      const { data: userData } = await supabase.auth.admin.getUserById(notifUserId);
+      const { data: userData } = await supabase.auth.admin.getUserById(
+        notifUserId,
+      );
       if (userData?.user?.email) {
         const { sendCliActivityEmail } = await import("@/lib/email");
         sendCliActivityEmail(
@@ -328,12 +369,28 @@ export async function GET(
           "CLI",
           projectId,
           notifUserId,
+          projectSlug,
         ).catch((e) => console.error("Failed to send CLI pull email:", e));
       }
     }
   } catch (err) {
     console.warn("Non-blocking CLI pull email error:", err);
   }
+
+  // Audit Log: Batch Read (Machine Only - humans via CLI also get logged as batch)
+  const clientIp = (await headers()).get("x-forwarded-for") || "unknown";
+  logAuditEvent({
+    projectId,
+    actorId: result.type === "service" ? result.tokenId : userId,
+    actorType: result.type === "service" ? "machine" : "user",
+    action: "secrets.read_batch",
+    targetResourceId: projectId,
+    ipAddress: clientIp,
+    metadata: {
+      count: finalSecrets.length,
+      environment: resolvedEnvironment.environment.slug,
+    },
+  });
 
   return NextResponse.json({
     secrets: finalSecrets,
@@ -346,8 +403,29 @@ export async function POST(
   { params }: { params: Promise<{ projectId: string }> },
 ) {
   const result = await validateCliToken(request);
-  if ('status' in result) {
+  if ("status" in result) {
     return result;
+  }
+
+  // Bifurcated Rate Limiting
+  const ip = (await headers()).get("x-forwarded-for") || "unknown";
+  if (result.type === "service") {
+    const { success } = await machineApiLimit.limit(
+      `cli_machine_${result.tokenId}`,
+    );
+    if (!success)
+      return NextResponse.json(
+        { error: "Too many requests." },
+        { status: 429 },
+      );
+  } else {
+    const identifier = result.userId || ip;
+    const { success } = await humanApiLimit.limit(`cli_human_${identifier}`);
+    if (!success)
+      return NextResponse.json(
+        { error: "Too many requests." },
+        { status: 429 },
+      );
   }
 
   const { projectId } = await params;
@@ -360,7 +438,9 @@ export async function POST(
   if (!validation.success) {
     return NextResponse.json(
       {
-        error: `Validation failed: ${validation.error.issues.map((i) => i.message).join(", ")}`,
+        error: `Validation failed: ${validation.error.issues
+          .map((i) => i.message)
+          .join(", ")}`,
       },
       { status: 400 },
     );
@@ -387,15 +467,18 @@ export async function POST(
     );
   }
 
-  let userId = '';
+  let userId = "";
 
-  if (result.type === 'service') {
+  if (result.type === "service") {
     if (result.projectId !== projectId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
-    const { data: pData } = await supabase.from('projects').select('user_id').eq('id', projectId).single();
+    const { data: pData } = await supabase
+      .from("projects")
+      .select("user_id")
+      .eq("id", projectId)
+      .single();
     if (pData) userId = pData.user_id;
-
   } else {
     userId = result.userId;
     // Verify Access: Owner OR Editor
@@ -455,25 +538,30 @@ export async function POST(
     // Notification for Push
     const { data: projectData } = await supabase
       .from("projects")
-      .select("name")
+      .select("name, slug")
       .eq("id", projectId)
       .single();
     const projectName = projectData?.name || "Project";
+    const projectSlug = projectData?.slug || projectId;
 
-    const { createSecretsPushedNotification } =
-      await import("@/lib/notifications");
+    const { createSecretsPushedNotification } = await import(
+      "@/lib/notifications"
+    );
     createSecretsPushedNotification(
       userId,
       projectName,
       projectId,
       "CLI",
       upsertData.length,
+      projectSlug,
     ).catch((e) => console.error("Failed to create push notification:", e));
 
     // CLI email if user has it toggled ON
     try {
       if (userId) {
-        const { data: userData } = await supabase.auth.admin.getUserById(userId);
+        const { data: userData } = await supabase.auth.admin.getUserById(
+          userId,
+        );
         if (userData?.user?.email) {
           const { sendCliActivityEmail } = await import("@/lib/email");
           sendCliActivityEmail(
@@ -484,6 +572,7 @@ export async function POST(
             "CLI",
             projectId,
             userId,
+            projectSlug,
           ).catch((e) => console.error("Failed to send CLI push email:", e));
         }
       }
@@ -497,6 +586,20 @@ export async function POST(
     revalidatePath("/dashboard");
     revalidatePath(`/project/${projectId}`);
   }
+
+  const clientIp = (await headers()).get("x-forwarded-for") || "unknown";
+  logAuditEvent({
+    projectId,
+    actorId: result.type === "service" ? result.tokenId : userId,
+    actorType: result.type === "service" ? "machine" : "user",
+    action: "secret.bulk_import",
+    targetResourceId: projectId,
+    ipAddress: clientIp,
+    metadata: {
+      count: upsertData.length,
+      environment: resolvedEnvironment.environment.slug,
+    },
+  });
 
   return NextResponse.json({
     success: true,

@@ -68,6 +68,11 @@ export function EnvVarTable({
   variables,
   userRole,
 }: EnvVarTableProps) {
+  // Always display A-Z; sort is stable so insertion order is preserved for ties
+  const sortedVariables = React.useMemo(
+    () => [...variables].sort((a, b) => a.key.localeCompare(b.key)),
+    [variables],
+  );
   const [editingVariable, setEditingVariable] =
     React.useState<EnvironmentVariable | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
@@ -144,14 +149,14 @@ export function EnvVarTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {variables.length === 0 ? (
+            {sortedVariables.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="h-24 text-center">
                   No variables added yet.
                 </TableCell>
               </TableRow>
             ) : (
-              variables.map((variable) => {
+              sortedVariables.map((variable) => {
                 const isVisible = visibleSecrets[variable.id];
                 return (
                   <TableRow key={variable.id}>
@@ -236,7 +241,11 @@ export function EnvVarTable({
                                 <div className="flex flex-col">
                                   <span className="text-sm font-medium leading-none">
                                     {variable.userInfo?.updater?.email
-                                      ? `${variable.userInfo.updater.email.split("@")[0]}` // Or simpler display
+                                      ? `${
+                                          variable.userInfo.updater.email.split(
+                                            "@",
+                                          )[0]
+                                        }` // Or simpler display
                                       : "Former Member"}
                                   </span>
                                   <span className="text-xs text-muted-foreground">
@@ -389,12 +398,12 @@ export function EnvVarTable({
       </div>
       {/* Mobile View */}
       <div className="md:hidden space-y-4">
-        {variables.length === 0 ? (
+        {sortedVariables.length === 0 ? (
           <div className="text-center p-8 border border-dashed rounded-lg text-muted-foreground">
             No variables added yet.
           </div>
         ) : (
-          variables.map((variable) => {
+          sortedVariables.map((variable) => {
             const isVisible = visibleSecrets[variable.id];
             return (
               <div
@@ -521,7 +530,7 @@ export function EnvVarTable({
         projectId={projectId}
         environmentSlug={environmentSlug}
         existingVariable={editingVariable || undefined}
-        existingVariables={variables}
+        existingVariables={sortedVariables}
         open={!!editingVariable}
         onOpenChange={(open) => !open && setEditingVariable(null)}
       />

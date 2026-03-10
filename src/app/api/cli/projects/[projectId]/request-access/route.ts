@@ -1,6 +1,8 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { validateCliToken } from "@/lib/cli-auth";
 import { NextResponse } from "next/server";
+import { humanApiLimit } from "@/lib/ratelimit";
+import { headers } from "next/headers";
 
 export async function POST(
   request: Request,
@@ -9,6 +11,18 @@ export async function POST(
   // 1. Authenticate CLI token
   const result = await validateCliToken(request);
   if ("status" in result) return result;
+
+  // Bifurcated Rate Limiting
+  const ip = (await headers()).get("x-forwarded-for") || "unknown";
+  if (result.type === "user") {
+    const identifier = result.userId || ip;
+    const { success } = await humanApiLimit.limit(`cli_human_${identifier}`);
+    if (!success)
+      return NextResponse.json(
+        { error: "Too many requests." },
+        { status: 429 },
+      );
+  }
 
   // Service tokens cannot request access - they should already have it
   if (result.type === "service") {
@@ -77,8 +91,9 @@ export async function POST(
 
     if (requestRecord && ownerEmail) {
       const { sendAccessRequestEmail } = await import("@/lib/email");
-      const { createAccessRequestNotification } =
-        await import("@/lib/notifications");
+      const { createAccessRequestNotification } = await import(
+        "@/lib/notifications"
+      );
 
       await Promise.all([
         sendAccessRequestEmail(
@@ -89,11 +104,11 @@ export async function POST(
           project.user_id,
         ),
         createAccessRequestNotification(
-          project.user_id,  // ownerId
-          requesterEmail,   // requesterEmail
-          project.name,     // projectName
-          projectId,        // projectId
-          userId,           // requesterId
+          project.user_id, // ownerId
+          requesterEmail, // requesterEmail
+          project.name, // projectName
+          projectId, // projectId
+          userId, // requesterId
           requestRecord.id, // requestId
         ),
       ]).catch((e) => console.error("[request-access] Notification error:", e));
