@@ -23,7 +23,10 @@ export function GlobalScene() {
   }, []);
 
   const isAuthPage =
-    pathname?.startsWith("/login") || pathname?.startsWith("/register");
+    pathname?.startsWith("/login") ||
+    pathname?.startsWith("/register") ||
+    pathname?.startsWith("/auth/device") ||
+    pathname?.startsWith("/approve");
   const isLandingPage = pathname === "/";
 
   useEffect(() => {
