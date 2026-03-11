@@ -74,6 +74,17 @@ interface PendingRequest {
   avatar?: string;
 }
 
+const areEnvironmentsEqual = (
+  a: string[] | null | undefined,
+  b: string[] | null | undefined,
+  allEnvs: string[]
+) => {
+  const normalizedA = [...(a === null || a === undefined ? allEnvs : a)].sort();
+  const normalizedB = [...(b === null || b === undefined ? allEnvs : b)].sort();
+  if (normalizedA.length !== normalizedB.length) return false;
+  return normalizedA.every((val, index) => val === normalizedB[index]);
+};
+
 export function ShareProjectDialog({
   project,
   children,
@@ -212,10 +223,22 @@ export function ShareProjectDialog({
   ) => {
     if (member.role === "owner") return; // Secure guard
     const newChanges = new Map(pendingChanges);
+    const existingChange = newChanges.get(member.user_id);
+    const allEnvs = project.environments?.map((e) => e.slug) || [];
 
     if (newValue === member.role) {
-      // Remove change if set back to original
-      newChanges.delete(member.user_id);
+      if (
+        existingChange?.allowedEnvironments !== undefined &&
+        !areEnvironmentsEqual(existingChange.allowedEnvironments, member.allowed_environments, allEnvs)
+      ) {
+        newChanges.set(member.user_id, {
+          ...existingChange,
+          type: "role_change",
+          newRole: member.role,
+        });
+      } else {
+        newChanges.delete(member.user_id);
+      }
     } else if (newValue === "revoke") {
       newChanges.set(member.user_id, {
         userId: member.user_id,
@@ -232,6 +255,7 @@ export function ShareProjectDialog({
         newRole: newValue,
         email: member.email,
         avatar: member.avatar,
+        allowedEnvironments: existingChange?.allowedEnvironments,
       });
     }
 
@@ -246,8 +270,13 @@ export function ShareProjectDialog({
 
     const newChanges = new Map(pendingChanges);
     const existingChange = newChanges.get(member.user_id);
+    const allEnvs = project.environments?.map((e) => e.slug) || [];
 
-    if (existingChange) {
+    const isRoleSame = !existingChange || (existingChange.type === "role_change" && existingChange.newRole === member.role);
+    
+    if (isRoleSame && areEnvironmentsEqual(newEnvironments, member.allowed_environments, allEnvs)) {
+      newChanges.delete(member.user_id);
+    } else if (existingChange) {
       newChanges.set(member.user_id, {
         ...existingChange,
         allowedEnvironments: newEnvironments || undefined,
@@ -616,7 +645,7 @@ export function ShareProjectDialog({
                                 {currentAction === "approve" && (
                                   <div className={`grid transition-all duration-200 ease-in-out ${isExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
                                     <div className="overflow-hidden">
-                                      <div className="p-3 pt-0 flex flex-col gap-4 border-t bg-muted/10 mt-2">
+                                      <div className="p-3 pt-2 flex flex-col gap-4 border-t bg-muted/10 mt-2">
                                         <div className="flex flex-col gap-2">
                                           <label className="text-sm font-medium">Assign Role</label>
                                           <Select
@@ -751,7 +780,7 @@ export function ShareProjectDialog({
                                 {isOwner && !isOwnerRole && (
                                   <div className={`grid transition-all duration-200 ease-in-out ${isExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
                                     <div className="overflow-hidden">
-                                      <div className="p-3 pt-0 flex flex-col gap-4 border-t bg-muted/10 mt-2">
+                                      <div className="p-3 pt-2 flex flex-col gap-4 border-t bg-muted/10 mt-2">
                                         <div className="flex flex-col gap-2">
                                           <label className="text-sm font-medium">Assign Role</label>
                                           <Select
@@ -835,17 +864,20 @@ export function ShareProjectDialog({
                       <Button
                         className="w-full"
                         onClick={handleSave}
-                        disabled={!hasChanges}
+                        disabled={!hasChanges || applying}
                       >
-                        Save Changes{" "}
-                        <span className="ml-2 flex items-center gap-1">
-                          <Kbd className="bg-primary-foreground/20 text-primary-foreground border-0">
-                            {getModifierKey("mod")}
-                          </Kbd>
-                          <Kbd className="bg-primary-foreground/20 text-primary-foreground border-0">
-                            S
-                          </Kbd>
-                        </span>
+                        {applying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {applying ? "Saving..." : "Save Changes"}
+                        {!applying && (
+                          <span className="ml-2 flex items-center gap-1">
+                            <Kbd className="bg-primary-foreground/20 text-primary-foreground border-0">
+                              {getModifierKey("mod")}
+                            </Kbd>
+                            <Kbd className="bg-primary-foreground/20 text-primary-foreground border-0">
+                              S
+                            </Kbd>
+                          </span>
+                        )}
                       </Button>
                     )}
                   </>
