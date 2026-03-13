@@ -166,7 +166,7 @@ export async function approveRequest(
   }
 
   // 1. Add to Project Members (Use Admin for reliability)
-  const insertData: any = {
+  const insertData: Record<string, unknown> = {
     project_id: request.project_id!,
     user_id: request.user_id,
     role: role,
@@ -381,7 +381,7 @@ export async function updateMemberRole(
 
   if (role !== "owner") return { error: "Unauthorized" };
 
-  const updateData: any = { role: newRole };
+  const updateData: Record<string, unknown> = { role: newRole };
 
   if (allowedEnvironments !== undefined) {
     updateData.allowed_environments = allowedEnvironments;

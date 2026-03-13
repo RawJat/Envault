@@ -22,14 +22,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Copy, Share2, Check, CornerDownLeft, Loader2, Plus, X, ChevronDown } from "lucide-react";
+import { Copy, Share2, Check, CornerDownLeft, Loader2, ChevronDown } from "lucide-react";
 import { MemberSkeleton } from "@/components/notifications/notification-skeleton";
 import {
   inviteUser,
@@ -61,6 +56,7 @@ interface Member {
   created_at: string;
   email?: string;
   avatar?: string;
+  username?: string;
   allowed_environments?: string[] | null;
 }
 
@@ -72,7 +68,19 @@ interface PendingRequest {
   created_at: string;
   email?: string;
   avatar?: string;
+  username?: string;
 }
+
+const areEnvironmentsEqual = (
+  a: string[] | null | undefined,
+  b: string[] | null | undefined,
+  allEnvs: string[]
+) => {
+  const normalizedA = [...(a === null || a === undefined ? allEnvs : a)].sort();
+  const normalizedB = [...(b === null || b === undefined ? allEnvs : b)].sort();
+  if (normalizedA.length !== normalizedB.length) return false;
+  return normalizedA.every((val, index) => val === normalizedB[index]);
+};
 
 export function ShareProjectDialog({
   project,
@@ -212,10 +220,22 @@ export function ShareProjectDialog({
   ) => {
     if (member.role === "owner") return; // Secure guard
     const newChanges = new Map(pendingChanges);
+    const existingChange = newChanges.get(member.user_id);
+    const allEnvs = project.environments?.map((e) => e.slug) || [];
 
     if (newValue === member.role) {
-      // Remove change if set back to original
-      newChanges.delete(member.user_id);
+      if (
+        existingChange?.allowedEnvironments !== undefined &&
+        !areEnvironmentsEqual(existingChange.allowedEnvironments, member.allowed_environments, allEnvs)
+      ) {
+        newChanges.set(member.user_id, {
+          ...existingChange,
+          type: "role_change",
+          newRole: member.role,
+        });
+      } else {
+        newChanges.delete(member.user_id);
+      }
     } else if (newValue === "revoke") {
       newChanges.set(member.user_id, {
         userId: member.user_id,
@@ -232,6 +252,7 @@ export function ShareProjectDialog({
         newRole: newValue,
         email: member.email,
         avatar: member.avatar,
+        allowedEnvironments: existingChange?.allowedEnvironments,
       });
     }
 
@@ -246,8 +267,13 @@ export function ShareProjectDialog({
 
     const newChanges = new Map(pendingChanges);
     const existingChange = newChanges.get(member.user_id);
+    const allEnvs = project.environments?.map((e) => e.slug) || [];
 
-    if (existingChange) {
+    const isRoleSame = !existingChange || (existingChange.type === "role_change" && existingChange.newRole === member.role);
+    
+    if (isRoleSame && areEnvironmentsEqual(newEnvironments, member.allowed_environments, allEnvs)) {
+      newChanges.delete(member.user_id);
+    } else if (existingChange) {
       newChanges.set(member.user_id, {
         ...existingChange,
         allowedEnvironments: newEnvironments || undefined,
@@ -281,10 +307,6 @@ export function ShareProjectDialog({
           if (c.type === "revoke") return false;
           // For active members (role_change) or approves, they must end up with at least 1 env
           if (c.type === "approve" || c.type === "role_change") {
-            const finalEnvs = c.allowedEnvironments !== undefined
-              ? c.allowedEnvironments
-              : getCurrentEnvironments(c.userId, null); // We don't have direct access to their member object here easily, but if they changed it, it's in c.allowedEnvironments
-
             // If they explicitly wiped out environments, flag them
             if (c.allowedEnvironments !== undefined && c.allowedEnvironments.length === 0) return true;
           }
@@ -435,7 +457,7 @@ export function ShareProjectDialog({
           onInteractOutside={(e) => {
             if (hasChanges) {
               e.preventDefault();
-              toast.error("You have unsaved changes.");
+              toast.error("You have unsaved changes. Discard changes to proceed to the dashboard.");
               setModalShake(false);
               setTimeout(() => {
                 setModalShake(true);
@@ -446,7 +468,7 @@ export function ShareProjectDialog({
           onEscapeKeyDown={(e) => {
             if (hasChanges) {
               e.preventDefault();
-              toast.error("You have unsaved changes.");
+              toast.error("You have unsaved changes. Discard changes to proceed to the dashboard.");
               setModalShake(false);
               setTimeout(() => {
                 setModalShake(true);
@@ -454,7 +476,17 @@ export function ShareProjectDialog({
               }, 10);
             }
           }}
-          hideClose={hasChanges}
+          onCloseClick={(e) => {
+            if (hasChanges) {
+              e.preventDefault();
+              toast.error("You have unsaved changes. Discard changes to proceed to the dashboard.");
+              setModalShake(false);
+              setTimeout(() => {
+                setModalShake(true);
+                setTimeout(() => setModalShake(false), 400);
+              }, 10);
+            }
+          }}
         >
           <DialogHeader>
             <DialogTitle className="text-lg sm:text-xl">
@@ -574,41 +606,45 @@ export function ShareProjectDialog({
                             const currentRole = existingChange?.newRole || "viewer";
 
                             const currentEnvs = existingChange?.allowedEnvironments || [];
-                            const availableEnvs = getAllProjectEnvSlugs().filter(e => !currentEnvs.includes(e));
 
                             return (
                               <div key={request.id} className={`flex flex-col border rounded-lg overflow-hidden transition-all bg-muted/30 ${shakeIds.has(request.user_id) ? "animate-shake border-destructive/50 ring-1 ring-destructive/50" : ""}`}>
                                 <div
-                                  className={`flex flex-col sm:flex-row sm:items-center gap-3 justify-between p-3 ${currentAction === "approve" ? "cursor-pointer hover:bg-muted/50" : ""}`}
+                                  className={`flex flex-row items-center p-3 gap-3 w-full ${currentAction === "approve" ? "cursor-pointer hover:bg-muted/50" : ""}`}
                                   onClick={(e) => {
                                     if (currentAction === "approve") toggleExpand(e, request.id);
                                   }}
                                 >
-                                  <div className="flex items-center space-x-3 flex-1 min-w-0">
-                                    <UserAvatar className="h-8 w-8 shrink-0" user={{ email: request.email || "unknown", avatar: request.avatar }} />
-                                    <div className="flex-1 min-w-0">
-                                      <p className="text-sm font-medium leading-none truncate">{request.email || "Unknown User"}</p>
+                                  <UserAvatar className="h-8 w-8 shrink-0" user={{ email: request.email || "unknown", avatar: request.avatar }} />
+                                  
+                                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                                    <div className="flex-1 min-w-0 [mask-image:linear-gradient(to_right,black_calc(100%-20px),transparent_100%)]">
+                                      <p className="text-sm font-medium leading-none whitespace-nowrap overflow-hidden">
+                                        <span className="sm:hidden">{request.username || request.email?.split('@')[0] || "Unknown User"}</span>
+                                        <span className="hidden sm:inline">{request.email || "Unknown User"}</span>
+                                      </p>
                                     </div>
-                                  </div>
-                                  <div className="flex items-center space-x-3 justify-end shrink-0 pl-2">
-                                    {isOwner && (
-                                      <Select
-                                        value={currentAction}
-                                        onValueChange={(value: "pending" | "approve" | "deny") => handleRequestAction(request, value)}
-                                      >
-                                        <SelectTrigger className="w-full sm:w-32" onClick={(e) => e.stopPropagation()}>
-                                          <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectItem value="pending">Pending</SelectItem>
-                                          <SelectItem value="approve">Approve</SelectItem>
-                                          <SelectItem value="deny">Deny</SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                    )}
-                                    {currentAction === "approve" && (
-                                      <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
-                                    )}
+                                    
+                                    <div className="flex items-center space-x-2 shrink-0">
+                                      {isOwner && (
+                                        <Select
+                                          value={currentAction}
+                                          onValueChange={(value: "pending" | "approve" | "deny") => handleRequestAction(request, value)}
+                                        >
+                                          <SelectTrigger className="w-[100px] h-8 text-xs sm:text-sm sm:h-9 sm:w-32" onClick={(e) => e.stopPropagation()}>
+                                            <SelectValue />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="pending">Pending</SelectItem>
+                                            <SelectItem value="approve">Approve</SelectItem>
+                                            <SelectItem value="deny" className="text-destructive focus:bg-destructive/10">Deny</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      )}
+                                      {currentAction === "approve" && (
+                                        <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
 
@@ -616,7 +652,7 @@ export function ShareProjectDialog({
                                 {currentAction === "approve" && (
                                   <div className={`grid transition-all duration-200 ease-in-out ${isExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
                                     <div className="overflow-hidden">
-                                      <div className="p-3 pt-0 flex flex-col gap-4 border-t bg-muted/10 mt-2">
+                                      <div className="p-3 pt-2 flex flex-col gap-4 border-t bg-muted/10 mt-2">
                                         <div className="flex flex-col gap-2">
                                           <label className="text-sm font-medium">Assign Role</label>
                                           <Select
@@ -643,60 +679,44 @@ export function ShareProjectDialog({
                                         {project.ui_mode === "advanced" && project.environments && project.environments.length > 0 && (
                                           <div className="flex flex-col gap-2">
                                             <label className="text-sm font-medium">Environment Access</label>
-                                            <div className="flex min-h-[44px] w-full items-center justify-between rounded-md border border-input bg-background px-3 py-1.5 text-sm ring-offset-background placeholder:text-muted-foreground focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
-                                              <div className="flex flex-wrap gap-1.5 items-center flex-1">
-                                                {currentEnvs.length === 0 && (
-                                                  <span className="text-muted-foreground">None selected</span>
-                                                )}
-                                                {currentEnvs.map((env) => (
-                                                  <Badge key={env} variant="secondary" className="pl-2 pr-1 h-6">
-                                                    {env}
-                                                    <button
-                                                      onClick={(e) => {
-                                                        e.stopPropagation();
+                                            <div className="flex flex-row flex-wrap gap-4 items-center rounded-md border border-input bg-background px-3 py-3 text-sm">
+                                              {getAllProjectEnvSlugs().map((env) => {
+                                                const isChecked = currentEnvs.includes(env);
+                                                return (
+                                                  <div key={`pending-${request.id}-${env}`} className="flex items-center space-x-2">
+                                                    <Checkbox
+                                                      id={`pending-${request.id}-${env}`}
+                                                      className="rounded border-2"
+                                                      checked={isChecked}
+                                                      onCheckedChange={(checked) => {
                                                         const newChanges = new Map(pendingChanges);
                                                         const c = newChanges.get(request.user_id);
+                                                        
+                                                        let nextEnvs;
+                                                        if (checked) {
+                                                          nextEnvs = [...currentEnvs, env];
+                                                        } else {
+                                                          nextEnvs = currentEnvs.filter((e) => e !== env);
+                                                        }
+
                                                         if (c) {
-                                                          newChanges.set(request.user_id, { ...c, allowedEnvironments: currentEnvs.filter(e => e !== env) });
+                                                          newChanges.set(request.user_id, {
+                                                            ...c,
+                                                            allowedEnvironments: nextEnvs,
+                                                          });
                                                           setPendingChanges(newChanges);
                                                         }
                                                       }}
-                                                      className="ml-1.5 rounded-full p-0.5 hover:bg-muted-foreground/20"
-                                                      type="button"
+                                                    />
+                                                    <label
+                                                      htmlFor={`pending-${request.id}-${env}`}
+                                                      className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 font-medium capitalize cursor-pointer"
                                                     >
-                                                      <X className="h-3 w-3" />
-                                                    </button>
-                                                  </Badge>
-                                                ))}
-                                              </div>
-
-                                              {availableEnvs.length > 0 && (
-                                                <DropdownMenu>
-                                                  <DropdownMenuTrigger asChild>
-                                                    <button onClick={(e) => e.stopPropagation()} type="button" className="ml-2 h-6 w-6 shrink-0 bg-transparent text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors">
-                                                      <Plus className="h-4 w-4" />
-                                                    </button>
-                                                  </DropdownMenuTrigger>
-                                                  <DropdownMenuContent align="end">
-                                                    {availableEnvs.map(env => (
-                                                      <DropdownMenuItem
-                                                        key={env}
-                                                        onClick={(e) => {
-                                                          e.stopPropagation();
-                                                          const newChanges = new Map(pendingChanges);
-                                                          const c = newChanges.get(request.user_id);
-                                                          if (c) {
-                                                            newChanges.set(request.user_id, { ...c, allowedEnvironments: [...currentEnvs, env] });
-                                                            setPendingChanges(newChanges);
-                                                          }
-                                                        }}
-                                                      >
-                                                        {env}
-                                                      </DropdownMenuItem>
-                                                    ))}
-                                                  </DropdownMenuContent>
-                                                </DropdownMenu>
-                                              )}
+                                                      {env}
+                                                    </label>
+                                                  </div>
+                                                );
+                                              })}
                                             </div>
                                           </div>
                                         )}
@@ -720,30 +740,34 @@ export function ShareProjectDialog({
                             const isExpanded = expandedMembers.has(member.id);
                             const currentRole = getCurrentValue(member.user_id, member.role);
                             const currentEnvs = getCurrentEnvironments(member.user_id, member.allowed_environments);
-                            const availableEnvs = getAllProjectEnvSlugs().filter(e => !currentEnvs.includes(e));
                             const isOwnerRole = currentRole === "owner";
 
                             return (
                               <div key={member.id} className={`flex flex-col border rounded-lg overflow-hidden transition-all bg-card ${shakeIds.has(member.user_id) ? "animate-shake border-destructive/50 ring-1 ring-destructive/50" : ""}`}>
                                 <div
-                                  className={`flex flex-col sm:flex-row sm:items-center gap-3 justify-between p-3 ${!isOwnerRole && isOwner ? "cursor-pointer hover:bg-muted/50" : ""}`}
+                                  className={`flex flex-row items-center p-3 gap-3 w-full ${!isOwnerRole && isOwner ? "cursor-pointer hover:bg-muted/50" : ""}`}
                                   onClick={(e) => {
                                     if (!isOwnerRole && isOwner) toggleExpand(e, member.id);
                                   }}
                                 >
-                                  <div className="flex items-center space-x-3 flex-1 min-w-0">
-                                    <UserAvatar className="h-8 w-8 shrink-0" user={{ email: member.email || "unknown", avatar: member.avatar }} />
-                                    <div className="flex-1 min-w-0">
-                                      <p className="text-sm font-medium leading-none truncate">{member.email || "Unknown User"}</p>
+                                  <UserAvatar className="h-8 w-8 shrink-0" user={{ email: member.email || "unknown", avatar: member.avatar }} />
+                                  
+                                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                                    <div className="flex-1 min-w-0 [mask-image:linear-gradient(to_right,black_calc(100%-20px),transparent_100%)]">
+                                      <p className="text-sm font-medium leading-none whitespace-nowrap overflow-hidden">
+                                        <span className="sm:hidden">{member.username || member.email?.split('@')[0] || "Unknown User"}</span>
+                                        <span className="hidden sm:inline">{member.email || "Unknown User"}</span>
+                                      </p>
                                     </div>
-                                  </div>
-                                  <div className="flex items-center space-x-3 justify-end shrink-0 pl-2">
-                                    <Badge variant={isOwnerRole ? "default" : "outline"} className="capitalize shrink-0">
-                                      {currentRole === "revoke" ? "revoking" : currentRole}
-                                    </Badge>
-                                    {isOwner && !isOwnerRole && (
-                                      <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
-                                    )}
+                                    
+                                    <div className="flex items-center space-x-2 shrink-0">
+                                      <Badge variant={isOwnerRole ? "default" : "outline"} className="capitalize shrink-0">
+                                        {currentRole === "revoke" ? "revoking" : currentRole}
+                                      </Badge>
+                                      {isOwner && !isOwnerRole && (
+                                        <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
 
@@ -751,7 +775,7 @@ export function ShareProjectDialog({
                                 {isOwner && !isOwnerRole && (
                                   <div className={`grid transition-all duration-200 ease-in-out ${isExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
                                     <div className="overflow-hidden">
-                                      <div className="p-3 pt-0 flex flex-col gap-4 border-t bg-muted/10 mt-2">
+                                      <div className="p-3 pt-2 flex flex-col gap-4 border-t bg-muted/10 mt-2">
                                         <div className="flex flex-col gap-2">
                                           <label className="text-sm font-medium">Assign Role</label>
                                           <Select
@@ -772,50 +796,34 @@ export function ShareProjectDialog({
                                         {project.ui_mode === "advanced" && project.environments && project.environments.length > 0 && currentRole !== "revoke" && (
                                           <div className="flex flex-col gap-2">
                                             <label className="text-sm font-medium">Environment Access</label>
-                                            <div className="flex min-h-[44px] w-full items-center justify-between rounded-md border border-input bg-background px-3 py-1.5 text-sm ring-offset-background placeholder:text-muted-foreground focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
-                                              <div className="flex flex-wrap gap-1.5 items-center flex-1">
-                                                {currentEnvs.length === 0 && (
-                                                  <span className="text-muted-foreground">None selected</span>
-                                                )}
-                                                {currentEnvs.map(env => (
-                                                  <Badge key={env} variant="secondary" className="pl-2 pr-1 h-6">
-                                                    {env}
-                                                    <button
-                                                      onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleModifyEnvironments(member, currentEnvs.filter(e => e !== env));
+                                            <div className="flex flex-row flex-wrap gap-4 items-center rounded-md border border-input bg-background px-3 py-3 text-sm">
+                                              {getAllProjectEnvSlugs().map((env) => {
+                                                const isChecked = currentEnvs.includes(env);
+                                                return (
+                                                  <div key={`active-${member.id}-${env}`} className="flex items-center space-x-2">
+                                                    <Checkbox
+                                                      id={`active-${member.id}-${env}`}
+                                                      className="rounded border-1"
+                                                      checked={isChecked}
+                                                      onCheckedChange={(checked) => {
+                                                        let nextEnvs;
+                                                        if (checked) {
+                                                          nextEnvs = [...currentEnvs, env];
+                                                        } else {
+                                                          nextEnvs = currentEnvs.filter((e) => e !== env);
+                                                        }
+                                                        handleModifyEnvironments(member, nextEnvs);
                                                       }}
-                                                      className="ml-1.5 rounded-full p-0.5 hover:bg-muted-foreground/20"
-                                                      type="button"
+                                                    />
+                                                    <label
+                                                      htmlFor={`active-${member.id}-${env}`}
+                                                      className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 font-medium capitalize cursor-pointer"
                                                     >
-                                                      <X className="h-3 w-3" />
-                                                    </button>
-                                                  </Badge>
-                                                ))}
-                                              </div>
-
-                                              {availableEnvs.length > 0 && (
-                                                <DropdownMenu>
-                                                  <DropdownMenuTrigger asChild>
-                                                    <button onClick={(e) => e.stopPropagation()} type="button" className="ml-2 h-6 w-6 shrink-0 bg-transparent text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors">
-                                                      <Plus className="h-4 w-4" />
-                                                    </button>
-                                                  </DropdownMenuTrigger>
-                                                  <DropdownMenuContent align="end">
-                                                    {availableEnvs.map(env => (
-                                                      <DropdownMenuItem
-                                                        key={env}
-                                                        onClick={(e) => {
-                                                          e.stopPropagation();
-                                                          handleModifyEnvironments(member, [...currentEnvs, env]);
-                                                        }}
-                                                      >
-                                                        {env}
-                                                      </DropdownMenuItem>
-                                                    ))}
-                                                  </DropdownMenuContent>
-                                                </DropdownMenu>
-                                              )}
+                                                      {env}
+                                                    </label>
+                                                  </div>
+                                                );
+                                              })}
                                             </div>
                                           </div>
                                         )}
@@ -832,21 +840,34 @@ export function ShareProjectDialog({
 
                     {/* Save Button */}
                     {isOwner && (
-                      <Button
-                        className="w-full"
-                        onClick={handleSave}
-                        disabled={!hasChanges}
-                      >
-                        Save Changes{" "}
-                        <span className="ml-2 flex items-center gap-1">
-                          <Kbd className="bg-primary-foreground/20 text-primary-foreground border-0">
-                            {getModifierKey("mod")}
-                          </Kbd>
-                          <Kbd className="bg-primary-foreground/20 text-primary-foreground border-0">
-                            S
-                          </Kbd>
-                        </span>
-                      </Button>
+                      <div className="flex gap-2 w-full">
+                        <Button
+                          variant="secondary"
+                          className="flex-1 border-red-500 text-red-500 hover:bg-red-100"
+                          onClick={() => setPendingChanges(new Map())}
+                          disabled={!hasChanges || applying}
+                        >
+                          Discard Changes
+                        </Button>
+                        <Button
+                          className="flex-1"
+                          onClick={handleSave}
+                          disabled={!hasChanges || applying}
+                        >
+                          {applying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          {applying ? "Saving..." : "Save Changes"}
+                          {!applying && (
+                            <span className="ml-2 flex items-center gap-1">
+                              <Kbd className="bg-primary-foreground/20 text-primary-foreground border-0">
+                                {getModifierKey("mod")}
+                              </Kbd>
+                              <Kbd className="bg-primary-foreground/20 text-primary-foreground border-0">
+                                S
+                              </Kbd>
+                            </span>
+                          )}
+                        </Button>
+                      </div>
                     )}
                   </>
                 )}
