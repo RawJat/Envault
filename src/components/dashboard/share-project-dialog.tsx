@@ -23,14 +23,8 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { Copy, Share2, Check, CornerDownLeft, Loader2, Plus, X, ChevronDown } from "lucide-react";
+import { Copy, Share2, Check, CornerDownLeft, Loader2, ChevronDown } from "lucide-react";
 import { MemberSkeleton } from "@/components/notifications/notification-skeleton";
 import {
   inviteUser,
@@ -313,10 +307,6 @@ export function ShareProjectDialog({
           if (c.type === "revoke") return false;
           // For active members (role_change) or approves, they must end up with at least 1 env
           if (c.type === "approve" || c.type === "role_change") {
-            const finalEnvs = c.allowedEnvironments !== undefined
-              ? c.allowedEnvironments
-              : getCurrentEnvironments(c.userId, null); // We don't have direct access to their member object here easily, but if they changed it, it's in c.allowedEnvironments
-
             // If they explicitly wiped out environments, flag them
             if (c.allowedEnvironments !== undefined && c.allowedEnvironments.length === 0) return true;
           }
@@ -616,7 +606,6 @@ export function ShareProjectDialog({
                             const currentRole = existingChange?.newRole || "viewer";
 
                             const currentEnvs = existingChange?.allowedEnvironments || [];
-                            const availableEnvs = getAllProjectEnvSlugs().filter(e => !currentEnvs.includes(e));
 
                             return (
                               <div key={request.id} className={`flex flex-col border rounded-lg overflow-hidden transition-all bg-muted/30 ${shakeIds.has(request.user_id) ? "animate-shake border-destructive/50 ring-1 ring-destructive/50" : ""}`}>
@@ -751,7 +740,6 @@ export function ShareProjectDialog({
                             const isExpanded = expandedMembers.has(member.id);
                             const currentRole = getCurrentValue(member.user_id, member.role);
                             const currentEnvs = getCurrentEnvironments(member.user_id, member.allowed_environments);
-                            const availableEnvs = getAllProjectEnvSlugs().filter(e => !currentEnvs.includes(e));
                             const isOwnerRole = currentRole === "owner";
 
                             return (
