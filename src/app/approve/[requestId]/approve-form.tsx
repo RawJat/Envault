@@ -10,16 +10,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Plus, X } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { approveRequest, rejectRequest } from "@/app/invite-actions";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface ApproveFormProps {
   requestId: string;
@@ -70,50 +64,40 @@ export function ApproveForm({ requestId, environments = [] }: ApproveFormProps) 
         {environments.length > 0 && (
           <div className="flex flex-col gap-2 mt-2">
             <label className="text-sm font-medium">Environment Access</label>
-            <div className="flex min-h-[44px] w-full items-center justify-between rounded-md border border-input bg-background px-3 py-1.5 text-sm ring-offset-background placeholder:text-muted-foreground focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
-              <div className="flex flex-wrap gap-1.5 items-center flex-1">
-                {selectedEnvironments.length === 0 && (
-                  <span className="text-muted-foreground">None selected</span>
-                )}
-                {selectedEnvironments.map((env) => (
-                  <Badge key={env} variant="secondary" className="pl-2 pr-1 h-6">
-                    {env}
-                    <button
-                      onClick={() => setSelectedEnvironments(prev => prev.filter(e => e !== env))}
-                      className="ml-1.5 rounded-full p-0.5 hover:bg-muted-foreground/20"
-                      type="button"
+            <div className="flex flex-row flex-wrap gap-4 items-center rounded-md border border-input bg-background px-3 py-3 text-sm">
+              {environments.map((env) => {
+                const isChecked = selectedEnvironments.includes(env);
+                return (
+                  <div key={`approve-${requestId}-${env}`} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`approve-${requestId}-${env}`}
+                      className="rounded border-1"
+                      checked={isChecked}
+                      onCheckedChange={(checked) => {
+                        let nextEnvs;
+                        if (checked) {
+                          nextEnvs = [...selectedEnvironments, env];
+                        } else {
+                          nextEnvs = selectedEnvironments.filter((e) => e !== env);
+                        }
+                        setSelectedEnvironments(nextEnvs);
+                      }}
+                    />
+                    <label
+                      htmlFor={`approve-${requestId}-${env}`}
+                      className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 font-medium capitalize cursor-pointer"
                     >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                ))}
-              </div>
-
-              {environments.filter(e => !selectedEnvironments.includes(e)).length > 0 && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button type="button" className="ml-2 h-6 w-6 shrink-0 bg-transparent text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors">
-                      <Plus className="h-4 w-4" />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {environments.filter(e => !selectedEnvironments.includes(e)).map(env => (
-                      <DropdownMenuItem
-                        key={env}
-                        onClick={() => setSelectedEnvironments(prev => [...prev, env])}
-                      >
-                        {env}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
+                      {env}
+                    </label>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
 
         <Button
-          className="w-full h-11 text-base"
+          className="w-full h-11 text-base mt-2"
           onClick={handleApprove}
           disabled={isApproving || isDenying}
         >
