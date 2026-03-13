@@ -84,6 +84,20 @@ export async function GET(request: NextRequest) {
     }),
   );
 
+  const usernames: Record<string, string | undefined> = {};
+  if (allUserIds.length > 0) {
+    const { data: profiles } = await admin
+      .from("profiles")
+      .select("id, username")
+      .in("id", allUserIds);
+      
+    if (profiles) {
+      profiles.forEach(p => {
+        usernames[p.id] = p.username;
+      });
+    }
+  }
+
   interface MemberWithUserData {
     id: string;
     user_id: string;
@@ -91,6 +105,7 @@ export async function GET(request: NextRequest) {
     created_at: string;
     email: string | undefined;
     avatar: string | undefined;
+    username: string | undefined;
     allowed_environments: string[] | null;
   }
 
@@ -102,6 +117,7 @@ export async function GET(request: NextRequest) {
     created_at: string;
     email: string | undefined;
     avatar: string | undefined;
+    username: string | undefined;
   }
 
   // Build members list
@@ -111,6 +127,7 @@ export async function GET(request: NextRequest) {
       ...member,
       email: emails[member.user_id],
       avatar: avatars[member.user_id],
+      username: usernames[member.user_id],
     }));
   }
 
@@ -124,6 +141,7 @@ export async function GET(request: NextRequest) {
       created_at: new Date().toISOString(),
       email: emails[project.user_id],
       avatar: avatars[project.user_id],
+      username: usernames[project.user_id],
       allowed_environments: null,
     });
   }
@@ -135,6 +153,7 @@ export async function GET(request: NextRequest) {
       ...request,
       email: emails[request.user_id],
       avatar: avatars[request.user_id],
+      username: usernames[request.user_id],
     }));
   }
 

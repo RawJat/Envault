@@ -62,6 +62,7 @@ interface Member {
   created_at: string;
   email?: string;
   avatar?: string;
+  username?: string;
   allowed_environments?: string[] | null;
 }
 
@@ -73,6 +74,7 @@ interface PendingRequest {
   created_at: string;
   email?: string;
   avatar?: string;
+  username?: string;
 }
 
 const areEnvironmentsEqual = (
@@ -619,36 +621,41 @@ export function ShareProjectDialog({
                             return (
                               <div key={request.id} className={`flex flex-col border rounded-lg overflow-hidden transition-all bg-muted/30 ${shakeIds.has(request.user_id) ? "animate-shake border-destructive/50 ring-1 ring-destructive/50" : ""}`}>
                                 <div
-                                  className={`flex flex-col sm:flex-row sm:items-center gap-3 justify-between p-3 ${currentAction === "approve" ? "cursor-pointer hover:bg-muted/50" : ""}`}
+                                  className={`flex flex-row items-center p-3 gap-3 w-full ${currentAction === "approve" ? "cursor-pointer hover:bg-muted/50" : ""}`}
                                   onClick={(e) => {
                                     if (currentAction === "approve") toggleExpand(e, request.id);
                                   }}
                                 >
-                                  <div className="flex items-center space-x-3 flex-1 min-w-0">
-                                    <UserAvatar className="h-8 w-8 shrink-0" user={{ email: request.email || "unknown", avatar: request.avatar }} />
-                                    <div className="flex-1 min-w-0">
-                                      <p className="text-sm font-medium leading-none truncate">{request.email || "Unknown User"}</p>
+                                  <UserAvatar className="h-8 w-8 shrink-0" user={{ email: request.email || "unknown", avatar: request.avatar }} />
+                                  
+                                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                                    <div className="flex-1 min-w-0 [mask-image:linear-gradient(to_right,black_calc(100%-20px),transparent_100%)]">
+                                      <p className="text-sm font-medium leading-none whitespace-nowrap overflow-hidden">
+                                        <span className="sm:hidden">{request.username || request.email?.split('@')[0] || "Unknown User"}</span>
+                                        <span className="hidden sm:inline">{request.email || "Unknown User"}</span>
+                                      </p>
                                     </div>
-                                  </div>
-                                  <div className="flex items-center space-x-3 justify-end shrink-0 pl-2">
-                                    {isOwner && (
-                                      <Select
-                                        value={currentAction}
-                                        onValueChange={(value: "pending" | "approve" | "deny") => handleRequestAction(request, value)}
-                                      >
-                                        <SelectTrigger className="w-full sm:w-32" onClick={(e) => e.stopPropagation()}>
-                                          <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectItem value="pending">Pending</SelectItem>
-                                          <SelectItem value="approve">Approve</SelectItem>
-                                          <SelectItem value="deny" className="text-destructive focus:bg-destructive/10">Deny</SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                    )}
-                                    {currentAction === "approve" && (
-                                      <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
-                                    )}
+                                    
+                                    <div className="flex items-center space-x-2 shrink-0">
+                                      {isOwner && (
+                                        <Select
+                                          value={currentAction}
+                                          onValueChange={(value: "pending" | "approve" | "deny") => handleRequestAction(request, value)}
+                                        >
+                                          <SelectTrigger className="w-[100px] h-8 text-xs sm:text-sm sm:h-9 sm:w-32" onClick={(e) => e.stopPropagation()}>
+                                            <SelectValue />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="pending">Pending</SelectItem>
+                                            <SelectItem value="approve">Approve</SelectItem>
+                                            <SelectItem value="deny" className="text-destructive focus:bg-destructive/10">Deny</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      )}
+                                      {currentAction === "approve" && (
+                                        <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
 
@@ -750,24 +757,29 @@ export function ShareProjectDialog({
                             return (
                               <div key={member.id} className={`flex flex-col border rounded-lg overflow-hidden transition-all bg-card ${shakeIds.has(member.user_id) ? "animate-shake border-destructive/50 ring-1 ring-destructive/50" : ""}`}>
                                 <div
-                                  className={`flex flex-col sm:flex-row sm:items-center gap-3 justify-between p-3 ${!isOwnerRole && isOwner ? "cursor-pointer hover:bg-muted/50" : ""}`}
+                                  className={`flex flex-row items-center p-3 gap-3 w-full ${!isOwnerRole && isOwner ? "cursor-pointer hover:bg-muted/50" : ""}`}
                                   onClick={(e) => {
                                     if (!isOwnerRole && isOwner) toggleExpand(e, member.id);
                                   }}
                                 >
-                                  <div className="flex items-center space-x-3 flex-1 min-w-0">
-                                    <UserAvatar className="h-8 w-8 shrink-0" user={{ email: member.email || "unknown", avatar: member.avatar }} />
-                                    <div className="flex-1 min-w-0">
-                                      <p className="text-sm font-medium leading-none truncate">{member.email || "Unknown User"}</p>
+                                  <UserAvatar className="h-8 w-8 shrink-0" user={{ email: member.email || "unknown", avatar: member.avatar }} />
+                                  
+                                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                                    <div className="flex-1 min-w-0 [mask-image:linear-gradient(to_right,black_calc(100%-20px),transparent_100%)]">
+                                      <p className="text-sm font-medium leading-none whitespace-nowrap overflow-hidden">
+                                        <span className="sm:hidden">{member.username || member.email?.split('@')[0] || "Unknown User"}</span>
+                                        <span className="hidden sm:inline">{member.email || "Unknown User"}</span>
+                                      </p>
                                     </div>
-                                  </div>
-                                  <div className="flex items-center space-x-3 justify-end shrink-0 pl-2">
-                                    <Badge variant={isOwnerRole ? "default" : "outline"} className="capitalize shrink-0">
-                                      {currentRole === "revoke" ? "revoking" : currentRole}
-                                    </Badge>
-                                    {isOwner && !isOwnerRole && (
-                                      <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
-                                    )}
+                                    
+                                    <div className="flex items-center space-x-2 shrink-0">
+                                      <Badge variant={isOwnerRole ? "default" : "outline"} className="capitalize shrink-0">
+                                        {currentRole === "revoke" ? "revoking" : currentRole}
+                                      </Badge>
+                                      {isOwner && !isOwnerRole && (
+                                        <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
 
