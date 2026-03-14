@@ -38,6 +38,11 @@ var statusCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		resolvedEnv := resolveTargetEnvironment()
+		if projectID != "" {
+			if env, err := resolveTargetEnvironmentForProject(projectID); err == nil {
+				resolvedEnv = env
+			}
+		}
 		resolvedFile := resolveEnvFile(resolvedEnv, "")
 		path := "/status"
 		if projectID != "" {

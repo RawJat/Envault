@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/DinanathDash/Envault/cli-go/internal/api"
 	"github.com/DinanathDash/Envault/cli-go/internal/project"
+	"github.com/DinanathDash/Envault/cli-go/internal/ui"
 )
 
 const defaultEnvName = "development"
@@ -30,6 +32,107 @@ func resolveTargetEnvironment() string {
 	}
 
 	return defaultEnvName
+}
+
+type cliEnvironment struct {
+	Slug      string `json:"slug"`
+	IsDefault bool   `json:"isDefault"`
+}
+
+type cliEnvironmentsResponse struct {
+	Environments []cliEnvironment `json:"environments"`
+}
+
+type apiErrorBody struct {
+	Error       string `json:"error"`
+	Message     string `json:"message"`
+	Environment string `json:"environment"`
+}
+
+func resolveTargetEnvironmentForProject(projectID string) (string, error) {
+	explicit := strings.TrimSpace(envFlag)
+	if explicit != "" {
+		return explicit, nil
+	}
+
+	cfg, _ := project.ReadConfig()
+	preferred := defaultEnvName
+	if strings.TrimSpace(cfg.DefaultEnvironment) != "" {
+		preferred = strings.TrimSpace(cfg.DefaultEnvironment)
+	}
+
+	environments, err := fetchAuthorizedEnvironments(projectID)
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch available environments: %w", err)
+	}
+	if len(environments) == 0 {
+		return "", errors.New("no accessible environments found for this project. Use --env after access is granted")
+	}
+
+	for _, env := range environments {
+		if env.Slug == preferred {
+			return preferred, nil
+		}
+	}
+
+	for _, env := range environments {
+		if env.IsDefault {
+			return env.Slug, nil
+		}
+	}
+
+	return environments[0].Slug, nil
+}
+
+func fetchAuthorizedEnvironments(projectID string) ([]cliEnvironment, error) {
+	client := api.NewClient()
+	respBytes, err := client.Get(fmt.Sprintf("/projects/%s/environments", projectID))
+	if err != nil {
+		return nil, err
+	}
+
+	var payload cliEnvironmentsResponse
+	if err := json.Unmarshal(respBytes, &payload); err != nil {
+		return nil, fmt.Errorf("invalid environments response: %w", err)
+	}
+
+	return payload.Environments, nil
+}
+
+func handleEnvironmentAccessDenied(err error, targetEnv string) bool {
+	var apiErr *api.APIError
+	if !errors.As(err, &apiErr) || apiErr.StatusCode != 403 {
+		return false
+	}
+
+	body := strings.TrimSpace(apiErr.Body)
+	if body == "" {
+		return false
+	}
+
+	var parsed apiErrorBody
+	if jsonErr := json.Unmarshal([]byte(body), &parsed); jsonErr == nil {
+		if parsed.Error == "ENVIRONMENT_ACCESS_DENIED" {
+			env := targetEnv
+			if strings.TrimSpace(parsed.Environment) != "" {
+				env = strings.TrimSpace(parsed.Environment)
+			}
+			printEnvironmentAccessDenied(env)
+			return true
+		}
+	}
+
+	if strings.Contains(strings.ToLower(body), "access to this environment") {
+		printEnvironmentAccessDenied(targetEnv)
+		return true
+	}
+
+	return false
+}
+
+func printEnvironmentAccessDenied(targetEnv string) {
+	fmt.Fprintln(os.Stderr, ui.ColorRed(fmt.Sprintf("Error: You don't have access to the '%s' environment.", targetEnv)))
+	fmt.Fprintln(os.Stderr, ui.ColorYellow("To request access, contact your project owner or visit your Envault dashboard."))
 }
 
 func resolveEnvFile(targetEnv string, fileOverride string) string {

@@ -114,9 +114,22 @@ export async function GET(
         .single();
 
       if (member) {
-        if (!member.allowed_environments || member.allowed_environments.includes(resolvedEnvironment.environment.slug)) {
-          hasFullProjectAccess = true; // Member authorized for this environment
+        if (
+          member.allowed_environments &&
+          !member.allowed_environments.includes(
+            resolvedEnvironment.environment.slug,
+          )
+        ) {
+          return NextResponse.json(
+            {
+              error: "ENVIRONMENT_ACCESS_DENIED",
+              message: "You do not have access to this environment",
+              environment: resolvedEnvironment.environment.slug,
+            },
+            { status: 403 },
+          );
         }
+        hasFullProjectAccess = true;
       }
     }
 
@@ -503,7 +516,11 @@ export async function POST(
 
       if (member && member.allowed_environments && !member.allowed_environments.includes(resolvedEnvironment.environment.slug)) {
         return NextResponse.json(
-          { error: "Unauthorized: You do not have access to this environment" },
+          {
+            error: "ENVIRONMENT_ACCESS_DENIED",
+            message: "You do not have access to this environment",
+            environment: resolvedEnvironment.environment.slug,
+          },
           { status: 403 }
         );
       }

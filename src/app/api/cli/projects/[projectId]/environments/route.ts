@@ -52,6 +52,91 @@ export async function GET(
         { status: 403 },
       );
     }
+
+    if (role !== "owner") {
+      const { data: member } = await supabase
+        .from("project_members")
+        .select("allowed_environments")
+        .eq("project_id", projectId)
+        .eq("user_id", userId)
+        .single();
+
+      if (member?.allowed_environments) {
+        try {
+          const environments = await getProjectEnvironments(supabase, projectId);
+          const allowed = new Set(member.allowed_environments);
+          return NextResponse.json({
+            environments: environments
+              .filter((env) => allowed.has(env.slug))
+              .map((env) => ({
+                id: env.id,
+                slug: env.slug,
+                name: env.name,
+                isDefault: env.is_default,
+              })),
+          });
+        } catch (e) {
+          return NextResponse.json(
+            {
+              error:
+                e instanceof Error
+                  ? e.message
+                  : "Failed to fetch environments",
+            },
+            { status: 500 },
+          );
+        }
+      }
+
+      if (!member) {
+        try {
+          const { data: sharedSecrets, error: sharedSecretsError } =
+            await supabase
+              .from("secret_shares")
+              .select("secrets!inner(environment_id, project_id)")
+              .eq("user_id", userId)
+              .eq("secrets.project_id", projectId);
+
+          if (sharedSecretsError) {
+            return NextResponse.json(
+              { error: sharedSecretsError.message },
+              { status: 500 },
+            );
+          }
+
+          const allowedEnvironmentIds = new Set(
+            (sharedSecrets || []).map((share) => {
+              const secret = Array.isArray(share.secrets)
+                ? share.secrets[0]
+                : share.secrets;
+              return secret.environment_id as string;
+            }),
+          );
+
+          const environments = await getProjectEnvironments(supabase, projectId);
+          return NextResponse.json({
+            environments: environments
+              .filter((env) => allowedEnvironmentIds.has(env.id))
+              .map((env) => ({
+                id: env.id,
+                slug: env.slug,
+                name: env.name,
+                isDefault: env.is_default,
+              })),
+          });
+        } catch (e) {
+          return NextResponse.json(
+            {
+              error:
+                e instanceof Error
+                  ? e.message
+                  : "Failed to fetch environments",
+            },
+            { status: 500 },
+          );
+        }
+      }
+    }
   }
 
   try {

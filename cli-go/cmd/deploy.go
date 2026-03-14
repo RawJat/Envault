@@ -52,7 +52,12 @@ var deployCmd = &cobra.Command{
 			fmt.Fprintln(os.Stderr, ui.ColorRed("Invalid project ID. Expected a UUID."))
 			os.Exit(1)
 		}
-		targetEnv := resolveTargetEnvironment()
+		targetEnv, err := resolveTargetEnvironmentForProject(projectId)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, ui.ColorRed("Deploy failed."))
+			fmt.Fprintln(os.Stderr, ui.ColorRed(err.Error()))
+			os.Exit(1)
+		}
 		targetFile := resolveEnvFile(targetEnv, fileFlag)
 
 		// Hard gate: if the source file is tracked by git, the secrets are
@@ -217,6 +222,9 @@ var deployCmd = &cobra.Command{
 			if ctx.Err() != nil {
 				fmt.Fprintln(os.Stderr, ui.ColorYellow("\nOperation cancelled. Verify the Envault dashboard to confirm whether secrets were updated."))
 				os.Exit(130)
+			}
+			if handleEnvironmentAccessDenied(err, targetEnv) {
+				os.Exit(1)
 			}
 			fmt.Fprintln(os.Stderr, ui.ColorRed("Deploy failed."))
 			fmt.Fprintln(os.Stderr, ui.ColorRed(classifyAPIError(err)))
