@@ -50,7 +50,7 @@ jobs:
         run: |
           npm install --no-save semantic-release @semantic-release/commit-analyzer @semantic-release/release-notes-generator @semantic-release/npm @semantic-release/git @semantic-release/exec
 
-      - name: Ensure release scope is CLI-only
+      - name: Ensure CLI changes exist since last tag
         id: cli_scope
         shell: bash
         run: |
@@ -62,20 +62,15 @@ jobs:
             exit 0
           fi
 
-          NON_CLI_FILES="$(git diff --name-only "${LAST_TAG}..HEAD" -- . \
-            ':(exclude)cli-go/**' \
-            ':(exclude)cli-wrapper/**' \
-            ':(exclude).github/workflows/publish.yml' \
-            ':(exclude)release.config.js')"
-
-          if [ -n "${NON_CLI_FILES}" ]; then
-            echo "Non-CLI changes detected since ${LAST_TAG}; skipping CLI auto-release to keep release notes CLI-only."
-            printf '%s\n' "${NON_CLI_FILES}"
+          CLI_FILES="$(git diff --name-only "${LAST_TAG}..HEAD" -- 'cli-go/**' 'cli-wrapper/**')"
+          if [ -z "${CLI_FILES}" ]; then
+            echo "No CLI file changes detected since ${LAST_TAG}; skipping CLI auto-release."
             echo "should_release=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          echo "CLI-only diff since ${LAST_TAG}; proceeding with CLI auto-release."
+          echo "CLI changes detected since ${LAST_TAG}; proceeding with CLI auto-release."
+          printf '%s\n' "${CLI_FILES}"
           echo "should_release=true" >> "$GITHUB_OUTPUT"
 
       - name: Semantic Release (CLI only)
