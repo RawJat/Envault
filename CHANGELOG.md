@@ -10,6 +10,20 @@ All notable changes to Envault are documented here.
 
 ---
 
+## 1.3.1 — 2026-03-14
+
+> Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
+
+### Improvements
+
+- **CLI Release Workflow Reliability:** Updated publish workflow gating to release when CLI files changed since the last CLI tag, even if app/docs commits also exist in the repo history.
+- **Semantic-Release Stability:** Added the missing `conventional-changelog-conventionalcommits` dependency required by `@semantic-release/commit-analyzer` preset loading.
+- **NPM Publish Metadata Cleanup:** Fixed CLI wrapper package metadata to remove npm publish auto-corrections (`bin` path normalization and repository URL format).
+- **GoReleaser Modernization:** Migrated deprecated archive/homebrew keys and refined changelog filtering to reduce noise and exclude release-loop commit messages.
+- **Routine Dependency Refresh:** Applied a safe semver-range dependency update pass and regenerated lockfile state.
+
+---
+
 ## 1.3.0 — 2026-03-14
 
 > Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
