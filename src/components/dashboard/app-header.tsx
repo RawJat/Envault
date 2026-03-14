@@ -44,6 +44,30 @@ export function AppHeader({
   const { user, logout } = useEnvaultStore();
   const router = useRouter();
 
+  const handleBack = () => {
+    if (typeof window === "undefined") {
+      if (backTo) router.push(backTo);
+      return;
+    }
+
+    const hasHistory = window.history.length > 1;
+    const referrer = document.referrer;
+    const isInternalReferrer =
+      !!referrer && new URL(referrer).origin === window.location.origin;
+
+    if (hasHistory && isInternalReferrer) {
+      router.back();
+      return;
+    }
+
+    if (backTo) {
+      router.push(backTo);
+      return;
+    }
+
+    router.push("/dashboard");
+  };
+
   const handleLogout = async () => {
     logout();
     await signOut();
@@ -57,7 +81,7 @@ export function AppHeader({
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => router.push(backTo)}
+              onClick={handleBack}
               className="[&_svg]:!w-5 [&_svg]:!h-5"
             >
               <ArrowLeft />

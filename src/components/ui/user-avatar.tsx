@@ -40,7 +40,6 @@ export function UserAvatar({
     user?.username ||
     user?.name ||
     user?.firstName ||
-    email.split("@")[0] ||
     email ||
     "User";
   const initials = displayName.slice(0, 2).toUpperCase();

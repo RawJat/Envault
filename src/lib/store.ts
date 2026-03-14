@@ -10,8 +10,8 @@ export type EnvironmentVariable = {
   isShared?: boolean;
   sharedAt?: string;
   userInfo?: {
-    creator?: { email: string; id: string; avatar?: string };
-    updater?: { email: string; id: string; avatar?: string };
+    creator?: { email: string; id: string; avatar?: string; username?: string };
+    updater?: { email: string; id: string; avatar?: string; username?: string };
   };
 };
 
@@ -30,6 +30,7 @@ export type Project = {
     slug: string;
     name: string;
     is_default?: boolean;
+    can_access?: boolean;
   }>;
   owner_username?: string | null;
   variables: EnvironmentVariable[];

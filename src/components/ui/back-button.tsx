@@ -8,10 +8,20 @@ export function BackButton() {
     const router = useRouter()
 
     const handleGoBack = () => {
-        if (typeof window !== 'undefined' && window.history.length > 2) {
+        if (typeof window === 'undefined') {
+            router.push("/dashboard")
+            return
+        }
+
+        const hasHistory = window.history.length > 1
+        const referrer = document.referrer
+        const isInternalReferrer =
+            !!referrer && new URL(referrer).origin === window.location.origin
+
+        if (hasHistory && isInternalReferrer) {
             router.back()
         } else {
-            router.push("/")
+            router.push("/dashboard")
         }
     }
 

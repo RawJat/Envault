@@ -27,6 +27,7 @@ import { AccessRequestSkeleton } from "@/components/notifications/notification-s
 import { useHotkeys } from "@/hooks/use-hotkeys";
 import { Kbd } from "@/components/ui/kbd";
 import { DateDisplay } from "@/components/ui/date-display";
+import { formatEnvironmentLabel } from "@/lib/environment-label";
 
 interface AccessRequest {
   id: string;
@@ -34,6 +35,7 @@ interface AccessRequest {
   project_id: string;
   status: string;
   created_at: string;
+  requested_environment?: string | null;
   projects:
   | { name: string; user_id: string }
   | { name: string; user_id: string }[];
@@ -74,6 +76,7 @@ export function AccessRequestsPanel() {
                 project_id,
                 status,
                 created_at,
+                requested_environment,
                 projects!inner(name, user_id)
             `,
       )
@@ -213,6 +216,14 @@ export function AccessRequestsPanel() {
                       Requesting access to{" "}
                       <span className="font-medium">{projectName}</span>
                     </p>
+                    {request.requested_environment && (
+                      <p className="text-xs text-muted-foreground">
+                        Requested environment:{" "}
+                        <span className="font-medium">
+                          {formatEnvironmentLabel(request.requested_environment)}
+                        </span>
+                      </p>
+                    )}
                     <p className="text-xs text-muted-foreground mt-1">
                       <DateDisplay
                         date={request.created_at}

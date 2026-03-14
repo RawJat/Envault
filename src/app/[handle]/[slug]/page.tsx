@@ -127,27 +127,80 @@ export default async function SharedProjectPage({
     envList.find((env) => env.is_default) ||
     envList[0];
 
-  const activeEnvironment = preferredEnvironment;
+  let activeEnvironment = preferredEnvironment;
   if (!activeEnvironment) {
     notFound();
   }
 
+  let allowedEnvironments: string[] | null = null;
+  if (role !== "owner") {
+    const { data: member } = await supabase
+      .from("project_members")
+      .select("allowed_environments")
+      .eq("project_id", id)
+      .eq("user_id", user.id)
+      .single();
+
+    if (member && Array.isArray(member.allowed_environments)) {
+      allowedEnvironments = member.allowed_environments as string[];
+    } else if (!member) {
+      const { data: sharedEnvSecrets } = await supabase
+        .from("secret_shares")
+        .select("secrets!inner(environment_id, project_id)")
+        .eq("user_id", user.id)
+        .eq("secrets.project_id", id);
+
+      const allowedEnvironmentIds = new Set(
+        (sharedEnvSecrets || []).map((share) => {
+          const secret = Array.isArray(share.secrets)
+            ? share.secrets[0]
+            : share.secrets;
+          return secret.environment_id as string;
+        }),
+      );
+
+      allowedEnvironments = envList
+        .filter((env) => allowedEnvironmentIds.has(env.id))
+        .map((env) => env.slug);
+    }
+  }
+
+  if (
+    allowedEnvironments &&
+    !allowedEnvironments.includes(activeEnvironment.slug) &&
+    !requestedEnvSlug
+  ) {
+    const firstAllowed = envList.find((env) =>
+      allowedEnvironments!.includes(env.slug),
+    );
+    if (firstAllowed) {
+      activeEnvironment = firstAllowed;
+    }
+  }
+
+  const hasActiveEnvironmentAccess =
+    !allowedEnvironments || allowedEnvironments.includes(activeEnvironment.slug);
+
   // Fetch secrets + sharedSecrets in parallel (both need project.id)
   const [
-    { data: secrets, error: secretsError },
+    { data: secretsData, error: secretsError },
     { data: sharedSecrets, error: sharedSecretsError },
   ] = await Promise.all([
-    supabase
-      .from("secrets")
-      .select("*")
-      .eq("project_id", id)
-      .eq("environment_id", activeEnvironment.id)
-      .order("created_at", { ascending: true }),
+    hasActiveEnvironmentAccess
+      ? supabase
+          .from("secrets")
+          .select("*")
+          .eq("project_id", id)
+          .eq("environment_id", activeEnvironment.id)
+          .order("created_at", { ascending: true })
+      : Promise.resolve({ data: [], error: null }),
     supabase
       .from("secret_shares")
       .select(`id, created_at, secrets (*)`)
       .eq("user_id", user.id),
   ]);
+
+  const secrets = secretsData || [];
 
   if (secretsError)
     console.error(`[SharedProjectPage] secrets error:`, secretsError);
@@ -225,9 +278,17 @@ export default async function SharedProjectPage({
 
   const userMap = new Map<
     string,
-    { email: string; id: string; avatar?: string }
+    { email: string; id: string; avatar?: string; username?: string }
   >();
   if (userIds.size > 0 && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    const { data: profiles } = await adminSupabase
+      .from("profiles")
+      .select("id, username")
+      .in("id", Array.from(userIds));
+    const usernameById = new Map<string, string>(
+      (profiles || []).map((p) => [p.id, p.username]),
+    );
+
     await Promise.all(
       Array.from(userIds).map(async (uid) => {
         const { data } = await adminSupabase.auth.admin.getUserById(uid);
@@ -239,6 +300,7 @@ export default async function SharedProjectPage({
               data.user.user_metadata?.avatar_url ||
               data.user.user_metadata?.picture ||
               undefined,
+            username: usernameById.get(uid) || undefined,
           });
         }
       }),
@@ -269,6 +331,7 @@ export default async function SharedProjectPage({
       slug: env.slug,
       name: env.name,
       is_default: env.is_default,
+      can_access: !allowedEnvironments || allowedEnvironments.includes(env.slug),
     })),
     owner_username: handle,
     createdAt: project.created_at,

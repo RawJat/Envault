@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 import { getEmailHtml } from "./email-html";
 import { Notification } from "./types/notifications";
+import { formatEnvironmentLabel } from "./environment-label";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -62,6 +63,7 @@ export async function sendAccessRequestEmail(
   requesterEmail: string, // Who requested access
   projectName: string,
   requestId: string,
+  requestedEnvironment?: string,
   ownerId?: string, // Added to check preferences
 ) {
   if (process.env.NODE_ENV === "development" && !process.env.RESEND_API_KEY) {
@@ -86,10 +88,18 @@ export async function sendAccessRequestEmail(
   }
 
   try {
+    const requestedEnvironmentLabel = requestedEnvironment
+      ? formatEnvironmentLabel(requestedEnvironment)
+      : "";
+    const envLine = requestedEnvironment
+      ? `<p><strong>Requested environment:</strong> ${requestedEnvironmentLabel}</p>`
+      : "";
+
     const html = getEmailHtml({
       heading: "New Access Request",
       content: `
         <p><strong>${requesterEmail}</strong> has requested access to your project <strong>${projectName}</strong>.</p>
+        ${envLine}
         <p>Review and approve or reject this request from your dashboard.</p>
       `,
       action: {
@@ -247,6 +257,8 @@ export async function sendInviteEmail(
 export async function sendAccessGrantedEmail(
   to: string,
   projectName: string,
+  role?: "viewer" | "editor" | "owner",
+  allowedEnvironments?: string[] | null,
   userId?: string, // Added to check preferences
 ) {
   if (process.env.NODE_ENV === "development" && !process.env.RESEND_API_KEY) {
@@ -271,9 +283,19 @@ export async function sendAccessGrantedEmail(
   }
 
   try {
+    const formattedAllowedEnvironments =
+      allowedEnvironments?.map((env) => formatEnvironmentLabel(env)) || [];
+    const roleText = role ? ` with <strong>${role}</strong> permissions` : "";
+    const envText =
+      allowedEnvironments === undefined || allowedEnvironments === null
+        ? "all environments"
+        : formattedAllowedEnvironments.length > 0
+          ? formattedAllowedEnvironments.join(", ")
+          : "none";
+
     const html = getEmailHtml({
       heading: "Access Granted",
-      content: `<p>Your request to access <strong>${projectName}</strong> has been approved.</p>`,
+      content: `<p>Your request to access <strong>${projectName}</strong> has been approved${roleText}.</p><p><strong>Environment access:</strong> ${envText}</p>`,
       action: {
         text: "Go to Dashboard",
         url: `${APP_URL}/dashboard`,
@@ -292,6 +314,163 @@ export async function sendAccessGrantedEmail(
     }
   } catch (error) {
     console.error("Failed to send access granted email:", error);
+  }
+}
+
+export async function sendAccessDeniedEmail(
+  to: string,
+  projectName: string,
+  userId?: string,
+) {
+  if (process.env.NODE_ENV === "development" && !process.env.RESEND_API_KEY) {
+    console.log("Skipping Access Denied email in DEV (No API Key).");
+    return;
+  }
+
+  if (userId) {
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const admin = createAdminClient();
+    const { data: prefs } = await admin
+      .from("notification_preferences")
+      .select("email_access_granted")
+      .eq("user_id", userId)
+      .single();
+
+    if (prefs && prefs.email_access_granted === false) {
+      return;
+    }
+  }
+
+  try {
+    const html = getEmailHtml({
+      heading: "Access Request Denied",
+      content: `<p>Your request to access <strong>${projectName}</strong> was denied.</p><p>If you think this is a mistake, contact the project owner.</p>`,
+      action: {
+        text: "Go to Dashboard",
+        url: `${APP_URL}/dashboard`,
+      },
+      logoUrl: LOGO_URL,
+    });
+
+    await resend.emails.send({
+      from: SENDERS.notifications,
+      to,
+      subject: `Access Request Denied: ${projectName}`,
+      html,
+    });
+  } catch (error) {
+    console.error("Failed to send access denied email:", error);
+  }
+}
+
+export async function sendAccessUpdatedEmail(
+  to: string,
+  projectName: string,
+  oldRole: string,
+  newRole: string,
+  changedBy: string,
+  newAllowedEnvironments?: string[] | null,
+  userId?: string,
+) {
+  if (process.env.NODE_ENV === "development" && !process.env.RESEND_API_KEY) {
+    console.log("Skipping Access Updated email in DEV (No API Key).");
+    return;
+  }
+
+  if (userId) {
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const admin = createAdminClient();
+    const { data: prefs } = await admin
+      .from("notification_preferences")
+      .select("email_access_granted")
+      .eq("user_id", userId)
+      .single();
+
+    if (prefs && prefs.email_access_granted === false) {
+      return;
+    }
+  }
+
+  const roleText =
+    oldRole === newRole
+      ? `<p>Your role remains <strong>${newRole}</strong>.</p>`
+      : `<p>Your role changed from <strong>${oldRole}</strong> to <strong>${newRole}</strong>.</p>`;
+
+  const formattedAllowedEnvironments =
+    newAllowedEnvironments?.map((env) => formatEnvironmentLabel(env)) || [];
+  const envText =
+    newAllowedEnvironments === undefined || newAllowedEnvironments === null
+      ? "all environments"
+      : formattedAllowedEnvironments.length > 0
+        ? formattedAllowedEnvironments.join(", ")
+        : "none";
+
+  try {
+    const html = getEmailHtml({
+      heading: "Access Updated",
+      content: `<p><strong>${changedBy}</strong> updated your access in <strong>${projectName}</strong>.</p>${roleText}<p><strong>Environment access:</strong> ${envText}</p>`,
+      action: {
+        text: "Go to Dashboard",
+        url: `${APP_URL}/dashboard`,
+      },
+      logoUrl: LOGO_URL,
+    });
+
+    await resend.emails.send({
+      from: SENDERS.notifications,
+      to,
+      subject: `Access Updated: ${projectName}`,
+      html,
+    });
+  } catch (error) {
+    console.error("Failed to send access updated email:", error);
+  }
+}
+
+export async function sendAccessRevokedEmail(
+  to: string,
+  projectName: string,
+  removedBy: string,
+  userId?: string,
+) {
+  if (process.env.NODE_ENV === "development" && !process.env.RESEND_API_KEY) {
+    console.log("Skipping Access Revoked email in DEV (No API Key).");
+    return;
+  }
+
+  if (userId) {
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const admin = createAdminClient();
+    const { data: prefs } = await admin
+      .from("notification_preferences")
+      .select("email_access_granted")
+      .eq("user_id", userId)
+      .single();
+
+    if (prefs && prefs.email_access_granted === false) {
+      return;
+    }
+  }
+
+  try {
+    const html = getEmailHtml({
+      heading: "Project Access Revoked",
+      content: `<p><strong>${removedBy}</strong> removed your access to <strong>${projectName}</strong>.</p>`,
+      action: {
+        text: "Go to Dashboard",
+        url: `${APP_URL}/dashboard`,
+      },
+      logoUrl: LOGO_URL,
+    });
+
+    await resend.emails.send({
+      from: SENDERS.notifications,
+      to,
+      subject: `Access Revoked: ${projectName}`,
+      html,
+    });
+  } catch (error) {
+    console.error("Failed to send access revoked email:", error);
   }
 }
 

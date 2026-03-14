@@ -38,7 +38,12 @@ var runCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		targetEnv := resolveTargetEnvironment()
+		targetEnv, err := resolveTargetEnvironmentForProject(projectID)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, ui.ColorRed("Run failed."))
+			fmt.Fprintln(os.Stderr, ui.ColorRed(err.Error()))
+			os.Exit(1)
+		}
 		client := api.NewClient()
 		path := fmt.Sprintf("/projects/%s/secrets?environment=%s", projectID, url.QueryEscape(targetEnv))
 
@@ -47,6 +52,9 @@ var runCmd = &cobra.Command{
 		usedOfflineCache := false
 		cachedAt := time.Time{}
 		if err != nil {
+			if handleEnvironmentAccessDenied(err, targetEnv) {
+				os.Exit(1)
+			}
 			if api.IsFallbackEligible(err) {
 				cachedSecrets, loadedAt, cacheErr := offlinecache.Load(projectID, targetEnv)
 				if cacheErr != nil {

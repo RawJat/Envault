@@ -24,8 +24,10 @@ import {
   Bell,
   Command,
   Copy,
+  Check,
   AlertTriangle,
   Loader2,
+  CornerDownLeft,
 } from "lucide-react";
 import { toast } from "sonner";
 import { NotificationPreferences } from "@/components/notifications/notification-preferences";
@@ -44,6 +46,7 @@ import { deleteAccountAction } from "@/app/actions";
 import { useHotkeys } from "@/hooks/use-hotkeys";
 import { Kbd } from "@/components/ui/kbd";
 import { AppHeader } from "@/components/dashboard/app-header";
+import { inferUsernameFromAuth } from "@/lib/username";
 
 const ModKey = () => (
   <>
@@ -91,6 +94,7 @@ export default function SettingsView() {
   const [firstName, setFirstName] = useState(user?.firstName || "");
   const [lastName, setLastName] = useState(user?.lastName || "");
   const [username, setUsername] = useState(user?.username || "");
+  const [userIdCopied, setUserIdCopied] = useState(false);
   useEffect(() => {
     if (user) {
       setFirstName(user.firstName || "");
@@ -176,8 +180,17 @@ export default function SettingsView() {
     }
   };
 
-  const emailPrefix = user?.email?.split("@")[0] || "";
-  const defaultUsernameRegex = new RegExp(`^${emailPrefix}(-\\d+)?$`);
+  const inferredDefaultBase = inferUsernameFromAuth(
+    user?.email,
+    user?.user_metadata as Record<string, unknown> | undefined,
+  );
+  const escapedDefaultBase = inferredDefaultBase.replace(
+    /[.*+?^${}()|[\]\\]/g,
+    "\\$&",
+  );
+  const defaultUsernameRegex = new RegExp(
+    `^${escapedDefaultBase}(-\\d+)?$`,
+  );
   const hasCustomizedUsername = user?.username
     ? !defaultUsernameRegex.test(user.username)
     : false;
@@ -210,7 +223,8 @@ export default function SettingsView() {
     const identifier = user?.username || user?.email || "";
     try {
       await navigator.clipboard.writeText(identifier);
-      toast.success("Identifier copied to clipboard");
+      setUserIdCopied(true);
+      setTimeout(() => setUserIdCopied(false), 2000);
     } catch {
       toast.error("Failed to copy identifier");
     }
@@ -578,10 +592,14 @@ export default function SettingsView() {
                 To confirm, type{" "}
                 <span className="inline-flex items-center gap-1 font-bold">
                   &quot;{user?.username || user?.email}&quot;{" "}
-                  <Copy
-                    className="h-4 w-4 cursor-pointer hover:text-primary"
-                    onClick={handleCopyUserIdentifier}
-                  />
+                  {userIdCopied ? (
+                    <Check className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <Copy
+                      className="h-4 w-4 cursor-pointer hover:text-primary"
+                      onClick={handleCopyUserIdentifier}
+                    />
+                  )}
                 </span>{" "}
                 below:
               </Label>
@@ -613,6 +631,16 @@ export default function SettingsView() {
                 </>
               ) : (
                 "Delete Account"
+              )}
+              {!isDeletingAccount && (
+                <div className="hidden sm:flex items-center gap-1">
+                  <Kbd variant="primary" size="xs">
+                    <ModKey />
+                  </Kbd>
+                  <Kbd variant="primary" size="xs">
+                    <CornerDownLeft className="h-3 w-3" />
+                  </Kbd>
+                </div>
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

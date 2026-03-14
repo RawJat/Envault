@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useEnvaultStore } from "@/lib/store";
 import { getProjects } from "@/app/project-actions";
 import { createClient } from "@/lib/supabase/client";
+import { inferUsernameFromAuth } from "@/lib/username";
 
 export function ProjectsSync() {
   useEffect(() => {
@@ -27,34 +28,38 @@ export function ProjectsSync() {
 
         if (userResult.data.user) {
           const u = userResult.data.user;
-          const meta = u.user_metadata || {};
+          const meta = (u.user_metadata || {}) as Record<string, unknown>;
 
-          // Fetch username from profiles table if not in user_metadata
-          let username = meta.username || "";
-          if (!username) {
-            const { data: profile } = await supabase
-              .from("profiles")
-              .select("username")
-              .eq("id", u.id)
-              .maybeSingle();
-            username = profile?.username || u.email?.split("@")[0] || "";
-          }
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("username")
+            .eq("id", u.id)
+            .maybeSingle();
+          const username =
+            profile?.username || inferUsernameFromAuth(u.email, meta);
 
           if (!controller.signal.aborted) {
             login({
               id: u.id,
               email: u.email!,
               firstName:
-                meta.first_name ||
-                meta.full_name?.split(" ")[0] ||
+                (typeof meta.first_name === "string" ? meta.first_name : "") ||
+                (typeof meta.full_name === "string"
+                  ? meta.full_name.split(" ")[0]
+                  : "") ||
                 u.email?.split("@")[0] ||
                 "",
               lastName:
-                meta.last_name ||
-                meta.full_name?.split(" ").slice(1).join(" ") ||
+                (typeof meta.last_name === "string" ? meta.last_name : "") ||
+                (typeof meta.full_name === "string"
+                  ? meta.full_name.split(" ").slice(1).join(" ")
+                  : "") ||
                 "",
               username,
-              avatar: meta.avatar_url || meta.picture,
+              avatar:
+                (typeof meta.avatar_url === "string" ? meta.avatar_url : "") ||
+                (typeof meta.picture === "string" ? meta.picture : "") ||
+                undefined,
               authProviders:
                 u.app_metadata?.providers ||
                 u.identities?.map((i) => i.provider) ||

@@ -69,7 +69,12 @@ var pullCmd = &cobra.Command{
 			fmt.Fprintln(os.Stderr, ui.ColorRed("Invalid project ID. Expected a UUID."))
 			os.Exit(1)
 		}
-		targetEnv := resolveTargetEnvironment()
+		targetEnv, err := resolveTargetEnvironmentForProject(projectId)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, ui.ColorRed("Pull failed."))
+			fmt.Fprintln(os.Stderr, ui.ColorRed(err.Error()))
+			os.Exit(1)
+		}
 		targetFile := resolveEnvFile(targetEnv, fileFlag)
 
 		// 2. Check for existing .env
@@ -142,6 +147,9 @@ var pullCmd = &cobra.Command{
 			if ctx.Err() != nil {
 				fmt.Fprintln(os.Stderr, ui.ColorYellow("\nOperation cancelled."))
 				os.Exit(130)
+			}
+			if handleEnvironmentAccessDenied(err, targetEnv) {
+				os.Exit(1)
 			}
 			// Check specifically for the ACCESS_REQUIRED JIT error
 			var apiErr *api.APIError

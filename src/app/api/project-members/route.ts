@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
   // Fetch pending requests using admin
   const { data: requestsData } = await admin
     .from("access_requests")
-    .select("id, user_id, project_id, status, created_at")
+    .select("id, user_id, project_id, status, created_at, requested_environment")
     .eq("project_id", projectId)
     .eq("status", "pending");
 
@@ -115,6 +115,7 @@ export async function GET(request: NextRequest) {
     project_id: string;
     status: string;
     created_at: string;
+    requested_environment: string | null;
     email: string | undefined;
     avatar: string | undefined;
     username: string | undefined;

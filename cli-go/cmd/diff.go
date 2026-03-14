@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -54,7 +55,12 @@ var diffCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		targetEnv := resolveTargetEnvironment()
+		targetEnv, err := resolveTargetEnvironmentForProject(projectID)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, ui.ColorRed("Diff failed."))
+			fmt.Fprintln(os.Stderr, ui.ColorRed(err.Error()))
+			os.Exit(1)
+		}
 		targetFile := resolveEnvFile(targetEnv, fileFlag)
 
 		result, err := computeDiff(ctx, projectID, targetEnv, targetFile)
@@ -105,6 +111,9 @@ func computeDiff(ctx context.Context, projectID, targetEnv, targetFile string) (
 	path := fmt.Sprintf("/projects/%s/secrets?environment=%s", projectID, url.QueryEscape(targetEnv))
 	respBytes, err := client.GetWithContext(ctx, path)
 	if err != nil {
+		if handleEnvironmentAccessDenied(err, targetEnv) {
+			return diffResult{}, errors.New("environment access denied")
+		}
 		return diffResult{}, fmt.Errorf("%s", classifyAPIError(err))
 	}
 

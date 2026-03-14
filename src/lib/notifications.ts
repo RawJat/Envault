@@ -4,6 +4,7 @@ import {
   NotificationVariant,
   NOTIFICATION_ICONS,
 } from "@/lib/types/notifications";
+import { formatEnvironmentLabel } from "@/lib/environment-label";
 
 interface CreateNotificationParams {
   userId: string;
@@ -14,6 +15,43 @@ interface CreateNotificationParams {
   metadata?: Record<string, unknown>;
   actionUrl?: string;
   actionType?: string;
+}
+
+async function resolveProjectActionUrl(
+  recipientUserId: string,
+  projectId: string,
+  projectSlug: string,
+): Promise<string> {
+  const fallback = `/project/${projectSlug}`;
+  const { createAdminClient } = await import("@/lib/supabase/admin");
+  const admin = createAdminClient();
+
+  const { data: project } = await admin
+    .from("projects")
+    .select("user_id")
+    .eq("id", projectId)
+    .maybeSingle();
+
+  if (!project?.user_id) {
+    return fallback;
+  }
+
+  if (project.user_id === recipientUserId) {
+    return fallback;
+  }
+
+  const { data: ownerProfile } = await admin
+    .from("profiles")
+    .select("username")
+    .eq("id", project.user_id)
+    .maybeSingle();
+
+  const ownerUsername = ownerProfile?.username?.trim();
+  if (!ownerUsername) {
+    return fallback;
+  }
+
+  return `/${ownerUsername}/${projectSlug}`;
 }
 
 /**
@@ -176,18 +214,26 @@ export async function createAccessRequestNotification(
   projectId: string,
   requesterId: string,
   requestId: string,
+  requestedEnvironment?: string,
 ) {
+  const requestedEnvironmentLabel = requestedEnvironment
+    ? formatEnvironmentLabel(requestedEnvironment)
+    : "";
+  const envSuffix = requestedEnvironment
+    ? ` for ${requestedEnvironmentLabel} environment`
+    : "";
   return createNotification({
     userId: ownerId,
     type: "access_request_received",
     title: "New Access Request",
-    message: `${requesterEmail} wants access to ${projectName}`,
+    message: `${requesterEmail} wants access to ${projectName}${envSuffix}`,
     variant: "info",
     metadata: {
       projectId,
       requesterId,
       requesterEmail,
       requestId,
+      requestedEnvironment: requestedEnvironment || null,
     },
     actionUrl: `/approve/${requestId}`,
     actionType: "approve_request",
@@ -202,16 +248,27 @@ export async function createAccessGrantedNotification(
   projectName: string,
   projectId: string,
   role: string,
+  allowedEnvironments?: string[] | null,
 ) {
+  const formattedAllowedEnvironments =
+    allowedEnvironments?.map((env) => formatEnvironmentLabel(env)) || [];
+  const envText =
+    allowedEnvironments === undefined || allowedEnvironments === null
+      ? "all environments"
+      : formattedAllowedEnvironments.length > 0
+        ? `${formattedAllowedEnvironments.join(", ")} environment${formattedAllowedEnvironments.length > 1 ? "s" : ""}`
+        : "no environments";
+
   return createNotification({
     userId,
     type: "access_request_approved",
     title: "Access Granted",
-    message: `You now have ${role} access to ${projectName}`,
+    message: `You now have ${role} access to ${projectName} (${envText})`,
     variant: "success",
     metadata: {
       projectId,
       role,
+      allowedEnvironments: allowedEnvironments ?? null,
     },
     actionUrl: `/dashboard`,
     actionType: "view_project",
@@ -264,7 +321,7 @@ export async function createSecretAddedNotification(
       secretKey,
       addedBy,
     },
-    actionUrl: `/project/${projectSlug}`,
+    actionUrl: await resolveProjectActionUrl(userId, projectId, projectSlug),
     actionType: "view_project",
   });
 }
@@ -291,7 +348,7 @@ export async function createSecretUpdatedNotification(
       secretKey,
       updatedBy,
     },
-    actionUrl: `/project/${projectSlug}`,
+    actionUrl: await resolveProjectActionUrl(userId, projectId, projectSlug),
     actionType: "view_project",
   });
 }
@@ -318,7 +375,7 @@ export async function createSecretDeletedNotification(
       secretKey,
       deletedBy,
     },
-    actionUrl: `/project/${projectSlug}`,
+    actionUrl: await resolveProjectActionUrl(userId, projectId, projectSlug),
     actionType: "view_project",
   });
 }
@@ -347,7 +404,7 @@ export async function createBulkOperationNotification(
       count,
       performedBy,
     },
-    actionUrl: `/project/${projectSlug}`,
+    actionUrl: await resolveProjectActionUrl(userId, projectId, projectSlug),
     actionType: "view_project",
   });
 }
@@ -376,7 +433,7 @@ export async function createProjectCreatedNotification(
       projectId,
       createdBy,
     },
-    actionUrl: `/project/${projectSlug}`,
+    actionUrl: await resolveProjectActionUrl(userId, projectId, projectSlug),
     actionType: "view_project",
   });
 }
@@ -404,7 +461,7 @@ export async function createProjectRenamedNotification(
       newName,
       renamedBy,
     },
-    actionUrl: `/project/${projectSlug}`,
+    actionUrl: await resolveProjectActionUrl(userId, projectId, projectSlug),
     actionType: "view_project",
   });
 }
@@ -452,7 +509,7 @@ export async function createMemberJoinedNotification(
       memberEmail,
       role,
     },
-    actionUrl: `/project/${projectSlug}`,
+    actionUrl: await resolveProjectActionUrl(userId, projectId, projectSlug),
     actionType: "view_project",
   });
 }
@@ -477,7 +534,7 @@ export async function createMemberLeftNotification(
       projectId,
       memberEmail,
     },
-    actionUrl: `/project/${projectSlug}`,
+    actionUrl: await resolveProjectActionUrl(userId, projectId, projectSlug),
     actionType: "view_project",
   });
 }
@@ -493,24 +550,72 @@ export async function createRoleChangedNotification(
   newRole: string,
   changedBy: string,
   projectSlug: string,
+  oldAllowedEnvironments?: string[] | null,
+  newAllowedEnvironments?: string[] | null,
 ) {
+  const normalizedOld = oldAllowedEnvironments ?? null;
+  const normalizedNew = newAllowedEnvironments ?? null;
+  const environmentsChanged =
+    JSON.stringify(normalizedOld) !== JSON.stringify(normalizedNew);
+
+  if (oldRole === newRole && environmentsChanged) {
+    const formattedNew =
+      normalizedNew?.map((env) => formatEnvironmentLabel(env)) || [];
+    const envText =
+      normalizedNew === null
+        ? "all environments"
+        : formattedNew.length > 0
+          ? formattedNew.join(", ")
+          : "none";
+
+    return createNotification({
+      userId,
+      type: "role_downgraded",
+      title: "Environment Access Updated",
+      message: `${changedBy} updated your environment access in ${projectName} to ${envText}`,
+      variant: "info",
+      metadata: {
+        projectId,
+        oldRole,
+        newRole,
+        changedBy,
+        oldAllowedEnvironments: normalizedOld,
+        newAllowedEnvironments: normalizedNew,
+      },
+      actionUrl: await resolveProjectActionUrl(userId, projectId, projectSlug),
+      actionType: "view_project",
+    });
+  }
+
   const isUpgrade =
     ["viewer", "editor", "owner"].indexOf(newRole) >
     ["viewer", "editor", "owner"].indexOf(oldRole);
+
+  const formattedNewForSuffix =
+    normalizedNew?.map((env) => formatEnvironmentLabel(env)) || [];
+  const envSuffix = environmentsChanged
+    ? normalizedNew === null
+      ? " with access to all environments"
+      : formattedNewForSuffix.length > 0
+        ? ` with access to ${formattedNewForSuffix.join(", ")}`
+        : " with no environment access"
+    : "";
 
   return createNotification({
     userId,
     type: isUpgrade ? "role_upgraded" : "role_downgraded",
     title: isUpgrade ? "Role Upgraded" : "Role Changed",
-    message: `${changedBy} changed your role in ${projectName} from ${oldRole} to ${newRole}`,
+    message: `${changedBy} changed your role in ${projectName} from ${oldRole} to ${newRole}${envSuffix}`,
     variant: isUpgrade ? "success" : "warning",
     metadata: {
       projectId,
       oldRole,
       newRole,
       changedBy,
+      oldAllowedEnvironments: normalizedOld,
+      newAllowedEnvironments: normalizedNew,
     },
-    actionUrl: `/project/${projectSlug}`,
+    actionUrl: await resolveProjectActionUrl(userId, projectId, projectSlug),
     actionType: "view_project",
   });
 }
@@ -539,7 +644,7 @@ export async function createSecretsPulledNotification(
     } pulled from ${projectName} on ${deviceName}`,
     variant: "info",
     metadata: { projectId, deviceName, count },
-    actionUrl: `/project/${projectSlug}`,
+    actionUrl: await resolveProjectActionUrl(userId, projectId, projectSlug),
     actionType: "view_project",
   });
 }
@@ -564,7 +669,7 @@ export async function createSecretsPushedNotification(
     } pushed to ${projectName} from ${deviceName}`,
     variant: "info",
     metadata: { projectId, deviceName, count },
-    actionUrl: `/project/${projectSlug}`,
+    actionUrl: await resolveProjectActionUrl(userId, projectId, projectSlug),
     actionType: "view_project",
   });
 }
@@ -769,7 +874,7 @@ export async function createInvitationAcceptedNotification(
     message: `${accepterEmail} accepted the invitation to join ${projectName}`,
     variant: "success",
     metadata: { projectId, accepterEmail },
-    actionUrl: `/project/${projectSlug}`,
+    actionUrl: await resolveProjectActionUrl(ownerId, projectId, projectSlug),
     actionType: "view_project",
   });
 }
