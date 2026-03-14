@@ -48,7 +48,7 @@ jobs:
 
       - name: Install semantic-release dependencies
         run: |
-          npm install --no-save semantic-release @semantic-release/commit-analyzer @semantic-release/release-notes-generator @semantic-release/npm @semantic-release/git @semantic-release/exec
+          npm install --no-save semantic-release @semantic-release/commit-analyzer @semantic-release/release-notes-generator @semantic-release/npm @semantic-release/git @semantic-release/exec conventional-changelog-conventionalcommits
 
       - name: Ensure CLI changes exist since last tag
         id: cli_scope
