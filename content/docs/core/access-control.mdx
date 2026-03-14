@@ -51,9 +51,16 @@ The **Viewer** role is strictly read-only.
 
 ## Granular Permissions
 
-Currently, permissions are scoped to the **Project** level.
+Permissions are managed at the project role level, with optional
+**environment allow-lists** for non-owner members.
 
-> **Roadmap Item**: We are working on Environment-level permissions (e.g., a user is an _Editor_ in `Development` but only a _Viewer_ in `Production`).
+- **Owners** always have access to all environments.
+- **Editors/Viewers** can be granted either all environments or a restricted
+  subset (for example, `development` + `preview` only).
+
+When a member is restricted, Envault enforces that scope in dashboard and
+CLI/API flows. Operations targeting disallowed environments return an access
+denied error.
 
 ## Governance & Auditing
 
@@ -70,8 +77,8 @@ When a project is linked to a GitHub repository, Envault can automatically grant
 **How it works:**
 1. A developer runs `envault pull` without an existing project membership.
 2. Envault checks if their GitHub account is a collaborator on the linked repository.
-3. If yes <ArrowRight className="inline w-4 h-4 mx-1" /> they are **permanently registered** as a `Viewer` in the project's access list and immediately receive their secrets.
-4. If no <ArrowRight className="inline w-4 h-4 mx-1" /> the CLI offers to submit an access request to the project owner.
+3. If yes <ArrowRight className="inline w-4 h-4 mx-1" /> they are **permanently registered** as a `Viewer` in the project's access list and immediately receive secrets for the requested environment.
+4. If no <ArrowRight className="inline w-4 h-4 mx-1" /> the CLI offers to submit an access request to the project owner, including the requested environment when applicable.
 
 <Callout type="info">
   **GitHub Collaborators bypass the "Pending Approval" flow entirely.** Once

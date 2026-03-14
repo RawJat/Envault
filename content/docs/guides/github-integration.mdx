@@ -15,7 +15,7 @@ The GitHub Integration lets you link an Envault project to a specific GitHub rep
 2. You link the app to a specific repository in your Envault project settings.
 3. When a team member runs `envault pull`, Envault checks their GitHub identity against that repository's collaborator list.
 4. If they are a collaborator, they are automatically granted `viewer` access and their secrets are returned.
-5. If they are not a collaborator, the CLI prompts them to submit an access request, which notifies the project owner.
+5. If they are not a collaborator, the CLI prompts them to submit an access request, which notifies the project owner and includes the requested environment when provided.
 
 <Callout type="info">
   JIT access only grants the **Viewer** role. To give a team member Editor or Owner access, invite them manually from the project settings.
@@ -65,7 +65,7 @@ When a developer runs `envault pull` on a project they don't have access to, the
   Would you like to send an access request to the project owner? (y/N)
 </Callout>
 
-- **y** - An access request is sent to the project owner. The owner receives an email and an in-app notification. Once approved, the developer can run `envault pull` again.
+- **y** - An access request is sent to the project owner. The owner receives an email and an in-app notification, including the requested environment when `--env` is used. Once approved, the developer can run `envault pull` again.
 - **N** - Outputs `Access request cancelled.` and exits cleanly.
 
 If a request was already submitted, the CLI shows:

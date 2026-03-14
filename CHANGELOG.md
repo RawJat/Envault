@@ -10,6 +10,26 @@ All notable changes to Envault are documented here.
 
 ---
 
+## 1.3.0 — 2026-03-14
+
+> Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
+
+### Features
+
+- **Environment-Scoped Access Flow:** Added requested-environment propagation across access requests, owner approvals, notifications, and shared-environment UX so approvals can be scoped precisely.
+- **CLI/API Environment Enforcement:** Enforced environment access constraints in CLI secrets APIs and added graceful `403` handling in CLI commands when users target unauthorized environments.
+- **Username Normalization:** Standardized default usernames across email, Google, and GitHub sign-ins with migration-backed profile normalization.
+- **Member Access Control UX Refresh:** Redesigned member access controls with expandable accordions, clearer validation, and improved approval/share interaction patterns.
+
+### Improvements
+
+- **Share Dialog & Approval Polish:** Improved share dialog save behavior, mobile member identity display (username-first), and approve-request UI consistency.
+- **Navigation and Dashboard Refinements:** Polished app header/back navigation and shared-project dashboard interactions for smoother project workflows.
+- **Landing Scene Reliability:** Added conditional `GlobalScene` initialization to resolve missing 3D scene rendering on auth/approval related pages.
+- **Changelog Timeline Refactor:** Simplified changelog entry processing and removed unused MDX serialization paths.
+
+---
+
 ## 1.2.1 — 2026-03-10
 
 > Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)

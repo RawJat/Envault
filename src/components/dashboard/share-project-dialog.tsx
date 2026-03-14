@@ -211,13 +211,15 @@ export function ShareProjectDialog({
               ]),
             )
           : undefined;
+      const fallbackRole: "viewer" | "editor" =
+        existingMember?.role === "editor" ? "editor" : "viewer";
       newChanges.set(request.user_id, {
         userId: request.user_id,
         type: action,
         currentRole: "pending",
         newRole:
           action === "approve"
-            ? (existingChange?.newRole || existingMember?.role || "viewer")
+            ? (existingChange?.newRole || fallbackRole)
             : undefined,
         email: request.email,
         avatar: request.avatar,

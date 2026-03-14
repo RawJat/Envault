@@ -138,6 +138,19 @@ If a request was already submitted and is still pending:
 
 > You already have a pending access request for this project.
 
+When you run `pull` with `--env <slug>`, that requested environment is carried
+through approval notifications so owners can grant scoped access directly.
+
+### Environment access denials (`403`)
+
+`pull`, `diff`, `deploy`, and `run` now return a specific environment access
+error when your role is valid for the project but blocked for the selected
+environment.
+
+- Check your active environment with `envault status`.
+- Retry with an environment you can access: `--env <slug>`.
+- If needed, request additional environment access from the project owner.
+
 ---
 
 ## `deploy`
