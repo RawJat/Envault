@@ -23,7 +23,8 @@ builds:
       - -X github.com/DinanathDash/Envault/cli-go/cmd.date={{.Date}}
 
 archives:
-  - format: tar.gz
+  - formats:
+      - tar.gz
     # this name template makes the OS and Arch compatible with the results of uname.
     name_template: >-
       {{ .ProjectName }}_
@@ -35,7 +36,8 @@ archives:
     # use zip for windows
     format_overrides:
       - goos: windows
-        format: zip
+        formats:
+          - zip
 
 checksum:
   name_template: 'checksums.txt'
@@ -46,18 +48,28 @@ snapshot:
 changelog:
   sort: asc
   filters:
+    include:
+      - '^feat(\([^)]+\))?:'
+      - '^fix(\([^)]+\))?:'
+      - '^perf(\([^)]+\))?:'
+      - '^refactor(\([^)]+\))?:'
+      - '^build(\([^)]+\))?:'
+      - '^chore(\([^)]+\))?:'
     exclude:
+      - '^chore\(cli-release\):'
+      - '^chore\(release\):'
       - '^docs:'
       - '^test:'
 
-# Homebrew configuration
-brews:
+# Homebrew cask configuration
+homebrew_casks:
   - repository:
       owner: DinanathDash
       name: homebrew-envault
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-    directory: Formula
+    directory: Casks
+    name: envault
     homepage: "https://envault.tech"
     description: "Envault CLI - Securely manage your environment variables"
-    test: |
-      system "#{bin}/envault version"
+    url:
+      verified: github.com/DinanathDash/Envault
