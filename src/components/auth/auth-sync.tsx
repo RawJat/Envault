@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useEnvaultStore } from "@/lib/store";
 import { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
+import { inferUsernameFromAuth } from "@/lib/username";
 
 export function AuthSync({ user }: { user: User }) {
   const login = useEnvaultStore((state) => state.login);
@@ -11,30 +12,7 @@ export function AuthSync({ user }: { user: User }) {
   useEffect(() => {
     if (!user) return;
 
-    const meta = user.user_metadata || {};
-
-    // If user_metadata already has a username, use it directly
-    if (meta.username) {
-      login({
-        id: user.id,
-        firstName:
-          meta.first_name ||
-          meta.full_name?.split(" ")[0] ||
-          user.email?.split("@")[0] ||
-          "",
-        lastName:
-          meta.last_name || meta.full_name?.split(" ").slice(1).join(" ") || "",
-        username: meta.username,
-        email: user.email!,
-        avatar: meta.avatar_url,
-        authProviders: user.identities?.map((id) => id.provider) || [],
-        app_metadata: user.app_metadata,
-        user_metadata: user.user_metadata,
-      });
-      return;
-    }
-
-    // Fallback: fetch username from the profiles table (set by trigger/backfill)
+    const meta = (user.user_metadata || {}) as Record<string, unknown>;
     const supabase = createClient();
     supabase
       .from("profiles")
@@ -42,20 +20,28 @@ export function AuthSync({ user }: { user: User }) {
       .eq("id", user.id)
       .maybeSingle()
       .then(({ data: profile }) => {
+        const username =
+          profile?.username || inferUsernameFromAuth(user.email, meta);
         login({
           id: user.id,
           firstName:
-            meta.first_name ||
-            meta.full_name?.split(" ")[0] ||
+            (typeof meta.first_name === "string" ? meta.first_name : "") ||
+            (typeof meta.full_name === "string"
+              ? meta.full_name.split(" ")[0]
+              : "") ||
             user.email?.split("@")[0] ||
             "",
           lastName:
-            meta.last_name ||
-            meta.full_name?.split(" ").slice(1).join(" ") ||
+            (typeof meta.last_name === "string" ? meta.last_name : "") ||
+            (typeof meta.full_name === "string"
+              ? meta.full_name.split(" ").slice(1).join(" ")
+              : "") ||
             "",
-          username: profile?.username || user.email?.split("@")[0] || "",
+          username,
           email: user.email!,
-          avatar: meta.avatar_url,
+          avatar:
+            (typeof meta.avatar_url === "string" ? meta.avatar_url : "") ||
+            undefined,
           authProviders: user.identities?.map((id) => id.provider) || [],
           app_metadata: user.app_metadata,
           user_metadata: user.user_metadata,

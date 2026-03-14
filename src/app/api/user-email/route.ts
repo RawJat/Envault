@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { UserEmailSchema } from "@/lib/schemas";
+import { inferUsernameFromAuth } from "@/lib/username";
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,9 +35,17 @@ export async function POST(request: NextRequest) {
     }
 
     const email = userData.user.email;
+    const { data: profile } = await adminSupabase
+      .from("profiles")
+      .select("username")
+      .eq("id", userId)
+      .maybeSingle();
     const username =
-      userData.user.user_metadata?.username ||
-      userData.user.user_metadata?.name;
+      profile?.username ||
+      inferUsernameFromAuth(
+        userData.user.email,
+        (userData.user.user_metadata || {}) as Record<string, unknown>,
+      );
 
     return NextResponse.json({ email, username });
   } catch (error) {
