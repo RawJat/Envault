@@ -119,31 +119,65 @@ export default async function ProjectPage({ params, searchParams }: PageProps) {
 
     if (member && Array.isArray(member.allowed_environments)) {
       allowedEnvironments = member.allowed_environments as string[];
+    } else if (!member) {
+      // Shared-secret-only users are not members; scope their env access to shared secrets.
+      const { data: sharedEnvSecrets } = await supabase
+        .from("secret_shares")
+        .select("secrets!inner(environment_id, project_id)")
+        .eq("user_id", user.id)
+        .eq("secrets.project_id", id);
 
-      if (!allowedEnvironments.includes(activeEnvironment.slug)) {
-        if (requestedEnvSlug && requestedEnvSlug === activeEnvironment.slug) {
-          notFound();
-        } else {
-          const firstAllowed = envList.find((env) =>
-            allowedEnvironments!.includes(env.slug)
-          );
-          if (firstAllowed) {
-            activeEnvironment = firstAllowed;
-          } else {
-            notFound();
-          }
-        }
-      }
+      const allowedEnvironmentIds = new Set(
+        (sharedEnvSecrets || []).map((share) => {
+          const secret = Array.isArray(share.secrets)
+            ? share.secrets[0]
+            : share.secrets;
+          return secret.environment_id as string;
+        }),
+      );
+
+      allowedEnvironments = envList
+        .filter((env) => allowedEnvironmentIds.has(env.id))
+        .map((env) => env.slug);
     }
   }
 
-  // Fetch secrets separately
-  const { data: secrets, error: secretsError } = await supabase
-    .from("secrets")
-    .select("*")
-    .eq("project_id", id)
-    .eq("environment_id", activeEnvironment.id)
-    .order("created_at", { ascending: true });
+  if (
+    allowedEnvironments &&
+    !allowedEnvironments.includes(activeEnvironment.slug) &&
+    !requestedEnvSlug
+  ) {
+    const firstAllowed = envList.find((env) =>
+      allowedEnvironments!.includes(env.slug),
+    );
+    if (firstAllowed) {
+      activeEnvironment = firstAllowed;
+    }
+  }
+
+  const hasActiveEnvironmentAccess =
+    !allowedEnvironments || allowedEnvironments.includes(activeEnvironment.slug);
+
+  let secrets: Array<{
+    id: string;
+    key: string;
+    value: string;
+    user_id: string | null;
+    last_updated_by: string | null;
+    last_updated_at: string | null;
+    [key: string]: unknown;
+  }> = [];
+  let secretsError: { message: string } | null = null;
+  if (hasActiveEnvironmentAccess) {
+    const { data, error } = await supabase
+      .from("secrets")
+      .select("*")
+      .eq("project_id", id)
+      .eq("environment_id", activeEnvironment.id)
+      .order("created_at", { ascending: true });
+    secrets = data || [];
+    secretsError = error;
+  }
 
   if (secretsError) {
     console.error(`[ProjectPage] Error fetching secrets:`, secretsError);
@@ -249,10 +283,17 @@ export default async function ProjectPage({ params, searchParams }: PageProps) {
 
   const userMap = new Map<
     string,
-    { email: string; id: string; avatar?: string }
+    { email: string; id: string; avatar?: string; username?: string }
   >();
   if (userIds.size > 0 && process.env.SUPABASE_SERVICE_ROLE_KEY) {
     const adminSupabase = createAdminClient();
+    const { data: profiles } = await adminSupabase
+      .from("profiles")
+      .select("id, username")
+      .in("id", Array.from(userIds));
+    const usernameById = new Map<string, string>(
+      (profiles || []).map((p) => [p.id, p.username]),
+    );
     await Promise.all(
       Array.from(userIds).map(async (uid) => {
         const { data } = await adminSupabase.auth.admin.getUserById(uid);
@@ -264,6 +305,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps) {
               data.user.user_metadata?.avatar_url ||
               data.user.user_metadata?.picture ||
               undefined,
+            username: usernameById.get(uid) || undefined,
           });
         }
       }),
@@ -281,13 +323,12 @@ export default async function ProjectPage({ params, searchParams }: PageProps) {
     default_environment_slug:
       project.default_environment_slug || activeEnvironment.slug,
     active_environment_slug: activeEnvironment.slug,
-    environments: envList
-      .filter((env) => !allowedEnvironments || allowedEnvironments.includes(env.slug))
-      .map((env) => ({
+    environments: envList.map((env) => ({
         id: env.id,
         slug: env.slug,
         name: env.name,
         is_default: env.is_default,
+        can_access: !allowedEnvironments || allowedEnvironments.includes(env.slug),
       })),
     createdAt: project.created_at,
     role: role,

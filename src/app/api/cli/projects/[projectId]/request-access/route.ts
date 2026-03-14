@@ -35,6 +35,8 @@ export async function POST(
   const { projectId } = await params;
   const userId = result.userId;
   const supabase = createAdminClient();
+  const requestedEnvironment =
+    new URL(request.url).searchParams.get("environment") || undefined;
 
   // 2. Ensure the project exists
   const { data: project } = await supabase
@@ -65,10 +67,25 @@ export async function POST(
   // 4. Insert access request (idempotent - ignore unique conflicts)
   const { error: insertError } = await supabase
     .from("access_requests")
-    .insert({ project_id: projectId, user_id: userId, status: "pending" });
+    .insert({
+      project_id: projectId,
+      user_id: userId,
+      status: "pending",
+      requested_environment: requestedEnvironment || null,
+    });
 
   if (insertError && insertError.code !== "23505") {
     return NextResponse.json({ error: insertError.message }, { status: 500 });
+  }
+  if (insertError && insertError.code === "23505") {
+    await supabase
+      .from("access_requests")
+      .update({
+        requested_environment: requestedEnvironment || null,
+        status: "pending",
+      })
+      .eq("project_id", projectId)
+      .eq("user_id", userId);
   }
 
   // 5. Fetch the access request ID for notifications
@@ -101,6 +118,7 @@ export async function POST(
           requesterEmail,
           project.name,
           requestRecord.id,
+          requestedEnvironment,
           project.user_id,
         ),
         createAccessRequestNotification(
@@ -110,6 +128,7 @@ export async function POST(
           projectId, // projectId
           userId, // requesterId
           requestRecord.id, // requestId
+          requestedEnvironment,
         ),
       ]).catch((e) => console.error("[request-access] Notification error:", e));
     }

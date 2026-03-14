@@ -41,6 +41,7 @@ import {
 import { useHotkeys } from "@/hooks/use-hotkeys";
 import { Kbd } from "@/components/ui/kbd";
 import { getModifierKey } from "@/lib/utils";
+import { formatEnvironmentLabel } from "@/lib/environment-label";
 
 interface ShareProjectDialogProps {
   project: Project;
@@ -66,6 +67,7 @@ interface PendingRequest {
   project_id: string;
   status: string;
   created_at: string;
+  requested_environment?: string | null;
   email?: string;
   avatar?: string;
   username?: string;
@@ -189,15 +191,41 @@ export function ShareProjectDialog({
       });
     } else {
       const existingChange = newChanges.get(request.user_id);
+      const existingMember = members.find((m) => m.user_id === request.user_id);
+      const existingMemberEnvs =
+        existingMember &&
+        existingMember.allowed_environments !== null &&
+        existingMember.allowed_environments !== undefined
+          ? existingMember.allowed_environments
+          : getAllProjectEnvSlugs();
+      const requestedEnvDefault =
+        action === "approve" && request.requested_environment
+          ? [request.requested_environment]
+          : undefined;
+      const mergedDefaultEnvs =
+        action === "approve"
+          ? Array.from(
+              new Set([
+                ...(existingMemberEnvs || []),
+                ...(requestedEnvDefault || []),
+              ]),
+            )
+          : undefined;
       newChanges.set(request.user_id, {
         userId: request.user_id,
         type: action,
         currentRole: "pending",
-        newRole: action === "approve" ? (existingChange?.newRole || "viewer") : undefined,
+        newRole:
+          action === "approve"
+            ? (existingChange?.newRole || existingMember?.role || "viewer")
+            : undefined,
         email: request.email,
         avatar: request.avatar,
         requestId: request.id,
-        allowedEnvironments: action === "approve" ? existingChange?.allowedEnvironments : undefined,
+        allowedEnvironments:
+          action === "approve"
+            ? (existingChange?.allowedEnvironments || mergedDefaultEnvs)
+            : undefined,
       });
 
       if (action === "approve") {
@@ -603,9 +631,15 @@ export function ShareProjectDialog({
                             const isExpanded = expandedMembers.has(request.id);
                             const currentAction = getCurrentValue(request.user_id, "pending");
                             const existingChange = pendingChanges.get(request.user_id);
-                            const currentRole = existingChange?.newRole || "viewer";
-
-                            const currentEnvs = existingChange?.allowedEnvironments || [];
+                            const existingMember = members.find((m) => m.user_id === request.user_id);
+                            const currentRole = existingChange?.newRole || existingMember?.role || "viewer";
+                            const baseRequestEnvs =
+                              existingMember &&
+                              existingMember.allowed_environments !== null &&
+                              existingMember.allowed_environments !== undefined
+                                ? existingMember.allowed_environments
+                                : getAllProjectEnvSlugs();
+                            const currentEnvs = existingChange?.allowedEnvironments || baseRequestEnvs || [];
 
                             return (
                               <div key={request.id} className={`flex flex-col border rounded-lg overflow-hidden transition-all bg-muted/30 ${shakeIds.has(request.user_id) ? "animate-shake border-destructive/50 ring-1 ring-destructive/50" : ""}`}>
@@ -620,9 +654,17 @@ export function ShareProjectDialog({
                                   <div className="flex items-center gap-2 flex-1 min-w-0">
                                     <div className="flex-1 min-w-0 [mask-image:linear-gradient(to_right,black_calc(100%-20px),transparent_100%)]">
                                       <p className="text-sm font-medium leading-none whitespace-nowrap overflow-hidden">
-                                        <span className="sm:hidden">{request.username || request.email?.split('@')[0] || "Unknown User"}</span>
+                                        <span className="sm:hidden">{request.username || request.email || "Unknown User"}</span>
                                         <span className="hidden sm:inline">{request.email || "Unknown User"}</span>
                                       </p>
+                                      {request.requested_environment && (
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                          Requested environment:{" "}
+                                          <span className="font-medium">
+                                            {formatEnvironmentLabel(request.requested_environment)}
+                                          </span>
+                                        </p>
+                                      )}
                                     </div>
                                     
                                     <div className="flex items-center space-x-2 shrink-0">
@@ -755,7 +797,7 @@ export function ShareProjectDialog({
                                   <div className="flex items-center gap-2 flex-1 min-w-0">
                                     <div className="flex-1 min-w-0 [mask-image:linear-gradient(to_right,black_calc(100%-20px),transparent_100%)]">
                                       <p className="text-sm font-medium leading-none whitespace-nowrap overflow-hidden">
-                                        <span className="sm:hidden">{member.username || member.email?.split('@')[0] || "Unknown User"}</span>
+                                        <span className="sm:hidden">{member.username || member.email || "Unknown User"}</span>
                                         <span className="hidden sm:inline">{member.email || "Unknown User"}</span>
                                       </p>
                                     </div>

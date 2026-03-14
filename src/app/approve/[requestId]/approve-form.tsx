@@ -18,14 +18,43 @@ import { Checkbox } from "@/components/ui/checkbox";
 interface ApproveFormProps {
   requestId: string;
   environments?: string[];
+  requestedEnvironment?: string;
+  existingRole?: "viewer" | "editor";
+  existingAllowedEnvironments?: string[] | null;
 }
 
-export function ApproveForm({ requestId, environments = [] }: ApproveFormProps) {
+export function ApproveForm({
+  requestId,
+  environments = [],
+  requestedEnvironment,
+  existingRole = "viewer",
+  existingAllowedEnvironments,
+}: ApproveFormProps) {
   const router = useRouter();
   const [isApproving, setIsApproving] = React.useState(false);
   const [isDenying, setIsDenying] = React.useState(false);
-  const [role, setRole] = React.useState<"viewer" | "editor">("viewer");
-  const [selectedEnvironments, setSelectedEnvironments] = React.useState<string[]>([]);
+  const [role, setRole] = React.useState<"viewer" | "editor">(existingRole);
+
+  const getInitialSelectedEnvironments = React.useCallback(() => {
+    if (environments.length === 0) return [];
+    const base =
+      existingAllowedEnvironments === null
+        ? environments
+        : existingAllowedEnvironments || [];
+    const merged = requestedEnvironment
+      ? Array.from(new Set([...base, requestedEnvironment]))
+      : base;
+    return merged.filter((env) => environments.includes(env));
+  }, [environments, existingAllowedEnvironments, requestedEnvironment]);
+
+  const [selectedEnvironments, setSelectedEnvironments] = React.useState<string[]>(
+    () => getInitialSelectedEnvironments(),
+  );
+
+  React.useEffect(() => {
+    setRole(existingRole);
+    setSelectedEnvironments(getInitialSelectedEnvironments());
+  }, [existingRole, getInitialSelectedEnvironments]);
 
   const handleApprove = async () => {
     setIsApproving(true);

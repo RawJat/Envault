@@ -2,10 +2,14 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { formatEnvironmentLabel } from "@/lib/environment-label";
 
 import { cacheDel, CacheKeys, invalidateUserSecretAccess } from "@/lib/cache";
 
-export async function createAccessRequest(token: string) {
+export async function createAccessRequest(
+  token: string,
+  requestedEnvironment?: string,
+) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -35,30 +39,31 @@ export async function createAccessRequest(token: string) {
     return { error: "You are already the owner of this project." };
   }
 
-  // Check if already a member
-  const { data: existingMember } = await supabase
-    .from("project_members")
-    .select("id")
-    .eq("project_id", projectId)
-    .eq("user_id", user.id)
-    .single();
-
-  if (existingMember) {
-    return { error: "You are already a member of this project." };
-  }
-
   // Create Request
   const { error } = await supabase.from("access_requests").insert({
     project_id: projectId,
     user_id: user.id,
     status: "pending",
+    requested_environment: requestedEnvironment || null,
   });
   // If conflict (unique constraint), just return success (idempotent for user)
 
   if (error) {
     if (error.code === "23505") {
-      // Unique violation
-      return { success: true, message: "Request already pending." };
+      await supabase
+        .from("access_requests")
+        .update({
+          requested_environment: requestedEnvironment || null,
+          status: "pending",
+        })
+        .eq("project_id", projectId)
+        .eq("user_id", user.id);
+      return {
+        success: true,
+        message: requestedEnvironment
+          ? `Request updated for ${formatEnvironmentLabel(requestedEnvironment)} environment and pending.`
+          : "Request updated and pending.",
+      };
     }
     return { error: error.message };
   }
@@ -90,6 +95,7 @@ export async function createAccessRequest(token: string) {
           requester.user.email,
           project.name,
           requestData.id,
+          requestedEnvironment,
           project.user_id, // Pass ownerId for preferences check
         );
 
@@ -103,6 +109,7 @@ export async function createAccessRequest(token: string) {
           projectId,
           user.id,
           requestData.id,
+          requestedEnvironment,
         );
       }
     }
@@ -111,7 +118,12 @@ export async function createAccessRequest(token: string) {
     console.error("Failed to send access request notification:", emailError);
   }
 
-  return { success: true };
+  return {
+    success: true,
+    message: requestedEnvironment
+      ? `Access request sent for ${formatEnvironmentLabel(requestedEnvironment)} environment.`
+      : "Access request sent.",
+  };
 }
 
 export async function approveRequest(
@@ -154,14 +166,84 @@ export async function approveRequest(
   // Check if user is already a member
   const { data: existingMember } = await admin
     .from("project_members")
-    .select("id")
+    .select("id, role, allowed_environments")
     .eq("project_id", request.project_id!)
     .eq("user_id", request.user_id)
     .single();
 
   if (existingMember) {
-    // Delete the request since they are already a member
+    const roleRank = (r: string) => (r === "editor" ? 2 : 1);
+    const existingRole = existingMember.role as "viewer" | "editor";
+    const mergedRole: "viewer" | "editor" =
+      roleRank(role) > roleRank(existingRole) ? role : existingRole;
+
+    const existingAllowed =
+      existingMember.allowed_environments as string[] | null | undefined;
+    const mergedAllowedEnvironments =
+      existingAllowed === null || existingAllowed === undefined
+        ? null
+        : allowedEnvironments
+          ? Array.from(new Set([...existingAllowed, ...allowedEnvironments]))
+          : existingAllowed;
+
+    const { error: updateMemberError } = await admin
+      .from("project_members")
+      .update({
+        role: mergedRole,
+        allowed_environments: mergedAllowedEnvironments,
+      })
+      .eq("project_id", request.project_id!)
+      .eq("user_id", request.user_id);
+
+    if (updateMemberError) {
+      return { error: updateMemberError.message };
+    }
+
     await admin.from("access_requests").delete().eq("id", requestId);
+
+    await cacheDel(CacheKeys.userProjects(request.user_id));
+    await cacheDel(
+      CacheKeys.userProjectRole(request.user_id, request.project_id!),
+    );
+    await cacheDel(CacheKeys.projectMembers(request.project_id!));
+    await invalidateUserSecretAccess(request.user_id);
+
+    if (notifyUser) {
+      try {
+        const { data: requesterUser } = await admin.auth.admin.getUserById(
+          request.user_id,
+        );
+        const projectName = (request.projects as unknown as { name: string })
+          .name;
+
+        if (requesterUser?.user?.email) {
+          const { sendAccessUpdatedEmail } = await import("@/lib/email");
+          await sendAccessUpdatedEmail(
+            requesterUser.user.email,
+            projectName,
+            existingRole,
+            mergedRole,
+            "Project Owner",
+            mergedAllowedEnvironments,
+            request.user_id,
+          );
+        }
+
+        const { createAccessGrantedNotification } = await import(
+          "@/lib/notifications"
+        );
+        await createAccessGrantedNotification(
+          request.user_id,
+          projectName,
+          request.project_id!,
+          mergedRole,
+          mergedAllowedEnvironments,
+        );
+      } catch (notifyError) {
+        console.error("Failed to notify existing member approval update:", notifyError);
+      }
+    }
+
     return { success: true };
   }
 
@@ -242,6 +324,8 @@ export async function approveRequest(
       await sendAccessGrantedEmail(
         requester.user.email,
         projectName,
+        role,
+        allowedEnvironments ?? null,
         request.user_id,
       );
 
@@ -253,6 +337,7 @@ export async function approveRequest(
         projectName,
         request.project_id!,
         role,
+        allowedEnvironments ?? null,
       );
     }
   }
@@ -312,6 +397,7 @@ export async function rejectRequest(requestId: string) {
     try {
       const { createAccessDeniedNotification } =
         await import("@/lib/notifications");
+      const { sendAccessDeniedEmail } = await import("@/lib/email");
       const projectName =
         (fullRequest.projects as unknown as { name: string })?.name ||
         "Unknown Project";
@@ -320,6 +406,16 @@ export async function rejectRequest(requestId: string) {
         projectName,
         fullRequest.project_id,
       );
+      const { data: requester } = await admin.auth.admin.getUserById(
+        fullRequest.user_id,
+      );
+      if (requester?.user?.email) {
+        await sendAccessDeniedEmail(
+          requester.user.email,
+          projectName,
+          fullRequest.user_id,
+        );
+      }
     } catch (error) {
       console.error("Failed to send access denied notification:", error);
     }
@@ -343,6 +439,27 @@ export async function removeMember(projectId: string, memberUserId: string) {
 
   if (role !== "owner") return { error: "Unauthorized" };
 
+  const { createAdminClient } = await import("@/lib/supabase/admin");
+  const admin = createAdminClient();
+
+  const [{ data: projectData }, { data: removedUser }, { data: actorUser }] =
+    await Promise.all([
+      admin.from("projects").select("name").eq("id", projectId).single(),
+      admin.auth.admin.getUserById(memberUserId),
+      admin.auth.admin.getUserById(user.id),
+    ]);
+  const { data: actorProfile } = await admin
+    .from("profiles")
+    .select("username")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const projectName = projectData?.name || "Project";
+  const removedBy =
+    actorProfile?.username ||
+    actorUser?.user?.user_metadata?.username ||
+    "Owner";
+
   const { error } = await supabase
     .from("project_members")
     .delete()
@@ -357,6 +474,25 @@ export async function removeMember(projectId: string, memberUserId: string) {
   await cacheDel(CacheKeys.projectMembers(projectId));
   // Invalidate all secret access caches for this user in this project
   await invalidateUserSecretAccess(memberUserId);
+
+  try {
+    const { createMemberRemovedNotification } = await import(
+      "@/lib/notifications"
+    );
+    const { sendAccessRevokedEmail } = await import("@/lib/email");
+
+    await createMemberRemovedNotification(memberUserId, projectName, removedBy);
+    if (removedUser?.user?.email) {
+      await sendAccessRevokedEmail(
+        removedUser.user.email,
+        projectName,
+        removedBy,
+        memberUserId,
+      );
+    }
+  } catch (notifyError) {
+    console.error("Failed to notify removed member:", notifyError);
+  }
 
   revalidatePath("/project/[slug]", "page");
   return { success: true };
@@ -380,6 +516,36 @@ export async function updateMemberRole(
   const role = await getProjectRole(supabase, projectId, user.id);
 
   if (role !== "owner") return { error: "Unauthorized" };
+
+  const { createAdminClient } = await import("@/lib/supabase/admin");
+  const admin = createAdminClient();
+
+  const [{ data: existingMember }, { data: projectData }, { data: actorUser }] =
+    await Promise.all([
+      admin
+        .from("project_members")
+        .select("role, allowed_environments")
+        .eq("project_id", projectId)
+        .eq("user_id", memberUserId)
+        .single(),
+      admin.from("projects").select("name, slug").eq("id", projectId).single(),
+      admin.auth.admin.getUserById(user.id),
+    ]);
+  const { data: actorProfile } = await admin
+    .from("profiles")
+    .select("username")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (!existingMember) {
+    return { error: "Member not found." };
+  }
+
+  const previousRole = existingMember.role as "viewer" | "editor";
+  const previousAllowed = existingMember.allowed_environments as
+    | string[]
+    | null
+    | undefined;
 
   const updateData: Record<string, unknown> = { role: newRole };
 
@@ -416,6 +582,47 @@ export async function updateMemberRole(
   await cacheDel(CacheKeys.userProjectRole(memberUserId, projectId));
   // Invalidate all secret access caches since permissions changed
   await invalidateUserSecretAccess(memberUserId);
+
+  try {
+    const { createRoleChangedNotification } = await import(
+      "@/lib/notifications"
+    );
+    const { sendAccessUpdatedEmail } = await import("@/lib/email");
+    const { data: memberUser } = await admin.auth.admin.getUserById(memberUserId);
+
+    const projectName = projectData?.name || "Project";
+    const projectSlug = projectData?.slug || projectId;
+    const changedBy =
+      actorProfile?.username ||
+      actorUser?.user?.user_metadata?.username ||
+      "Owner";
+
+    await createRoleChangedNotification(
+      memberUserId,
+      projectName,
+      projectId,
+      previousRole,
+      newRole,
+      changedBy,
+      projectSlug,
+      previousAllowed ?? null,
+      allowedEnvironments ?? previousAllowed ?? null,
+    );
+
+    if (memberUser?.user?.email) {
+      await sendAccessUpdatedEmail(
+        memberUser.user.email,
+        projectName,
+        previousRole,
+        newRole,
+        changedBy,
+        allowedEnvironments ?? previousAllowed ?? null,
+        memberUserId,
+      );
+    }
+  } catch (notifyError) {
+    console.error("Failed to send role/environment update notifications:", notifyError);
+  }
 
   revalidatePath("/project/[slug]", "page");
   return { success: true };

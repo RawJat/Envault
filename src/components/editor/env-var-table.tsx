@@ -60,6 +60,9 @@ interface EnvVarTableProps {
   environmentSlug?: string;
   variables: EnvironmentVariable[];
   userRole?: "owner" | "editor" | "viewer";
+  accessDenied?: boolean;
+  onRequestAccess?: () => void;
+  isRequestingAccess?: boolean;
 }
 
 export function EnvVarTable({
@@ -67,6 +70,9 @@ export function EnvVarTable({
   environmentSlug,
   variables,
   userRole,
+  accessDenied = false,
+  onRequestAccess,
+  isRequestingAccess = false,
 }: EnvVarTableProps) {
   // Always display A-Z; sort is stable so insertion order is preserved for ties
   const sortedVariables = React.useMemo(
@@ -149,7 +155,28 @@ export function EnvVarTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedVariables.length === 0 ? (
+            {accessDenied ? (
+              <TableRow>
+                <TableCell colSpan={4} className="h-28 text-center">
+                  <div className="flex flex-col items-center gap-3">
+                    <p className="text-muted-foreground">
+                      You don&apos;t have access to this environment.
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={onRequestAccess}
+                      disabled={!onRequestAccess || isRequestingAccess}
+                    >
+                      {isRequestingAccess && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
+                      {isRequestingAccess ? "Requesting..." : "Request Access"}
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : sortedVariables.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="h-24 text-center">
                   No variables added yet.
@@ -228,7 +255,10 @@ export function EnvVarTable({
                                     user={{
                                       email: variable.userInfo.updater.email,
                                       avatar: variable.userInfo.updater.avatar,
-                                      name: variable.userInfo.updater.email,
+                                      username: variable.userInfo.updater.username,
+                                      name:
+                                        variable.userInfo.updater.username ||
+                                        variable.userInfo.updater.email,
                                     }}
                                   />
                                 ) : (
@@ -241,11 +271,8 @@ export function EnvVarTable({
                                 <div className="flex flex-col">
                                   <span className="text-sm font-medium leading-none">
                                     {variable.userInfo?.updater?.email
-                                      ? `${
-                                          variable.userInfo.updater.email.split(
-                                            "@",
-                                          )[0]
-                                        }` // Or simpler display
+                                      ? variable.userInfo.updater.username ||
+                                        variable.userInfo.updater.email
                                       : "Former Member"}
                                   </span>
                                   <span className="text-xs text-muted-foreground">
@@ -282,11 +309,16 @@ export function EnvVarTable({
                                         email: variable.userInfo.creator.email,
                                         avatar:
                                           variable.userInfo.creator.avatar,
-                                        name: variable.userInfo.creator.email,
+                                        username:
+                                          variable.userInfo.creator.username,
+                                        name:
+                                          variable.userInfo.creator.username ||
+                                          variable.userInfo.creator.email,
                                       }}
                                     />
                                     <span>
-                                      {variable.userInfo.creator.email}
+                                      {variable.userInfo.creator.username ||
+                                        variable.userInfo.creator.email}
                                     </span>
                                   </div>
                                 </div>
@@ -305,11 +337,17 @@ export function EnvVarTable({
                                             variable.userInfo.updater.email,
                                           avatar:
                                             variable.userInfo.updater.avatar,
-                                          name: variable.userInfo.updater.email,
+                                          username:
+                                            variable.userInfo.updater.username,
+                                          name:
+                                            variable.userInfo.updater
+                                              .username ||
+                                            variable.userInfo.updater.email,
                                         }}
                                       />
                                       <span>
-                                        {variable.userInfo.updater.email}
+                                        {variable.userInfo.updater.username ||
+                                          variable.userInfo.updater.email}
                                       </span>
                                     </>
                                   ) : (
@@ -398,7 +436,22 @@ export function EnvVarTable({
       </div>
       {/* Mobile View */}
       <div className="md:hidden space-y-4">
-        {sortedVariables.length === 0 ? (
+        {accessDenied ? (
+          <div className="text-center p-8 border border-dashed rounded-lg text-muted-foreground space-y-3">
+            <p>You don&apos;t have access to this environment.</p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onRequestAccess}
+              disabled={!onRequestAccess || isRequestingAccess}
+            >
+              {isRequestingAccess && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              {isRequestingAccess ? "Requesting..." : "Request Access"}
+            </Button>
+          </div>
+        ) : sortedVariables.length === 0 ? (
           <div className="text-center p-8 border border-dashed rounded-lg text-muted-foreground">
             No variables added yet.
           </div>

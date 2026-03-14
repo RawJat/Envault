@@ -164,6 +164,8 @@ export async function shareSecret(secretId: string, email: string) {
   await sendAccessGrantedEmail(
     email,
     `${project.name} (Single Variable)`,
+    undefined,
+    undefined,
     targetUserId,
   );
 

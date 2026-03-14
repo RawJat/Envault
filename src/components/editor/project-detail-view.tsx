@@ -52,11 +52,13 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { deleteProject as deleteProjectAction } from "@/app/project-actions";
+import { createAccessRequest } from "@/app/invite-actions";
 import { ShareProjectDialog } from "@/components/dashboard/share-project-dialog";
 import { RenameProjectDialog } from "@/components/dashboard/rename-project-dialog";
 import { GitHubIntegrationDialog } from "@/components/dashboard/github-integration-dialog";
 import { AppHeader } from "@/components/dashboard/app-header";
 import { Edit3, Github, Loader2, ShieldCheck } from "lucide-react";
+import { formatEnvironmentLabel } from "@/lib/environment-label";
 
 interface ProjectDetailViewProps {
   project: Project;
@@ -82,6 +84,7 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [idCopied, setIdCopied] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isRequestingAccess, setIsRequestingAccess] = useState(false);
   const activeEnvironment = project.active_environment_slug || "development";
   const [optimisticEnv, setOptimisticEnv] = useState(activeEnvironment);
   const [isPending, startTransition] = React.useTransition();
@@ -95,8 +98,16 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
     () => project.environments || [],
     [project.environments],
   );
+  const activeEnvironmentConfig = React.useMemo(
+    () =>
+      availableEnvironments.find((env) => env.slug === optimisticEnv) ||
+      availableEnvironments.find((env) => env.slug === activeEnvironment),
+    [availableEnvironments, optimisticEnv, activeEnvironment],
+  );
+  const hasEnvironmentAccess = activeEnvironmentConfig?.can_access !== false;
 
   const canEdit = project.role === "owner" || project.role === "editor";
+  const canEditEnvironment = canEdit && hasEnvironmentAccess;
   const projectBasePath =
     project.owner_username && project.role !== "owner"
       ? `/${project.owner_username}/${project.slug}`
@@ -112,15 +123,21 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
   // Listen for global command context
   useEffect(() => {
     const handleOpenAdd = () => {
-      if (!canEdit) return;
+      if (!canEditEnvironment) return;
       setIsAddDialogOpen(true);
     };
     const handleDownload = () => {
+      if (!hasEnvironmentAccess) {
+        toast.error(
+          `You don't have access to the ${formatEnvironmentLabel(optimisticEnv)} environment.`,
+        );
+        return;
+      }
       const btn = document.getElementById("download-env-btn");
       if (btn) btn.click();
     };
     const handleOpenImport = () => {
-      if (!canEdit) return;
+      if (!canEditEnvironment) return;
       setIsImportDialogOpen(true);
     };
     const handleOpenShare = () => {
@@ -175,10 +192,13 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
   }, [
     project.role,
     canEdit,
+    canEditEnvironment,
+    hasEnvironmentAccess,
     isAdvancedMode,
     availableEnvironments,
     projectBasePath,
     router,
+    optimisticEnv,
   ]);
 
   const handleDeleteClick = (e: React.MouseEvent) => {
@@ -202,16 +222,25 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
     router.push("/dashboard");
   };
 
+  const [projectNameCopied, setProjectNameCopied] = useState(false);
+
   const handleCopyProjectName = async () => {
     try {
       await navigator.clipboard.writeText(project.name);
-      toast.success("Project name copied to clipboard");
+      setProjectNameCopied(true);
+      setTimeout(() => setProjectNameCopied(false), 2000);
     } catch {
       toast.error("Failed to copy project name");
     }
   };
 
   const handleDownloadEnv = async () => {
+    if (!hasEnvironmentAccess) {
+      toast.error(
+        `You don't have access to the ${formatEnvironmentLabel(optimisticEnv)} environment.`,
+      );
+      return;
+    }
     const content = [...project.variables]
       .sort((a, b) => a.key.localeCompare(b.key))
       .map((v) => `${v.key}=${v.value}`)
@@ -252,6 +281,23 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
         scroll: false,
       });
     });
+  };
+
+  const handleRequestAccess = async () => {
+    setIsRequestingAccess(true);
+    try {
+      const result = await createAccessRequest(project.id, optimisticEnv);
+      if (result?.error) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success(
+        result?.message ||
+          `Access request sent for ${formatEnvironmentLabel(optimisticEnv)} environment.`,
+      );
+    } finally {
+      setIsRequestingAccess(false);
+    }
   };
 
   // Extract the settings dropdown content into a variable or separate component to pass to actions
@@ -399,11 +445,12 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
               id="download-env-btn"
               variant="outline"
               onClick={handleDownloadEnv}
+              disabled={!hasEnvironmentAccess}
             >
               <Download className="w-4 h-4 mr-2" />
               Download .env
             </Button>
-            {canEdit && (
+            {canEditEnvironment && (
               <>
                 <ImportEnvDialog
                   projectId={projectId}
@@ -449,6 +496,9 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
             environmentSlug={activeEnvironment}
             variables={project.variables}
             userRole={project.role}
+            accessDenied={!hasEnvironmentAccess}
+            onRequestAccess={handleRequestAccess}
+            isRequestingAccess={isRequestingAccess}
           />
         )}
       </main>
@@ -471,10 +521,14 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
               To confirm, type{" "}
               <span className="inline-flex items-center gap-1 font-bold">
                 &quot;{project.name}&quot;{" "}
-                <Copy
-                  className="h-4 w-4 cursor-pointer hover:text-primary"
-                  onClick={handleCopyProjectName}
-                />
+                {projectNameCopied ? (
+                  <Check className="h-4 w-4 text-green-500" />
+                ) : (
+                  <Copy
+                    className="h-4 w-4 cursor-pointer hover:text-primary"
+                    onClick={handleCopyProjectName}
+                  />
+                )}
               </span>{" "}
               below:
             </Label>
@@ -496,7 +550,10 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {isDeleting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
               ) : (
                 "Delete"
               )}

@@ -14,6 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import type { Metadata } from "next";
+import { formatEnvironmentLabel } from "@/lib/environment-label";
 
 interface ApprovePageProps {
   params: Promise<{ requestId: string }>;
@@ -46,7 +47,7 @@ export default async function ApprovePage({ params }: ApprovePageProps) {
   // Fetch request details
   const { data: request, error: requestError } = await supabase
     .from("access_requests")
-    .select("*, projects!inner(user_id, name, ui_mode)")
+    .select("*, projects!inner(user_id, name, ui_mode), requested_environment")
     .eq("id", requestId)
     .single();
 
@@ -114,6 +115,20 @@ export default async function ApprovePage({ params }: ApprovePageProps) {
     environments = environmentsData?.map((e) => e.slug) || [];
   }
 
+  const { data: existingMember } = await admin
+    .from("project_members")
+    .select("role, allowed_environments")
+    .eq("project_id", request.project_id)
+    .eq("user_id", request.user_id)
+    .single();
+
+  const existingRole =
+    existingMember?.role === "editor" ? "editor" : "viewer";
+  const existingAllowedEnvironments = existingMember?.allowed_environments as
+    | string[]
+    | null
+    | undefined;
+
   return (
     <AuthLayout>
       <div className="w-[90vw] sm:w-full sm:max-w-md mx-auto">
@@ -139,7 +154,21 @@ export default async function ApprovePage({ params }: ApprovePageProps) {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <ApproveForm requestId={requestId} environments={environments} />
+            {request.requested_environment && (
+              <p className="text-sm text-muted-foreground">
+                Requested environment:{" "}
+                <span className="font-medium text-foreground">
+                  {formatEnvironmentLabel(request.requested_environment)}
+                </span>
+              </p>
+            )}
+            <ApproveForm
+              requestId={requestId}
+              environments={environments}
+              requestedEnvironment={request.requested_environment || undefined}
+              existingRole={existingRole}
+              existingAllowedEnvironments={existingAllowedEnvironments}
+            />
             <Button variant="ghost" asChild className="w-full h-11">
               <Link href="/dashboard">Back to Dashboard</Link>
             </Button>
