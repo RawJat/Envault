@@ -10,6 +10,7 @@ import {
   Command,
   Users,
   Copy,
+  Check,
   Pencil,
   Loader2,
 } from "lucide-react";
@@ -128,10 +129,13 @@ export function ProjectCard({ project }: ProjectCardProps) {
     router.refresh();
   };
 
+  const [projectNameCopied, setProjectNameCopied] = React.useState(false);
+
   const handleCopyProjectName = async () => {
     try {
       await navigator.clipboard.writeText(project.name);
-      toast.success("Project name copied to clipboard");
+      setProjectNameCopied(true);
+      setTimeout(() => setProjectNameCopied(false), 2000);
     } catch {
       toast.error("Failed to copy project name");
     }
@@ -288,10 +292,14 @@ export function ProjectCard({ project }: ProjectCardProps) {
               To confirm, type{" "}
               <span className="inline-flex items-center gap-1 font-bold">
                 &quot;{project.name}&quot;{" "}
-                <Copy
-                  className="h-4 w-4 cursor-pointer hover:text-primary"
-                  onClick={handleCopyProjectName}
-                />
+                {projectNameCopied ? (
+                  <Check className="h-4 w-4 text-green-500" />
+                ) : (
+                  <Copy
+                    className="h-4 w-4 cursor-pointer hover:text-primary"
+                    onClick={handleCopyProjectName}
+                  />
+                )}
               </span>{" "}
               below:
             </Label>
@@ -313,7 +321,10 @@ export function ProjectCard({ project }: ProjectCardProps) {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {isDeleting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
               ) : (
                 "Delete"
               )}

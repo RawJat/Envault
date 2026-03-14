@@ -5,9 +5,13 @@ import { RegMark } from "@/components/landing/RegMark";
 import { Stacked404 } from "@/components/landing/Stacked404";
 import { BackButton } from "@/components/ui/back-button";
 import { Button } from "@/components/ui/button";
+import { createClient } from "@/lib/supabase/server";
 
 export default async function NotFound() {
-  const user = null;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   return (
     <div className="flex min-h-screen flex-col font-sans selection:bg-primary/20 relative blueprint-grid sharp overflow-hidden">

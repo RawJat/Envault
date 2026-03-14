@@ -166,6 +166,21 @@ export async function POST(request: Request) {
 
   const supabase = createAdminClient();
 
+  // Check if a project with the same name already exists for this user (case-insensitive)
+  const { data: existingProject } = await supabase
+    .from("projects")
+    .select("id")
+    .eq("user_id", userId)
+    .ilike("name", name.trim())
+    .maybeSingle();
+
+  if (existingProject) {
+    return NextResponse.json(
+      { error: `A project named "${name}" already exists. Please use a different name.` },
+      { status: 409 },
+    );
+  }
+
   const slugBase =
     name
       .toLowerCase()

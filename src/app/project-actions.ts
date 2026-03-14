@@ -65,6 +65,18 @@ export async function createProject(
     return { error: "Too many requests. Please try again later." };
   }
 
+  // Check if a project with the same name already exists for this user (case-insensitive)
+  const { data: existingProject } = await supabase
+    .from("projects")
+    .select("id")
+    .eq("user_id", user.id)
+    .ilike("name", name.trim())
+    .maybeSingle();
+
+  if (existingProject) {
+    return { error: `A project named "${name}" already exists. Please use a different name.` };
+  }
+
   const slugBase =
     name
       .toLowerCase()
@@ -295,32 +307,48 @@ export async function getProjects(bypassCache: boolean = false) {
     }
   });
 
-  // Step 2: Fetch secrets count for each project
+  // Step 2: Fetch secrets for each project
   const projectIds = allProjects.map((p) => p.id);
-  const { data: secretCounts } = await supabase
+  const { data: projectSecrets } = await supabase
     .from("secrets")
-    .select("id, project_id")
+    .select("id, project_id, environment_id")
     .in("project_id", projectIds);
 
-  // Create a count map
+  // Create count and grouping maps
   const secretCountMap = new Map<string, number>();
-  secretCounts?.forEach((s) => {
+  const projectSecretMap = new Map<
+    string,
+    Array<{ id: string; environment_id: string }>
+  >();
+  projectSecrets?.forEach((s) => {
     secretCountMap.set(
       s.project_id,
       (secretCountMap.get(s.project_id) || 0) + 1,
     );
+    const grouped = projectSecretMap.get(s.project_id) || [];
+    grouped.push({ id: s.id, environment_id: s.environment_id });
+    projectSecretMap.set(s.project_id, grouped);
   });
 
   // Step 3: Fetch project members for current user
   const { data: memberships } = await supabase
     .from("project_members")
-    .select("project_id, role")
+    .select("project_id, role, allowed_environments")
     .in("project_id", projectIds)
     .eq("user_id", user.id);
 
   // Create membership map
-  const membershipMap = new Map(
-    memberships?.map((m) => [m.project_id, m.role]) || [],
+  const membershipMap = new Map<
+    string,
+    { role: "owner" | "editor" | "viewer"; allowed_environments: string[] | null }
+  >(
+    memberships?.map((m) => [
+      m.project_id,
+      {
+        role: (m.role as "owner" | "editor" | "viewer") || "viewer",
+        allowed_environments: m.allowed_environments || null,
+      },
+    ]) || [],
   );
 
   // Step 3.5: Check if projects are shared (for owners)
@@ -376,14 +404,34 @@ export async function getProjects(bypassCache: boolean = false) {
 
   // Group environments by project
   const environmentMap = new Map<string, Array<{ id: string, slug: string, name: string, is_default: boolean }>>();
+  const environmentSlugByIdMap = new Map<string, string>();
 
   if (allEnvironments) {
     allEnvironments.forEach(env => {
       const projEnvs = environmentMap.get(env.project_id) || [];
       projEnvs.push(env);
       environmentMap.set(env.project_id, projEnvs);
+      environmentSlugByIdMap.set(env.id, env.slug);
     });
   }
+
+  // Step 3.9: Fetch per-user shared secret ids for shared projects
+  const { data: userSecretShares } = await supabase
+    .from("secret_shares")
+    .select("secret_id, secrets!inner(project_id)")
+    .eq("user_id", user.id)
+    .in("secrets.project_id", projectIds);
+
+  const sharedSecretIdMap = new Map<string, Set<string>>();
+  userSecretShares?.forEach((share) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const secret = Array.isArray(share.secrets) ? share.secrets[0] : (share.secrets as any);
+    const projectId = secret?.project_id as string | undefined;
+    if (!projectId) return;
+    const ids = sharedSecretIdMap.get(projectId) || new Set<string>();
+    ids.add(share.secret_id);
+    sharedSecretIdMap.set(projectId, ids);
+  });
 
   // Step 4: Enrich projects with the data
   const enrichedProjects = allProjects.map((p) => {
@@ -391,11 +439,39 @@ export async function getProjects(bypassCache: boolean = false) {
     if (p.user_id === user.id) {
       role = "owner";
     } else if (membershipMap.has(p.id)) {
-      role =
-        (membershipMap.get(p.id) as "owner" | "editor" | "viewer") || "viewer";
+      role = membershipMap.get(p.id)?.role || "viewer";
     }
 
-    const count = secretCountMap.get(p.id) || 0;
+    const totalCount = secretCountMap.get(p.id) || 0;
+    let count = totalCount;
+    if (p.user_id !== user.id) {
+      const accessibleSecretIds = new Set<string>(
+        sharedSecretIdMap.get(p.id) || [],
+      );
+      const membership = membershipMap.get(p.id);
+
+      if (membership) {
+        const projectSecretsForProject = projectSecretMap.get(p.id) || [];
+        const allowedEnvironments = membership.allowed_environments;
+
+        if (allowedEnvironments && allowedEnvironments.length > 0) {
+          const allowedSet = new Set(allowedEnvironments);
+          projectSecretsForProject.forEach((secret) => {
+            const envSlug = environmentSlugByIdMap.get(secret.environment_id);
+            if (envSlug && allowedSet.has(envSlug)) {
+              accessibleSecretIds.add(secret.id);
+            }
+          });
+        } else {
+          projectSecretsForProject.forEach((secret) => {
+            accessibleSecretIds.add(secret.id);
+          });
+        }
+      }
+
+      count = accessibleSecretIds.size;
+    }
+
     // For the owner: isShared means they have shared it with others
     // For non-owners: isShared must always be true so ProjectCard routes to /[owner_username]/[slug]
     const isShared =

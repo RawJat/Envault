@@ -225,25 +225,13 @@ export function VariableDialog({
           <div className="space-y-2">
             <Label htmlFor="value">Value</Label>
             <div className="relative">
-              {showPassword ? (
-                <Input
-                  key="visible-input"
-                  id="value"
-                  placeholder="postgres://..."
-                  type="text"
-                  {...register("value")}
-                  className="font-mono pr-10"
-                />
-              ) : (
-                <Input
-                  key="masked-input"
-                  id="value-masked"
-                  value="••••••••••"
-                  readOnly
-                  type="text"
-                  className="font-mono pr-10 text-muted-foreground"
-                />
-              )}
+              <Input
+                id="value"
+                placeholder="postgres://..."
+                type={showPassword ? "text" : "password"}
+                {...register("value")}
+                className="font-mono pr-10"
+              />
               <Button
                 type="button"
                 variant="ghost"
