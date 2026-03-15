@@ -28,12 +28,12 @@ export function UserAvatar({
   avatar: propAvatar,
   className,
   avatarSeed,
-  fallbackType = "dicebear",
+  fallbackType: _fallbackType = "dicebear",
   ...props
 }: UserAvatarProps) {
   // Determine the values to use
   const email = propEmail || user?.email || "";
-  const avatar = propAvatar || user?.avatar;
+  const avatar = propAvatar || user?.avatar || "";
 
   // Use username if available, otherwise email for display name
   const displayName =
@@ -42,32 +42,37 @@ export function UserAvatar({
     user?.firstName ||
     email ||
     "User";
-  const initials = displayName.slice(0, 2).toUpperCase();
+  const initials =
+    displayName
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() ?? "")
+      .join("") || "U";
 
   // Use username or email for seeding (avoid userId for privacy)
   const seed = avatarSeed || user?.username || email || "user";
   const dicebearUrl = `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(seed)}&backgroundColor=transparent`;
+  const [imageSrc, setImageSrc] = React.useState(avatar || dicebearUrl);
 
-  const [imageError, setImageError] = React.useState(false);
-
-  const handleImageError = () => {
-    setImageError(true);
-  };
+  React.useEffect(() => {
+    setImageSrc(avatar || dicebearUrl);
+  }, [avatar, dicebearUrl]);
 
   return (
     <Avatar className={cn("h-8 w-8", className)} {...props}>
-      {avatar && !imageError ? (
-        <AvatarImage
-          src={avatar}
-          alt={displayName}
-          onError={handleImageError}
-        />
-      ) : fallbackType === "dicebear" ? (
-        // If using DiceBear, we pass it as the image source
-        <AvatarImage src={dicebearUrl} alt={displayName} />
-      ) : null}
-
-      <AvatarFallback>{initials}</AvatarFallback>
+      <AvatarImage
+        src={imageSrc}
+        alt={displayName}
+        onError={() => {
+          if (imageSrc !== dicebearUrl) {
+            setImageSrc(dicebearUrl);
+          }
+        }}
+      />
+      <AvatarFallback className="bg-muted">
+        {_fallbackType === "initials" ? initials : null}
+      </AvatarFallback>
     </Avatar>
   );
 }
