@@ -51,7 +51,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { deleteProject as deleteProjectAction } from "@/app/project-actions";
+import {
+  deleteProject as deleteProjectAction,
+  logSecretBatchRead,
+} from "@/app/project-actions";
 import { createAccessRequest } from "@/app/invite-actions";
 import { ShareProjectDialog } from "@/components/dashboard/share-project-dialog";
 import { RenameProjectDialog } from "@/components/dashboard/rename-project-dialog";
@@ -241,6 +244,18 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
       );
       return;
     }
+
+    try {
+      await logSecretBatchRead(
+        projectId,
+        project.variables.length,
+        optimisticEnv,
+        "web_ui_download",
+      );
+    } catch (error) {
+      console.warn("Failed to write download audit log:", error);
+    }
+
     const content = [...project.variables]
       .sort((a, b) => a.key.localeCompare(b.key))
       .map((v) => `${v.key}=${v.value}`)

@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDistanceToNow, format } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -42,9 +42,6 @@ export function DateDisplay({
   }
 
   const isCurrentYear = parsedDate.getFullYear() === new Date().getFullYear();
-  const baseDateFormat = isCurrentYear ? "MMM dd" : "MMM dd, yyyy";
-  const timeFormat = "hh:mm a";
-
   let displayString = "";
 
   switch (formatType) {
@@ -52,16 +49,20 @@ export function DateDisplay({
       displayString = formatDistanceToNow(parsedDate, { addSuffix });
       break;
     case "absolute":
-      displayString = format(
-        parsedDate,
-        `${baseDateFormat}',' ${timeFormat}`,
-      );
+      displayString = new Intl.DateTimeFormat(undefined, {
+        dateStyle: isCurrentYear ? "medium" : "long",
+        timeStyle: "short",
+      }).format(parsedDate);
       break;
     case "date":
-      displayString = format(parsedDate, baseDateFormat);
+      displayString = new Intl.DateTimeFormat(undefined, {
+        dateStyle: isCurrentYear ? "medium" : "long",
+      }).format(parsedDate);
       break;
     case "time":
-      displayString = format(parsedDate, timeFormat);
+      displayString = new Intl.DateTimeFormat(undefined, {
+        timeStyle: "short",
+      }).format(parsedDate);
       break;
   }
 

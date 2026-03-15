@@ -393,17 +393,17 @@ export async function GET(
   }
 
   // Audit Log: Batch Read (Machine Only - humans via CLI also get logged as batch)
-  const clientIp = (await headers()).get("x-forwarded-for") || "unknown";
-  logAuditEvent({
+  await logAuditEvent({
     projectId,
     actorId: result.type === "service" ? result.tokenId : userId,
     actorType: result.type === "service" ? "machine" : "user",
-    action: "secrets.read_batch",
+    action: "secret.read_batch",
     targetResourceId: projectId,
-    ipAddress: clientIp,
     metadata: {
       count: finalSecrets.length,
       environment: resolvedEnvironment.environment.slug,
+      source: "cli",
+      ...(result.type === "user" ? { beneficiary_user_id: userId } : {}),
     },
   });
 
@@ -622,19 +622,46 @@ export async function POST(
     revalidatePath(`/project/${projectId}`);
   }
 
-  const clientIp = (await headers()).get("x-forwarded-for") || "unknown";
-  logAuditEvent({
-    projectId,
-    actorId: result.type === "service" ? result.tokenId : userId,
-    actorType: result.type === "service" ? "machine" : "user",
-    action: "secret.bulk_import",
-    targetResourceId: projectId,
-    ipAddress: clientIp,
-    metadata: {
-      count: upsertData.length,
-      environment: resolvedEnvironment.environment.slug,
-    },
-  });
+  const actorId = result.type === "service" ? result.tokenId : userId;
+  const actorType = result.type === "service" ? "machine" : "user";
+
+  if (upsertData.length > 0) {
+    const existingIds = new Set((existingSecrets || []).map((secret) => secret.id));
+    const createdCount = upsertData.filter((item) => !existingIds.has(item.id)).length;
+    const updatedCount = upsertData.length - createdCount;
+
+    if (createdCount > 0) {
+      await logAuditEvent({
+        projectId,
+        actorId,
+        actorType,
+        action: "secret.created",
+        targetResourceId: projectId,
+        metadata: {
+          count: createdCount,
+          environment: resolvedEnvironment.environment.slug,
+          source: "cli",
+          ...(actorType === "user" ? { beneficiary_user_id: userId } : {}),
+        },
+      });
+    }
+
+    if (updatedCount > 0) {
+      await logAuditEvent({
+        projectId,
+        actorId,
+        actorType,
+        action: "secret.updated",
+        targetResourceId: projectId,
+        metadata: {
+          count: updatedCount,
+          environment: resolvedEnvironment.environment.slug,
+          source: "cli",
+          ...(actorType === "user" ? { beneficiary_user_id: userId } : {}),
+        },
+      });
+    }
+  }
 
   return NextResponse.json({
     success: true,

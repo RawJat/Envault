@@ -30,26 +30,31 @@ export default async function AuditLogsPage({ params }: PageProps) {
     redirect("/login");
   }
 
-  // Fetch the project by slug and user_id to get project.id
-  const { data: project, error: _projectError } = await supabase
+  // Fetch project by slug, then verify user membership via getProjectRole
+  const { data: projects, error: _projectError } = await supabase
     .from("projects")
     .select("id, name")
     .eq("slug", slug)
-    .eq("user_id", user.id)
-    .single();
+    .limit(20);
 
-  if (_projectError || !project) {
+  if (_projectError || !projects || projects.length === 0) {
     notFound();
   }
 
-  // Verify user is owner
+  // Verify user can access this project
   const { getProjectRole } = await import("@/lib/permissions");
-  const role = await getProjectRole(supabase, project.id, user.id);
+  const roleChecks = await Promise.all(
+    projects.map(async (candidate) => ({
+      project: candidate,
+      role: await getProjectRole(supabase, candidate.id, user.id),
+    })),
+  );
+  const accessible = roleChecks.find((entry) => Boolean(entry.role));
 
-  if (role !== "owner") {
-    // Only owners can access audit logs
+  if (!accessible) {
     redirect(`/project/${slug}`);
   }
+  const project = accessible.project;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
