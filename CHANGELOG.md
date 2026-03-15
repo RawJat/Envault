@@ -10,6 +10,18 @@ All notable changes to Envault are documented here.
 
 ---
 
+## 1.3.2 — 2026-03-16
+
+> Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
+
+### Improvements
+
+- **Audit Logs Filtering & UX:** Enhanced audit logs interface with improved filtering capabilities, better detail semantics, and improved fallback handling for edge cases.
+- **Audit Event Taxonomy & Privacy:** Enforced structured event taxonomy with privacy-aware access controls and member-level access policies for audit log visibility.
+- **Secret Share Management:** Editors can now manage secret shares directly, improving workflow efficiency for environment access requests.
+
+---
+
 ## 1.3.1 — 2026-03-14
 
 > Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
