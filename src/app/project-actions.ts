@@ -660,15 +660,17 @@ export async function addVariable(
     }
   }
 
-  const clientIp = (await headers()).get("x-forwarded-for") || "unknown";
-  logAuditEvent({
+  await logAuditEvent({
     projectId,
     actorId: user.id,
     actorType: "user",
-    action: "secret.create",
+    action: "secret.created",
     targetResourceId: data.id,
-    ipAddress: clientIp,
-    metadata: { key },
+    metadata: {
+      key_name: key,
+      environment: environment.slug,
+      beneficiary_user_id: user.id,
+    },
   });
 
   revalidatePath("/project/[slug]", "page");
@@ -737,6 +739,21 @@ export async function updateVariable(
     return { error: "No environment configured for this project." };
   }
 
+  const { data: existingSecret, error: existingSecretError } = await supabase
+    .from("secrets")
+    .select("key")
+    .eq("id", id)
+    .eq("environment_id", environment.id)
+    .maybeSingle();
+
+  if (existingSecretError) {
+    return { error: existingSecretError.message };
+  }
+
+  if (!existingSecret) {
+    return { error: "Secret not found." };
+  }
+
   // If updating the value, encrypt it first
   const finalUpdates: Record<string, unknown> = {
     ...updates,
@@ -788,17 +805,31 @@ export async function updateVariable(
     }
   }
 
-  const clientIp = (await headers()).get("x-forwarded-for") || "unknown";
-  logAuditEvent({
+  const changes: Record<string, { old: string; new: string }> = {};
+  if (typeof updates.key === "string" && updates.key !== existingSecret.key) {
+    changes.key_name = {
+      old: existingSecret.key,
+      new: updates.key,
+    };
+  }
+  if (typeof updates.value === "string") {
+    changes.value = {
+      old: "[REDACTED]",
+      new: "[REDACTED]",
+    };
+  }
+
+  await logAuditEvent({
     projectId,
     actorId: user.id,
     actorType: "user",
-    action: "secret.update",
+    action: "secret.updated",
     targetResourceId: id,
-    ipAddress: clientIp,
     metadata: {
-      key: updates.key,
-      value_updated: !!updates.value,
+      key_name: updates.key ?? existingSecret.key,
+      environment: environment.slug,
+      beneficiary_user_id: user.id,
+      ...(Object.keys(changes).length > 0 ? { changes } : {}),
     },
   });
 
@@ -847,15 +878,21 @@ export async function deleteVariable(
     return { error: "No environment configured for this project." };
   }
 
-  const { error } = await supabase
+  const { data: deletedSecret, error } = await supabase
     .from("secrets")
     .delete()
     .eq("id", id)
-    .eq("environment_id", environment.id);
+    .eq("environment_id", environment.id)
+    .select("id, key")
+    .maybeSingle();
   // Remove .eq('user_id')
 
   if (error) {
     return { error: error.message };
+  }
+
+  if (!deletedSecret) {
+    return { error: "Secret not found." };
   }
 
   // Fire-and-forget project activity email
@@ -883,6 +920,29 @@ export async function deleteVariable(
       }
     }
   }
+
+  await logAuditEvent({
+    projectId,
+    actorId: user.id,
+    actorType: "user",
+    action: "secret.deleted",
+    targetResourceId: deletedSecret.id,
+    metadata: {
+      key_name: deletedSecret.key,
+      environment: environment.slug,
+      beneficiary_user_id: user.id,
+      changes: {
+        key_name: {
+          old: deletedSecret.key,
+          new: "[DELETED]",
+        },
+        value: {
+          old: "[REDACTED]",
+          new: "[DELETED]",
+        },
+      },
+    },
+  });
 
   revalidatePath("/project/[slug]", "page");
   return { success: true };
@@ -1085,17 +1145,80 @@ export async function addVariablesBulk(
     }
   }
 
-  const clientIp = (await headers()).get("x-forwarded-for") || "unknown";
-  logAuditEvent({
-    projectId,
-    actorId: user.id,
-    actorType: "user",
-    action: "secret.bulk_import",
-    targetResourceId: projectId,
-    ipAddress: clientIp,
-    metadata: { added, updated, skipped },
-  });
+  if (added > 0) {
+    await logAuditEvent({
+      projectId,
+      actorId: user.id,
+      actorType: "user",
+      action: "secret.created",
+      targetResourceId: projectId,
+      metadata: {
+        count: added,
+        added,
+        updated: 0,
+        skipped,
+        environment: environment.slug,
+        beneficiary_user_id: user.id,
+      },
+    });
+  }
+
+  if (updated > 0) {
+    await logAuditEvent({
+      projectId,
+      actorId: user.id,
+      actorType: "user",
+      action: "secret.updated",
+      targetResourceId: projectId,
+      metadata: {
+        count: updated,
+        added: 0,
+        updated,
+        skipped,
+        environment: environment.slug,
+        beneficiary_user_id: user.id,
+      },
+    });
+  }
 
   revalidatePath("/project/[slug]", "page");
   return { added, updated, skipped };
+}
+
+export async function logSecretBatchRead(
+  projectId: string,
+  count: number,
+  environmentSlug?: string,
+  source: "web_ui_download" | "cli" = "web_ui_download",
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const { getProjectRole } = await import("@/lib/permissions");
+  const role = await getProjectRole(supabase, projectId, user.id);
+  if (!role) {
+    return { error: "Unauthorized" };
+  }
+
+  await logAuditEvent({
+    projectId,
+    actorId: user.id,
+    actorType: "user",
+    action: "secret.read_batch",
+    targetResourceId: projectId,
+    metadata: {
+      count,
+      source,
+      environment: environmentSlug || "unknown",
+      beneficiary_user_id: user.id,
+    },
+  });
+
+  return { success: true };
 }

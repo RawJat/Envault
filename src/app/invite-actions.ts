@@ -5,6 +5,107 @@ import { revalidatePath } from "next/cache";
 import { formatEnvironmentLabel } from "@/lib/environment-label";
 
 import { cacheDel, CacheKeys, invalidateUserSecretAccess } from "@/lib/cache";
+import { logAuditEvent } from "@/lib/audit-logger";
+
+function normalizeAllowedEnvironments(
+  environments: string[] | null | undefined,
+): string[] | null {
+  if (environments === null || environments === undefined) {
+    return null;
+  }
+  return [...environments].sort();
+}
+
+function areAllowedEnvironmentsEqual(
+  a: string[] | null | undefined,
+  b: string[] | null | undefined,
+): boolean {
+  const normalizedA = normalizeAllowedEnvironments(a);
+  const normalizedB = normalizeAllowedEnvironments(b);
+
+  if (normalizedA === null && normalizedB === null) {
+    return true;
+  }
+
+  if (normalizedA === null || normalizedB === null) {
+    return false;
+  }
+
+  if (normalizedA.length !== normalizedB.length) {
+    return false;
+  }
+
+  return normalizedA.every((value, index) => value === normalizedB[index]);
+}
+
+function deriveAccessChangeEvents(
+  previous: string[] | null | undefined,
+  next: string[] | null | undefined,
+): Array<{
+  action: "environment.access_granted" | "environment.access_revoked";
+  old: string[] | "all";
+  new: string[] | "all";
+}> {
+  const prev = normalizeAllowedEnvironments(previous);
+  const nxt = normalizeAllowedEnvironments(next);
+
+  if (areAllowedEnvironmentsEqual(prev, nxt)) {
+    return [];
+  }
+
+  if (prev === null && nxt !== null) {
+    return [
+      {
+        action: "environment.access_revoked",
+        old: "all",
+        new: nxt,
+      },
+    ];
+  }
+
+  if (prev !== null && nxt === null) {
+    return [
+      {
+        action: "environment.access_granted",
+        old: prev,
+        new: "all",
+      },
+    ];
+  }
+
+  if (prev !== null && nxt !== null) {
+    const prevSet = new Set(prev);
+    const nextSet = new Set(nxt);
+    const added = nxt.filter((env) => !prevSet.has(env));
+    const removed = prev.filter((env) => !nextSet.has(env));
+
+    const events: Array<{
+      action: "environment.access_granted" | "environment.access_revoked";
+      old: string[] | "all";
+      new: string[] | "all";
+    }> = [];
+
+    if (added.length > 0) {
+      events.push({
+        action: "environment.access_granted",
+        old: prev,
+        new: nxt,
+      });
+    }
+
+    if (removed.length > 0) {
+      events.push({
+        action: "environment.access_revoked",
+        old: prev,
+        new: nxt,
+      });
+    }
+
+    return events;
+  }
+
+  return [];
+}
 
 export async function createAccessRequest(
   token: string,
@@ -199,6 +300,53 @@ export async function approveRequest(
       return { error: updateMemberError.message };
     }
 
+    const projectName = (request.projects as unknown as { name: string }).name;
+
+    if (mergedRole !== existingRole) {
+      await logAuditEvent({
+        projectId: request.project_id!,
+        actorId: user.id,
+        actorType: "user",
+        action: "member.role_updated",
+        targetResourceId: request.user_id,
+        metadata: {
+          member_user_id: request.user_id,
+          project_name: projectName,
+          changes: {
+            role: {
+              old: existingRole,
+              new: mergedRole,
+            },
+          },
+        },
+      });
+    }
+
+    const accessEvents = deriveAccessChangeEvents(
+      existingAllowed,
+      mergedAllowedEnvironments,
+    );
+    for (const accessEvent of accessEvents) {
+      await logAuditEvent({
+        projectId: request.project_id!,
+        actorId: user.id,
+        actorType: "user",
+        action: accessEvent.action,
+        targetResourceId: request.user_id,
+        metadata: {
+          member_user_id: request.user_id,
+          beneficiary_user_id: request.user_id,
+          project_name: projectName,
+          changes: {
+            allowed_environments: {
+              old: accessEvent.old,
+              new: accessEvent.new,
+            },
+          },
+        },
+      });
+    }
+
     await admin.from("access_requests").delete().eq("id", requestId);
 
     await cacheDel(CacheKeys.userProjects(request.user_id));
@@ -264,6 +412,42 @@ export async function approveRequest(
   if (memberError) {
     return { error: memberError.message };
   }
+
+  const projectNameForAudit = (request.projects as unknown as { name: string })
+    .name;
+  const normalizedAllowed = normalizeAllowedEnvironments(allowedEnvironments);
+
+  await logAuditEvent({
+    projectId: request.project_id!,
+    actorId: user.id,
+    actorType: "user",
+    action: "member.invited",
+    targetResourceId: request.user_id,
+    metadata: {
+      member_user_id: request.user_id,
+      beneficiary_user_id: request.user_id,
+      role,
+      project_name: projectNameForAudit,
+    },
+  });
+
+  await logAuditEvent({
+    projectId: request.project_id!,
+    actorId: user.id,
+    actorType: "user",
+    action: "environment.access_granted",
+    targetResourceId: request.user_id,
+    metadata: {
+      member_user_id: request.user_id,
+      project_name: projectNameForAudit,
+      changes: {
+        allowed_environments: {
+          old: [],
+          new: normalizedAllowed === null ? "all" : normalizedAllowed,
+        },
+      },
+    },
+  });
 
   // 1.5. Clean up any existing secret_shares for this user in this project
   // Since they now have full project access, individual secret shares are redundant
@@ -468,6 +652,36 @@ export async function removeMember(projectId: string, memberUserId: string) {
 
   if (error) return { error: error.message };
 
+  await logAuditEvent({
+    projectId,
+    actorId: user.id,
+    actorType: "user",
+    action: "member.removed",
+    targetResourceId: memberUserId,
+    metadata: {
+      member_user_id: memberUserId,
+      project_name: projectName,
+    },
+  });
+
+  await logAuditEvent({
+    projectId,
+    actorId: user.id,
+    actorType: "user",
+    action: "environment.access_revoked",
+    targetResourceId: memberUserId,
+    metadata: {
+      member_user_id: memberUserId,
+      project_name: projectName,
+      changes: {
+        allowed_environments: {
+          old: "all",
+          new: [],
+        },
+      },
+    },
+  });
+
   // Invalidate caches for the removed member
   await cacheDel(CacheKeys.userProjects(memberUserId));
   await cacheDel(CacheKeys.userProjectRole(memberUserId, projectId));
@@ -578,6 +792,50 @@ export async function updateMemberRole(
     return { error: "No rows were updated. Check permissions or if the user exists in the project." };
   }
 
+  const nextAllowed = allowedEnvironments ?? previousAllowed ?? null;
+
+  if (previousRole !== newRole) {
+    await logAuditEvent({
+      projectId,
+      actorId: user.id,
+      actorType: "user",
+      action: "member.role_updated",
+      targetResourceId: memberUserId,
+      metadata: {
+        member_user_id: memberUserId,
+        project_name: projectData?.name || "Project",
+        changes: {
+          role: {
+            old: previousRole,
+            new: newRole,
+          },
+        },
+      },
+    });
+  }
+
+  const accessEvents = deriveAccessChangeEvents(previousAllowed, nextAllowed);
+  for (const accessEvent of accessEvents) {
+    await logAuditEvent({
+      projectId,
+      actorId: user.id,
+      actorType: "user",
+      action: accessEvent.action,
+      targetResourceId: memberUserId,
+      metadata: {
+        member_user_id: memberUserId,
+        beneficiary_user_id: memberUserId,
+        project_name: projectData?.name || "Project",
+        changes: {
+          allowed_environments: {
+            old: accessEvent.old,
+            new: accessEvent.new,
+          },
+        },
+      },
+    });
+  }
+
   // Invalidate caches for the member whose role changed
   await cacheDel(CacheKeys.userProjectRole(memberUserId, projectId));
   // Invalidate all secret access caches since permissions changed
@@ -679,6 +937,20 @@ export async function inviteUser(projectId: string, email: string) {
   // Send Email
   const { sendInviteEmail } = await import("@/lib/email");
   await sendInviteEmail(email, project.name, projectId);
+
+  await logAuditEvent({
+    projectId,
+    actorId: user.id,
+    actorType: "user",
+    action: "member.invited",
+    targetResourceId: invitedUser?.id || null,
+    metadata: {
+      beneficiary_user_id: invitedUser?.id,
+      beneficiary_email: email,
+      invited_email: email,
+      project_name: project.name,
+    },
+  });
 
   return { success: true };
 }

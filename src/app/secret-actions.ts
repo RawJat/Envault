@@ -137,7 +137,7 @@ export async function shareSecret(secretId: string, email: string) {
   }
 
   // Insert Share
-  const { error: insertError } = await supabase.from("secret_shares").insert({
+  const { error: insertError } = await admin.from("secret_shares").insert({
     secret_id: secretId,
     user_id: targetUserId,
     role: "viewer",
@@ -147,6 +147,11 @@ export async function shareSecret(secretId: string, email: string) {
   if (insertError) {
     if (insertError.code === "23505")
       return { error: "User already has access" }; // Unique constraint
+    if (insertError.code === "42501") {
+      return {
+        error: "You do not have permission to share this secret.",
+      };
+    }
     return { error: insertError.message };
   }
 
@@ -205,13 +210,21 @@ export async function unshareSecret(secretId: string, userId: string) {
     return { error: "Unauthorized" };
   }
 
-  const { error } = await supabase
+  const { createAdminClient } = await import("@/lib/supabase/admin");
+  const admin = createAdminClient();
+
+  const { error } = await admin
     .from("secret_shares")
     .delete()
     .eq("secret_id", secretId)
     .eq("user_id", userId);
 
-  if (error) return { error: error.message };
+  if (error) {
+    if (error.code === "42501") {
+      return { error: "You do not have permission to revoke this share." };
+    }
+    return { error: error.message };
+  }
 
   // Invalidate secret access cache for the user who lost access
   await cacheDel(CacheKeys.userSecretAccess(userId, secretId));
