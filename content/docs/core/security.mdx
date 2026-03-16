@@ -29,6 +29,7 @@ Envault supports key rotation for Data Keys. This limits the "blast radius" if a
 
 - **RLS (Row Level Security)**: We use Supabase RLS to ensure that users can only access data rows they are explicitly permitted to see. Even if the application logic fails, the database layer attempts to prevent unauthorized access.
 - **Immutable Audit Logs**: All administrative actions (mutating secrets, batch reads by machines, project changes) are written to an append-only, immutable `audit_logs` table. Only Project Owners can query this table via strict RLS policies.
+- **Ownership Chain of Custody**: Ownership transfer emits explicit `TRANSFER_REQUESTED`, `TRANSFER_ACCEPTED`, and `TRANSFER_REJECTED` audit events to preserve legal and operational accountability.
 - **Data Retention**: Audit logs undergo automated cleanup and are strictly retained for a maximum of 7 days to balance visibility with privacy considerations.
 
 ### Identity Snapshot Retention

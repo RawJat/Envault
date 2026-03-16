@@ -12,6 +12,9 @@ const ALLOWED_AUDIT_ACTIONS = new Set([
   "member.invited",
   "member.role_updated",
   "member.removed",
+  "transfer.requested",
+  "transfer.accepted",
+  "transfer.rejected",
   "environment.access_updated",
   "environment.access_granted",
   "environment.access_revoked",
@@ -205,18 +208,23 @@ export async function GET(
 
     const beneficiaryUserIds = Array.from(
       new Set(
-        (logs || [])
-          .map((log) => {
+        (logs || []).flatMap((log) => {
             const metadata =
               log.metadata && typeof log.metadata === "object"
                 ? (log.metadata as Record<string, unknown>)
                 : {};
 
-            return (
-              parseMaybeUuid(metadata.member_user_id) ||
-              parseMaybeUuid(metadata.beneficiary_user_id) ||
-              parseMaybeUuid(log.target_resource_id)
-            );
+            const ids = [
+              parseMaybeUuid(metadata.member_user_id),
+              parseMaybeUuid(metadata.beneficiary_user_id),
+              parseMaybeUuid(metadata.previous_owner_id),
+              parseMaybeUuid(metadata.new_owner_id),
+              parseMaybeUuid(metadata.target_user_id),
+              parseMaybeUuid(metadata.rejected_by_user_id),
+              parseMaybeUuid(log.target_resource_id),
+            ];
+
+            return ids.filter((value): value is string => Boolean(value));
           })
           .filter((value): value is string => Boolean(value)),
       ),
@@ -343,6 +351,67 @@ export async function GET(
           userEmailById.get(beneficiaryUserId) ||
           existingBeneficiaryEmail ||
           "";
+      }
+
+      const transferUserMappings: Array<{
+        idKey:
+          | "previous_owner_id"
+          | "new_owner_id"
+          | "target_user_id"
+          | "rejected_by_user_id";
+        nameKey:
+          | "previous_owner_name"
+          | "new_owner_name"
+          | "target_name"
+          | "rejected_by_name";
+        emailKey:
+          | "previous_owner_email"
+          | "new_owner_email"
+          | "target_email"
+          | "rejected_by_email";
+      }> = [
+        {
+          idKey: "previous_owner_id",
+          nameKey: "previous_owner_name",
+          emailKey: "previous_owner_email",
+        },
+        {
+          idKey: "new_owner_id",
+          nameKey: "new_owner_name",
+          emailKey: "new_owner_email",
+        },
+        {
+          idKey: "target_user_id",
+          nameKey: "target_name",
+          emailKey: "target_email",
+        },
+        {
+          idKey: "rejected_by_user_id",
+          nameKey: "rejected_by_name",
+          emailKey: "rejected_by_email",
+        },
+      ];
+
+      for (const mapping of transferUserMappings) {
+        const mappedId = parseMaybeUuid(metadata[mapping.idKey]);
+        if (!mappedId) continue;
+
+        const existingName =
+          typeof metadata[mapping.nameKey] === "string"
+            ? (metadata[mapping.nameKey] as string)
+            : "";
+        const existingEmail =
+          typeof metadata[mapping.emailKey] === "string"
+            ? (metadata[mapping.emailKey] as string)
+            : "";
+
+        metadata[mapping.nameKey] =
+          userNameById.get(mappedId) ||
+          existingName ||
+          existingEmail ||
+          "Former Member";
+        metadata[mapping.emailKey] =
+          userEmailById.get(mappedId) || existingEmail || "";
       }
 
       return {

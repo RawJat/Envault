@@ -22,6 +22,7 @@ import {
   ShieldCheck,
   ShieldOff,
   Trash2,
+  ArrowRightLeft,
   UserCog,
   UserMinus,
   UserPlus,
@@ -52,6 +53,24 @@ interface AuditLogMetadata {
   count?: number;
   role?: string;
   member_user_id?: string;
+  target_user_id?: string;
+  target_name?: string;
+  target_email?: string;
+  previous_owner_id?: string;
+  previous_owner_name?: string;
+  previous_owner_email?: string;
+  new_owner_id?: string;
+  new_owner_name?: string;
+  new_owner_email?: string;
+  rejected_by_user_id?: string;
+  rejected_by_name?: string;
+  rejected_by_email?: string;
+  current_owner_action?: "demote_to_editor" | "remove_from_project";
+  previous_owner_disposition?: "demote_to_editor" | "remove_from_project";
+  granted_role?: string;
+  granted_access?: string;
+  requested_role?: string;
+  transferred_secret_count?: number;
   beneficiary_user_id?: string;
   beneficiary_name?: string;
   beneficiary_email?: string;
@@ -67,6 +86,11 @@ interface AuditLog {
   actor_name?: string;
   actor_avatar?: string;
   metadata?: AuditLogMetadata;
+}
+
+interface DetailRow {
+  label: string;
+  value: string;
 }
 
 interface ProjectMemberOption {
@@ -89,6 +113,9 @@ const ACTION_OPTIONS = [
   { value: "member.invited", label: "Member Invited" },
   { value: "member.role_updated", label: "Member Role Updated" },
   { value: "member.removed", label: "Member Removed" },
+  { value: "transfer.requested", label: "Ownership Transfer Requested" },
+  { value: "transfer.accepted", label: "Ownership Transfer Accepted" },
+  { value: "transfer.rejected", label: "Ownership Transfer Rejected" },
   { value: "environment.access_updated", label: "Environment Access Updated" },
   { value: "environment.access_granted", label: "Environment Access Granted" },
   { value: "environment.access_revoked", label: "Environment Access Revoked" },
@@ -134,6 +161,124 @@ function getBeneficiaryLabel(metadata?: AuditLogMetadata): string | null {
   );
 }
 
+function firstNonEmpty(...values: Array<string | null | undefined>): string {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim().length > 0) {
+      return value.trim();
+    }
+  }
+  return "";
+}
+
+function getTransferDispositionLabel(
+  value: AuditLogMetadata["previous_owner_disposition"],
+): string {
+  if (value === "demote_to_editor") return "Demoted to Editor";
+  if (value === "remove_from_project") return "Removed from Project";
+  return "";
+}
+
+function getGrantedAccessLabel(metadata: AuditLogMetadata): string {
+  const raw = firstNonEmpty(metadata.granted_access, metadata.granted_role);
+  if (!raw) return "";
+  if (raw.toLowerCase().includes("owner")) return "Owner";
+  return raw
+    .replace(/[_\.]/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function getRequestedAccessLabel(metadata: AuditLogMetadata): string {
+  const raw = firstNonEmpty(metadata.requested_role);
+  if (!raw) return "";
+  if (raw.toLowerCase().includes("owner")) return "Owner";
+  return raw
+    .replace(/[_\.]/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function getTransferDetailRows(
+  action: string,
+  metadata: AuditLogMetadata | undefined,
+): DetailRow[] {
+  if (!metadata || !action.startsWith("transfer.")) {
+    return [];
+  }
+
+  const rows: DetailRow[] = [];
+  const previousOwner = firstNonEmpty(
+    metadata.previous_owner_name,
+    metadata.previous_owner_email,
+    metadata.previous_owner_id,
+  );
+  const targetUser = firstNonEmpty(
+    metadata.target_name,
+    metadata.target_email,
+    metadata.target_user_id,
+  );
+  const newOwner = firstNonEmpty(
+    metadata.new_owner_name,
+    metadata.new_owner_email,
+    metadata.new_owner_id,
+    metadata.beneficiary_name,
+    metadata.beneficiary_email,
+    metadata.beneficiary_user_id,
+  );
+  const rejectedBy = firstNonEmpty(
+    metadata.rejected_by_name,
+    metadata.rejected_by_email,
+    metadata.rejected_by_user_id,
+  );
+  const granted = getGrantedAccessLabel(metadata);
+  const requested = getRequestedAccessLabel(metadata);
+  const disposition = getTransferDispositionLabel(
+    metadata.previous_owner_disposition || metadata.current_owner_action,
+  );
+  const transferredCount =
+    typeof metadata.transferred_secret_count === "number"
+      ? metadata.transferred_secret_count
+      : null;
+
+  if (action === "transfer.requested") {
+    if (previousOwner) rows.push({ label: "Current Owner", value: previousOwner });
+    if (targetUser || newOwner) {
+      rows.push({ label: "Target User", value: targetUser || newOwner });
+    }
+    if (granted) rows.push({ label: "Requested Access", value: granted });
+    if (disposition) rows.push({ label: "On Acceptance", value: disposition });
+    return rows;
+  }
+
+  if (action === "transfer.accepted") {
+    if (previousOwner) rows.push({ label: "Previous Owner", value: previousOwner });
+    if (newOwner || targetUser) {
+      rows.push({ label: "New Owner", value: newOwner || targetUser });
+    }
+    if (granted) rows.push({ label: "Granted Access", value: granted });
+    if (disposition) rows.push({ label: "Previous Owner Access", value: disposition });
+    if (transferredCount !== null) {
+      rows.push({
+        label: "Secrets Reassigned",
+        value: String(transferredCount),
+      });
+    }
+    return rows;
+  }
+
+  if (action === "transfer.rejected") {
+    if (previousOwner) rows.push({ label: "Current Owner", value: previousOwner });
+    if (rejectedBy || targetUser || newOwner) {
+      rows.push({
+        label: "Rejected By",
+        value: rejectedBy || targetUser || newOwner,
+      });
+    }
+    if (requested) rows.push({ label: "Requested Access", value: requested });
+    return rows;
+  }
+
+  return rows;
+}
+
 function getActionIcon(action: string) {
   if (action === "secret.created") return <KeyRound className="h-3.5 w-3.5" />;
   if (action === "secret.updated")
@@ -144,6 +289,8 @@ function getActionIcon(action: string) {
   if (action === "member.role_updated")
     return <UserCog className="h-3.5 w-3.5" />;
   if (action === "member.removed") return <UserMinus className="h-3.5 w-3.5" />;
+  if (action.startsWith("transfer."))
+    return <ArrowRightLeft className="h-3.5 w-3.5" />;
   if (action === "environment.access_updated")
     return <RefreshCw className="h-3.5 w-3.5" />;
   if (action === "environment.access_granted")
@@ -240,6 +387,16 @@ function isMemberRelatedAction(action: string): boolean {
 }
 
 function getActionBadgeClass(action: string): string {
+  if (action === "transfer.requested") {
+    return "border-amber-500/25 bg-amber-500/10 text-amber-700 dark:text-amber-300";
+  }
+  if (action === "transfer.accepted") {
+    return "border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
+  }
+  if (action === "transfer.rejected") {
+    return "border-rose-500/25 bg-rose-500/10 text-rose-700 dark:text-rose-300";
+  }
+
   if (
     action.includes("deleted") ||
     action.includes("removed") ||
@@ -354,6 +511,71 @@ function getNonDiffContextSummary(
 
   if (action === "member.removed") {
     return "Member removed from project";
+  }
+
+  if (action === "transfer.requested") {
+    const target = firstNonEmpty(
+      metadata?.target_name,
+      metadata?.target_email,
+      metadata?.beneficiary_name,
+      metadata?.beneficiary_email,
+      metadata?.target_user_id,
+      metadata?.beneficiary_user_id,
+    );
+    const grantedRole = metadata ? getGrantedAccessLabel(metadata) : "";
+    if (target && grantedRole) {
+      return `Ownership transfer requested to ${target}. Requested access: ${grantedRole}.`;
+    }
+    if (target) {
+      return `Ownership transfer requested to ${target}`;
+    }
+    return "Ownership transfer requested";
+  }
+
+  if (action === "transfer.accepted") {
+    const newOwner = firstNonEmpty(
+      metadata?.new_owner_name,
+      metadata?.new_owner_email,
+      metadata?.beneficiary_name,
+      metadata?.beneficiary_email,
+      metadata?.new_owner_id,
+      metadata?.beneficiary_user_id,
+    );
+    const granted = metadata ? getGrantedAccessLabel(metadata) : "";
+    const disposition = getTransferDispositionLabel(
+      metadata?.previous_owner_disposition || metadata?.current_owner_action,
+    );
+
+    if (newOwner && granted && disposition) {
+      return `Ownership transferred to ${newOwner}. Granted access: ${granted}. Previous owner access: ${disposition}.`;
+    }
+    if (newOwner && granted) {
+      return `Ownership transferred to ${newOwner}. Granted access: ${granted}.`;
+    }
+    if (newOwner) {
+      return `Ownership transfer accepted by ${newOwner}`;
+    }
+    return "Ownership transfer accepted";
+  }
+
+  if (action === "transfer.rejected") {
+    const rejectedBy = firstNonEmpty(
+      metadata?.rejected_by_name,
+      metadata?.rejected_by_email,
+      metadata?.target_name,
+      metadata?.target_email,
+      metadata?.rejected_by_user_id,
+      metadata?.target_user_id,
+    );
+    const requestedRole = metadata ? getRequestedAccessLabel(metadata) : "";
+
+    if (rejectedBy && requestedRole) {
+      return `Ownership transfer rejected by ${rejectedBy} (requested access: ${requestedRole})`;
+    }
+    if (rejectedBy) {
+      return `Ownership transfer rejected by ${rejectedBy}`;
+    }
+    return "Ownership transfer rejected";
   }
 
   if (action === "environment.access_granted") {
@@ -581,11 +803,16 @@ export function AuditLogsView({ projectId }: AuditLogsViewProps) {
             {logs.map((log) => {
               const changes = log.metadata?.changes || {};
               const keyName = log.metadata?.key_name;
+              const effectiveAction = getEffectiveAction(log);
               const changeEntries = Object.entries(changes);
-              const canExpand = changeEntries.length > 0;
+              const transferDetailRows = getTransferDetailRows(
+                effectiveAction,
+                log.metadata,
+              );
+              const canExpand =
+                changeEntries.length > 0 || transferDetailRows.length > 0;
               const isExpanded = expandedRows.has(log.id);
               const affectedUser = getBeneficiaryLabel(log.metadata);
-              const effectiveAction = getEffectiveAction(log);
               const actionText = getActionLabel(effectiveAction);
               const detailsSummary =
                 getNonDiffContextSummary(
@@ -593,7 +820,9 @@ export function AuditLogsView({ projectId }: AuditLogsViewProps) {
                   log.metadata,
                   keyName,
                 ) ||
-                (!canExpand ? getDetailSummary(changeEntries, keyName) : null);
+                (changeEntries.length === 0
+                  ? getDetailSummary(changeEntries, keyName)
+                  : null);
               const shouldShowAffectedUser =
                 isMemberRelatedAction(effectiveAction) && Boolean(affectedUser);
 
@@ -605,7 +834,7 @@ export function AuditLogsView({ projectId }: AuditLogsViewProps) {
                         <button
                           type="button"
                           aria-label={
-                            isExpanded ? "Collapse diff" : "Expand diff"
+                            isExpanded ? "Collapse details" : "Expand details"
                           }
                           onClick={() => toggleRow(log.id)}
                           className="inline-flex h-7 w-7 items-center justify-center rounded-md hover:bg-muted"
@@ -676,7 +905,7 @@ export function AuditLogsView({ projectId }: AuditLogsViewProps) {
                           <span>{detailsSummary}</span>
                         ) : (
                           <span>
-                            {canExpand ? "Expand row to view changes" : "-"}
+                            {canExpand ? "Expand row to view details" : "-"}
                           </span>
                         )}
                       </div>
@@ -713,6 +942,19 @@ export function AuditLogsView({ projectId }: AuditLogsViewProps) {
                               )}
                             </div>
                           ))}
+                          {transferDetailRows.map((row) => (
+                            <div
+                              key={`${row.label}-${row.value}`}
+                              className="text-sm"
+                            >
+                              <span className="font-medium text-foreground">
+                                {row.label}:{" "}
+                              </span>
+                              <span className="text-muted-foreground break-words">
+                                {row.value}
+                              </span>
+                            </div>
+                          ))}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -728,15 +970,22 @@ export function AuditLogsView({ projectId }: AuditLogsViewProps) {
         {logs.map((log) => {
           const changes = log.metadata?.changes || {};
           const keyName = log.metadata?.key_name;
+          const effectiveAction = getEffectiveAction(log);
           const changeEntries = Object.entries(changes);
-          const canExpand = changeEntries.length > 0;
+          const transferDetailRows = getTransferDetailRows(
+            effectiveAction,
+            log.metadata,
+          );
+          const canExpand =
+            changeEntries.length > 0 || transferDetailRows.length > 0;
           const isExpanded = expandedRows.has(log.id);
           const affectedUser = getBeneficiaryLabel(log.metadata);
-          const effectiveAction = getEffectiveAction(log);
           const actionText = getActionLabel(effectiveAction);
           const detailsSummary =
             getNonDiffContextSummary(effectiveAction, log.metadata, keyName) ||
-            (!canExpand ? getDetailSummary(changeEntries, keyName) : null);
+            (changeEntries.length === 0
+              ? getDetailSummary(changeEntries, keyName)
+              : null);
           const shouldShowAffectedUser =
             isMemberRelatedAction(effectiveAction) && Boolean(affectedUser);
 
@@ -750,7 +999,9 @@ export function AuditLogsView({ projectId }: AuditLogsViewProps) {
                   {canExpand ? (
                     <button
                       type="button"
-                      aria-label={isExpanded ? "Collapse diff" : "Expand diff"}
+                      aria-label={
+                        isExpanded ? "Collapse details" : "Expand details"
+                      }
                       onClick={() => toggleRow(log.id)}
                       className="inline-flex h-7 w-7 items-center justify-center rounded-md hover:bg-muted"
                     >
@@ -814,7 +1065,7 @@ export function AuditLogsView({ projectId }: AuditLogsViewProps) {
                   )}
                   {detailsSummary ? <div>{detailsSummary}</div> : null}
                   {!detailsSummary && canExpand ? (
-                    <div>Expand row to view changes</div>
+                    <div>Expand row to view details</div>
                   ) : null}
                 </div>
               )}
@@ -845,6 +1096,19 @@ export function AuditLogsView({ projectId }: AuditLogsViewProps) {
                           </span>
                         </>
                       )}
+                    </div>
+                  ))}
+                  {transferDetailRows.map((row) => (
+                    <div
+                      key={`${row.label}-${row.value}`}
+                      className="text-sm"
+                    >
+                      <span className="font-medium text-foreground">
+                        {row.label}:{" "}
+                      </span>
+                      <span className="text-muted-foreground break-words">
+                        {row.value}
+                      </span>
                     </div>
                   ))}
                 </div>

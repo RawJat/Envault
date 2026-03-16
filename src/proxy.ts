@@ -30,12 +30,17 @@ export async function proxy(request: NextRequest) {
   }
 
   const isCliApiRoute = matchesRoute(pathname, "/api/cli");
+  const isTransferApiRoute =
+    /^\/api\/projects\/[^/]+\/transfer\/(initiate|accept|reject)$/.test(
+      pathname,
+    );
 
   // Explicit unauthenticated API allowlist.
   const unauthenticatedApiRoutes = [
     "/api/system-status",
     "/api/cli-version",
     "/api/search",
+    "/api/avatar",
     "/api/cli/auth/device/code",
     "/api/cli/auth/device/token",
     "/api/cli/auth/device/cancel",
@@ -57,7 +62,8 @@ export async function proxy(request: NextRequest) {
   if (
     ["POST", "PUT", "PATCH", "DELETE"].includes(method) &&
     !isPublicApi &&
-    !isCliBearerRequest
+    !isCliBearerRequest &&
+    !isTransferApiRoute
   ) {
     const signature = request.headers.get("x-signature");
     const timestampStr = request.headers.get("x-timestamp");

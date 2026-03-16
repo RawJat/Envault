@@ -37,6 +37,9 @@ export type NotificationType =
   | "project_created"
   | "project_renamed"
   | "project_deleted"
+  | "ownership_transfer_requested"
+  | "ownership_transfer_accepted"
+  | "ownership_transfer_rejected"
   | "settings_changed"
   // CLI Activity
   | "secrets_pulled"
@@ -110,6 +113,9 @@ export const NOTIFICATION_ICONS: Record<NotificationType, string> = {
   project_created: "FolderPlus",
   project_renamed: "FileEdit",
   project_deleted: "FolderX",
+  ownership_transfer_requested: "ArrowRightLeft",
+  ownership_transfer_accepted: "ArrowRightLeft",
+  ownership_transfer_rejected: "ArrowRightLeft",
   settings_changed: "Settings",
   // CLI Activity
   secrets_pulled: "Download",

@@ -678,6 +678,148 @@ export async function sendProjectActivityEmail(
   }
 }
 
+export async function sendOwnershipTransferRequestedEmail(
+  to: string,
+  projectName: string,
+  requestedBy: string,
+  requestId: string,
+  userId?: string,
+) {
+  if (process.env.NODE_ENV === "development" && !process.env.RESEND_API_KEY) {
+    console.log("Skipping ownership transfer request email in DEV.");
+    return;
+  }
+
+  if (userId) {
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const admin = createAdminClient();
+    const { data: prefs } = await admin
+      .from("notification_preferences")
+      .select("email_access_requests")
+      .eq("user_id", userId)
+      .single();
+
+    if (prefs && prefs.email_access_requests === false) {
+      return;
+    }
+  }
+
+  try {
+    const html = getEmailHtml({
+      heading: "Ownership Transfer Requested",
+      content: `<p><strong>${requestedBy}</strong> requested to transfer ownership of <strong>${projectName}</strong> to you.</p><p>Review and accept/reject from the project transfer controls in Envault.</p>`,
+      action: {
+        text: "Review Transfer Request",
+        url: `${APP_URL}/transfer/${requestId}`,
+      },
+      logoUrl: LOGO_URL,
+    });
+
+    await resend.emails.send({
+      from: SENDERS.activity,
+      to,
+      subject: `Ownership Transfer Request: ${projectName}`,
+      html,
+    });
+  } catch (error) {
+    console.error("Failed to send ownership transfer request email:", error);
+  }
+}
+
+export async function sendOwnershipTransferAcceptedEmail(
+  to: string,
+  projectName: string,
+  acceptedBy: string,
+  userId?: string,
+) {
+  if (process.env.NODE_ENV === "development" && !process.env.RESEND_API_KEY) {
+    console.log("Skipping ownership transfer accepted email in DEV.");
+    return;
+  }
+
+  if (userId) {
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const admin = createAdminClient();
+    const { data: prefs } = await admin
+      .from("notification_preferences")
+      .select("email_access_granted")
+      .eq("user_id", userId)
+      .single();
+
+    if (prefs && prefs.email_access_granted === false) {
+      return;
+    }
+  }
+
+  try {
+    const html = getEmailHtml({
+      heading: "Ownership Transfer Accepted",
+      content: `<p><strong>${acceptedBy}</strong> accepted ownership transfer for <strong>${projectName}</strong>.</p>`,
+      action: {
+        text: "Go to Dashboard",
+        url: `${APP_URL}/dashboard`,
+      },
+      logoUrl: LOGO_URL,
+    });
+
+    await resend.emails.send({
+      from: SENDERS.activity,
+      to,
+      subject: `Ownership Transfer Accepted: ${projectName}`,
+      html,
+    });
+  } catch (error) {
+    console.error("Failed to send ownership transfer accepted email:", error);
+  }
+}
+
+export async function sendOwnershipTransferRejectedEmail(
+  to: string,
+  projectName: string,
+  rejectedBy: string,
+  userId?: string,
+) {
+  if (process.env.NODE_ENV === "development" && !process.env.RESEND_API_KEY) {
+    console.log("Skipping ownership transfer rejected email in DEV.");
+    return;
+  }
+
+  if (userId) {
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const admin = createAdminClient();
+    const { data: prefs } = await admin
+      .from("notification_preferences")
+      .select("email_access_granted")
+      .eq("user_id", userId)
+      .single();
+
+    if (prefs && prefs.email_access_granted === false) {
+      return;
+    }
+  }
+
+  try {
+    const html = getEmailHtml({
+      heading: "Ownership Transfer Rejected",
+      content: `<p><strong>${rejectedBy}</strong> rejected ownership transfer for <strong>${projectName}</strong>.</p>`,
+      action: {
+        text: "Go to Dashboard",
+        url: `${APP_URL}/dashboard`,
+      },
+      logoUrl: LOGO_URL,
+    });
+
+    await resend.emails.send({
+      from: SENDERS.activity,
+      to,
+      subject: `Ownership Transfer Rejected: ${projectName}`,
+      html,
+    });
+  } catch (error) {
+    console.error("Failed to send ownership transfer rejected email:", error);
+  }
+}
+
 // ============================================
 // CLI ACTIVITY EMAILS
 // ============================================
