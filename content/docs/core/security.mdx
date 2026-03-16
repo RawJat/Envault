@@ -31,6 +31,14 @@ Envault supports key rotation for Data Keys. This limits the "blast radius" if a
 - **Immutable Audit Logs**: All administrative actions (mutating secrets, batch reads by machines, project changes) are written to an append-only, immutable `audit_logs` table. Only Project Owners can query this table via strict RLS policies.
 - **Data Retention**: Audit logs undergo automated cleanup and are strictly retained for a maximum of 7 days to balance visibility with privacy considerations.
 
+### Identity Snapshot Retention
+
+For operational continuity, Envault snapshots contributor identity metadata on user-linked secret records.
+
+- Secret creator/updater identity is retained even if the original auth/profile row later disappears.
+- Account deletion flows preserve shared data and keep attribution readable via stored metadata snapshots.
+- Fallback labels are only used when both live identity lookup and stored snapshot metadata are unavailable.
+
 ## Authentication Security
 
 - **Passkeys (WebAuthn)**: Envault supports passwordless authentication using WebAuthn. This provides phishing-resistant, biometric login capabilities and significantly improves account security compared to traditional passwords.
