@@ -74,6 +74,16 @@ Every action taken by a user is logged. Owners can view the **Audit Logs** in th
 
 This visibility enables collaborative teams to maintain security awareness and accountability across all project activities.
 
+## Account Deletion Behavior
+
+When a member deletes their account, Envault preserves project integrity and attribution context:
+
+- **Shared secrets are not deleted** during account removal.
+- **Ownership pointers are safely reassigned** to the project owner where required.
+- **Creator/updater identity snapshots are retained** on secret records so project history remains understandable in variable tables and audit timelines.
+
+If a live user profile can no longer be resolved, UI surfaces a fallback identity label while preserving available metadata from prior snapshots.
+
 ## Just-in-Time (JIT) Access via GitHub
 
 When a project is linked to a GitHub repository, Envault can automatically grant **Viewer** access to developers the moment they run `envault pull` - no manual invite or owner approval needed.

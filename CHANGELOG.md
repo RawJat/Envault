@@ -10,6 +10,18 @@ All notable changes to Envault are documented here.
 
 ---
 
+## 1.3.3 — 2026-03-16
+
+> Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
+### Improvements
+
+- **Account Deletion Data Preservation:** Shared secrets are now preserved during account deletion and reassigned safely to the project owner instead of being removed.
+- **Identity Continuity After Member Exit:** Secret records now retain creator/updater identity snapshots so audit logs and variable tables remain attributable even after a user account is deleted.
+- **Approval + Access Consistency:** Fixed role assignment during share-request approval so the selected role is applied correctly, with environment access handling aligned for simple and advanced project modes.
+- **Project Activity Freshness:** Project dashboard cards now track latest project activity updates from editor/owner secret mutations, with broader cache invalidation to reduce stale timestamps.
+
+---
+
 ## 1.3.2 — 2026-03-16
 
 > Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
