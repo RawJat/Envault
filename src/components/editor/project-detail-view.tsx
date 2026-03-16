@@ -14,6 +14,7 @@ import {
   Copy,
   Check,
   Info,
+  ArrowRightLeft,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -59,6 +60,7 @@ import { createAccessRequest } from "@/app/invite-actions";
 import { ShareProjectDialog } from "@/components/dashboard/share-project-dialog";
 import { RenameProjectDialog } from "@/components/dashboard/rename-project-dialog";
 import { GitHubIntegrationDialog } from "@/components/dashboard/github-integration-dialog";
+import { TransferOwnershipDialog } from "@/components/dashboard/transfer-ownership-dialog";
 import { AppHeader } from "@/components/dashboard/app-header";
 import { Edit3, Github, Loader2, ShieldCheck } from "lucide-react";
 import { formatEnvironmentLabel } from "@/lib/environment-label";
@@ -82,6 +84,7 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [githubDialogOpen, setGithubDialogOpen] = useState(false);
+  const [transferDialogOpen, setTransferDialogOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
@@ -337,6 +340,11 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
               </DropdownMenuItem>
             )}
             {project.role === "owner" && (
+              <DropdownMenuItem onClick={() => setTransferDialogOpen(true)}>
+                <ArrowRightLeft className="w-4 h-4 mr-2" /> Transfer Ownership
+              </DropdownMenuItem>
+            )}
+            {project.role === "owner" && (
               <DropdownMenuItem onClick={() => setGithubDialogOpen(true)}>
                 <Github className="w-4 h-4 mr-2" /> GitHub Integration
               </DropdownMenuItem>
@@ -554,6 +562,22 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
               placeholder={project.name}
               className="bg-background"
             />
+            {project.role === "owner" && (
+              <p className="text-xs text-muted-foreground">
+                Prefer not to delete?{" "}
+                <button
+                  type="button"
+                  className="underline underline-offset-2 text-foreground hover:text-primary transition-colors"
+                  onClick={() => {
+                    setDeleteDialogOpen(false);
+                    setTransferDialogOpen(true);
+                  }}
+                >
+                  Transfer ownership instead
+                </button>
+                .
+              </p>
+            )}
           </div>
 
           <AlertDialogFooter>
@@ -602,6 +626,11 @@ export default function ProjectDetailView({ project }: ProjectDetailViewProps) {
         project={project}
         open={githubDialogOpen}
         onOpenChange={setGithubDialogOpen}
+      />
+      <TransferOwnershipDialog
+        project={project}
+        open={transferDialogOpen}
+        onOpenChange={setTransferDialogOpen}
       />
     </div>
   );

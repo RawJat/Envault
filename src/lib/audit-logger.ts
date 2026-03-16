@@ -18,6 +18,9 @@ export type AuditLogAction =
   | "member.invited"
   | "member.role_updated"
   | "member.removed"
+  | "transfer.requested"
+  | "transfer.accepted"
+  | "transfer.rejected"
   | "environment.access_granted"
   | "environment.access_revoked";
 

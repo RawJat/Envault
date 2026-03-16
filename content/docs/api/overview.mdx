@@ -53,6 +53,20 @@ If you exceed these limits, you will receive a `429 Too Many Requests` response.
 
 ## Endpoints
 
+### Ownership Transfer (Project Settings/API)
+
+These endpoints support the ownership transfer handshake:
+
+- `POST /api/projects/:id/transfer/initiate`
+- `POST /api/projects/:id/transfer/accept`
+- `POST /api/projects/:id/transfer/reject`
+
+Notes:
+- `initiate` is owner-only.
+- `accept` / `reject` are target-user-only.
+- Overlapping pending requests per project are blocked.
+- Requests expire after 48 hours.
+
 ### Get Project Secrets
 
 Retrieve all decrypted secrets for a specific project environment.

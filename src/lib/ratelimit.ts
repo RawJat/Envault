@@ -41,6 +41,14 @@ export const writeRateLimit = new Ratelimit({
   prefix: "@upstash/ratelimit/write",
 });
 
+// Ownership transfer actions: lower-frequency, high-impact mutations
+export const transferRateLimit = new Ratelimit({
+  redis: getRedisClient(),
+  limiter: Ratelimit.slidingWindow(6, "1 m"),
+  analytics: true,
+  prefix: "@upstash/ratelimit/transfer",
+});
+
 // Audit read: 20/min
 export const auditReadRateLimit = new Ratelimit({
   redis: getRedisClient(),

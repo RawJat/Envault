@@ -112,6 +112,9 @@ async function shouldCreateNotification(
     case "project_created":
     case "project_renamed":
     case "project_deleted":
+    case "ownership_transfer_requested":
+    case "ownership_transfer_accepted":
+    case "ownership_transfer_rejected":
     case "settings_changed":
     case "member_joined":
     case "member_left":
@@ -484,6 +487,80 @@ export async function createProjectDeletedNotification(
       projectName,
       deletedBy,
     },
+  });
+}
+
+/**
+ * Create an ownership transfer requested notification (target user).
+ */
+export async function createOwnershipTransferRequestedNotification(
+  userId: string,
+  projectName: string,
+  projectId: string,
+  requestedBy: string,
+  requestId: string,
+) {
+  return createNotification({
+    userId,
+    type: "ownership_transfer_requested",
+    title: "Ownership Transfer Requested",
+    message: `${requestedBy} requested to transfer ownership of ${projectName} to you.`,
+    variant: "warning",
+    metadata: {
+      projectId,
+      requestId,
+      requestedBy,
+    },
+    actionUrl: `/transfer/${requestId}`,
+    actionType: "review_transfer",
+  });
+}
+
+/**
+ * Create an ownership transfer accepted notification (previous owner).
+ */
+export async function createOwnershipTransferAcceptedNotification(
+  userId: string,
+  projectName: string,
+  projectId: string,
+  acceptedBy: string,
+) {
+  return createNotification({
+    userId,
+    type: "ownership_transfer_accepted",
+    title: "Ownership Transfer Accepted",
+    message: `${acceptedBy} accepted ownership transfer for ${projectName}.`,
+    variant: "success",
+    metadata: {
+      projectId,
+      acceptedBy,
+    },
+    actionUrl: "/dashboard",
+    actionType: "view_dashboard",
+  });
+}
+
+/**
+ * Create an ownership transfer rejected notification (previous owner).
+ */
+export async function createOwnershipTransferRejectedNotification(
+  userId: string,
+  projectName: string,
+  projectId: string,
+  rejectedBy: string,
+) {
+  return createNotification({
+    userId,
+    type: "ownership_transfer_rejected",
+    title: "Ownership Transfer Rejected",
+    message: `${rejectedBy} rejected ownership transfer for ${projectName}.`,
+    variant: "warning",
+    metadata: {
+      projectId,
+      rejectedBy,
+    },
+    actionUrl: "/dashboard",
+    actionType: "view_dashboard",
   });
 }
 

@@ -36,3 +36,16 @@ Envault implements a Role-Based Access Control (RBAC) system.
 ## Sharing Projects
 
 You can invite team members to your project via email. They will receive an invitation link to join.
+
+## Transfer Ownership
+
+Owners can initiate transfer from the project settings dropdown using
+**Transfer Ownership**.
+
+- Transfers are **pending** until the target user accepts.
+- Target users can reject requests without ownership changes.
+- Pending transfer requests expire after **48 hours**.
+- During acceptance, Envault performs ownership promotion/demotion and secret
+  liability reassignment atomically to avoid partial permission states.
+- In delete confirmation dialogs, owners also get a quick
+  **Transfer ownership instead** action to avoid accidental project deletion.

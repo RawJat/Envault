@@ -27,6 +27,22 @@ The **Owner** has the keys to the castle.
 - **Rotate Keys**: Perform cryptographic key rotation.
 - **Billing**: Manage subscription (if applicable).
 
+### Ownership Transfer Handshake
+
+Project ownership transfer in Envault is a strict two-step handshake to prevent
+forced liability transfer:
+
+1. Current owner initiates a transfer request for a specific target user.
+2. Target user explicitly accepts or rejects the request.
+3. If accepted, Envault executes owner promotion + prior-owner demotion/removal + secret liability reassignment in one transaction.
+
+Transfer requests expire automatically after **48 hours** if not accepted.
+
+<Callout type="warn">
+  Ownership never changes on initiate. The target user must explicitly accept
+  for transfer to complete.
+</Callout>
+
 ### Editor
 
 The **Editor** is the standard role for day-to-day development.

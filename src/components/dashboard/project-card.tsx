@@ -49,6 +49,7 @@ import { deleteProject as deleteProjectAction } from "@/app/project-actions";
 
 import { ShareProjectDialog } from "@/components/dashboard/share-project-dialog";
 import { RenameProjectDialog } from "@/components/dashboard/rename-project-dialog";
+import { TransferOwnershipDialog } from "@/components/dashboard/transfer-ownership-dialog";
 import { Share2 } from "lucide-react";
 import { Kbd } from "@/components/ui/kbd";
 
@@ -68,6 +69,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [shareDialogOpen, setShareDialogOpen] = React.useState(false);
   const [renameDialogOpen, setRenameDialogOpen] = React.useState(false);
+  const [transferDialogOpen, setTransferDialogOpen] = React.useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = React.useState("");
   const [isDeleting, setIsDeleting] = React.useState(false);
   const router = useRouter();
@@ -310,6 +312,22 @@ export function ProjectCard({ project }: ProjectCardProps) {
               placeholder={project.name}
               className="bg-background"
             />
+            {project.role === "owner" && (
+              <p className="text-xs text-muted-foreground">
+                Prefer not to delete?{" "}
+                <button
+                  type="button"
+                  className="underline underline-offset-2 text-foreground hover:text-primary transition-colors"
+                  onClick={() => {
+                    setDeleteDialogOpen(false);
+                    setTransferDialogOpen(true);
+                  }}
+                >
+                  Transfer ownership instead
+                </button>
+                .
+              </p>
+            )}
           </div>
 
           <AlertDialogFooter>
@@ -352,6 +370,11 @@ export function ProjectCard({ project }: ProjectCardProps) {
         project={project}
         open={renameDialogOpen}
         onOpenChange={setRenameDialogOpen}
+      />
+      <TransferOwnershipDialog
+        project={project}
+        open={transferDialogOpen}
+        onOpenChange={setTransferDialogOpen}
       />
     </>
   );

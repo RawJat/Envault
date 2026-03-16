@@ -359,8 +359,12 @@ export default async function ProjectPage({ params, searchParams }: PageProps) {
           }
         }
 
-        const creatorFromMap = secret.user_id
-          ? userMap.get(secret.user_id)
+        const creatorSnapshotId =
+          (secret.created_by_user_id_snapshot as string | undefined) ||
+          secret.user_id ||
+          undefined;
+        const creatorFromMap = creatorSnapshotId
+          ? userMap.get(creatorSnapshotId)
           : undefined;
         const creator = secret.user_id
           ? secret.created_by_name || secret.created_by_email
@@ -376,13 +380,13 @@ export default async function ProjectPage({ params, searchParams }: PageProps) {
             : creatorFromMap
           : undefined;
 
-        const updaterFromMap = secret.last_updated_by
-          ? userMap.get(secret.last_updated_by)
-          : undefined;
         const updaterSnapshotId =
           (secret.last_updated_by_user_id_snapshot as string | undefined) ||
           secret.last_updated_by ||
           undefined;
+        const updaterFromMap = updaterSnapshotId
+          ? userMap.get(updaterSnapshotId)
+          : undefined;
         const updater =
           updaterSnapshotId ||
           secret.last_updated_by_name ||
