@@ -23,7 +23,7 @@ import { Loader2 } from "lucide-react";
 import { PreferencesSkeleton } from "./notification-skeleton";
 import { useHotkeys } from "@/hooks/use-hotkeys";
 import { Kbd } from "@/components/ui/kbd";
-import { getModifierKey } from "@/lib/utils";
+import { getModifierKey } from "@/lib/utils/utils";
 
 interface NotificationPreferences {
   email_access_requests: boolean;

@@ -2,7 +2,7 @@ import {
   ProjectNameSchema,
   UserEmailSchema,
   SecretSchema,
-} from "../src/lib/schemas";
+} from "../src/lib/types/schemas";
 
 console.log("Testing Schemas...");
 

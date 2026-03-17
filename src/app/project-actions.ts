@@ -3,10 +3,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
-import { getProjectEnvironments } from "@/lib/cli-environments";
+import { getProjectEnvironments } from "@/lib/utils/cli-environments";
 import { headers } from "next/headers";
-import { writeRateLimit } from "@/lib/ratelimit";
-import { logAuditEvent } from "@/lib/audit-logger";
+import { writeRateLimit } from "@/lib/infra/ratelimit";
+import { logAuditEvent } from "@/lib/system/audit-logger";
 
 type ProjectUIMode = "simple" | "advanced";
 
@@ -60,7 +60,7 @@ async function touchProjectActivity(projectId: string) {
   });
 
   const { cacheDel, CacheKeys, invalidateProjectCaches } =
-    await import("@/lib/cache");
+    await import("@/lib/infra/cache");
 
   await Promise.all([
     ...Array.from(userIds).map((userId) =>
@@ -184,7 +184,7 @@ export async function createProject(
   }
 
   // Invalidate user's project list cache
-  const { cacheDel, CacheKeys } = await import("@/lib/cache");
+  const { cacheDel, CacheKeys } = await import("@/lib/infra/cache");
   await cacheDel(CacheKeys.userProjects(user.id));
 
   revalidatePath("/dashboard");
@@ -211,7 +211,7 @@ export async function renameProject(id: string, newName: string) {
   }
 
   // Permission Check: Owner Only
-  const { getProjectRole } = await import("@/lib/permissions");
+  const { getProjectRole } = await import("@/lib/auth/permissions");
   const role = await getProjectRole(supabase, id, user.id);
 
   if (role !== "owner") {
@@ -261,7 +261,7 @@ export async function renameProject(id: string, newName: string) {
 
   // Invalidate user's project list cache and specific project cache
   const { cacheDel, CacheKeys, invalidateProjectCaches } =
-    await import("@/lib/cache");
+    await import("@/lib/infra/cache");
   await cacheDel(CacheKeys.userProjects(user.id));
   await invalidateProjectCaches(id);
 
@@ -272,7 +272,7 @@ export async function renameProject(id: string, newName: string) {
     const { data: userData } = await admin.auth.admin.getUserById(user.id);
     const userEmail = userData?.user?.email;
     if (userEmail) {
-      const { sendProjectActivityEmail } = await import("@/lib/email");
+      const { sendProjectActivityEmail } = await import("@/lib/infra/email");
       sendProjectActivityEmail(
         userEmail,
         data.name,
@@ -300,7 +300,7 @@ export async function getProjects(bypassCache: boolean = false) {
 
   // Check cache first
   const { cacheGet, cacheSet, CacheKeys, CACHE_TTL } =
-    await import("@/lib/cache");
+    await import("@/lib/infra/cache");
   const cacheKey = CacheKeys.userProjects(user.id);
 
   if (!bypassCache) {
@@ -492,13 +492,13 @@ export async function getProjects(bypassCache: boolean = false) {
 
   const sharedSecretIdMap = new Map<string, Set<string>>();
   userSecretShares?.forEach((share) => {
-      const secretRelation = share.secrets as
-        | { project_id?: string }
-        | Array<{ project_id?: string }>
-        | null;
-      const secret = Array.isArray(secretRelation)
-        ? secretRelation[0]
-        : secretRelation;
+    const secretRelation = share.secrets as
+      | { project_id?: string }
+      | Array<{ project_id?: string }>
+      | null;
+    const secret = Array.isArray(secretRelation)
+      ? secretRelation[0]
+      : secretRelation;
     const projectId = secret?.project_id as string | undefined;
     if (!projectId) return;
     const ids = sharedSecretIdMap.get(projectId) || new Set<string>();
@@ -612,7 +612,7 @@ export async function deleteProject(id: string) {
   }
 
   // Permission Check: Owner Only
-  const { getProjectRole } = await import("@/lib/permissions");
+  const { getProjectRole } = await import("@/lib/auth/permissions");
   const role = await getProjectRole(supabase, id, user.id);
 
   if (role !== "owner") {
@@ -629,7 +629,7 @@ export async function deleteProject(id: string) {
 
   // Invalidate caches for owner and all members
   const { cacheDel, CacheKeys, invalidateProjectCaches } =
-    await import("@/lib/cache");
+    await import("@/lib/infra/cache");
   await cacheDel(CacheKeys.userProjects(user.id));
   await invalidateProjectCaches(id);
 
@@ -646,7 +646,7 @@ export async function addVariable(
   const supabase = await createClient();
 
   // Input Validation
-  const { SecretSchema } = await import("@/lib/schemas");
+  const { SecretSchema } = await import("@/lib/types/schemas");
   const validation = SecretSchema.safeParse({ key, value });
   if (!validation.success) {
     return {
@@ -680,7 +680,7 @@ export async function addVariable(
   }
 
   // Permission Check: Owner or Editor
-  const { getProjectRole } = await import("@/lib/permissions");
+  const { getProjectRole } = await import("@/lib/auth/permissions");
   const role = await getProjectRole(supabase, projectId, user.id);
 
   if (role !== "owner" && role !== "editor") {
@@ -690,7 +690,7 @@ export async function addVariable(
   }
 
   // Import encryption utility
-  const { encrypt } = await import("@/lib/encryption");
+  const { encrypt } = await import("@/lib/utils/encryption");
   const environment = await resolveProjectEnvironmentForUI(
     supabase,
     projectId,
@@ -745,7 +745,7 @@ export async function addVariable(
       const { data: userData } = await admin.auth.admin.getUserById(user.id);
       const userEmail = userData?.user?.email;
       if (userEmail) {
-        const { sendProjectActivityEmail } = await import("@/lib/email");
+        const { sendProjectActivityEmail } = await import("@/lib/infra/email");
         sendProjectActivityEmail(
           userEmail,
           projectData.name,
@@ -787,7 +787,7 @@ export async function updateVariable(
 
   // Input Validation - use partial schema since both are optional in the type
   if (updates.key || updates.value) {
-    const { SecretSchema } = await import("@/lib/schemas");
+    const { SecretSchema } = await import("@/lib/types/schemas");
     // Merge with dummy data for safe parsing of partials if needed, or parse partial
     const validation = SecretSchema.partial().safeParse(updates);
     if (!validation.success) {
@@ -827,7 +827,7 @@ export async function updateVariable(
   // `getProjectRole` covers project-level access.
   // If we support Granular Shares having "Edit" rights (unlikely? usually Read Only), we'd check that here.
   // For now, only Project Editors/Owners can update.
-  const { getProjectRole } = await import("@/lib/permissions");
+  const { getProjectRole } = await import("@/lib/auth/permissions");
   const role = await getProjectRole(supabase, projectId, user.id);
 
   if (role !== "owner" && role !== "editor") {
@@ -870,7 +870,7 @@ export async function updateVariable(
   };
 
   if (updates.value) {
-    const { encrypt } = await import("@/lib/encryption");
+    const { encrypt } = await import("@/lib/utils/encryption");
     finalUpdates.value = await encrypt(updates.value);
     // Extract key_id
     finalUpdates.key_id = (finalUpdates.value as string).split(":")[1];
@@ -900,7 +900,7 @@ export async function updateVariable(
       const { data: userData } = await admin.auth.admin.getUserById(user.id);
       const userEmail = userData?.user?.email;
       if (userEmail) {
-        const { sendProjectActivityEmail } = await import("@/lib/email");
+        const { sendProjectActivityEmail } = await import("@/lib/infra/email");
         sendProjectActivityEmail(
           userEmail,
           projectData.name,
@@ -970,7 +970,7 @@ export async function deleteVariable(
     return { error: "Too many requests. Please try again later." };
   }
 
-  const { getProjectRole } = await import("@/lib/permissions");
+  const { getProjectRole } = await import("@/lib/auth/permissions");
   const role = await getProjectRole(supabase, projectId, user.id);
 
   if (role !== "owner" && role !== "editor") {
@@ -1018,7 +1018,7 @@ export async function deleteVariable(
       const { data: userData } = await admin.auth.admin.getUserById(user.id);
       const userEmail = userData?.user?.email;
       if (userEmail) {
-        const { sendProjectActivityEmail } = await import("@/lib/email");
+        const { sendProjectActivityEmail } = await import("@/lib/infra/email");
         sendProjectActivityEmail(
           userEmail,
           projectData.name,
@@ -1105,7 +1105,7 @@ export async function addVariablesBulk(
     };
   }
 
-  const { getProjectRole } = await import("@/lib/permissions");
+  const { getProjectRole } = await import("@/lib/auth/permissions");
   const role = await getProjectRole(supabase, projectId, user.id);
 
   if (role !== "owner" && role !== "editor") {
@@ -1113,7 +1113,7 @@ export async function addVariablesBulk(
   }
 
   // Import encryption utilities
-  const { encrypt, decrypt } = await import("@/lib/encryption");
+  const { encrypt, decrypt } = await import("@/lib/utils/encryption");
   const environment = await resolveProjectEnvironmentForUI(
     supabase,
     projectId,
@@ -1268,7 +1268,8 @@ export async function addVariablesBulk(
           if (added > 0) parts.push(`${added} added`);
           if (updated > 0) parts.push(`${updated} updated`);
           const summary = parts.join(", ");
-          const { sendProjectActivityEmail } = await import("@/lib/email");
+          const { sendProjectActivityEmail } =
+            await import("@/lib/infra/email");
           sendProjectActivityEmail(
             userEmail,
             projectData.name,
@@ -1337,7 +1338,7 @@ export async function logSecretBatchRead(
     return { error: "Not authenticated" };
   }
 
-  const { getProjectRole } = await import("@/lib/permissions");
+  const { getProjectRole } = await import("@/lib/auth/permissions");
   const role = await getProjectRole(supabase, projectId, user.id);
   if (!role) {
     return { error: "Unauthorized" };

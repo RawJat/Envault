@@ -4,9 +4,9 @@ import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useHotkeys } from "@/hooks/use-hotkeys";
-import { ShortcutHelpModal } from "@/components/modals/shortcut-help-modal";
-import { SearchDialog } from "@/components/modals/search-dialog";
-import { useEnvaultStore } from "@/lib/store";
+import { ShortcutHelpModal } from "@/components/dialogs/shortcut-help-modal";
+import { SearchDialog } from "@/components/dialogs/search-dialog";
+import { useEnvaultStore } from "@/lib/stores/store";
 import { signOut } from "@/app/actions";
 
 export function ShortcutProvider({ children }: { children: React.ReactNode }) {

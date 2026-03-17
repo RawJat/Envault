@@ -1,4 +1,4 @@
-import { RegMark } from "@/components/landing/RegMark";
+import { RegMark } from "@/components/landing/ui/RegMark";
 import { getComponents, getIncidents } from "@/actions/status";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -15,13 +15,13 @@ import {
   TimelineIcon,
   TimelineBody,
 } from "@/components/ui/timeline";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/utils";
 import {
   STATUS_CONFIG,
   INCIDENT_SEVERITY_LEVEL,
   INCIDENT_PHASE_CONFIG,
   type StatusLevel,
-} from "@/lib/status-config";
+} from "@/lib/system/status-config";
 import { StatusPill } from "@/components/ui/status-pill";
 import { DateDisplay } from "@/components/ui/date-display";
 

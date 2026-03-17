@@ -1,8 +1,8 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
-import { UserEmailSchema } from "@/lib/schemas";
-import { inferUsernameFromAuth } from "@/lib/username";
+import { UserEmailSchema } from "@/lib/types/schemas";
+import { inferUsernameFromAuth } from "@/lib/utils/username";
 
 export async function POST(request: NextRequest) {
   try {

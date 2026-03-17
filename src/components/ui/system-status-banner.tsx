@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { X, ArrowRight } from "lucide-react";
 import Link from "next/link";
-import type { SystemStatusSummary } from "@/lib/system-status";
-import { STATUS_CONFIG } from "@/lib/status-config";
-import { cn } from "@/lib/utils";
+import type { SystemStatusSummary } from "@/lib/system/system-status";
+import { STATUS_CONFIG } from "@/lib/system/status-config";
+import { cn } from "@/lib/utils/utils";
 
 const DISMISS_KEY = "envault:status-banner-dismissed";
 
@@ -30,13 +30,13 @@ export function SystemStatusBanner({ show }: SystemStatusBannerProps) {
     fetch("/api/system-status", { cache: "default" })
       .then((r) => r.json() as Promise<SystemStatusSummary>)
       .then((data: SystemStatusSummary) => setStatus(data))
-      .catch(() => { });
+      .catch(() => {});
   }, [show, dismissed]);
 
   const handleDismiss = () => {
     try {
       sessionStorage.setItem(DISMISS_KEY, Date.now().toString());
-    } catch { }
+    } catch {}
     setDismissed(true);
   };
 
@@ -65,7 +65,12 @@ export function SystemStatusBanner({ show }: SystemStatusBannerProps) {
         <div
           role="alert"
           aria-live="polite"
-          className={cn("relative w-full border-b", cfg.bg, cfg.border, cfg.color)}
+          className={cn(
+            "relative w-full border-b",
+            cfg.bg,
+            cfg.border,
+            cfg.color,
+          )}
         >
           {/* Diagonal stripe overlay - uses currentColor so it inverts in dark mode automatically */}
           <div
@@ -79,9 +84,11 @@ export function SystemStatusBanner({ show }: SystemStatusBannerProps) {
           />
           {/* Centred content row - dismiss is absolute so it never shifts the centre */}
           <div className="mx-auto flex max-w-7xl items-center justify-center gap-2 py-2 pl-4 pr-10 sm:gap-2.5">
-
             {/* Naked icon matching status page exactly */}
-            <Icon className={cn("size-[18px] shrink-0 animate-pulse", cfg.color)} strokeWidth={2.5} />
+            <Icon
+              className={cn("size-[18px] shrink-0 animate-pulse", cfg.color)}
+              strokeWidth={2.5}
+            />
 
             {/* Primary bold message - truncates on very small screens */}
             <span className="min-w-0 truncate text-sm font-semibold text-foreground/80 sm:truncate">
@@ -89,7 +96,10 @@ export function SystemStatusBanner({ show }: SystemStatusBannerProps) {
             </span>
 
             {/* Arrow separator - hidden on mobile */}
-            <ArrowRight className="hidden size-3 shrink-0 text-foreground/30 sm:block" aria-hidden />
+            <ArrowRight
+              className="hidden size-3 shrink-0 text-foreground/30 sm:block"
+              aria-hidden
+            />
 
             {/* Muted secondary text + coloured inline link - hidden on mobile */}
             <span className="hidden shrink-0 text-sm text-foreground/55 sm:inline">
@@ -104,8 +114,8 @@ export function SystemStatusBanner({ show }: SystemStatusBannerProps) {
                 )}
               >
                 status page
-              </Link>
-              {" "}for updates
+              </Link>{" "}
+              for updates
             </span>
 
             {/* On mobile: inline link directly after message */}

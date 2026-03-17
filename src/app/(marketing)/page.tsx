@@ -1,9 +1,9 @@
-import { Hero } from "@/components/landing/Hero";
-import { Features } from "@/components/landing/Features";
-import { WorkflowSection } from "@/components/landing/WorkflowSection";
-import { CliSection } from "@/components/landing/CliSection";
-import { RegMark } from "@/components/landing/RegMark";
-import { Testimonials } from "@/components/landing/Testimonials";
+import { Hero } from "@/components/landing/sections/Hero";
+import { Features } from "@/components/landing/sections/Features";
+import { WorkflowSection } from "@/components/landing/sections/WorkflowSection";
+import { CliSection } from "@/components/landing/sections/CliSection";
+import { RegMark } from "@/components/landing/ui/RegMark";
+import { Testimonials } from "@/components/landing/sections/Testimonials";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {

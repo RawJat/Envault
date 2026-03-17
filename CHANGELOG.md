@@ -10,41 +10,27 @@ All notable changes to Envault are documented here.
 
 ---
 
-## 1.3.3 — 2026-03-16
+## 1.4.0 — 2026-03-17
 
 > Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
+
+### Features
+
+- **Server-First Architecture:** Migrated Envault to a strict Next.js Server Component architecture. Completely removed `"use client"` directives from page and layout files, drastically reducing the client-side JavaScript bundle size and mitigating the "white screen" issue on slow connections.
+- **Deep Folder Restructuring:** Consolidated and reorganized `src/lib` and `src/components` into domains (`/auth`, `/infra`, `/system`, `/dialogs`, etc.) to improve project maintainability and strict separation of concerns.
+- **Animation Restoration & Client Isolation:** Restored beautiful `framer-motion` animations across the landing page using strictly isolated Client Component wrappers (`FadeIn.tsx` and `SlideUp.tsx`), ensuring full SSR compatibility.
+- **Throttled Window Focus Refresher:** Implemented a lightweight, throttled window-focus refetching strategy to sync the web UI with CLI actions without exhausting database or Redis limits.
+
 ### Improvements
 
 - **Account Deletion Data Preservation:** Shared secrets are now preserved during account deletion and reassigned safely to the project owner instead of being removed.
 - **Identity Continuity After Member Exit:** Secret records now retain creator/updater identity snapshots so audit logs and variable tables remain attributable even after a user account is deleted.
-- **Approval + Access Consistency:** Fixed role assignment during share-request approval so the selected role is applied correctly, with environment access handling aligned for simple and advanced project modes.
-- **Project Activity Freshness:** Project dashboard cards now track latest project activity updates from editor/owner secret mutations, with broader cache invalidation to reduce stale timestamps.
-
----
-
-## 1.3.2 — 2026-03-16
-
-> Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
-
-### Improvements
-
 - **Audit Logs Filtering & UX:** Enhanced audit logs interface with improved filtering capabilities, better detail semantics, and improved fallback handling for edge cases.
 - **Audit Event Taxonomy & Privacy:** Enforced structured event taxonomy with privacy-aware access controls and member-level access policies for audit log visibility.
 - **Secret Share Management:** Editors can now manage secret shares directly, improving workflow efficiency for environment access requests.
-
----
-
-## 1.3.1 — 2026-03-14
-
-> Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
-
-### Improvements
-
-- **CLI Release Workflow Reliability:** Updated publish workflow gating to release when CLI files changed since the last CLI tag, even if app/docs commits also exist in the repo history.
-- **Semantic-Release Stability:** Added the missing `conventional-changelog-conventionalcommits` dependency required by `@semantic-release/commit-analyzer` preset loading.
-- **NPM Publish Metadata Cleanup:** Fixed CLI wrapper package metadata to remove npm publish auto-corrections (`bin` path normalization and repository URL format).
-- **GoReleaser Modernization:** Migrated deprecated archive/homebrew keys and refined changelog filtering to reduce noise and exclude release-loop commit messages.
-- **Routine Dependency Refresh:** Applied a safe semver-range dependency update pass and regenerated lockfile state.
+- **Approval + Access Consistency:** Fixed role assignment during share-request approval so the selected role is applied correctly, with environment access handling aligned for simple and advanced project modes.
+- **Project Activity Freshness:** Project dashboard cards now track latest project activity updates from editor/owner secret mutations, with broader cache invalidation to reduce stale timestamps.
+- **CLI & Release Workflow Reliability:** Updated publish workflow gating to release when CLI files changed since the last CLI tag, added missing `conventional-changelog-conventionalcommits` dependency, fixed CLI wrapper metadata, modernized GoReleaser keys, and regenerated lockfile state.
 
 ---
 

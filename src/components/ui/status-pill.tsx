@@ -1,5 +1,5 @@
-import { cn } from "@/lib/utils";
-import { STATUS_CONFIG, type StatusLevel } from "@/lib/status-config";
+import { cn } from "@/lib/utils/utils";
+import { STATUS_CONFIG, type StatusLevel } from "@/lib/system/status-config";
 
 interface StatusPillProps {
   level: StatusLevel;
@@ -41,10 +41,13 @@ export function StatusPill({ level, size = "md", className }: StatusPillProps) {
         className,
       )}
     >
-      <Icon
-        className={cn("w-5 h-5 md:w-6 md:h-6 animate-pulse", cfg.color)}
-      />
-      <span className={cn("text-base md:text-lg font-bold tracking-tight", cfg.color)}>
+      <Icon className={cn("w-5 h-5 md:w-6 md:h-6 animate-pulse", cfg.color)} />
+      <span
+        className={cn(
+          "text-base md:text-lg font-bold tracking-tight",
+          cfg.color,
+        )}
+      >
         {cfg.label}.
       </span>
     </div>

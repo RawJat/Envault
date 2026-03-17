@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { FolderX } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AppHeader } from "@/components/dashboard/app-header";
+import { AppHeader } from "@/components/dashboard/ui/app-header";
 
 export default function ProjectNotFound() {
   return (

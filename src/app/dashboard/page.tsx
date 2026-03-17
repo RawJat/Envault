@@ -1,6 +1,6 @@
 import DashboardLogic, {
   ProjectSkeletonGrid,
-} from "@/components/dashboard/dashboard-view";
+} from "@/components/dashboard/views/dashboard-view";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Metadata } from "next";

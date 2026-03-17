@@ -3,8 +3,8 @@
 
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { verifyHmacSignature } from "@/lib/hmac";
-import { shouldShowBanner } from "@/lib/banner-routes";
+import { verifyHmacSignature } from "@/lib/utils/hmac";
+import { shouldShowBanner } from "@/lib/system/banner-routes";
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

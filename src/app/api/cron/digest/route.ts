@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendDigestEmail } from "@/lib/email";
+import { sendDigestEmail } from "@/lib/infra/email";
 import { Notification } from "@/lib/types/notifications";
 
 export const dynamic = "force-dynamic";

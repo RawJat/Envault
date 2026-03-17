@@ -12,8 +12,8 @@ import {
   ExternalLink,
   HelpCircle,
 } from "lucide-react";
-import { STATUS_CONFIG, type StatusLevel } from "@/lib/status-config";
-import type { SystemStatusSummary } from "@/lib/system-status";
+import { STATUS_CONFIG, type StatusLevel } from "@/lib/system/status-config";
+import type { SystemStatusSummary } from "@/lib/system/system-status";
 import {
   Accordion,
   AccordionContent,
@@ -131,8 +131,8 @@ export function SupportView({ inDashboard = false }: SupportViewProps) {
               )}
             </h3>
             <p className="text-muted-foreground mb-3">
-              {cfg.message} · Check the real-time status of
-              Envault&apos;s API, dashboard, and CLI services.
+              {cfg.message} · Check the real-time status of Envault&apos;s API,
+              dashboard, and CLI services.
             </p>
             <div>
               <div className="flex items-center justify-between text-xs gap-8">

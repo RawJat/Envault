@@ -18,8 +18,8 @@ async function main() {
   }
 
   // Import dynamically so it evaluates after dotenv.config()
-  const { sendTestEmail } = await import("../src/lib/email");
-  const { getEmailHtml } = await import("../src/lib/email-html");
+  const { sendTestEmail } = await import("../src/lib/infra/email");
+  const { getEmailHtml } = await import("../src/lib/infra/email-html");
 
   // Also confirm we can generate HTML successfully
   try {

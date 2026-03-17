@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSystemStatus } from "@/lib/system-status";
+import { getSystemStatus } from "@/lib/system/system-status";
 
 // Edge runtime: runs closest to the user, minimal cold starts.
 

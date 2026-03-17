@@ -1,9 +1,9 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { validateCliToken } from "@/lib/cli-auth";
+import { validateCliToken } from "@/lib/auth/cli-auth";
 import { NextResponse } from "next/server";
-import { getProjectRole } from "@/lib/permissions";
-import { getProjectEnvironments } from "@/lib/cli-environments";
-import { humanApiLimit, machineApiLimit } from "@/lib/ratelimit";
+import { getProjectRole } from "@/lib/auth/permissions";
+import { getProjectEnvironments } from "@/lib/utils/cli-environments";
+import { humanApiLimit, machineApiLimit } from "@/lib/infra/ratelimit";
 import { headers } from "next/headers";
 
 export async function GET(
@@ -63,7 +63,10 @@ export async function GET(
 
       if (member?.allowed_environments) {
         try {
-          const environments = await getProjectEnvironments(supabase, projectId);
+          const environments = await getProjectEnvironments(
+            supabase,
+            projectId,
+          );
           const allowed = new Set(member.allowed_environments);
           return NextResponse.json({
             environments: environments
@@ -79,9 +82,7 @@ export async function GET(
           return NextResponse.json(
             {
               error:
-                e instanceof Error
-                  ? e.message
-                  : "Failed to fetch environments",
+                e instanceof Error ? e.message : "Failed to fetch environments",
             },
             { status: 500 },
           );
@@ -113,7 +114,10 @@ export async function GET(
             }),
           );
 
-          const environments = await getProjectEnvironments(supabase, projectId);
+          const environments = await getProjectEnvironments(
+            supabase,
+            projectId,
+          );
           return NextResponse.json({
             environments: environments
               .filter((env) => allowedEnvironmentIds.has(env.id))
@@ -128,9 +132,7 @@ export async function GET(
           return NextResponse.json(
             {
               error:
-                e instanceof Error
-                  ? e.message
-                  : "Failed to fetch environments",
+                e instanceof Error ? e.message : "Failed to fetch environments",
             },
             { status: 500 },
           );

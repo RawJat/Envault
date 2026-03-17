@@ -2,7 +2,7 @@
 
 import { formatDistanceToNow } from "date-fns";
 import { useEffect, useState } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/utils";
 
 interface DateDisplayProps {
   date: Date | string | number;

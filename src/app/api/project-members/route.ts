@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { ProjectIdParamSchema } from "@/lib/schemas";
+import { ProjectIdParamSchema } from "@/lib/types/schemas";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Check if user has access to the project
-  const { getProjectRole } = await import("@/lib/permissions");
+  const { getProjectRole } = await import("@/lib/auth/permissions");
   const role = await getProjectRole(supabase, projectId, user.id);
 
   if (!role) {
@@ -44,7 +44,9 @@ export async function GET(request: NextRequest) {
   // Fetch pending requests using admin
   const { data: requestsData } = await admin
     .from("access_requests")
-    .select("id, user_id, project_id, status, created_at, requested_environment")
+    .select(
+      "id, user_id, project_id, status, created_at, requested_environment",
+    )
     .eq("project_id", projectId)
     .eq("status", "pending");
 
@@ -90,9 +92,9 @@ export async function GET(request: NextRequest) {
       .from("profiles")
       .select("id, username")
       .in("id", allUserIds);
-      
+
     if (profiles) {
-      profiles.forEach(p => {
+      profiles.forEach((p) => {
         usernames[p.id] = p.username;
       });
     }

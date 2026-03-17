@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { toast } from "sonner";
-import { ShareSecretModal } from "@/components/dashboard/share-secret-modal";
+import { ShareSecretModal } from "@/components/dialogs/share-secret-modal";
 import { DateDisplay } from "@/components/ui/date-display";
 
 import { Button } from "@/components/ui/button";
@@ -50,8 +50,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { EnvironmentVariable } from "@/lib/store";
-import { VariableDialog } from "./variable-dialog";
+import { EnvironmentVariable } from "@/lib/stores/store";
+import { VariableDialog } from "@/components/dialogs/variable-dialog";
 import { deleteVariable as deleteVariableAction } from "@/app/project-actions";
 import { useRouter } from "next/navigation";
 

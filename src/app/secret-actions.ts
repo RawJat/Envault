@@ -2,9 +2,9 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-import { cacheDel, CacheKeys } from "@/lib/cache";
+import { cacheDel, CacheKeys } from "@/lib/infra/cache";
 import { headers } from "next/headers";
-import { writeRateLimit } from "@/lib/ratelimit";
+import { writeRateLimit } from "@/lib/infra/ratelimit";
 
 export async function shareSecret(secretId: string, email: string) {
   const supabase = await createClient();
@@ -16,7 +16,9 @@ export async function shareSecret(secretId: string, email: string) {
 
   // Rate Limiting
   const ip = (await headers()).get("x-forwarded-for") || "unknown";
-  const { success: rateLimitSuccess } = await writeRateLimit.limit(`share_${ip}`);
+  const { success: rateLimitSuccess } = await writeRateLimit.limit(
+    `share_${ip}`,
+  );
   if (!rateLimitSuccess) {
     return { error: "Too many requests. Please try again later." };
   }
@@ -37,7 +39,7 @@ export async function shareSecret(secretId: string, email: string) {
   const projectId = secret.project_id;
 
   // 2. Check Permission (Owner or Editor of Project)
-  const { getProjectRole } = await import("@/lib/permissions");
+  const { getProjectRole } = await import("@/lib/auth/permissions");
   const role = await getProjectRole(supabase, projectId, user.id);
 
   if (role !== "owner" && role !== "editor") {
@@ -165,7 +167,7 @@ export async function shareSecret(secretId: string, email: string) {
   await cacheDel(CacheKeys.userProjectRole(targetUserId, projectId));
 
   // Notify
-  const { sendAccessGrantedEmail } = await import("@/lib/email");
+  const { sendAccessGrantedEmail } = await import("@/lib/infra/email");
   await sendAccessGrantedEmail(
     email,
     `${project.name} (Single Variable)`,
@@ -188,7 +190,9 @@ export async function unshareSecret(secretId: string, userId: string) {
 
   // Rate Limiting
   const ip = (await headers()).get("x-forwarded-for") || "unknown";
-  const { success: rateLimitSuccess } = await writeRateLimit.limit(`unshare_${ip}`);
+  const { success: rateLimitSuccess } = await writeRateLimit.limit(
+    `unshare_${ip}`,
+  );
   if (!rateLimitSuccess) {
     return { error: "Too many requests. Please try again later." };
   }
@@ -203,7 +207,7 @@ export async function unshareSecret(secretId: string, userId: string) {
   if (!secret) return { error: "Secret not found" };
 
   // 2. Check Permission
-  const { getProjectRole } = await import("@/lib/permissions");
+  const { getProjectRole } = await import("@/lib/auth/permissions");
   const role = await getProjectRole(supabase, secret.project_id, user.id);
 
   if (role !== "owner" && role !== "editor") {
@@ -250,7 +254,7 @@ export async function getSecretSharesWithEmails(secretId: string) {
 
   if (!secret) return { error: "Secret not found" };
 
-  const { getProjectRole } = await import("@/lib/permissions");
+  const { getProjectRole } = await import("@/lib/auth/permissions");
   const role = await getProjectRole(supabase, secret.project_id, user.id);
 
   if (!role) return { error: "Unauthorized" };

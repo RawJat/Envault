@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { ProjectsSync } from "@/components/dashboard/projects-sync";
+import { ProjectsSync } from "@/components/dashboard/ui/projects-sync";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {

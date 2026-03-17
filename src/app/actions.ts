@@ -6,8 +6,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { headers } from "next/headers";
-import { authRateLimit } from "@/lib/ratelimit";
-import { logAuditEvent } from "@/lib/audit-logger";
+import { authRateLimit } from "@/lib/infra/ratelimit";
+import { logAuditEvent } from "@/lib/system/audit-logger";
 
 export async function signInWithGoogle(formData?: FormData) {
   const supabase = await createClient();

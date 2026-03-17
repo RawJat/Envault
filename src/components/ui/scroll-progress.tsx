@@ -69,6 +69,7 @@ export function ScrollProgress({
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           strokeDasharray={circumference}
+          initial={{ strokeDashoffset: circumference * (1 - progress) }}
           animate={{ strokeDashoffset: circumference * (1 - progress) }}
           transition={{ type: "spring", stiffness: 120, damping: 30, mass: 0.5 }}
         />

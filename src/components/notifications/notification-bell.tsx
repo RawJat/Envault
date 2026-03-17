@@ -3,7 +3,7 @@
 import { Bell } from "lucide-react";
 import { Kbd } from "@/components/ui/kbd";
 import { useNotificationStore } from "@/lib/stores/notification-store";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/utils";
 
 import { forwardRef } from "react";
 

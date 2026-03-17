@@ -3,10 +3,10 @@ import {
   verifyRegistrationResponse,
   RegistrationResponseJSON,
 } from "@simplewebauthn/server";
-import { getRpId, getExpectedOrigin } from "@/lib/webauthn";
+import { getRpId, getExpectedOrigin } from "@/lib/auth/webauthn";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getRedisClient } from "@/lib/redis";
+import { getRedisClient } from "@/lib/infra/redis";
 
 export async function POST(req: NextRequest) {
   try {

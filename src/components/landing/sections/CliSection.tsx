@@ -1,0 +1,123 @@
+import { Terminal, GitBranch, Zap, Shield, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Link } from "next-view-transitions";
+import { AnimatedTerminal } from "@/components/landing/animations/animated-terminal";
+import { headers } from "next/headers";
+import { FadeIn } from "@/components/landing/animations/FadeIn";
+import { SlideUp } from "@/components/landing/animations/SlideUp";
+
+export async function CliSection() {
+  let version: string | null = null;
+  try {
+    // Construct the full URL for the API endpoint since Server Components require absolute URLs
+    const headersList = await headers();
+    const host = headersList.get("host") || "localhost:3000";
+    const protocol = host.includes("localhost") ? "http" : "https";
+    const baseUrl = `${protocol}://${host}`;
+
+    const res = await fetch(`${baseUrl}/api/cli-version`, {
+      next: { revalidate: 3600 },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      version = data.version;
+    }
+  } catch {
+    console.warn("Could not fetch CLI version during SSR");
+  }
+
+  const workflowSteps = [
+    {
+      icon: GitBranch,
+      title: "Workspace-Aware Context Switching",
+      desc: "Switch between projects and environments seamlessly. The CLI remembers your context and prevents accidental cross-project operations.",
+      color: "text-blue-500",
+      bg: "bg-blue-500/10",
+    },
+    {
+      icon: Zap,
+      title: "Smart Environment Selection",
+      desc: "Default environment selection during `init` and automatic context-aware command execution. No more manual flag juggling.",
+      color: "text-primary",
+      bg: "bg-primary/10",
+    },
+    {
+      icon: Shield,
+      title: "Secure Device Flow",
+      desc: "Authenticate securely via browser without handling long-lived tokens manually. Multi-environment aware authentication.",
+      color: "text-green-500",
+      bg: "bg-green-500/10",
+    },
+  ];
+
+  return (
+    <section className="py-16 md:py-32 relative z-20">
+      <div className="container px-4 md:px-6">
+        <div className="grid lg:grid-cols-2 gap-8 lg:gap-10 items-center">
+          {/* Left Column: Content */}
+          <div className="space-y-4 order-2 lg:order-1">
+            <SlideUp className="space-y-4">
+              <div className="inline-flex items-center space-x-2 bg-primary/10 text-primary px-3 py-1 text-sm font-medium">
+                <Terminal className="w-4 h-4" />
+                <span>Command Line Interface</span>
+              </div>
+
+              <h2 className="text-3xl md:text-5xl lg:text-6xl font-serif font-bold tracking-tight leading-[1.1] text-void dark:text-bone">
+                Manage Environment Variables from your Terminal.
+              </h2>
+              <p className="max-w-lg font-mono text-sm uppercase tracking-wider text-void/60 dark:text-bone/60">
+                Experience the speed of command-line secret management. Push,
+                pull, and sync your environment variables without leaving your
+                workflow.
+              </p>
+            </SlideUp>
+
+            <div className="space-y-4">
+              {workflowSteps.map((item, i) => (
+                <SlideUp
+                  key={i}
+                  delay={i * 0.15}
+                  className="group flex items-start space-x-4 p-4 rounded-none bg-card/50 backdrop-blur-sm border border-muted/20 hover:border-primary/50 transition-colors shadow-sm"
+                >
+                  <div
+                    className={`mt-1 p-3 rounded-none ${item.bg} ${item.color} group-hover:scale-110 transition-transform`}
+                  >
+                    <item.icon className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg mb-1 text-void dark:text-bone">
+                      {item.title}
+                    </h3>
+                    <p className="text-void/70 dark:text-bone/70 leading-relaxed">
+                      {item.desc}
+                    </p>
+                  </div>
+                </SlideUp>
+              ))}
+            </div>
+
+            <FadeIn delay={0.4} className="pt-4 flex items-center gap-4">
+              <Link href="/docs/cli/reference">
+                <Button
+                  size="lg"
+                  className="h-12 px-8 text-base shadow-lg shadow-primary/20 rounded-none"
+                >
+                  Read the Docs
+                  <ArrowRight className="w-4 h-4 -rotate-45" />
+                </Button>
+              </Link>
+              <div className="text-sm text-muted-foreground">
+                {version ? `v${version} released` : "Latest CLI release"}
+              </div>
+            </FadeIn>
+          </div>
+
+          {/* Right Column: Premium Terminal visualization */}
+          <FadeIn delay={0.2} className="order-1 lg:order-2">
+            <AnimatedTerminal />
+          </FadeIn>
+        </div>
+      </div>
+    </section>
+  );
+}

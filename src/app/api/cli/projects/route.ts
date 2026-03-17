@@ -1,18 +1,18 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { validateCliToken } from "@/lib/cli-auth";
+import { validateCliToken } from "@/lib/auth/cli-auth";
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
-import { ProjectNameSchema } from "@/lib/schemas";
+import { ProjectNameSchema } from "@/lib/types/schemas";
 
 export async function GET(request: Request) {
   const result = await validateCliToken(request);
-  if ('status' in result) {
+  if ("status" in result) {
     return result;
   }
 
   const supabase = createAdminClient();
 
-  if (result.type === 'service') {
+  if (result.type === "service") {
     // Service tokens only see their specific project
     const { data: project } = await supabase
       .from("projects")
@@ -67,9 +67,9 @@ export async function GET(request: Request) {
   // Map shared projects with isOwner flag and role
   interface SharedProjectMember {
     projects:
-    | { id: string; name: string; user_id: string }
-    | { id: string; name: string; user_id: string }[]
-    | null;
+      | { id: string; name: string; user_id: string }
+      | { id: string; name: string; user_id: string }[]
+      | null;
     role: "viewer" | "editor" | "owner";
   }
 
@@ -140,12 +140,15 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const result = await validateCliToken(request);
-  if ('status' in result) {
+  if ("status" in result) {
     return result;
   }
 
-  if (result.type === 'service') {
-    return NextResponse.json({ error: 'Service tokens cannot create projects' }, { status: 403 });
+  if (result.type === "service") {
+    return NextResponse.json(
+      { error: "Service tokens cannot create projects" },
+      { status: 403 },
+    );
   }
 
   const userId = result.userId;
@@ -176,7 +179,9 @@ export async function POST(request: Request) {
 
   if (existingProject) {
     return NextResponse.json(
-      { error: `A project named "${name}" already exists. Please use a different name.` },
+      {
+        error: `A project named "${name}" already exists. Please use a different name.`,
+      },
       { status: 409 },
     );
   }
@@ -238,7 +243,7 @@ export async function POST(request: Request) {
   });
 
   // Invalidate user's project list cache
-  const { cacheDel, CacheKeys } = await import("@/lib/cache");
+  const { cacheDel, CacheKeys } = await import("@/lib/infra/cache");
   await cacheDel(CacheKeys.userProjects(userId));
   revalidatePath("/dashboard");
 

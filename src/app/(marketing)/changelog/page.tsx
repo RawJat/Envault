@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { parseChangelog } from "@/lib/changelog-parser";
+import { parseChangelog } from "@/lib/system/changelog-parser";
 import {
   ChangelogTimeline,
   type TimelineEntry,

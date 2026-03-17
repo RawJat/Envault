@@ -1,8 +1,8 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { validateCliToken } from "@/lib/cli-auth";
+import { validateCliToken } from "@/lib/auth/cli-auth";
 import { NextResponse } from "next/server";
-import { getProjectRole } from "@/lib/permissions";
-import { resolveProjectEnvironment } from "@/lib/cli-environments";
+import { getProjectRole } from "@/lib/auth/permissions";
+import { resolveProjectEnvironment } from "@/lib/utils/cli-environments";
 
 function permissionSetForRole(role: string | null) {
   if (role === "owner" || role === "editor") {
@@ -16,7 +16,7 @@ function permissionSetForRole(role: string | null) {
 
 export async function GET(request: Request) {
   const result = await validateCliToken(request);
-  if ('status' in result) {
+  if ("status" in result) {
     return result;
   }
 
@@ -25,7 +25,7 @@ export async function GET(request: Request) {
   let user = { email: "" };
   let userId = "";
 
-  if (result.type === 'service') {
+  if (result.type === "service") {
     if (projectId && projectId !== result.projectId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
@@ -33,7 +33,8 @@ export async function GET(request: Request) {
     user = { email: "Service Token (CI)" };
   } else {
     userId = result.userId;
-    const { data: userData, error } = await supabase.auth.admin.getUserById(userId);
+    const { data: userData, error } =
+      await supabase.auth.admin.getUserById(userId);
     if (error || !userData?.user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
@@ -47,7 +48,7 @@ export async function GET(request: Request) {
   }
 
   let role: string | null = null;
-  if (result.type === 'service') {
+  if (result.type === "service") {
     role = "owner"; // Service tokens have read/write access to their linked project
   } else {
     role = await getProjectRole(supabase, projectId, userId);

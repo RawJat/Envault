@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { generateRegistrationOptions } from "@simplewebauthn/server";
-import { getRpId, rpName } from "@/lib/webauthn";
+import { getRpId, rpName } from "@/lib/auth/webauthn";
 import { createClient } from "@/lib/supabase/server";
-import { getRedisClient } from "@/lib/redis";
+import { getRedisClient } from "@/lib/infra/redis";
 
 export async function GET(req: Request) {
   try {

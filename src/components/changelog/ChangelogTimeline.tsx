@@ -4,10 +4,12 @@ import React, { useRef, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
-import { RegMark } from "@/components/landing/RegMark";
+import { cn } from "@/lib/utils/utils";
+import { RegMark } from "@/components/landing/ui/RegMark";
 import { ScrollProgress } from "@/components/ui/scroll-progress";
-import type { Author } from "@/lib/changelog-parser";
+import { SlideUp } from "@/components/landing/animations/SlideUp";
+import { FadeIn } from "@/components/landing/animations/FadeIn";
+import type { Author } from "@/lib/system/changelog-parser";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -48,7 +50,10 @@ function getBadgeStyle(category: string): string {
   return BADGE_STYLES[category.toLowerCase()] ?? BADGE_STYLES.release;
 }
 
-function renderInlineMarkdown(text: string, keyPrefix: string): React.ReactNode[] {
+function renderInlineMarkdown(
+  text: string,
+  keyPrefix: string,
+): React.ReactNode[] {
   const nodes: React.ReactNode[] = [];
   const tokenPattern = /\*\*([^*]+)\*\*|`([^`]+)`|\[([^\]]+)\]\(([^)]+)\)/g;
   let lastIndex = 0;
@@ -450,7 +455,7 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
         <RegMark position="top-right" />
 
         {/* Breadcrumb */}
-        <div className="container max-w-7xl px-4 md:px-6 py-4 border-b border-border/50">
+        <FadeIn delay={0.1} className="container max-w-7xl px-4 md:px-6 py-4 border-b border-border/50">
           <div className="flex items-center gap-2 text-sm font-mono text-muted-foreground">
             <Link href="/" className="hover:text-foreground transition-colors">
               Home
@@ -458,7 +463,7 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
             <ChevronRight className="w-3 h-3" />
             <span className="text-foreground">Changelog</span>
           </div>
-        </div>
+        </FadeIn>
 
         {/* Grid */}
         <div className="container max-w-7xl px-4 md:px-6 py-6 md:py-12">
@@ -466,7 +471,7 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
             <div className="hidden lg:block absolute left-[calc(100%-280px-1.5rem)] top-0 bottom-0 w-px bg-border/30" />
 
             {/* Left column */}
-            <div>
+            <SlideUp delay={0.2} yOffset={20}>
               {/* Title block — matches LegalLayout */}
               <div className="mb-6 pb-6 md:mb-8 md:pb-8 border-b border-border/50">
                 <h1 className="text-4xl md:text-5xl font-serif font-bold tracking-tight mb-4">
@@ -561,9 +566,7 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
                             v{entry.version}
                           </span>
                         </div>
-                        <div>
-                          {renderMarkdownBody(entry.body)}
-                        </div>
+                        <div>{renderMarkdownBody(entry.body)}</div>
                         {entry.authors.length > 0 && (
                           <div className="mt-5 pt-4 border-t border-border/30 flex items-center gap-4 flex-wrap">
                             {entry.authors.map((author) => (
@@ -593,9 +596,7 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
                           v{entry.version}
                         </span>
                       </div>
-                      <div>
-                        {renderMarkdownBody(entry.body)}
-                      </div>
+                      <div>{renderMarkdownBody(entry.body)}</div>
                       {entry.authors.length > 0 && (
                         <div className="mt-4 pt-4 border-t border-border/30 flex items-center gap-4 flex-wrap">
                           {entry.authors.map((author) => (
@@ -607,15 +608,10 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
                   </div>
                 ))}
               </div>
-            </div>
+            </SlideUp>
 
             {/* Sidebar */}
-            <motion.aside
-              initial={{ opacity: 1, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="hidden lg:block"
-            >
+            <SlideUp delay={0.3} yOffset={20} className="hidden lg:block">
               <div className="sticky top-28 space-y-4">
                 <div className="pb-4 border-b border-border/50">
                   <h2 className="text-xs font-mono font-semibold tracking-wider uppercase text-muted-foreground">
@@ -657,7 +653,7 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
                   <div className="w-4 h-4 rounded-full border border-border/50 mx-auto opacity-30" />
                 </div>
               </div>
-            </motion.aside>
+            </SlideUp>
           </div>
         </div>
 

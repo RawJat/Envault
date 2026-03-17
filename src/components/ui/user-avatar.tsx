@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/utils";
 
 interface UserAvatarProps extends React.ComponentPropsWithoutRef<
   typeof Avatar

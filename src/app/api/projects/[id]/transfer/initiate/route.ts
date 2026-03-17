@@ -2,10 +2,10 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getProjectRole } from "@/lib/permissions";
-import { logAuditEvent } from "@/lib/audit-logger";
+import { getProjectRole } from "@/lib/auth/permissions";
+import { logAuditEvent } from "@/lib/system/audit-logger";
 import { headers } from "next/headers";
-import { transferRateLimit } from "@/lib/ratelimit";
+import { transferRateLimit } from "@/lib/infra/ratelimit";
 
 const ParamsSchema = z.object({ id: z.string().uuid("Invalid project ID") });
 
@@ -198,8 +198,11 @@ export async function POST(
     user.email ||
     `user-${user.id.slice(0, 8)}`;
   try {
-    const [{ data: targetUserAuth }, { data: ownerProfile }, { data: targetProfile }] =
-      await Promise.all([
+    const [
+      { data: targetUserAuth },
+      { data: ownerProfile },
+      { data: targetProfile },
+    ] = await Promise.all([
       admin.auth.admin.getUserById(targetUserId),
       admin.from("profiles").select("username").eq("id", user.id).maybeSingle(),
       admin
@@ -218,7 +221,10 @@ export async function POST(
       targetName;
     ownerName = ownerProfile?.username || ownerName;
   } catch (identityError) {
-    console.warn("[transfer:initiate] identity enrichment failed", identityError);
+    console.warn(
+      "[transfer:initiate] identity enrichment failed",
+      identityError,
+    );
   }
 
   await logAuditEvent({
@@ -247,8 +253,13 @@ export async function POST(
   });
 
   try {
-    const [{ createOwnershipTransferRequestedNotification }, { sendOwnershipTransferRequestedEmail }] =
-      await Promise.all([import("@/lib/notifications"), import("@/lib/email")]);
+    const [
+      { createOwnershipTransferRequestedNotification },
+      { sendOwnershipTransferRequestedEmail },
+    ] = await Promise.all([
+      import("@/lib/system/notifications"),
+      import("@/lib/infra/email"),
+    ]);
 
     await createOwnershipTransferRequestedNotification(
       targetUserId,

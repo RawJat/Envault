@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { RegMark } from "@/components/landing/RegMark";
+import { RegMark } from "@/components/landing/ui/RegMark";
 import { ChevronRight, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "next-view-transitions";
+import { SlideUp } from "@/components/landing/animations/SlideUp";
+import { FadeIn } from "@/components/landing/animations/FadeIn";
 import { ScrollProgress } from "@/components/ui/scroll-progress";
 
 interface Section {
@@ -61,7 +63,12 @@ function MobileSectionNav({
             size={16}
             strokeWidth={1.5}
             className="shrink-0 opacity-80"
-            progress={sections.length > 1 ? sections.findIndex((s) => s.id === activeSection) / (sections.length - 1) : 1}
+            progress={
+              sections.length > 1
+                ? sections.findIndex((s) => s.id === activeSection) /
+                  (sections.length - 1)
+                : 1
+            }
           />
           <span className="truncate text-foreground font-medium">
             {active?.title}
@@ -228,12 +235,7 @@ export function LegalLayout({
         <RegMark position="top-right" />
 
         {/* Breadcrumbs */}
-        <motion.div
-          initial={{ opacity: 1, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="container max-w-7xl px-4 md:px-6 py-4 border-b border-border/50"
-        >
+        <FadeIn delay={0.1} className="container max-w-7xl px-4 md:px-6 py-4 border-b border-border/50">
           <div className="flex items-center gap-2 text-sm font-mono text-muted-foreground">
             <Link href="/" className="hover:text-foreground transition-colors">
               Home
@@ -241,7 +243,7 @@ export function LegalLayout({
             <ChevronRight className="w-3 h-3" />
             <span className="text-foreground">{title}</span>
           </div>
-        </motion.div>
+        </FadeIn>
 
         {/* Main Grid Layout */}
         <div className="container max-w-7xl px-4 md:px-6 py-6 md:py-12">
@@ -250,12 +252,7 @@ export function LegalLayout({
             <div className="hidden lg:block absolute left-[calc(100%-280px-1.5rem)] top-0 bottom-0 w-px bg-border/30" />
 
             {/* Main Content Area */}
-            <motion.div
-              initial={{ opacity: 1, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="max-w-3xl"
-            >
+            <SlideUp delay={0.2} yOffset={20} className="max-w-3xl">
               {/* Title */}
               <div className="mb-6 pb-6 md:mb-8 md:pb-8 border-b border-border/50">
                 <h1 className="text-4xl md:text-5xl font-serif font-bold tracking-tight mb-4">
@@ -270,15 +267,10 @@ export function LegalLayout({
               <div className="prose prose-stone dark:prose-invert max-w-none">
                 {children}
               </div>
-            </motion.div>
+            </SlideUp>
 
             {/* Sticky Sidebar Navigation */}
-            <motion.aside
-              initial={{ opacity: 1, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="hidden lg:block"
-            >
+            <SlideUp delay={0.3} yOffset={20} className="hidden lg:block">
               <div className="sticky top-28 space-y-4">
                 <div className="pb-4 border-b border-border/50">
                   <h2 className="text-xs font-mono font-semibold tracking-wider uppercase text-muted-foreground">
@@ -317,7 +309,7 @@ export function LegalLayout({
                   <div className="w-4 h-4 rounded-full border border-border/50 mx-auto opacity-30" />
                 </div>
               </div>
-            </motion.aside>
+            </SlideUp>
           </div>
         </div>
 
