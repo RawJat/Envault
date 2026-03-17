@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { generateHmacSignature } from "@/lib/hmac";
+import { generateHmacSignature } from "@/lib/utils/hmac";
 
 export function HmacProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {

@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
-import { useEnvaultStore } from "@/lib/store";
+import { useEnvaultStore } from "@/lib/stores/store";
 import { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
-import { inferUsernameFromAuth } from "@/lib/username";
+import { inferUsernameFromAuth } from "@/lib/utils/username";
 
 export function AuthSync({ user }: { user: User }) {
   const login = useEnvaultStore((state) => state.login);

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { generateGitHubAppJWT } from "@/lib/github";
+import { generateGitHubAppJWT } from "@/lib/auth/github";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);

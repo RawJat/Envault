@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { auditReadRateLimit } from "@/lib/ratelimit";
-import { getProjectRole } from "@/lib/permissions";
+import { auditReadRateLimit } from "@/lib/infra/ratelimit";
+import { getProjectRole } from "@/lib/auth/permissions";
 
 const ALLOWED_AUDIT_ACTIONS = new Set([
   "secret.created",
@@ -208,7 +208,8 @@ export async function GET(
 
     const beneficiaryUserIds = Array.from(
       new Set(
-        (logs || []).flatMap((log) => {
+        (logs || [])
+          .flatMap((log) => {
             const metadata =
               log.metadata && typeof log.metadata === "object"
                 ? (log.metadata as Record<string, unknown>)

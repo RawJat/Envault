@@ -12,10 +12,10 @@ import { useSearchParams, usePathname } from "next/navigation";
 import { toast } from "sonner";
 import { DateDisplay } from "@/components/ui/date-display";
 import { Plus, CornerDownLeft, Loader2 } from "lucide-react";
-import { STATUS_CONFIG } from "@/lib/status-config";
+import { STATUS_CONFIG } from "@/lib/system/status-config";
 import { useHotkeys } from "@/hooks/use-hotkeys";
 import { Kbd } from "@/components/ui/kbd";
-import { getModifierKey } from "@/lib/utils";
+import { getModifierKey } from "@/lib/utils/utils";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -52,7 +52,7 @@ interface AdminStatusViewProps {
   initialIncidents: any[]; // Using any for now to avoid strict type complexity, but locally typed as Incident[]
 }
 
-import { AppHeader } from "@/components/dashboard/app-header";
+import { AppHeader } from "@/components/dashboard/ui/app-header";
 
 // Custom event type
 // Custom event type

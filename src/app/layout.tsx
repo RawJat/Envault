@@ -12,11 +12,11 @@ import { NotificationProvider } from "@/components/notifications/notification-pr
 import { ShortcutProvider } from "@/components/providers/shortcut-provider";
 import { HmacProvider } from "@/components/hmac-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { getServerOS } from "@/lib/os";
+import { getServerOS } from "@/lib/utils/os";
 import { ViewTransitions } from "next-view-transitions";
 import { headers } from "next/headers";
 import { SystemStatusBanner } from "@/components/ui/system-status-banner";
-import { GlobalScene } from "@/components/landing/GlobalScene";
+import { GlobalScene } from "@/components/landing/ui/GlobalScene";
 import { RootRefreshHandler } from "@/components/RootRefreshHandler";
 
 export const metadata: Metadata = {

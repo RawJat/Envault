@@ -2,15 +2,15 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { logAuditEvent } from "@/lib/audit-logger";
+import { logAuditEvent } from "@/lib/system/audit-logger";
 import {
   cacheDel,
   CacheKeys,
   invalidateProjectCaches,
   invalidateUserSecretAccess,
-} from "@/lib/cache";
+} from "@/lib/infra/cache";
 import { headers } from "next/headers";
-import { transferRateLimit } from "@/lib/ratelimit";
+import { transferRateLimit } from "@/lib/infra/ratelimit";
 
 const ParamsSchema = z.object({ id: z.string().uuid("Invalid project ID") });
 const AcceptTransferSchema = z.object({
@@ -253,8 +253,13 @@ export async function POST(
   });
 
   try {
-    const [{ createOwnershipTransferAcceptedNotification }, { sendOwnershipTransferAcceptedEmail }] =
-      await Promise.all([import("@/lib/notifications"), import("@/lib/email")]);
+    const [
+      { createOwnershipTransferAcceptedNotification },
+      { sendOwnershipTransferAcceptedEmail },
+    ] = await Promise.all([
+      import("@/lib/system/notifications"),
+      import("@/lib/infra/email"),
+    ]);
     const projectName = project?.name || "Project";
 
     await createOwnershipTransferAcceptedNotification(

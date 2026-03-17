@@ -14,7 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import type { Metadata } from "next";
-import { formatEnvironmentLabel } from "@/lib/environment-label";
+import { formatEnvironmentLabel } from "@/lib/utils/environment-label";
 
 interface ApprovePageProps {
   params: Promise<{ requestId: string }>;
@@ -122,8 +122,7 @@ export default async function ApprovePage({ params }: ApprovePageProps) {
     .eq("user_id", request.user_id)
     .single();
 
-  const existingRole =
-    existingMember?.role === "editor" ? "editor" : "viewer";
+  const existingRole = existingMember?.role === "editor" ? "editor" : "viewer";
   const existingAllowedEnvironments = existingMember?.allowed_environments as
     | string[]
     | null

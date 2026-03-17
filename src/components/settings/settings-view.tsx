@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams, usePathname } from "next/navigation";
-import { useEnvaultStore } from "@/lib/store";
+import { useEnvaultStore } from "@/lib/stores/store";
 import { SecurityTab } from "./security-tab";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,8 +45,8 @@ import { createClient } from "@/lib/supabase/client";
 import { deleteAccountAction } from "@/app/actions";
 import { useHotkeys } from "@/hooks/use-hotkeys";
 import { Kbd } from "@/components/ui/kbd";
-import { AppHeader } from "@/components/dashboard/app-header";
-import { inferUsernameFromAuth } from "@/lib/username";
+import { AppHeader } from "@/components/dashboard/ui/app-header";
+import { inferUsernameFromAuth } from "@/lib/utils/username";
 
 const ModKey = () => (
   <>

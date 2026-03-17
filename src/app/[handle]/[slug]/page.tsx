@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect, notFound } from "next/navigation";
 import ProjectDetailView from "@/components/editor/project-detail-view";
-import { getProjectEnvironments } from "@/lib/cli-environments";
+import { getProjectEnvironments } from "@/lib/utils/cli-environments";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
@@ -107,7 +107,7 @@ export default async function SharedProjectPage({
   }
 
   // Get role (needs project.id)
-  const { getProjectRole } = await import("@/lib/permissions");
+  const { getProjectRole } = await import("@/lib/auth/permissions");
   const role = await getProjectRole(supabase, id, user.id);
 
   if (!role) {
@@ -309,7 +309,7 @@ export default async function SharedProjectPage({
   }
 
   // Decrypt + transform (in parallel)
-  const { decrypt } = await import("@/lib/encryption");
+  const { decrypt } = await import("@/lib/utils/encryption");
   const isEncrypted = (value: string): boolean => {
     if (value.startsWith("v1:")) return true;
     const base64Pattern = /^[A-Za-z0-9+/]+=*$/;

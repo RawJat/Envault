@@ -1,7 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { validateCliToken } from "@/lib/cli-auth";
+import { validateCliToken } from "@/lib/auth/cli-auth";
 import { NextResponse } from "next/server";
-import { humanApiLimit } from "@/lib/ratelimit";
+import { humanApiLimit } from "@/lib/infra/ratelimit";
 import { headers } from "next/headers";
 
 export async function POST(
@@ -65,14 +65,12 @@ export async function POST(
   }
 
   // 4. Insert access request (idempotent - ignore unique conflicts)
-  const { error: insertError } = await supabase
-    .from("access_requests")
-    .insert({
-      project_id: projectId,
-      user_id: userId,
-      status: "pending",
-      requested_environment: requestedEnvironment || null,
-    });
+  const { error: insertError } = await supabase.from("access_requests").insert({
+    project_id: projectId,
+    user_id: userId,
+    status: "pending",
+    requested_environment: requestedEnvironment || null,
+  });
 
   if (insertError && insertError.code !== "23505") {
     return NextResponse.json({ error: insertError.message }, { status: 500 });
@@ -107,10 +105,9 @@ export async function POST(
     const requesterEmail = requesterData.data?.user?.email || "A team member";
 
     if (requestRecord && ownerEmail) {
-      const { sendAccessRequestEmail } = await import("@/lib/email");
-      const { createAccessRequestNotification } = await import(
-        "@/lib/notifications"
-      );
+      const { sendAccessRequestEmail } = await import("@/lib/infra/email");
+      const { createAccessRequestNotification } =
+        await import("@/lib/system/notifications");
 
       await Promise.all([
         sendAccessRequestEmail(

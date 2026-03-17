@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useHotkeys } from "@/hooks/use-hotkeys";
 import { Kbd } from "@/components/ui/kbd";
-import { getModifierKey } from "@/lib/utils";
+import { getModifierKey } from "@/lib/utils/utils";
 
 interface Token {
   id: string;

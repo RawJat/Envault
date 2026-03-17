@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { DateDisplay } from "@/components/ui/date-display";
 import { createClient } from "@/lib/supabase/client";
-import { useEnvaultStore } from "@/lib/store";
+import { useEnvaultStore } from "@/lib/stores/store";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -95,7 +95,8 @@ export function PasskeyManager() {
         const error = (await resp.json()) as { error?: string };
         throw new Error(error.error || "Failed to get registration options");
       }
-      const options = (await resp.json()) as PublicKeyCredentialCreationOptionsJSON;
+      const options =
+        (await resp.json()) as PublicKeyCredentialCreationOptionsJSON;
 
       // 2. Pass options to browser authenticator via SimpleWebAuthn
       const attResp = await startRegistration({ optionsJSON: options });
@@ -109,7 +110,10 @@ export function PasskeyManager() {
         body: JSON.stringify(attResp),
       });
 
-      const verification = (await verifyResp.json()) as { success?: boolean; error?: string };
+      const verification = (await verifyResp.json()) as {
+        success?: boolean;
+        error?: string;
+      };
       if (verifyResp.ok && verification.success) {
         toast.success("Passkey added successfully");
         refetchPasskeys();

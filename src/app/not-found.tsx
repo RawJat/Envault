@@ -1,7 +1,7 @@
 import { Link } from "next-view-transitions";
-import { Navbar } from "@/components/landing/Navbar";
-import { Footer } from "@/components/landing/Footer";
-import { RegMark } from "@/components/landing/RegMark";
+import { Navbar } from "@/components/landing/ui/Navbar";
+import { Footer } from "@/components/landing/sections/Footer";
+import { RegMark } from "@/components/landing/ui/RegMark";
 import { Stacked404 } from "@/components/landing/Stacked404";
 import { BackButton } from "@/components/ui/back-button";
 import { Button } from "@/components/ui/button";

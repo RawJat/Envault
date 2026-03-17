@@ -1,7 +1,7 @@
 import { createHash } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { avatarProxyRateLimit } from "@/lib/ratelimit";
-import { redis } from "@/lib/redis";
+import { avatarProxyRateLimit } from "@/lib/infra/ratelimit";
+import { redis } from "@/lib/infra/redis";
 
 const CACHE_TTL_SECONDS = 60 * 60 * 6;
 const ALLOWED_HOSTS = new Set([

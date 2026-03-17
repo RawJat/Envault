@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { generateAuthenticationOptions } from "@simplewebauthn/server";
-import { getRpId } from "@/lib/webauthn";
-import { getRedisClient } from "@/lib/redis";
+import { getRpId } from "@/lib/auth/webauthn";
+import { getRedisClient } from "@/lib/infra/redis";
 import crypto from "crypto";
 
 export async function GET(req: Request) {

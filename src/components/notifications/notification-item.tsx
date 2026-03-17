@@ -5,7 +5,7 @@ import { Notification } from "@/lib/types/notifications";
 import { NotificationIcon } from "./notification-icon";
 import { Button } from "@/components/ui/button";
 import { useNotificationStore } from "@/lib/stores/notification-store";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/utils";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 

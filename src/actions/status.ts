@@ -11,7 +11,7 @@ import {
   ComponentStatusEnum,
   IncidentSeverityEnum,
   IncidentStatusEnum,
-} from "@/lib/schemas";
+} from "@/lib/types/schemas";
 import { z } from "zod";
 
 // Define types locally to avoid re-export issues with type-only strings in Server Actions
@@ -202,14 +202,16 @@ export async function createIncident(
     const admin = createAdminClient();
 
     // Fetch all auth users
-    const { data: usersData } = await admin.auth.admin.listUsers({ perPage: 1000 });
+    const { data: usersData } = await admin.auth.admin.listUsers({
+      perPage: 1000,
+    });
     const users = usersData?.users ?? [];
 
     const notificationTitle = `New Incident: ${title}`;
     const notificationMessage = `${severity.charAt(0).toUpperCase() + severity.slice(1)} severity – ${initialMessage}`;
 
-    const { createNotification } = await import("@/lib/notifications");
-    const { sendSystemUpdateEmail } = await import("@/lib/email");
+    const { createNotification } = await import("@/lib/system/notifications");
+    const { sendSystemUpdateEmail } = await import("@/lib/infra/email");
 
     await Promise.allSettled(
       users.map(async (user) => {
@@ -219,7 +221,12 @@ export async function createIncident(
           type: "incident_created",
           title: notificationTitle,
           message: notificationMessage,
-          variant: severity === "critical" ? "error" : severity === "major" ? "warning" : "info",
+          variant:
+            severity === "critical"
+              ? "error"
+              : severity === "major"
+                ? "warning"
+                : "info",
           metadata: { incidentId, severity, status },
           actionUrl: "/status",
           actionType: "view_status",

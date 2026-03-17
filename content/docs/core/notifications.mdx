@@ -83,7 +83,7 @@ Developers extending Envault should consult `src/lib/types/notifications.ts` for
 
 ## Example Email Template
 
-Envault uses [Resend](https://resend.com) for delivery. Email content is rendered server‑side with a Handlebars template that includes a title, message body, and optional action button when appropriate. See `src/lib/email.ts` for the implementation details.
+Envault uses [Resend](https://resend.com) for delivery. Email content is rendered server‑side with a Handlebars template that includes a title, message body, and optional action button when appropriate. See `src/lib/infra/email.ts` for the implementation details.
 
 ## Email Digest Cron Job
 
@@ -124,4 +124,4 @@ All **"View Project"** buttons and deep-links in in-app notifications and email 
 
 ---
 
-For more details about how notifications integrate with other parts of the system, see the [API overview](/docs/api/overview) or inspect the source code under `src/lib/notifications.ts`.
+For more details about how notifications integrate with other parts of the system, see the [API overview](/docs/api/overview) or inspect the source code under `src/lib/system/notifications.ts`.

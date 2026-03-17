@@ -51,7 +51,8 @@ export async function verifyDeviceCode(userCode: string) {
 
   // Create in-app notification (respects user preferences)
   const deviceName = session.device_info?.hostname || "Unknown Device";
-  const { createNewDeviceNotification } = await import("@/lib/notifications");
+  const { createNewDeviceNotification } =
+    await import("@/lib/system/notifications");
   await createNewDeviceNotification(
     user.id,
     deviceName,
@@ -62,7 +63,7 @@ export async function verifyDeviceCode(userCode: string) {
   try {
     const { data: userData } = await admin.auth.admin.getUserById(user.id);
     if (userData?.user?.email) {
-      const { sendNewDeviceEmail } = await import("@/lib/email");
+      const { sendNewDeviceEmail } = await import("@/lib/infra/email");
       await sendNewDeviceEmail(userData.user.email, deviceName, user.id);
     }
   } catch (emailError) {

@@ -1,13 +1,13 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { cva, type VariantProps } from "class-variance-authority"
+import * as React from "react";
+import { cva, type VariantProps } from "class-variance-authority";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils/utils";
 
 const TimelineContext = React.createContext<{
-  color?: "primary" | "secondary" | "info" | "success" | "warning" | "error"
-}>({ color: "secondary" })
+  color?: "primary" | "secondary" | "info" | "success" | "warning" | "error";
+}>({ color: "secondary" });
 
 const timelineVariants = cva("relative", {
   variants: {
@@ -19,12 +19,13 @@ const timelineVariants = cva("relative", {
   defaultVariants: {
     orientation: "vertical",
   },
-})
+});
 
 interface TimelineProps
-  extends React.HTMLAttributes<HTMLDivElement>,
+  extends
+    React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof timelineVariants> {
-  color?: "primary" | "secondary" | "info" | "success" | "warning" | "error"
+  color?: "primary" | "secondary" | "info" | "success" | "warning" | "error";
 }
 
 function Timeline({
@@ -43,7 +44,7 @@ function Timeline({
         {children}
       </div>
     </TimelineContext.Provider>
-  )
+  );
 }
 
 function TimelineItem({
@@ -55,7 +56,7 @@ function TimelineItem({
       className={cn("relative flex gap-4 pb-8 last:pb-0", className)}
       {...props}
     />
-  )
+  );
 }
 
 function TimelineHeader({
@@ -67,14 +68,14 @@ function TimelineHeader({
       className={cn("flex w-6 shrink-0 flex-col items-center", className)}
       {...props}
     />
-  )
+  );
 }
 
 function TimelineSeparator({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
-  const { color = "secondary" } = React.useContext(TimelineContext)
+  const { color = "secondary" } = React.useContext(TimelineContext);
 
   const colorClasses = {
     primary: "bg-primary",
@@ -83,18 +84,18 @@ function TimelineSeparator({
     success: "bg-green-500",
     warning: "bg-yellow-500",
     error: "bg-destructive",
-  }
+  };
 
   return (
     <div
       className={cn(
         "absolute top-3 left-[11px] h-full w-0.5",
         colorClasses[color],
-        className
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 
 function TimelineIcon({
@@ -102,7 +103,7 @@ function TimelineIcon({
   children,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
-  const { color = "secondary" } = React.useContext(TimelineContext)
+  const { color = "secondary" } = React.useContext(TimelineContext);
 
   const colorClasses = {
     primary: "bg-primary text-primary-foreground",
@@ -111,27 +112,27 @@ function TimelineIcon({
     success: "bg-green-500 text-white",
     warning: "bg-yellow-500 text-white",
     error: "bg-destructive text-white",
-  }
+  };
 
   return (
     <div
       className={cn(
         "relative z-10 flex size-6 items-center justify-center rounded-full",
         colorClasses[color],
-        className
+        className,
       )}
       {...props}
     >
       {children}
     </div>
-  )
+  );
 }
 
 function TimelineBody({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("flex-1 pt-0.5", className)} {...props} />
+  return <div className={cn("flex-1 pt-0.5", className)} {...props} />;
 }
 
 export {
@@ -142,4 +143,4 @@ export {
   TimelineIcon,
   TimelineBody,
   timelineVariants,
-}
+};

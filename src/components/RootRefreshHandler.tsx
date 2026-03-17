@@ -1,15 +1,18 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 export function RootRefreshHandler() {
   const pathname = usePathname();
+  const router = useRouter();
   const lastPathname = useRef(pathname);
+  const lastRefreshTime = useRef(0);
 
   // Update the ref whenever the pathname changes normally
   useEffect(() => {
     lastPathname.current = pathname;
+    lastRefreshTime.current = Date.now();
   }, [pathname]);
 
   useEffect(() => {
@@ -24,11 +27,23 @@ export function RootRefreshHandler() {
       }
     };
 
+    // Listen for window focus to refresh data (throttled to 15s)
+    const handleFocus = () => {
+      const now = Date.now();
+      if (now - lastRefreshTime.current > 15000) {
+        lastRefreshTime.current = now;
+        router.refresh();
+      }
+    };
+
     window.addEventListener("popstate", handlePopState);
+    window.addEventListener("focus", handleFocus);
+
     return () => {
       window.removeEventListener("popstate", handlePopState);
+      window.removeEventListener("focus", handleFocus);
     };
-  }, []);
+  }, [router]);
 
   return null;
 }

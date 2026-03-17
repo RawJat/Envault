@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound, redirect } from "next/navigation";
-import { AuditLogsView } from "@/components/dashboard/audit-logs-view";
-import { AppHeader } from "@/components/dashboard/app-header";
+import { AuditLogsView } from "@/components/dashboard/views/audit-logs-view";
+import { AppHeader } from "@/components/dashboard/ui/app-header";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
@@ -42,7 +42,7 @@ export default async function AuditLogsPage({ params }: PageProps) {
   }
 
   // Verify user can access this project
-  const { getProjectRole } = await import("@/lib/permissions");
+  const { getProjectRole } = await import("@/lib/auth/permissions");
   const roleChecks = await Promise.all(
     projects.map(async (candidate) => ({
       project: candidate,

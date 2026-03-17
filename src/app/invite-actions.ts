@@ -2,10 +2,14 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-import { formatEnvironmentLabel } from "@/lib/environment-label";
+import { formatEnvironmentLabel } from "@/lib/utils/environment-label";
 
-import { cacheDel, CacheKeys, invalidateUserSecretAccess } from "@/lib/cache";
-import { logAuditEvent } from "@/lib/audit-logger";
+import {
+  cacheDel,
+  CacheKeys,
+  invalidateUserSecretAccess,
+} from "@/lib/infra/cache";
+import { logAuditEvent } from "@/lib/system/audit-logger";
 
 function normalizeAllowedEnvironments(
   environments: string[] | null | undefined,
@@ -190,7 +194,7 @@ export async function createAccessRequest(
 
       if (requestData) {
         // Send email notification
-        const { sendAccessRequestEmail } = await import("@/lib/email");
+        const { sendAccessRequestEmail } = await import("@/lib/infra/email");
         await sendAccessRequestEmail(
           owner.user.email,
           requester.user.email,
@@ -202,7 +206,7 @@ export async function createAccessRequest(
 
         // Create in-app notification
         const { createAccessRequestNotification } =
-          await import("@/lib/notifications");
+          await import("@/lib/system/notifications");
         await createAccessRequestNotification(
           project.user_id,
           requester.user.email,
@@ -400,7 +404,7 @@ export async function approveRequest(
           .name;
 
         if (requesterUser?.user?.email) {
-          const { sendAccessUpdatedEmail } = await import("@/lib/email");
+          const { sendAccessUpdatedEmail } = await import("@/lib/infra/email");
           await sendAccessUpdatedEmail(
             requesterUser.user.email,
             projectName,
@@ -413,7 +417,7 @@ export async function approveRequest(
         }
 
         const { createAccessGrantedNotification } =
-          await import("@/lib/notifications");
+          await import("@/lib/system/notifications");
         await createAccessGrantedNotification(
           request.user_id,
           projectName,
@@ -534,7 +538,7 @@ export async function approveRequest(
 
   // 4. Notify User via email and in-app notification
   if (notifyUser) {
-    const { sendAccessGrantedEmail } = await import("@/lib/email");
+    const { sendAccessGrantedEmail } = await import("@/lib/infra/email");
     // We need requester email.
     // Supabase join `auth_users` might return it if we have access to auth schema (rarely enabled by default for users)
     // Usually we can't select from `auth.users` directly via client unless view exists.
@@ -562,7 +566,7 @@ export async function approveRequest(
 
       // Create in-app notification
       const { createAccessGrantedNotification } =
-        await import("@/lib/notifications");
+        await import("@/lib/system/notifications");
       await createAccessGrantedNotification(
         request.user_id,
         projectName,
@@ -627,8 +631,8 @@ export async function rejectRequest(requestId: string) {
   if (fullRequest) {
     try {
       const { createAccessDeniedNotification } =
-        await import("@/lib/notifications");
-      const { sendAccessDeniedEmail } = await import("@/lib/email");
+        await import("@/lib/system/notifications");
+      const { sendAccessDeniedEmail } = await import("@/lib/infra/email");
       const projectName =
         (fullRequest.projects as unknown as { name: string })?.name ||
         "Unknown Project";
@@ -665,7 +669,7 @@ export async function removeMember(projectId: string, memberUserId: string) {
   if (!user) return { error: "Not authenticated" };
 
   // Verify Owner
-  const { getProjectRole } = await import("@/lib/permissions");
+  const { getProjectRole } = await import("@/lib/auth/permissions");
   const role = await getProjectRole(supabase, projectId, user.id);
 
   if (role !== "owner") return { error: "Unauthorized" };
@@ -760,8 +764,8 @@ export async function removeMember(projectId: string, memberUserId: string) {
 
   try {
     const { createMemberRemovedNotification } =
-      await import("@/lib/notifications");
-    const { sendAccessRevokedEmail } = await import("@/lib/email");
+      await import("@/lib/system/notifications");
+    const { sendAccessRevokedEmail } = await import("@/lib/infra/email");
 
     await createMemberRemovedNotification(memberUserId, projectName, removedBy);
     if (removedUser?.user?.email) {
@@ -794,7 +798,7 @@ export async function updateMemberRole(
   if (!user) return { error: "Not authenticated" };
 
   // Verify Owner
-  const { getProjectRole } = await import("@/lib/permissions");
+  const { getProjectRole } = await import("@/lib/auth/permissions");
   const role = await getProjectRole(supabase, projectId, user.id);
 
   if (role !== "owner") return { error: "Unauthorized" };
@@ -943,8 +947,8 @@ export async function updateMemberRole(
 
   try {
     const { createRoleChangedNotification } =
-      await import("@/lib/notifications");
-    const { sendAccessUpdatedEmail } = await import("@/lib/email");
+      await import("@/lib/system/notifications");
+    const { sendAccessUpdatedEmail } = await import("@/lib/infra/email");
     const projectName = projectData?.name || "Project";
     const projectSlug = projectData?.slug || projectId;
     const changedBy =
@@ -995,7 +999,7 @@ export async function inviteUser(projectId: string, email: string) {
   if (!user) return { error: "Not authenticated" };
 
   // Verify Owner or Editor
-  const { getProjectRole } = await import("@/lib/permissions");
+  const { getProjectRole } = await import("@/lib/auth/permissions");
   const role = await getProjectRole(supabase, projectId, user.id);
 
   if (role !== "owner" && role !== "editor") return { error: "Unauthorized" };
@@ -1035,7 +1039,7 @@ export async function inviteUser(projectId: string, email: string) {
   }
 
   // Send Email
-  const { sendInviteEmail } = await import("@/lib/email");
+  const { sendInviteEmail } = await import("@/lib/infra/email");
   await sendInviteEmail(email, project.name, projectId);
 
   await logAuditEvent({

@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { verifyAuthenticationResponse } from "@simplewebauthn/server";
 import type { AuthenticationResponseJSON } from "@simplewebauthn/server";
-import { getRpId, getExpectedOrigin } from "@/lib/webauthn";
+import { getRpId, getExpectedOrigin } from "@/lib/auth/webauthn";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getRedisClient } from "@/lib/redis";
+import { getRedisClient } from "@/lib/infra/redis";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(req: Request) {

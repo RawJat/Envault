@@ -14,7 +14,7 @@ import {
   CornerDownLeft,
 } from "lucide-react";
 import { Notification } from "@/lib/types/notifications";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/utils";
 import { isToday, isYesterday, isThisWeek } from "date-fns";
 import { DateDisplay } from "@/components/ui/date-display";
 import { useRouter } from "next/navigation";

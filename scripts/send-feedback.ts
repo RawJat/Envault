@@ -1,6 +1,6 @@
 import * as dotenv from "dotenv";
 import { Resend } from "resend";
-import { getEmailHtml } from "../src/lib/email-html";
+import { getEmailHtml } from "../src/lib/infra/email-html";
 
 // load env
 dotenv.config({ path: ".env.local" });
@@ -56,11 +56,11 @@ async function main() {
   const result = await resend.emails.send({
     from: SENDERS.default,
     to: recipientEmail,
-    replyTo: 'dashdinanath056@gmail.com',
+    replyTo: "dashdinanath056@gmail.com",
     subject: "We'd love your feedback",
     html,
   });
-  console.log('send result', result);
+  console.log("send result", result);
 }
 
 main().catch(console.error);

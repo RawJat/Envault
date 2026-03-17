@@ -1,5 +1,5 @@
-import { Navbar } from "@/components/landing/Navbar";
-import { Footer } from "@/components/landing/Footer";
+import { Navbar } from "@/components/landing/ui/Navbar";
+import { Footer } from "@/components/landing/sections/Footer";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function MarketingLayout({

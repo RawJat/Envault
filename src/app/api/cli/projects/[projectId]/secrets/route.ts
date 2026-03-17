@@ -1,16 +1,16 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { validateCliToken } from "@/lib/cli-auth";
-import { decrypt, encrypt } from "@/lib/encryption";
+import { validateCliToken } from "@/lib/auth/cli-auth";
+import { decrypt, encrypt } from "@/lib/utils/encryption";
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { v4 as uuidv4 } from "uuid";
-import { PushSecretsSchema } from "@/lib/schemas";
-import { getProjectRole } from "@/lib/permissions";
-import { resolveProjectEnvironment } from "@/lib/cli-environments";
-import { isGitHubCollaborator, getGitHubUsername } from "@/lib/github";
-import { cacheSet, CacheKeys, CACHE_TTL } from "@/lib/cache";
-import { humanApiLimit, machineApiLimit } from "@/lib/ratelimit";
-import { logAuditEvent } from "@/lib/audit-logger";
+import { PushSecretsSchema } from "@/lib/types/schemas";
+import { getProjectRole } from "@/lib/auth/permissions";
+import { resolveProjectEnvironment } from "@/lib/utils/cli-environments";
+import { isGitHubCollaborator, getGitHubUsername } from "@/lib/auth/github";
+import { cacheSet, CacheKeys, CACHE_TTL } from "@/lib/infra/cache";
+import { humanApiLimit, machineApiLimit } from "@/lib/infra/ratelimit";
+import { logAuditEvent } from "@/lib/system/audit-logger";
 import { headers } from "next/headers";
 
 export async function GET(
@@ -279,7 +279,8 @@ export async function GET(
 
   // [READ-REPAIR] Trigger rotation for outdated secrets
   // We use the same logic as the UI.
-  const { getActiveKeyId, reEncryptSecret } = await import("@/lib/encryption");
+  const { getActiveKeyId, reEncryptSecret } =
+    await import("@/lib/utils/encryption");
 
   // Fire-and-forget background process
   const performRotation = async () => {
@@ -356,9 +357,8 @@ export async function GET(
     if (pData) notifUserId = pData.user_id;
   }
 
-  const { createSecretsPulledNotification } = await import(
-    "@/lib/notifications"
-  );
+  const { createSecretsPulledNotification } =
+    await import("@/lib/system/notifications");
   createSecretsPulledNotification(
     notifUserId,
     projectName,
@@ -371,11 +371,10 @@ export async function GET(
   // CLI email if user has it toggled ON
   try {
     if (notifUserId) {
-      const { data: userData } = await supabase.auth.admin.getUserById(
-        notifUserId,
-      );
+      const { data: userData } =
+        await supabase.auth.admin.getUserById(notifUserId);
       if (userData?.user?.email) {
-        const { sendCliActivityEmail } = await import("@/lib/email");
+        const { sendCliActivityEmail } = await import("@/lib/infra/email");
         sendCliActivityEmail(
           userData.user.email,
           projectName,
@@ -514,14 +513,20 @@ export async function POST(
         .eq("user_id", userId)
         .single();
 
-      if (member && member.allowed_environments && !member.allowed_environments.includes(resolvedEnvironment.environment.slug)) {
+      if (
+        member &&
+        member.allowed_environments &&
+        !member.allowed_environments.includes(
+          resolvedEnvironment.environment.slug,
+        )
+      ) {
         return NextResponse.json(
           {
             error: "ENVIRONMENT_ACCESS_DENIED",
             message: "You do not have access to this environment",
             environment: resolvedEnvironment.environment.slug,
           },
-          { status: 403 }
+          { status: 403 },
         );
       }
     }
@@ -579,9 +584,8 @@ export async function POST(
     const projectName = projectData?.name || "Project";
     const projectSlug = projectData?.slug || projectId;
 
-    const { createSecretsPushedNotification } = await import(
-      "@/lib/notifications"
-    );
+    const { createSecretsPushedNotification } =
+      await import("@/lib/system/notifications");
     createSecretsPushedNotification(
       userId,
       projectName,
@@ -594,11 +598,10 @@ export async function POST(
     // CLI email if user has it toggled ON
     try {
       if (userId) {
-        const { data: userData } = await supabase.auth.admin.getUserById(
-          userId,
-        );
+        const { data: userData } =
+          await supabase.auth.admin.getUserById(userId);
         if (userData?.user?.email) {
-          const { sendCliActivityEmail } = await import("@/lib/email");
+          const { sendCliActivityEmail } = await import("@/lib/infra/email");
           sendCliActivityEmail(
             userData.user.email,
             projectName,
@@ -616,7 +619,7 @@ export async function POST(
     }
 
     // Invalidate user's project list cache (update secret counts)
-    const { cacheDel, CacheKeys } = await import("@/lib/cache");
+    const { cacheDel, CacheKeys } = await import("@/lib/infra/cache");
     await cacheDel(CacheKeys.userProjects(userId));
     revalidatePath("/dashboard");
     revalidatePath(`/project/${projectId}`);
@@ -626,8 +629,12 @@ export async function POST(
   const actorType = result.type === "service" ? "machine" : "user";
 
   if (upsertData.length > 0) {
-    const existingIds = new Set((existingSecrets || []).map((secret) => secret.id));
-    const createdCount = upsertData.filter((item) => !existingIds.has(item.id)).length;
+    const existingIds = new Set(
+      (existingSecrets || []).map((secret) => secret.id),
+    );
+    const createdCount = upsertData.filter(
+      (item) => !existingIds.has(item.id),
+    ).length;
     const updatedCount = upsertData.length - createdCount;
 
     if (createdCount > 0) {

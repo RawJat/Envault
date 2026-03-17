@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect, notFound } from "next/navigation";
 import ProjectDetailView from "@/components/editor/project-detail-view";
-import { getProjectEnvironments } from "@/lib/cli-environments";
+import { getProjectEnvironments } from "@/lib/utils/cli-environments";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
@@ -82,7 +82,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps) {
   }
 
   // Verify user has access to this project
-  const { getProjectRole } = await import("@/lib/permissions");
+  const { getProjectRole } = await import("@/lib/auth/permissions");
   const role = await getProjectRole(supabase, id, user.id);
 
   if (!role) {
@@ -264,7 +264,7 @@ export default async function ProjectPage({ params, searchParams }: PageProps) {
   const allSecrets = Array.from(secretsMap.values());
 
   // Transform to match local store format and decrypt values
-  const { decrypt } = await import("@/lib/encryption");
+  const { decrypt } = await import("@/lib/utils/encryption");
 
   // Helper function to check if a value looks like encrypted data (base64)
   const isEncrypted = (value: string): boolean => {
@@ -423,7 +423,8 @@ export default async function ProjectPage({ params, searchParams }: PageProps) {
   };
 
   // [READ-REPAIR] Post-Process: Trigger rotation for outdated secrets
-  const { getActiveKeyId, reEncryptSecret } = await import("@/lib/encryption");
+  const { getActiveKeyId, reEncryptSecret } =
+    await import("@/lib/utils/encryption");
 
   // We fetch the active key ID once
   let activeKeyId = "";

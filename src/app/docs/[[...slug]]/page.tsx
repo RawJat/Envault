@@ -1,4 +1,4 @@
-import { loadedSource } from "@/lib/source";
+import { loadedSource } from "@/lib/utils/source";
 import {
   DocsPage,
   DocsBody,
