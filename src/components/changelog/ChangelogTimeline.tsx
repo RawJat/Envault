@@ -441,7 +441,7 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      {/* Mobile version nav — BEFORE pt-24 so it's at y≈0 and immediately sticky at top-16 (flush under navbar) */}
+      {/* Mobile version nav - BEFORE pt-24 so it's at y≈0 and immediately sticky at top-16 (flush under navbar) */}
       <div className="lg:hidden sticky top-16 z-40 bg-background/95 backdrop-blur border-t border-b border-border/50 relative">
         <MobileVersionNav
           entries={entries}
@@ -455,7 +455,10 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
         <RegMark position="top-right" />
 
         {/* Breadcrumb */}
-        <FadeIn delay={0.1} className="container max-w-7xl px-4 md:px-6 py-4 border-b border-border/50">
+        <FadeIn
+          delay={0.1}
+          className="container max-w-7xl px-4 md:px-6 py-4 border-b border-border/50"
+        >
           <div className="flex items-center gap-2 text-sm font-mono text-muted-foreground">
             <Link href="/" className="hover:text-foreground transition-colors">
               Home
@@ -472,7 +475,7 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
 
             {/* Left column */}
             <SlideUp delay={0.2} yOffset={20}>
-              {/* Title block — matches LegalLayout */}
+              {/* Title block - matches LegalLayout */}
               <div className="mb-6 pb-6 md:mb-8 md:pb-8 border-b border-border/50">
                 <h1 className="text-4xl md:text-5xl font-serif font-bold tracking-tight mb-4">
                   Changelog
@@ -485,7 +488,7 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
 
               {/* Timeline */}
               <div ref={containerRef} className="relative">
-                {/* Circuit SVG — desktop only */}
+                {/* Circuit SVG - desktop only */}
                 <svg
                   className="hidden md:block absolute top-0 pointer-events-none select-none overflow-visible"
                   style={{ left: "7rem" }}

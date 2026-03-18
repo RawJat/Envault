@@ -22,7 +22,11 @@ export type AuditLogAction =
   | "transfer.accepted"
   | "transfer.rejected"
   | "environment.access_granted"
-  | "environment.access_revoked";
+  | "environment.access_revoked"
+  | "github.account_connected"
+  | "github.account_disconnected"
+  | "github.repo_linked"
+  | "github.repo_unlinked";
 
 export interface AuditLogPayload {
   projectId: string;

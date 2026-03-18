@@ -18,6 +18,7 @@ import {
   ChevronDown,
   ChevronRight,
   Eye,
+  Github,
   KeyRound,
   RefreshCw,
   ShieldCheck,
@@ -75,6 +76,11 @@ interface AuditLogMetadata {
   beneficiary_user_id?: string;
   beneficiary_name?: string;
   beneficiary_email?: string;
+  repo_full_name?: string;
+  reason?: string;
+  installation_id?: number;
+  account_login?: string;
+  account_type?: string;
 }
 
 interface AuditLog {
@@ -120,6 +126,13 @@ const ACTION_OPTIONS = [
   { value: "environment.access_updated", label: "Environment Access Updated" },
   { value: "environment.access_granted", label: "Environment Access Granted" },
   { value: "environment.access_revoked", label: "Environment Access Revoked" },
+  { value: "github.account_connected", label: "GitHub Account Connected" },
+  {
+    value: "github.account_disconnected",
+    label: "GitHub Account Disconnected",
+  },
+  { value: "github.repo_linked", label: "GitHub Repo Linked" },
+  { value: "github.repo_unlinked", label: "GitHub Repo Unlinked" },
 ];
 
 function formatDiffValue(value: unknown): string {
@@ -302,6 +315,7 @@ function getActionIcon(action: string) {
     return <ShieldCheck className="h-3.5 w-3.5" />;
   if (action === "environment.access_revoked")
     return <ShieldOff className="h-3.5 w-3.5" />;
+  if (action.startsWith("github.")) return <Github className="h-3.5 w-3.5" />;
   return <AlertCircle className="h-3.5 w-3.5" />;
 }
 
@@ -399,6 +413,15 @@ function getActionBadgeClass(action: string): string {
     return "border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
   }
   if (action === "transfer.rejected") {
+    return "border-rose-500/25 bg-rose-500/10 text-rose-700 dark:text-rose-300";
+  }
+  if (action === "github.account_connected" || action === "github.repo_linked") {
+    return "border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
+  }
+  if (
+    action === "github.account_disconnected" ||
+    action === "github.repo_unlinked"
+  ) {
     return "border-rose-500/25 bg-rose-500/10 text-rose-700 dark:text-rose-300";
   }
 
@@ -597,6 +620,38 @@ function getNonDiffContextSummary(
 
   if (action === "member.invited") {
     return "Member invited";
+  }
+
+  if (action === "github.repo_linked") {
+    if (metadata?.repo_full_name) {
+      return `Linked repository ${metadata.repo_full_name}`;
+    }
+    return "Repository linked";
+  }
+
+  if (action === "github.repo_unlinked") {
+    const repo = metadata?.repo_full_name
+      ? `Unlinked repository ${metadata.repo_full_name}`
+      : "Repository unlinked";
+    const reason =
+      metadata?.reason === "manual"
+        ? "manual unlink"
+        : metadata?.reason === "github_app_uninstalled"
+          ? "GitHub App uninstalled"
+          : "";
+    return reason ? `${repo} (${reason})` : repo;
+  }
+
+  if (action === "github.account_connected") {
+    const account = firstNonEmpty(metadata?.account_login);
+    if (account) return `Connected GitHub account @${account}`;
+    return "GitHub account connected";
+  }
+
+  if (action === "github.account_disconnected") {
+    const account = firstNonEmpty(metadata?.account_login);
+    if (account) return `Disconnected GitHub account @${account}`;
+    return "GitHub account disconnected";
   }
 
   return null;
@@ -887,7 +942,7 @@ export function AuditLogsView({ projectId }: AuditLogsViewProps) {
                   log.metadata,
                   keyName,
                 ) ||
-                (changeEntries.length === 0
+                (changeEntries.length > 0
                   ? getDetailSummary(changeEntries, keyName)
                   : null);
               const shouldShowAffectedUser =
@@ -1050,7 +1105,7 @@ export function AuditLogsView({ projectId }: AuditLogsViewProps) {
           const actionText = getActionLabel(effectiveAction);
           const detailsSummary =
             getNonDiffContextSummary(effectiveAction, log.metadata, keyName) ||
-            (changeEntries.length === 0
+            (changeEntries.length > 0
               ? getDetailSummary(changeEntries, keyName)
               : null);
           const shouldShowAffectedUser =

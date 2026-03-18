@@ -97,7 +97,7 @@ export async function GET(
     // Check if user has full project access (owner or member)
     const { data: project } = await supabase
       .from("projects")
-      .select("user_id, github_installation_id, github_repo_full_name")
+      .select("user_id, github_repo_full_name")
       .eq("id", projectId)
       .single();
 
@@ -171,8 +171,19 @@ export async function GET(
         // ── JIT GitHub Collaborator Check ──────────────────────────────────
         // If the project is linked to a GitHub repo, check if the requesting
         // user is a collaborator before falling back to a manual request.
-        const installationId = project?.github_installation_id;
         const repoFullName = project?.github_repo_full_name;
+
+        // Resolve the installation_id from github_installations (owned by project owner)
+        let installationId: number | null = null;
+        if (repoFullName && project?.user_id) {
+          const { data: installRow } = await supabase
+            .from("github_installations")
+            .select("installation_id")
+            .eq("user_id", project.user_id)
+            .limit(1)
+            .single();
+          installationId = installRow?.installation_id ?? null;
+        }
 
         if (installationId && repoFullName) {
           const githubUsername = await getGitHubUsername(supabase, userId);

@@ -24,6 +24,18 @@ These environment variables are required to run the Envault server (Next.js app)
 | `RESEND_API_KEY` | Resend API key for sending application emails. | `re_123456789...`        |
 | `LOG_LEVEL`      | Logging verbosity.                             | `info`                   |
 
+### GitHub Integration Variables (Optional)
+
+If you enable GitHub integration, add the following:
+
+| Variable | Description | Example |
+| :--- | :--- | :--- |
+| `NEXT_PUBLIC_GITHUB_APP_NAME` | GitHub App slug name | `envault` |
+| `ENVAULT_GITHUB_APP_CLIENT_ID` | GitHub App client ID | `Iv1.xxxxx` |
+| `ENVAULT_GITHUB_APP_CLIENT_SECRET` | GitHub App client secret | `xxxxxx` |
+| `ENVAULT_GITHUB_APP_PRIVATE_KEY` | GitHub App private key (single-line, `\n` escaped) | `"-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"` |
+| `ENVAULT_GITHUB_WEBHOOK_SECRET` | Secret to verify GitHub webhook signatures | `whsec_xxxxx` |
+
 ## Generating Keys
 
 To generate a secure `ENCRYPTION_KEY`, use:

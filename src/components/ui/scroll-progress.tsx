@@ -31,7 +31,8 @@ export function ScrollProgress({
     return () => window.removeEventListener("scroll", handleScroll);
   }, [externalProgress]);
 
-  const progress = externalProgress !== undefined ? externalProgress : windowProgress;
+  const progress =
+    externalProgress !== undefined ? externalProgress : windowProgress;
   const radius = (size - strokeWidth * 2) / 2;
   const circumference = 2 * Math.PI * radius;
   const cx = size / 2;
@@ -58,7 +59,7 @@ export function ScrollProgress({
         strokeWidth={strokeWidth}
         opacity={0.5}
       />
-      {/* Progress — starts at 12 o’clock via rotate(-90) */}
+      {/* Progress - starts at 12 o’clock via rotate(-90) */}
       <g transform={`rotate(-90, ${cx}, ${cy})`}>
         <motion.circle
           cx={cx}
@@ -71,7 +72,12 @@ export function ScrollProgress({
           strokeDasharray={circumference}
           initial={{ strokeDashoffset: circumference * (1 - progress) }}
           animate={{ strokeDashoffset: circumference * (1 - progress) }}
-          transition={{ type: "spring", stiffness: 120, damping: 30, mass: 0.5 }}
+          transition={{
+            type: "spring",
+            stiffness: 120,
+            damping: 30,
+            mass: 0.5,
+          }}
         />
       </g>
     </svg>
