@@ -7,10 +7,18 @@ import { verifyHmacSignature } from "@/lib/utils/hmac";
 import { shouldShowBanner } from "@/lib/system/banner-routes";
 
 export async function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  const { pathname, searchParams } = request.nextUrl;
   const method = request.method.toUpperCase();
   const authHeader = request.headers.get("authorization") || "";
   const hasBearerAuth = authHeader.startsWith("Bearer ");
+
+  // OAuth fallback: if provider lands on "/" with code, route through our
+  // dedicated callback handler so session exchange always completes.
+  if (pathname === "/" && searchParams.get("code")) {
+    const callbackUrl = request.nextUrl.clone();
+    callbackUrl.pathname = "/auth/callback";
+    return NextResponse.redirect(callbackUrl);
+  }
 
   const matchesRoute = (path: string, route: string) => {
     if (route === "/") return path === "/";

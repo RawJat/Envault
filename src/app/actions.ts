@@ -9,10 +9,30 @@ import { headers } from "next/headers";
 import { authRateLimit } from "@/lib/infra/ratelimit";
 import { logAuditEvent } from "@/lib/system/audit-logger";
 
+function resolveAuthBaseUrl(headersList: Headers): string {
+  const envUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (envUrl) return envUrl.replace(/\/+$/, "");
+
+  const origin = headersList.get("origin")?.trim();
+  if (origin) return origin.replace(/\/+$/, "");
+
+  const forwardedHost = headersList.get("x-forwarded-host")?.trim();
+  if (forwardedHost) {
+    const proto = headersList.get("x-forwarded-proto")?.trim() || "https";
+    return `${proto}://${forwardedHost}`;
+  }
+
+  const host = headersList.get("host")?.trim();
+  if (host) return `https://${host}`;
+
+  // Final fallback to avoid malformed redirectTo like "null/auth/callback".
+  return "https://envault.localhost:1355";
+}
+
 export async function signInWithGoogle(formData?: FormData) {
   const supabase = await createClient();
   const headersList = await headers();
-  const origin = process.env.NEXT_PUBLIC_APP_URL || headersList.get("origin");
+  const origin = resolveAuthBaseUrl(headersList);
   const next = (formData?.get("next") as string) || "/dashboard";
 
   // Rate Limiting
@@ -45,7 +65,7 @@ export async function signInWithGoogle(formData?: FormData) {
 export async function signInWithGithub(formData?: FormData) {
   const supabase = await createClient();
   const headersList = await headers();
-  const origin = process.env.NEXT_PUBLIC_APP_URL || headersList.get("origin");
+  const origin = resolveAuthBaseUrl(headersList);
   const next = (formData?.get("next") as string) || "/dashboard";
 
   // Rate Limiting
@@ -110,7 +130,7 @@ export async function signUp(formData: FormData) {
   const password = formData.get("password") as string;
   const supabase = await createClient();
   const headersList = await headers();
-  const origin = process.env.NEXT_PUBLIC_APP_URL || headersList.get("origin");
+  const origin = resolveAuthBaseUrl(headersList);
 
   // Rate Limiting
   const ip = headersList.get("x-forwarded-for") || "unknown";
