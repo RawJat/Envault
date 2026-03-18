@@ -45,10 +45,16 @@ For more details, check out the [CLI Documentation](./cli-go/README.md).
 
 ### Local Testing
 
-To use the Envault CLI with a local development server, set the `ENVAULT_CLI_URL` environment variable:
+Envault local development now uses `portless` with HTTPS hostnames.
 
 ```bash
-export ENVAULT_CLI_URL="http://localhost:3000/api/cli"
+npm install -g portless
+```
+
+To use the Envault CLI with the local development server, set the `ENVAULT_CLI_URL` environment variable:
+
+```bash
+export ENVAULT_CLI_URL="https://envault.localhost/api/cli"
 envault login
 ```
 
@@ -140,7 +146,7 @@ Follow these steps to get the project running locally.
     npm run dev
     ```
 
-    Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+    Open [https://envault.localhost](https://envault.localhost) with your browser to see the result.
 
 5.  **Test Email Configuration (Optional)**
 

@@ -153,11 +153,11 @@ The Envault CLI uses the following environment variables for configuration:
 To test against a local instance of Envault:
 
 ```bash
-export ENVAULT_CLI_URL="http://localhost:3000/api/cli"
+export ENVAULT_CLI_URL="https://envault.localhost:1355/api/cli"
 envault login
 ```
 
 <Callout type="warn">
-  Insecure (HTTP) connections are only permitted when the hostname is
-  `localhost` or `127.0.0.1`.
+  Insecure `http://` URLs are blocked by default. Use an HTTPS base URL for
+  `ENVAULT_CLI_URL`.
 </Callout>

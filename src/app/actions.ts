@@ -11,11 +11,12 @@ import { logAuditEvent } from "@/lib/system/audit-logger";
 
 export async function signInWithGoogle(formData?: FormData) {
   const supabase = await createClient();
-  const origin = (await headers()).get("origin");
+  const headersList = await headers();
+  const origin = process.env.NEXT_PUBLIC_APP_URL || headersList.get("origin");
   const next = (formData?.get("next") as string) || "/dashboard";
 
   // Rate Limiting
-  const ip = (await headers()).get("x-forwarded-for") || "unknown";
+  const ip = headersList.get("x-forwarded-for") || "unknown";
   const { success: rateLimitSuccess } = await authRateLimit.limit(ip);
   if (!rateLimitSuccess) {
     return { error: "Too many requests. Please try again later." };
@@ -43,11 +44,12 @@ export async function signInWithGoogle(formData?: FormData) {
 
 export async function signInWithGithub(formData?: FormData) {
   const supabase = await createClient();
-  const origin = (await headers()).get("origin");
+  const headersList = await headers();
+  const origin = process.env.NEXT_PUBLIC_APP_URL || headersList.get("origin");
   const next = (formData?.get("next") as string) || "/dashboard";
 
   // Rate Limiting
-  const ip = (await headers()).get("x-forwarded-for") || "unknown";
+  const ip = headersList.get("x-forwarded-for") || "unknown";
   const { success: rateLimitSuccess } = await authRateLimit.limit(ip);
   if (!rateLimitSuccess) {
     return { error: "Too many requests. Please try again later." };
@@ -107,10 +109,11 @@ export async function signUp(formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
   const supabase = await createClient();
-  const origin = (await headers()).get("origin");
+  const headersList = await headers();
+  const origin = process.env.NEXT_PUBLIC_APP_URL || headersList.get("origin");
 
   // Rate Limiting
-  const ip = (await headers()).get("x-forwarded-for") || "unknown";
+  const ip = headersList.get("x-forwarded-for") || "unknown";
   const { success: rateLimitSuccess } = await authRateLimit.limit(ip);
   if (!rateLimitSuccess) {
     return { error: "Too many requests. Please try again later." };

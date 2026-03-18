@@ -86,7 +86,7 @@ func TestRunCmd_NoConfigLeakOnStdout(t *testing.T) {
 	srv := httptest.NewTLSServer(nil) // just as anchor; we override URL
 	srv.Close()
 
-	// Stand up a plain HTTP server (the CLI allows http for localhost).
+	// Stand up a plain HTTP server for subprocess tests (explicitly allowed via ENVAULT_ALLOW_INSECURE_HTTP).
 	mockSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.Contains(r.URL.Path, "/secrets") {
 			w.Header().Set("Content-Type", "application/json")
@@ -107,6 +107,7 @@ func TestRunCmd_NoConfigLeakOnStdout(t *testing.T) {
 	cmd.Env = append(os.Environ(),
 		"ENVAULT_CLI_URL="+mockSrv.URL+"/api/cli",
 		"ENVAULT_TOKEN=test-token",
+		"ENVAULT_ALLOW_INSECURE_HTTP=1",
 	)
 
 	var outBuf, errBuf bytes.Buffer
@@ -166,6 +167,7 @@ func TestErrorsRouteToStderr_RunFailed(t *testing.T) {
 	cmd.Env = append(os.Environ(),
 		"ENVAULT_CLI_URL="+mockSrv.URL+"/api/cli",
 		"ENVAULT_TOKEN=test-token",
+		"ENVAULT_ALLOW_INSECURE_HTTP=1",
 	)
 
 	var outBuf, errBuf bytes.Buffer
@@ -204,6 +206,7 @@ func TestPullCmd_NoLeftoverTempFile(t *testing.T) {
 	cmd.Env = append(os.Environ(),
 		"ENVAULT_CLI_URL="+mockSrv.URL+"/api/cli",
 		"ENVAULT_TOKEN=test-token",
+		"ENVAULT_ALLOW_INSECURE_HTTP=1",
 	)
 	var errBuf bytes.Buffer
 	cmd.Stderr = &errBuf
@@ -238,6 +241,7 @@ func TestPullCmd_SecretWrittenToEnvFile(t *testing.T) {
 	cmd.Env = append(os.Environ(),
 		"ENVAULT_CLI_URL="+mockSrv.URL+"/api/cli",
 		"ENVAULT_TOKEN=test-token",
+		"ENVAULT_ALLOW_INSECURE_HTTP=1",
 	)
 	_ = cmd.Run()
 
@@ -275,6 +279,7 @@ func TestPullCmd_SIGINTExitsWithCode130(t *testing.T) {
 	cmd.Env = append(os.Environ(),
 		"ENVAULT_CLI_URL="+slowSrv.URL+"/api/cli",
 		"ENVAULT_TOKEN=test-token",
+		"ENVAULT_ALLOW_INSECURE_HTTP=1",
 	)
 	var outBuf, errBuf bytes.Buffer
 	cmd.Stdout = &outBuf
@@ -341,6 +346,7 @@ func TestDeployCmd_SIGINTExitsWithCode130(t *testing.T) {
 	cmd.Env = append(os.Environ(),
 		"ENVAULT_CLI_URL="+slowSrv.URL+"/api/cli",
 		"ENVAULT_TOKEN=test-token",
+		"ENVAULT_ALLOW_INSECURE_HTTP=1",
 	)
 	var outBuf, errBuf bytes.Buffer
 	cmd.Stdout = &outBuf
@@ -401,6 +407,7 @@ func TestRunCmd_PropagatesChildExitCode(t *testing.T) {
 	cmd.Env = append(os.Environ(),
 		"ENVAULT_CLI_URL="+mockSrv.URL+"/api/cli",
 		"ENVAULT_TOKEN=test-token",
+		"ENVAULT_ALLOW_INSECURE_HTTP=1",
 	)
 
 	err := cmd.Run()
@@ -434,6 +441,7 @@ func TestRunCmd_StdoutIsPureChildOutput(t *testing.T) {
 	cmd.Env = append(os.Environ(),
 		"ENVAULT_CLI_URL="+mockSrv.URL+"/api/cli",
 		"ENVAULT_TOKEN=test-token",
+		"ENVAULT_ALLOW_INSECURE_HTTP=1",
 	)
 
 	var outBuf, errBuf bytes.Buffer

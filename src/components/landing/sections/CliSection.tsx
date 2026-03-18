@@ -9,11 +9,23 @@ import { SlideUp } from "@/components/landing/animations/SlideUp";
 export async function CliSection() {
   let version: string | null = null;
   try {
-    // Construct the full URL for the API endpoint since Server Components require absolute URLs
+    // In dev with portless, Node SSR cannot always resolve *.localhost hostnames.
+    // Use the internal Next dev server port directly when available.
     const headersList = await headers();
-    const host = headersList.get("host") || "localhost:3000";
-    const protocol = host.includes("localhost") ? "http" : "https";
-    const baseUrl = `${protocol}://${host}`;
+    const internalDevPort =
+      process.env.NODE_ENV === "development" ? process.env.PORT : undefined;
+
+    const host =
+      headersList.get("x-forwarded-host") ||
+      headersList.get("host") ||
+      "envault.tech";
+    const protocol =
+      headersList.get("x-forwarded-proto") ||
+      (host.includes("localhost") ? "http" : "https");
+
+    const baseUrl = internalDevPort
+      ? `http://127.0.0.1:${internalDevPort}`
+      : `${protocol}://${host}`;
 
     const res = await fetch(`${baseUrl}/api/cli-version`, {
       next: { revalidate: 3600 },
