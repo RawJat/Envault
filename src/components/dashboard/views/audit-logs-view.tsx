@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useState, useCallback, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
+import { createClient } from "@/lib/supabase/client";
 import { AuditLogsSkeleton } from "@/components/dashboard/audit-logs-skeleton";
 import {
   Table,
@@ -679,6 +680,68 @@ export function AuditLogsView({ projectId }: AuditLogsViewProps) {
   useEffect(() => {
     fetchLogs();
   }, [fetchLogs]);
+
+  // Hybrid Realtime Sync for Audit Logs
+  useEffect(() => {
+    const supabase = createClient();
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let debounceTimer: NodeJS.Timeout;
+    let isStale = false;
+
+    const handleRealtimeEvent = () => {
+      if (document.hasFocus()) {
+        fetchLogs();
+      } else {
+        isStale = true;
+      }
+    };
+
+    const connectRealtime = () => {
+      if (channel) return;
+      channel = supabase
+        .channel(`project-${projectId}-audit-sync`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "audit_logs",
+            filter: `project_id=eq.${projectId}`,
+          },
+          handleRealtimeEvent,
+        )
+        .subscribe((status, err) => {
+          if (err) console.error("Realtime subscription error:", err);
+        });
+    };
+
+    const disconnectRealtime = () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+        channel = null;
+      }
+    };
+
+    const handleFocus = () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        if (isStale) {
+          fetchLogs();
+          isStale = false;
+        }
+      }, 300);
+    };
+
+    connectRealtime();
+
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      clearTimeout(debounceTimer);
+      window.removeEventListener("focus", handleFocus);
+      disconnectRealtime();
+    };
+  }, [projectId, fetchLogs]);
 
   const toggleRow = (logId: string) => {
     setExpandedRows((prev) => {
