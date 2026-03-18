@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "PORTLESS_HTTPS=1 portless run --name envault next dev --turbo",
+    "dev": "node scripts/dev.mjs",
     "generate:llms": "tsx scripts/generate-llms-full.ts",
     "build": "npm run generate:llms && next build",
     "start": "next start",
@@ -85,6 +85,7 @@
     "eslint": "^9.39.3",
     "eslint-config-next": "^16.1.6",
     "playwright": "^1.58.2",
+    "portless": "^0.7.1",
     "tsx": "^4.21.0",
     "typescript": "^5"
   }
