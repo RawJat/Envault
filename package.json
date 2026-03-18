@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev --turbo",
+    "dev": "PORTLESS_HTTPS=1 portless run --name envault next dev --turbo",
     "generate:llms": "tsx scripts/generate-llms-full.ts",
     "build": "npm run generate:llms && next build",
     "start": "next start",

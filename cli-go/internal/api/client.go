@@ -45,12 +45,9 @@ func NewClient() *Client {
 		os.Exit(1)
 	}
 
-	hostname := u.Hostname()
-	isLocal := hostname == "localhost" || hostname == "127.0.0.1"
-
-	if !isLocal && u.Scheme != "https" {
-		fmt.Println("Error: Insecure connection (HTTP) is only allowed for localhost.")
-		fmt.Println("       Please use HTTPS for remote servers.")
+	if u.Scheme != "https" && os.Getenv("ENVAULT_ALLOW_INSECURE_HTTP") != "1" {
+		fmt.Println("Error: Insecure connection (HTTP) is not allowed.")
+		fmt.Println("       Please use an HTTPS URL for ENVAULT_CLI_URL.")
 		os.Exit(1)
 	}
 

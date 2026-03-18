@@ -117,7 +117,7 @@ export async function GET(
     const { projectId } = params;
 
     // Apply Rate Limiting
-    const ip = req.headers.get("x-forwarded-for") || "127.0.0.1";
+    const ip = req.headers.get("x-forwarded-for") || "unknown";
     const { success } = await auditReadRateLimit.limit(`audit_read_${ip}`);
 
     if (!success) {
