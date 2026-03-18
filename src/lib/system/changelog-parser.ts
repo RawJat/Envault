@@ -79,7 +79,7 @@ function normalizeCategory(value: string): string | null {
 }
 
 function detectCategory(heading: string, body: string): string {
-  // Optional explicit override in heading: "## 1.2.1 — 2026-03-10 [Security]"
+  // Optional explicit override in heading: "## 1.2.1 - 2026-03-10 [Security]"
   const explicitMatch = heading.match(/\[([a-z ]+)\]/i);
   if (explicitMatch) {
     const explicit = normalizeCategory(explicitMatch[1]);
@@ -126,7 +126,7 @@ export function parseChangelog(): ChangelogEntry[] {
   const changelogPath = path.join(process.cwd(), "CHANGELOG.md");
   const raw = fs.readFileSync(changelogPath, "utf-8");
 
-  // Split on ## headings — each is one release
+  // Split on ## headings - each is one release
   const sections = raw.split(/^## /m).filter(Boolean);
 
   const entries: ChangelogEntry[] = [];
@@ -135,7 +135,7 @@ export function parseChangelog(): ChangelogEntry[] {
     const lines = section.split("\n");
     const heading = lines[0].trim();
 
-    // Matches "1.3.0 — 2026-03-09" or "1.3.0" or "1.3.0 (2026-03-09)"
+    // Matches "1.3.0 - 2026-03-09" or "1.3.0" or "1.3.0 (2026-03-09)"
     const versionMatch = heading.match(/^(\d+\.\d+\.\d+)/);
     if (!versionMatch) continue;
 

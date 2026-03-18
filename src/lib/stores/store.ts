@@ -23,7 +23,6 @@ export type Project = {
   ui_mode?: "simple" | "advanced";
   default_environment_slug?: string;
   active_environment_slug?: string;
-  github_installation_id?: number | null;
   github_repo_full_name?: string | null;
   environments?: Array<{
     id: string;

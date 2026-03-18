@@ -8,7 +8,7 @@ import {
 export const metadata: Metadata = {
   title: "Changelog",
   description:
-    "Every notable release to Envault — new features, security patches, and CLI updates, documented in order.",
+    "Every notable release to Envault - new features, security patches, and CLI updates, documented in order.",
   alternates: {
     canonical: "/changelog",
   },

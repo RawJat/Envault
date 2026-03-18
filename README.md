@@ -146,7 +146,7 @@ Follow these steps to get the project running locally.
     npm run dev
     ```
 
-    Open [https://envault.localhost](https://envault.localhost) with your browser to see the result.
+    Open [https://envault.localhost:1355](https://envault.localhost:1355) with your browser to see the result.
 
 5.  **Test Email Configuration (Optional)**
 

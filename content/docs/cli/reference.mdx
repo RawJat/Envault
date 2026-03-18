@@ -94,6 +94,12 @@ envault deploy --env preview --file .env.preview
 
 See [Commands](/docs/cli/commands) for full details.
 
+<Callout type="info">
+  If a project has GitHub Integration enabled, `envault pull` can auto-grant
+  Viewer access for repository collaborators (Just-in-Time access) before
+  returning secrets.
+</Callout>
+
 ## Environment-Scoped Local Files
 
 When a command needs a local env file (`pull`, `diff`, `deploy`), Envault resolves file path in this order:

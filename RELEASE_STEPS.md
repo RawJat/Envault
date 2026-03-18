@@ -1,6 +1,7 @@
 # Envault Manual Release Guide
 
 This repo uses a hybrid release flow:
+
 - App release: manual
 - CLI release: automatic (GitHub Actions)
 
@@ -27,12 +28,15 @@ These are independent and should be bumped only when that surface changes.
 Use this when web/app features change.
 
 1. Update changelog manually in [`CHANGELOG.md`](./CHANGELOG.md):
-   - Move `Unreleased` items into a real version heading (example: `## 1.3.0 — 2026-03-10`).
+   - Move `Unreleased` items into a real version heading (example: `## 1.3.0 - 2026-03-10`).
 2. Bump app version in root:
+
 ```bash
 npm version <major|minor|patch> --no-git-tag-version
 ```
+
 3. Review and commit:
+
 ```bash
 git add CHANGELOG.md package.json package-lock.json
 git commit -m "chore(app-release): bump app version to X.Y.Z"

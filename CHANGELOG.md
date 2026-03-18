@@ -10,7 +10,7 @@ All notable changes to Envault are documented here.
 
 ---
 
-## 1.4.0 — 2026-03-17
+## 1.4.0 - 2026-03-17
 
 > Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
 
@@ -34,7 +34,7 @@ All notable changes to Envault are documented here.
 
 ---
 
-## 1.3.0 — 2026-03-14
+## 1.3.0 - 2026-03-14
 
 > Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
 
@@ -54,7 +54,7 @@ All notable changes to Envault are documented here.
 
 ---
 
-## 1.2.1 — 2026-03-10
+## 1.2.1 - 2026-03-10
 
 > Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
 
@@ -71,7 +71,7 @@ All notable changes to Envault are documented here.
 
 ---
 
-## 1.2.0 — 2026-03-09
+## 1.2.0 - 2026-03-09
 
 > Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
 
@@ -93,7 +93,7 @@ All notable changes to Envault are documented here.
 
 ---
 
-## 1.1.0 — 2026-03-03
+## 1.1.0 - 2026-03-03
 
 > Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
 
@@ -121,7 +121,7 @@ All notable changes to Envault are documented here.
 
 ---
 
-## 1.0.0 — 2026-02-28
+## 1.0.0 - 2026-02-28
 
 > Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
 
@@ -130,9 +130,9 @@ All notable changes to Envault are documented here.
 - **Non-Blocking CLI Updates:** CLI now checks for updates in the background without blocking command execution. Update notifications appear after the command completes.
 - **GitHub App Integration:** Implemented full GitHub App installation flow for linking repositories to Envault projects, enabling automated access management.
 - **CLI Auto-Refresh Sessions:** Implemented rolling session auto-refresh for the CLI with CI/CD service token guardrails, allowing Envault to be used in automated pipelines without re-authentication.
-- **CLI Workspace Mode:** Enhanced `envault init` with workspace-aware project creation — supports selecting a default environment during setup for streamlined multi-environment workflows.
+- **CLI Workspace Mode:** Enhanced `envault init` with workspace-aware project creation - supports selecting a default environment during setup for streamlined multi-environment workflows.
 - **CLI Environment Management:** Added dedicated CLI commands for managing project environments, enabling environment-scoped secret operations without opening the web UI.
-- **JIT Access:** Introduced a JIT access request workflow — users can request project access which owners approve or deny, with pending requests auto-cleaned on approval.
+- **JIT Access:** Introduced a JIT access request workflow - users can request project access which owners approve or deny, with pending requests auto-cleaned on approval.
 - **System Status Page:** Launched a dedicated `/status` page with real-time health indicators, incident timeline, and admin management view.
 - **Shared Data Validation Schemas:** Centralised Zod schemas for shared API validation across CLI and web application endpoints.
 - **Email Digest Cron Job:** Added a `/api/cron` endpoint for scheduled email digests, secured with Vercel cron authentication.
@@ -145,13 +145,13 @@ All notable changes to Envault are documented here.
 
 ---
 
-## 0.9.0 — 2026-02-22
+## 0.9.0 - 2026-02-22
 
 > Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
 
 ### Features
 
-- **WebAuthn / Passkeys:** Implemented full WebAuthn (FIDO2) passwordless authentication — users can register biometric or hardware passkeys and log in without a password.
+- **WebAuthn / Passkeys:** Implemented full WebAuthn (FIDO2) passwordless authentication - users can register biometric or hardware passkeys and log in without a password.
 - **HMAC Request Signing:** Introduced HMAC-SHA256 signing for sensitive API requests, with a client-side `HmacProvider` injecting signatures into request headers, enforced by a strict CSP.
 - **Slug-Based Project Routing:** Migrated project URLs from internal IDs to human-readable slugs (`/[handle]/[project-slug]`), matching GitHub-style semantic routing.
 - **User Profiles:** Introduced user profile records (handle, display name, avatar) created automatically on signup, powering the new URL scheme.
@@ -165,7 +165,7 @@ All notable changes to Envault are documented here.
 
 ---
 
-## 0.8.0 — 2026-02-12
+## 0.8.0 - 2026-02-12
 
 > Authors: Dinanath Dash (DinanathDash)
 
@@ -174,7 +174,7 @@ All notable changes to Envault are documented here.
 - **Status Page Incident Timeline:** Refactored the status page incident view into a dedicated `Timeline` component with visual severity indicators and chronological ordering.
 - **Comprehensive System Status:** Launched the foundational system status infrastructure with an admin view for creating and managing incidents.
 - **Page Transitions:** Implemented full-page enter/exit transition animations using Framer Motion, wired to the Next.js App Router's navigation events.
-- **Go CLI:** Published the Envault Go CLI (`cli-go`) — a high-performance binary for managing secrets from the terminal. Distributed via an npm wrapper (`@dinanathdash/envault`) and Homebrew.
+- **Go CLI:** Published the Envault Go CLI (`cli-go`) - a high-performance binary for managing secrets from the terminal. Distributed via an npm wrapper (`@dinanathdash/envault`) and Homebrew.
 - **CLI JIT Offline Cache:** CLI now caches project and secret metadata locally for resilience when the Envault API is temporarily unreachable.
 
 ### Security
@@ -183,7 +183,7 @@ All notable changes to Envault are documented here.
 
 ---
 
-## 0.7.0 — 2026-02-07
+## 0.7.0 - 2026-02-07
 
 > Authors: Dinanath Dash (DinanathDash)
 
@@ -193,11 +193,11 @@ All notable changes to Envault are documented here.
 - **Mermaid Diagram Support:** Added `mermaid` rendering support inside documentation pages for architecture and flow diagrams.
 - **`AnimatedWorkflow` Component:** Built an interactive animated workflow diagram for the landing page, visually communicating the Envault secret sync flow.
 - **Custom 404 Page:** Implemented a branded, animated Not Found page with navigation recovery options.
-- **Middleware — Auth & Routing:** Added global Next.js middleware for session-based authentication gating and static file exclusion rules.
+- **Middleware - Auth & Routing:** Added global Next.js middleware for session-based authentication gating and static file exclusion rules.
 
 ---
 
-## 0.6.0 — 2026-02-04
+## 0.6.0 - 2026-02-04
 
 > Authors: Dinanath Dash (DinanathDash)
 
@@ -212,7 +212,7 @@ All notable changes to Envault are documented here.
 
 ---
 
-## 0.5.0 — 2026-02-03
+## 0.5.0 - 2026-02-03
 
 > Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
 
@@ -231,20 +231,20 @@ All notable changes to Envault are documented here.
 
 ---
 
-## 0.4.0 — 2026-02-01
+## 0.4.0 - 2026-02-01
 
 > Authors: Dinanath Dash (DinanathDash)
 
 ### Features
 
-- **CLI Device Authentication:** Implemented the OAuth 2.0 Device Authorization flow for CLI login — users authenticate in the browser and the CLI polls for token confirmation.
+- **CLI Device Authentication:** Implemented the OAuth 2.0 Device Authorization flow for CLI login - users authenticate in the browser and the CLI polls for token confirmation.
 - **CLI API Routes:** Added dedicated Next.js API routes for CLI interactions: `/api/cli/projects`, `/api/cli/secrets`, `/api/cli/me`, and `/api/cli/environments`.
 - **Clipboard Support for Login:** CLI login now copies the device code to the clipboard automatically on supported platforms.
 - **`envault deploy` & `envault pull`:** Added CLI commands to push local `.env` files to a project environment and pull secrets to a local file.
 
 ---
 
-## 0.3.0 — 2026-01-25
+## 0.3.0 - 2026-01-25
 
 > Authors: Dinanath Dash (DinanathDash)
 
@@ -259,13 +259,13 @@ All notable changes to Envault are documented here.
 
 ---
 
-## 0.2.0 — 2026-01-06
+## 0.2.0 - 2026-01-06
 
 > Authors: Dinanath Dash (DinanathDash)
 
 ### Features
 
-- **Key Wrapping & Rotation:** Implemented a full hierarchical encryption model — a Master Key encrypts unique per-project Data Keys. Data Keys can be rotated with a background scavenger process that re-encrypts all secrets using chunked processing.
+- **Key Wrapping & Rotation:** Implemented a full hierarchical encryption model - a Master Key encrypts unique per-project Data Keys. Data Keys can be rotated with a background scavenger process that re-encrypts all secrets using chunked processing.
 - **GitHub Authentication:** Added GitHub OAuth as an alternative sign-in provider via Supabase Auth.
 - **Variable Visibility Toggle:** Users can now reveal/mask individual secret values inline within the environment variable table.
 - **Tooltip Component:** Added a reusable `<Tooltip>` component used throughout the variable table and action buttons.
@@ -275,7 +275,7 @@ All notable changes to Envault are documented here.
 
 ---
 
-## 0.1.0 — 2026-01-03
+## 0.1.0 - 2026-01-03
 
 > Authors: Dinanath Dash (DinanathDash)
 
@@ -283,9 +283,9 @@ All notable changes to Envault are documented here.
 
 - **Core Application Scaffold:** Bootstrapped with Next.js 15 App Router, TypeScript, Tailwind CSS, and Shadcn UI component library.
 - **User Authentication:** Full email/password authentication powered by Supabase Auth, including signup, login, and session management via SSR-compatible cookies.
-- **Project Management:** Users can create, view, and delete projects — organisational units for grouping related environment variables.
+- **Project Management:** Users can create, view, and delete projects - organisational units for grouping related environment variables.
 - **Environment Variable Vault:** Core secret storage with AES-256-GCM authenticated encryption. Each secret is encrypted with a project-scoped Data Key before being persisted to the database.
 - **Bulk `.env` Import:** Paste or upload a raw `.env` file and Envault parses, encrypts, and stores all key-value pairs in a single operation.
 - **UI Component Library:** Established the full Shadcn/Radix UI component foundation: `Button`, `Dialog`, `Input`, `Card`, `Badge`, `DropdownMenu`, `Avatar`, and more.
-- **Async Secret Decryption:** Secrets are decrypted on-demand in the browser — plaintext values are never persisted to the client beyond the active session.
+- **Async Secret Decryption:** Secrets are decrypted on-demand in the browser - plaintext values are never persisted to the client beyond the active session.
 - **User Sign-Out:** Secure server-side sign-out with session invalidation and redirect to the login page.

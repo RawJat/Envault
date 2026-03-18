@@ -18,6 +18,10 @@ const ALLOWED_AUDIT_ACTIONS = new Set([
   "environment.access_updated",
   "environment.access_granted",
   "environment.access_revoked",
+  "github.account_connected",
+  "github.account_disconnected",
+  "github.repo_linked",
+  "github.repo_unlinked",
 ]);
 
 type EnvAccessState = "none" | "some" | "all" | "unknown";
