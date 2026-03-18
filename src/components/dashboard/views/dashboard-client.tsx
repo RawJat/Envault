@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 
 export function DashboardClient({
@@ -87,19 +88,68 @@ export function DashboardClient({
       refreshProjects();
     };
 
-    const handleWindowFocus = () => {
-      refreshProjects();
+    const supabase = createClient();
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let debounceTimer: NodeJS.Timeout;
+    let isStale = false; // Tracks if DB changed while we were hidden
+
+    const handleRealtimeEvent = () => {
+      if (document.visibilityState === "visible") {
+        refreshProjects();
+      } else {
+        isStale = true; // Mark as stale, fetch when we return
+      }
     };
 
+    const connectRealtime = () => {
+      if (channel) return;
+      channel = supabase
+        .channel("dashboard-sync")
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "projects" },
+          handleRealtimeEvent,
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "project_members" },
+          handleRealtimeEvent,
+        )
+        .subscribe((status, err) => {
+          if (err) console.error("Realtime subscription error:", err);
+        });
+    };
+
+    const disconnectRealtime = () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+        channel = null;
+      }
+    };
+
+    const handleFocus = () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        if (isStale) {
+          refreshProjects();
+          isStale = false;
+        }
+      }, 300);
+    };
+
+    connectRealtime();
+
     document.addEventListener("project-role-changed", handleProjectRoleChanged);
-    window.addEventListener("focus", handleWindowFocus);
+    window.addEventListener("focus", handleFocus);
 
     return () => {
+      clearTimeout(debounceTimer);
       document.removeEventListener(
         "project-role-changed",
         handleProjectRoleChanged,
       );
-      window.removeEventListener("focus", handleWindowFocus);
+      window.removeEventListener("focus", handleFocus);
+      disconnectRealtime();
     };
   }, [requested, approved, denied, router, refreshProjects]);
 

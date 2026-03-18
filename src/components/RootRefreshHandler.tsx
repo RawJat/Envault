@@ -27,21 +27,10 @@ export function RootRefreshHandler() {
       }
     };
 
-    // Listen for window focus to refresh data (throttled to 15s)
-    const handleFocus = () => {
-      const now = Date.now();
-      if (now - lastRefreshTime.current > 15000) {
-        lastRefreshTime.current = now;
-        router.refresh();
-      }
-    };
-
     window.addEventListener("popstate", handlePopState);
-    window.addEventListener("focus", handleFocus);
 
     return () => {
       window.removeEventListener("popstate", handlePopState);
-      window.removeEventListener("focus", handleFocus);
     };
   }, [router]);
 

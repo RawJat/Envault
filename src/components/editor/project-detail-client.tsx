@@ -23,6 +23,7 @@ import { EnvVarTableSkeleton } from "@/components/editor/env-var-table-skeleton"
 import { VariableDialog } from "@/components/dialogs/variable-dialog";
 import { ImportEnvDialog } from "@/components/dialogs/import-env-dialog";
 import { Project, useEnvaultStore } from "@/lib/stores/store";
+import { createClient } from "@/lib/supabase/client";
 
 import {
   DropdownMenu,
@@ -97,6 +98,84 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
   useEffect(() => {
     setOptimisticEnv(activeEnvironment);
   }, [activeEnvironment]);
+
+  // Hybrid Realtime Sync for Editor
+  const refreshSecrets = React.useCallback(() => {
+    startTransition(() => {
+      router.refresh();
+    });
+  }, [router]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let debounceTimer: NodeJS.Timeout;
+    let isStale = false; // Tracks if DB changed while we were hidden
+
+    const handleRealtimeEvent = () => {
+      if (document.hasFocus()) {
+        refreshSecrets();
+      } else {
+        isStale = true; // Mark as stale, fetch when we return
+      }
+    };
+
+    const connectRealtime = () => {
+      if (channel) return;
+      channel = supabase
+        .channel(`project-${projectId}-sync`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "secrets",
+            filter: `project_id=eq.${projectId}`,
+          },
+          handleRealtimeEvent,
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "environments",
+            filter: `project_id=eq.${projectId}`,
+          },
+          handleRealtimeEvent,
+        )
+        .subscribe((status, err) => {
+          if (err) console.error("Realtime subscription error:", err);
+        });
+    };
+
+    const disconnectRealtime = () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+        channel = null;
+      }
+    };
+
+    const handleFocus = () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        if (isStale) {
+          refreshSecrets();
+          isStale = false;
+        }
+      }, 300);
+    };
+
+    connectRealtime();
+
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      clearTimeout(debounceTimer);
+      window.removeEventListener("focus", handleFocus);
+      disconnectRealtime();
+    };
+  }, [projectId, refreshSecrets]);
 
   const isAdvancedMode = project.ui_mode === "advanced";
   const availableEnvironments = React.useMemo(
