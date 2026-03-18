@@ -10,6 +10,22 @@ All notable changes to Envault are documented here.
 
 ---
 
+## 1.5.0 - 2026-03-18
+
+> Authors: Dinanath Dash (DinanathDash)
+
+### Features
+
+- **Hybrid Realtime Sync + Tab Focus Optimization:** Implemented hybrid realtime synchronization with optimized tab-focus fetch behavior for dashboard, editor, and audit surfaces to improve freshness while reducing unnecessary refetch churn.
+- **GitHub Multi-Account Integration Flow:** Added multi-account GitHub installation support with improved installation/add-account UX, expanded integration audit coverage, and repository selection/search flow refinements.
+- **Portless Local HTTPS Development:** Migrated local development from ngrok/localhost setup to `portless`, with first-class dev command integration for secure callback testing.
+
+### Improvements
+
+- **Windows Dev Compatibility for Portless:** Enhanced `portless` developer workflow on Windows and added OpenSSL installation guidance to reduce setup friction across environments.
+
+---
+
 ## 1.4.0 - 2026-03-17
 
 > Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
