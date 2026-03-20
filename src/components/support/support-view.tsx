@@ -8,7 +8,6 @@ import {
   Activity,
   Mail,
   Github,
-  Twitter,
   ExternalLink,
   HelpCircle,
 } from "lucide-react";
@@ -21,6 +20,12 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
+
+const XLogo = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" className={className} fill="currentColor">
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 22.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  </svg>
+);
 
 const faqs = [
   {
@@ -185,11 +190,11 @@ export function SupportView({ inDashboard = false }: SupportViewProps) {
             </Button>
             <Button variant="outline" size="sm" asChild className="gap-2">
               <a
-                href="https://twitter.com/dinanathdash"
+                href="https://twitter.com/envault_tech"
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <Twitter className="w-4 h-4" /> Twitter
+                <XLogo className="w-4 h-4" /> Twitter
               </a>
             </Button>
           </div>

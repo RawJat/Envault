@@ -18,6 +18,7 @@ import { headers } from "next/headers";
 import { SystemStatusBanner } from "@/components/ui/system-status-banner";
 import { GlobalScene } from "@/components/landing/ui/GlobalScene";
 import { RootRefreshHandler } from "@/components/RootRefreshHandler";
+import { FreeTierNotification } from "@/components/free-tier-notification";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.envault.tech"),
@@ -155,10 +156,10 @@ export default async function RootLayout({
                   <GlobalScene />
                   {children}
                   <Toaster />
+                  <FreeTierNotification />
                   {user && (
                     <>
                       <AuthSync user={user} />
-
                       <NotificationProvider />
                     </>
                   )}
