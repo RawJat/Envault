@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Server, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -11,7 +12,12 @@ const XLogo = ({ className }: { className?: string }) => (
 );
 
 export function FreeTierNotification() {
+  const pathname = usePathname();
   const [isVisible, setIsVisible] = useState(false);
+
+  // Define allowed paths to render the notification
+  const allowedPaths = ["/changelog", "/support"];
+  const isAllowed = pathname === "/" || allowedPaths.some(p => pathname === p || pathname?.startsWith(`${p}/`));
 
   useEffect(() => {
     const isDismissed = sessionStorage.getItem("envault_hide_freetier_warning");
@@ -25,10 +31,10 @@ export function FreeTierNotification() {
     sessionStorage.setItem("envault_hide_freetier_warning", "true");
   };
 
-  if (!isVisible) return null;
+  if (!isAllowed || !isVisible) return null;
 
   return (
-    <div className="group fixed hidden md:block bottom-4 right-4 z-50 w-full max-w-[22rem] cursor-default rounded-xl border border-border bg-background/80 backdrop-blur-md p-4 shadow-lg transition-all duration-500 ease-in-out hover:shadow-xl sm:bottom-6 sm:right-6">
+    <div className="group fixed hidden md:block bottom-4 right-4 z-50 w-full max-w-[22rem] cursor-default rounded-xl border border-border bg-background/85 backdrop-blur-md p-4 shadow-lg transition-all duration-500 ease-in-out hover:shadow-xl sm:bottom-6 sm:right-6">
       <div className="flex items-start gap-4">
         <div className="mt-0.5 flex-shrink-0">
           <Server className="h-4 w-4 text-muted-foreground transition-colors duration-500 group-hover:text-foreground" />
