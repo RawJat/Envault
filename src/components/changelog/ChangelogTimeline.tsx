@@ -430,6 +430,16 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
   const [activeSlug, setActiveSlug] = useState<string>(entries[0]?.slug ?? "");
   const [isScrolling, setIsScrolling] = useState(false);
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 14;
+  const totalPages = Math.ceil(entries.length / itemsPerPage);
+  const currentEntries = entries.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  useEffect(() => {
+    setActiveSlug(currentEntries[0]?.slug ?? "");
+  }, [currentPage]);
+
   // Comet state and physics
   const [pathLength, setPathLength] = useState(0);
   const [showComet, setShowComet] = useState(false);
@@ -546,7 +556,7 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
       const bYs: number[] = [];
       let maxY = 0;
 
-      entries.forEach((_, i) => {
+      currentEntries.forEach((_, i) => {
         const nodeEl = nodeRefs.current[i];
         const titleEl = titleRefs.current[i];
         const bodyEl = bodyRefs.current[i];
@@ -586,7 +596,7 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
     const ro = new ResizeObserver(recalculate);
     if (containerRef.current) ro.observe(containerRef.current);
     return () => ro.disconnect();
-  }, [entries]);
+  }, [currentEntries]);
 
   // Track active section via IntersectionObserver
   useEffect(() => {
@@ -612,7 +622,7 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
       },
       { rootMargin: "-120px 0px -66% 0px", threshold: [0, 0.25, 0.5, 0.75, 1] },
     );
-    entries.forEach(({ slug }) => {
+    currentEntries.forEach(({ slug }) => {
       const el = document.getElementById(slug);
       if (el) observer.observe(el);
     });
@@ -620,7 +630,7 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
       observer.disconnect();
       visible.clear();
     };
-  }, [entries, isScrolling]);
+  }, [currentEntries, isScrolling]);
 
   const scrollToEntry = (slug: string) => {
     const el = document.getElementById(slug);
@@ -641,7 +651,7 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
       {/* Mobile version nav - BEFORE pt-24 so it's at y≈0 and immediately sticky at top-16 (flush under navbar) */}
       <div className="lg:hidden sticky top-16 z-40 bg-background/95 backdrop-blur border-t border-b border-border/50 relative">
         <MobileVersionNav
-          entries={entries}
+          entries={currentEntries}
           activeSlug={activeSlug}
           onSelect={scrollToEntry}
         />
@@ -753,7 +763,7 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
                 </svg>
 
                 {/* Entries */}
-                {entries.map((entry, index) => {
+                {currentEntries.map((entry, index) => {
                   const { title: extractedTitle, remainingBody } = extractFirstParagraph(entry.body);
                   const displayTitle = entry.title || extractedTitle || `Release v${entry.version}`;
                   const hasLongTitle = displayTitle.length > 25;
@@ -764,7 +774,7 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
                     id={entry.slug}
                     className={cn(
                       "scroll-mt-36",
-                      index < entries.length - 1 ? "pb-12 md:pb-16" : "pb-4",
+                      index < currentEntries.length - 1 ? "pb-12 md:pb-16" : "pb-4",
                     )}
                   >
                     {/* Desktop: side-by-side with date column + SVG spacer */}
@@ -851,6 +861,37 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
                   </div>
                 )})}
               </div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between pt-8 pb-4 border-t border-border/50">
+                  <button
+                    onClick={() => {
+                      const offset = containerRef.current ? containerRef.current.getBoundingClientRect().top + window.scrollY - 140 : 0;
+                      setCurrentPage(p => Math.max(1, p - 1));
+                      window.scrollTo({ top: offset, behavior: "smooth" });
+                    }}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 text-sm font-mono text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    ← Previous
+                  </button>
+                  <span className="text-sm font-mono text-muted-foreground/60">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button
+                    onClick={() => {
+                      const offset = containerRef.current ? containerRef.current.getBoundingClientRect().top + window.scrollY - 140 : 0;
+                      setCurrentPage(p => Math.min(totalPages, p + 1));
+                      window.scrollTo({ top: offset, behavior: "smooth" });
+                    }}
+                    disabled={currentPage === totalPages}
+                    className="px-4 py-2 text-sm font-mono text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Next →
+                  </button>
+                </div>
+              )}
             </SlideUp>
 
             {/* Sidebar */}
@@ -863,7 +904,7 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
                 </div>
 
                 <nav className="space-y-1">
-                  {entries.map((entry) => {
+                  {currentEntries.map((entry) => {
                     const isActive = activeSlug === entry.slug;
                     return (
                       <button
