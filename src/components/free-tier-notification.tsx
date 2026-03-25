@@ -20,10 +20,11 @@ export function FreeTierNotification() {
   const isAllowed = pathname === "/" || allowedPaths.some(p => pathname === p || pathname?.startsWith(`${p}/`));
 
   useEffect(() => {
-    const isDismissed = sessionStorage.getItem("envault_hide_freetier_warning");
-    if (!isDismissed) {
-      setIsVisible(true);
-    }
+    const timer = setTimeout(() => {
+      const isDismissed = sessionStorage.getItem("envault_hide_freetier_warning");
+      if (!isDismissed) setIsVisible(true);
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleDismiss = () => {

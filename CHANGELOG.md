@@ -10,11 +10,33 @@ All notable changes to Envault are documented here.
 
 ---
 
+## 1.5.2 - 2026-03-22
+
+> Authors: Rajat Patra (RawJat)
+
+### UX Improvements
+
+- **Public-Route-Only Free-Tier Notice:** Restricted free-tier engine notification visibility to public-facing routes so authenticated app workflows are not interrupted by irrelevant upgrade prompts.
+
+---
+
+## 1.5.1 - 2026-03-20
+
+> Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
+
+### Authentication & Product Experience
+
+- **OAuth URL Resolution Hardening:** Improved authentication URL resolution and proxy OAuth handling to make callback behavior more reliable across deployment environments.
+- **Free-Tier Status Notification:** Added a reusable free-tier engine notification component and integrated it into key public surfaces.
+- **Branding Polish:** Updated website footer logo treatment for improved visual consistency.
+
+---
+
 ## 1.5.0 - 2026-03-18
 
 > Authors: Dinanath Dash (DinanathDash)
 
-### Features
+### Sync, GitHub Integrations & Local Dev
 
 - **Hybrid Realtime Sync + Tab Focus Optimization:** Implemented hybrid realtime synchronization with optimized tab-focus fetch behavior for dashboard, editor, and audit surfaces to improve freshness while reducing unnecessary refetch churn.
 - **GitHub Multi-Account Integration Flow:** Added multi-account GitHub installation support with improved installation/add-account UX, expanded integration audit coverage, and repository selection/search flow refinements.
@@ -30,7 +52,7 @@ All notable changes to Envault are documented here.
 
 > Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
 
-### Features
+### Server-First Architecture & UI Optimizations
 
 - **Server-First Architecture:** Migrated Envault to a strict Next.js Server Component architecture. Completely removed `"use client"` directives from page and layout files, drastically reducing the client-side JavaScript bundle size and mitigating the "white screen" issue on slow connections.
 - **Deep Folder Restructuring:** Consolidated and reorganized `src/lib` and `src/components` into domains (`/auth`, `/infra`, `/system`, `/dialogs`, etc.) to improve project maintainability and strict separation of concerns.
@@ -54,7 +76,7 @@ All notable changes to Envault are documented here.
 
 > Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
 
-### Features
+### Environment Access Controls & Identity
 
 - **Environment-Scoped Access Flow:** Added requested-environment propagation across access requests, owner approvals, notifications, and shared-environment UX so approvals can be scoped precisely.
 - **CLI/API Environment Enforcement:** Enforced environment access constraints in CLI secrets APIs and added graceful `403` handling in CLI commands when users target unauthorized environments.
@@ -74,7 +96,7 @@ All notable changes to Envault are documented here.
 
 > Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
 
-### Features
+### Audit Logging & Security
 
 - **Immutable Audit Logs:** Added a full audit logging system with UI and API coverage, persistence schema support, and rate-limited access patterns for safer forensic visibility.
 - **Owner-Only Audit Access Controls:** Tightened access enforcement so sensitive audit operations align with strict owner-level authorization and policy boundaries.
@@ -91,7 +113,7 @@ All notable changes to Envault are documented here.
 
 > Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
 
-### Features
+### Automation, CLI Enhancements & Licensing
 
 - **GitHub Auto-Approval:** Viewer access requests are now automatically approved when a GitHub App installation is detected, eliminating manual review friction for low-privilege roles.
 - **CLI Verbose Mode:** Added `--verbose` / `-v` flag to CLI commands for detailed diagnostic output and improved error reporting during troubleshooting.
@@ -113,7 +135,7 @@ All notable changes to Envault are documented here.
 
 > Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
 
-### Features
+### UI Redesign, Animations & System Status
 
 - **Responsive Navbar:** Fully rebuilt navigation with mobile hamburger menu, smooth overlay animations, and scroll-aware styling transitions.
 - **Animated Theme Toggler:** Introduced a custom animated light/dark mode toggle with smooth icon morphing, integrated into both desktop and mobile layouts.
@@ -141,7 +163,7 @@ All notable changes to Envault are documented here.
 
 > Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
 
-### Features
+### CLI Workspaces, JIT Access & Status Infrastructure
 
 - **Non-Blocking CLI Updates:** CLI now checks for updates in the background without blocking command execution. Update notifications appear after the command completes.
 - **GitHub App Integration:** Implemented full GitHub App installation flow for linking repositories to Envault projects, enabling automated access management.
@@ -165,7 +187,7 @@ All notable changes to Envault are documented here.
 
 > Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
 
-### Features
+### Passwordless Auth, Request Signing & Profiles
 
 - **WebAuthn / Passkeys:** Implemented full WebAuthn (FIDO2) passwordless authentication - users can register biometric or hardware passkeys and log in without a password.
 - **HMAC Request Signing:** Introduced HMAC-SHA256 signing for sensitive API requests, with a client-side `HmacProvider` injecting signatures into request headers, enforced by a strict CSP.
@@ -185,7 +207,7 @@ All notable changes to Envault are documented here.
 
 > Authors: Dinanath Dash (DinanathDash)
 
-### Features
+### Go CLI Release & Status Incidents
 
 - **Status Page Incident Timeline:** Refactored the status page incident view into a dedicated `Timeline` component with visual severity indicators and chronological ordering.
 - **Comprehensive System Status:** Launched the foundational system status infrastructure with an admin view for creating and managing incidents.
@@ -203,7 +225,7 @@ All notable changes to Envault are documented here.
 
 > Authors: Dinanath Dash (DinanathDash)
 
-### Features
+### Documentation, Visuals & Middleware
 
 - **Fumadocs Integration:** Migrated documentation to [Fumadocs](https://fumadocs.vercel.app/), enabling MDX-powered docs with full-text search, versioning, and a structured sidebar.
 - **Mermaid Diagram Support:** Added `mermaid` rendering support inside documentation pages for architecture and flow diagrams.
@@ -217,7 +239,7 @@ All notable changes to Envault are documented here.
 
 > Authors: Dinanath Dash (DinanathDash)
 
-### Features
+### Keyboard Navigation, Notifications & Redis Caching
 
 - **Keyboard-First Navigation:** Implemented a comprehensive, conflict-free hotkey system across the entire application with configurable bindings and a visual shortcut reference.
 - **`Kbd` Hints:** Added inline keyboard shortcut hints (`<Kbd>`) throughout the UI so users can discover shortcuts contextually.
@@ -232,7 +254,7 @@ All notable changes to Envault are documented here.
 
 > Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
 
-### Features
+### RBAC, Secret Sharing & Tailwind v4 Upgrade
 
 - **Project & Secret Sharing:** Implemented full project and secret sharing flows with access request forms, approval dialogs, and a join page for invited users.
 - **Role-Based Access Control (RBAC):** Formalised Owner / Editor / Viewer roles with Row-Level Security enforcement in Supabase.
@@ -251,7 +273,7 @@ All notable changes to Envault are documented here.
 
 > Authors: Dinanath Dash (DinanathDash)
 
-### Features
+### CLI Device Auth & Deployment Commands
 
 - **CLI Device Authentication:** Implemented the OAuth 2.0 Device Authorization flow for CLI login - users authenticate in the browser and the CLI polls for token confirmation.
 - **CLI API Routes:** Added dedicated Next.js API routes for CLI interactions: `/api/cli/projects`, `/api/cli/secrets`, `/api/cli/me`, and `/api/cli/environments`.
@@ -264,7 +286,7 @@ All notable changes to Envault are documented here.
 
 > Authors: Dinanath Dash (DinanathDash)
 
-### Features
+### Performance, Theming & Redis Integration
 
 - **Preloader & Skeleton UIs:** Added a full-screen preloader with global loading state, and skeleton components for the dashboard and project views to improve perceived performance.
 - **Open Graph & Twitter Cards:** Implemented OG/Twitter image metadata across all pages, including a new `open-graph.png` asset.
@@ -279,7 +301,7 @@ All notable changes to Envault are documented here.
 
 > Authors: Dinanath Dash (DinanathDash)
 
-### Features
+### Key Rotation, GitHub Auth & Core UX
 
 - **Key Wrapping & Rotation:** Implemented a full hierarchical encryption model - a Master Key encrypts unique per-project Data Keys. Data Keys can be rotated with a background scavenger process that re-encrypts all secrets using chunked processing.
 - **GitHub Authentication:** Added GitHub OAuth as an alternative sign-in provider via Supabase Auth.
@@ -295,7 +317,7 @@ All notable changes to Envault are documented here.
 
 > Authors: Dinanath Dash (DinanathDash)
 
-### Initial Release
+### Initial Core Application Release
 
 - **Core Application Scaffold:** Bootstrapped with Next.js 15 App Router, TypeScript, Tailwind CSS, and Shadcn UI component library.
 - **User Authentication:** Full email/password authentication powered by Supabase Auth, including signup, login, and session management via SSR-compatible cookies.

@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useRef, useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { motion, AnimatePresence, useScroll, useSpring, useVelocity, useMotionValue, useAnimationFrame, useMotionTemplate } from "framer-motion";
+import { ArrowLeft, ArrowRight, ChevronDown, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils/utils";
 import { RegMark } from "@/components/landing/ui/RegMark";
@@ -11,15 +11,55 @@ import { SlideUp } from "@/components/landing/animations/SlideUp";
 import { FadeIn } from "@/components/landing/animations/FadeIn";
 import type { Author } from "@/lib/system/changelog-parser";
 
+// ─── Tunable Constants ────────────────────────────────────────────────────────
+const BEAM_LENGTH = 160;
+const SPRING_STIFFNESS = 100;
+const SPRING_DAMPING = 30;
+const FADE_TIMEOUT_MS = 400;
+const FADE_DURATION_S = 0.5;
+
+/** 
+ * Implementation Notes:
+ * 1. The Comet uses a stroke-dash technique. By keeping the gap huge (1e6), it appears as a finite beam.
+ * 2. Scroll mapping uses Framer Motion's `useScroll` with `useSpring` to smoothly animate `strokeDashoffset`, avoiding jumping.
+ * 3. The `showComet` state listens directly to `springScroll` changes to gracefully fade in and out during scroll and rest.
+ * 4. The `theme-aware gradient` is applied via CSS variables `var(--foreground)` inside the `<defs>` moving exactly with the dash offsets.
+ */
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export interface TimelineEntry {
   version: string;
   date: string;
   category: string;
+  title?: string;
   body: string;
   slug: string;
   authors: Author[];
+}
+
+function extractFirstParagraph(markdown: string): { title: string; remainingBody: string } {
+  const lines = markdown.split("\n");
+  let headerIndex = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) {
+      if (headerIndex !== -1) {
+        return {
+          title: lines.slice(0, i).join(" ").trim(),
+          remainingBody: lines.slice(i).join("\n").trim(),
+        };
+      }
+    } else {
+      if (headerIndex === -1) {
+        if (line.startsWith("-") || line.startsWith("```")) {
+          return { title: "", remainingBody: markdown };
+        }
+        headerIndex = i;
+      }
+    }
+  }
+  return { title: markdown.trim(), remainingBody: "" };
 }
 
 interface TimelineProps {
@@ -202,23 +242,60 @@ function renderMarkdownBody(markdown: string): React.ReactNode {
 
 const SVG_W = 40;
 const CX = SVG_W / 2;
-const JOG = 8;
-const CHAMFER = 22;
+const TRACK_JOG_X = 20;
+const TRACK_JOG_Y = 20;
+const TRACK_TITLE_GAP = 8;
+const TRACK_BODY_GAP = 10;
 
-function buildPath(ys: number[]): string {
-  if (ys.length < 2) return "";
+interface TrackMath {
+  d: string;
+  dotLengths: number[];
+}
+
+function buildPath(ys: number[], tYs: number[], bYs: number[]): TrackMath {
+  if (ys.length === 0) return { d: "", dotLengths: [] };
   const parts = [`M ${CX} ${ys[0]}`];
-  for (let i = 0; i < ys.length - 1; i++) {
-    const mid = (ys[i] + ys[i + 1]) / 2;
-    const dx = i % 2 === 0 ? JOG : -JOG;
-    parts.push(
-      `L ${CX} ${mid - CHAMFER}`,
-      `L ${CX + dx} ${mid}`,
-      `L ${CX} ${mid + CHAMFER}`,
-      `L ${CX} ${ys[i + 1]}`,
-    );
+  let currentLen = 0;
+  let currentY = ys[0];
+  let currentX = CX;
+  
+  const dotLengths: number[] = [0];
+  
+  function pushLine(nx: number, ny: number) {
+    const dx = nx - currentX;
+    const dy = ny - currentY;
+    currentLen += Math.sqrt(dx * dx + dy * dy);
+    currentX = nx;
+    currentY = ny;
+    parts.push(`L ${nx} ${ny}`);
   }
-  return parts.join(" ");
+
+  for (let i = 0; i < ys.length; i++) {
+    const tY = tYs[i];
+    const bY = bYs[i];
+    
+    const jogStartY = (tY || ys[i]) + TRACK_TITLE_GAP;
+    const jogEndY = (bY || ys[i]) + TRACK_BODY_GAP;
+    
+    const safeNextY = i < ys.length - 1 ? ys[i + 1] : jogEndY + TRACK_JOG_Y + 20;
+
+    if (tY && bY && jogEndY > jogStartY + TRACK_JOG_Y) {
+      if (jogEndY + TRACK_JOG_Y < safeNextY) {
+        pushLine(CX, jogStartY);
+        pushLine(CX + TRACK_JOG_X, jogStartY + TRACK_JOG_Y);
+        pushLine(CX + TRACK_JOG_X, jogEndY);
+        pushLine(CX, jogEndY + TRACK_JOG_Y);
+      }
+    }
+    
+    pushLine(CX, safeNextY);
+    
+    if (i < ys.length - 1) {
+      dotLengths.push(currentLen);
+    }
+  }
+  
+  return { d: parts.join(" "), dotLengths };
 }
 
 // ─── Author chip ──────────────────────────────────────────────────────────────
@@ -363,33 +440,256 @@ function MobileVersionNav({
 export function ChangelogTimeline({ entries }: TimelineProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const nodeRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const titleRefs = useRef<(HTMLHeadingElement | null)[]>([]);
+  const bodyRefs = useRef<(HTMLDivElement | null)[]>([]);
+  
   const [nodeYs, setNodeYs] = useState<number[]>([]);
+  const [titleYs, setTitleYs] = useState<number[]>([]);
+  const [bodyYs, setBodyYs] = useState<number[]>([]);
+  
   const [svgHeight, setSvgHeight] = useState(0);
   const [activeSlug, setActiveSlug] = useState<string>(entries[0]?.slug ?? "");
   const [isScrolling, setIsScrolling] = useState(false);
+  
+  const { scrollY } = useScroll();
+
+  // Exclusive Magnet State
+  const [parkedSlug, setParkedSlug] = useState<string | null>(null);
+  const isScrollingRef = useRef(false);
+  const parkedSlugRef = useRef<string | null>(null);
+  const hasScrolledRef = useRef(false);
+  
+  const isProgrammaticScrollRef = useRef(false);
+  const scrollEndTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const skipCometVisibilityRef = useRef(false);
+
+  useEffect(() => { isScrollingRef.current = isScrolling; }, [isScrolling]);
+  useEffect(() => { parkedSlugRef.current = parkedSlug; }, [parkedSlug]);
+
+  useEffect(() => {
+    const unsub = scrollY.on("change", (latestY) => {
+      if (latestY > 5) hasScrolledRef.current = true;
+      
+      if (isProgrammaticScrollRef.current) {
+        if (scrollEndTimeoutRef.current) clearTimeout(scrollEndTimeoutRef.current);
+        scrollEndTimeoutRef.current = setTimeout(() => {
+          isProgrammaticScrollRef.current = false;
+          setIsScrolling(false);
+        }, 150);
+      } else if (parkedSlugRef.current) {
+        setParkedSlug(null);
+        setShowComet(false);
+        skipCometVisibilityRef.current = true;
+        setTimeout(() => { skipCometVisibilityRef.current = false; }, 400);
+      }
+    });
+    return () => {
+      unsub();
+      if (scrollEndTimeoutRef.current) clearTimeout(scrollEndTimeoutRef.current);
+    };
+  }, [scrollY]);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 14;
+  const totalPages = Math.max(1, Math.ceil(entries.length / itemsPerPage));
+  
+  const currentEntries = React.useMemo(() => {
+    return entries.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  }, [entries, currentPage]);
+
+  useEffect(() => {
+    setActiveSlug(currentEntries[0]?.slug ?? "");
+  }, [currentEntries]);
+
+  // Comet state and physics
+  const [showComet, setShowComet] = useState(false);
+  const [containerTop, setContainerTop] = useState(0);
+  const pathRef = useRef<SVGPathElement>(null);
+
+  const rawCometY = useMotionValue(0);
+  const springCometY = useSpring(rawCometY, {
+    stiffness: SPRING_STIFFNESS,
+    damping: SPRING_DAMPING,
+    restDelta: 0.001,
+  });
+
+  const activeBeamLength = useSpring(0, { stiffness: 250, damping: 35 }); // Overdamped to ban zero-crossing bounce
+  const dirSpring = useSpring(1, { stiffness: 400, damping: 40 }); // Critically damped
+  
+  const actualDashOffset = useMotionValue(0);
+  const actualDashLength = useMotionValue(BEAM_LENGTH);
+  const strokeDasharray = useMotionTemplate`${actualDashLength} 1000000`;
+  
+  const gradientY1 = useMotionValue(0); // Tail
+  const gradientY2 = useMotionValue(0); // Head
+
+  const lastScrollY = useRef(0);
+  const scrollDir = useRef(1); // 1 = down, -1 = up
+
+  const parkedIndex = parkedSlug ? currentEntries.findIndex(e => e.slug === parkedSlug) : -1;
+  const parkedDotY = parkedIndex !== -1 && nodeYs.length > 0 ? nodeYs[parkedIndex] : 0;
+  const parkedDotYRef = useRef(0);
+  
+  // Track geometry memoization (prevent duplicate loops)
+  const trackMath = React.useMemo(() => buildPath(nodeYs, titleYs, bodyYs), [nodeYs, titleYs, bodyYs]);
+  const nodeYsRef = useRef<number[]>([]);
+  const dotLengthsRef = useRef<number[]>([]);
+
+  useEffect(() => {
+    parkedDotYRef.current = parkedDotY;
+    nodeYsRef.current = nodeYs;
+    dotLengthsRef.current = trackMath.dotLengths;
+  }, [parkedDotY, nodeYs, trackMath]);
+
+  useAnimationFrame(() => {
+    const sy = scrollY.get();
+    
+    // Smooth scroll direction derivation
+    const delta = sy - lastScrollY.current;
+    if (delta > 0) scrollDir.current = 1;
+    else if (delta < 0) scrollDir.current = -1;
+    lastScrollY.current = sy;
+
+    // 1. Target Head Y calculation
+    const vh = typeof window !== "undefined" ? window.innerHeight : 1000;
+    const normalTarget = sy + vh * 0.5 - containerTop;
+    const firstDot = nodeYs.length > 0 ? nodeYs[0] : 0;
+    
+    const THRESHOLD = 250;
+    
+    if (isProgrammaticScrollRef.current) {
+      // Bind tightly to the expected scroll-padding margin height crossing dynamically on-screen
+      rawCometY.set(sy + 156 - containerTop);
+    } else if (parkedSlugRef.current && parkedDotYRef.current > 0) {
+      // Exclusive Sidebar lock perfectly snapped on target
+      rawCometY.set(parkedDotYRef.current);
+    } else if (sy < THRESHOLD && nodeYs.length > 0) {
+      const progress = sy / THRESHOLD;
+      rawCometY.set(firstDot + (normalTarget - firstDot) * progress);
+    } else {
+      rawCometY.set(normalTarget);
+    }
+
+    const hY = springCometY.get();
+
+    // 2. Exact Tail calculation via single derived math (No double springs)
+    dirSpring.set(scrollDir.current);
+    const rawLen = activeBeamLength.get();
+    const len = Math.max(0, rawLen); 
+    const dir = dirSpring.get();
+    const tY = hY - dir * len;
+
+    // 3. Mathematical exact dash offset alignment scaling
+    const minY = Math.min(hY, tY);
+    const absLen = Math.abs(hY - tY);
+    
+    const yList = nodeYsRef.current;
+    const lList = dotLengthsRef.current;
+    
+    let pathDistance = 0;
+    if (yList.length > 0 && lList.length > 0) {
+      if (minY <= yList[0]) pathDistance = 0;
+      else if (minY >= yList[yList.length - 1]) {
+        pathDistance = lList[lList.length - 1] + (minY - yList[yList.length - 1]);
+      } else {
+        for (let i = 0; i < yList.length - 1; i++) {
+          if (minY >= yList[i] && minY <= yList[i + 1]) {
+            const segY = yList[i + 1] - yList[i];
+            const segL = lList[i + 1] - lList[i];
+            const progress = segY > 0 ? (minY - yList[i]) / segY : 0;
+            pathDistance = lList[i] + progress * segL;
+            break;
+          }
+        }
+      }
+    }
+
+    actualDashLength.set(absLen);
+    actualDashOffset.set(-pathDistance);
+
+    // 4. Gradients map precisely to bounding edges
+    gradientY1.set(tY);
+    gradientY2.set(hY);
+  });
+
+  useEffect(() => {
+    // Only control length by scroll movement state, preventing rapid forced clipping when brushing the top boundary
+    activeBeamLength.set(showComet ? BEAM_LENGTH : 0);
+  }, [showComet, activeBeamLength]);
+
+  const springVelocity = useVelocity(springCometY);
+  useEffect(() => {
+    let timeout: NodeJS.Timeout;
+    const unsubscribe = springVelocity.on("change", (v) => {
+      if (skipCometVisibilityRef.current) return;
+      const isMoving = Math.abs(v) > 5;
+      if (isMoving && hasScrolledRef.current) {
+        if (!showComet) setShowComet(true);
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+          setShowComet(false);
+        }, FADE_TIMEOUT_MS);
+      }
+    });
+    return () => {
+      unsubscribe();
+      clearTimeout(timeout);
+    };
+  }, [springVelocity, showComet]);
 
   // Measure node Y positions
   useEffect(() => {
     function recalculate() {
       if (!containerRef.current) return;
-      const containerTop = containerRef.current.getBoundingClientRect().top;
+      const cTop = containerRef.current.getBoundingClientRect().top + window.scrollY;
+      setContainerTop(cTop);
       const ys: number[] = [];
+      const tYs: number[] = [];
+      const bYs: number[] = [];
       let maxY = 0;
-      nodeRefs.current.forEach((el) => {
-        if (!el) return;
-        const rect = el.getBoundingClientRect();
-        const y = rect.top - containerTop + rect.height / 2;
-        ys.push(y);
-        maxY = Math.max(maxY, y);
+
+      currentEntries.forEach((_, i) => {
+        const nodeEl = nodeRefs.current[i];
+        const titleEl = titleRefs.current[i];
+        const bodyEl = bodyRefs.current[i];
+        
+        let y = 0;
+        if (nodeEl) {
+          const rect = nodeEl.getBoundingClientRect();
+          y = rect.top + window.scrollY - cTop + rect.height / 2;
+          ys.push(y);
+          maxY = Math.max(maxY, y);
+        }
+        
+        if (titleEl) {
+          const rect = titleEl.getBoundingClientRect();
+          const tY = rect.bottom + window.scrollY - cTop;
+          tYs.push(tY);
+        } else {
+          tYs.push(y + 30);
+        }
+        
+        if (bodyEl) {
+          const rect = bodyEl.getBoundingClientRect();
+          const bY = rect.bottom + window.scrollY - cTop;
+          bYs.push(bY);
+          maxY = Math.max(maxY, bY);
+        } else {
+          bYs.push(y + 100);
+        }
       });
+
       setNodeYs(ys);
-      setSvgHeight(maxY + 40);
+      setTitleYs(tYs);
+      setBodyYs(bYs);
+      setSvgHeight(maxY + 60);
     }
     recalculate();
     const ro = new ResizeObserver(recalculate);
     if (containerRef.current) ro.observe(containerRef.current);
     return () => ro.disconnect();
-  }, [entries]);
+  }, [currentEntries]);
 
   // Track active section via IntersectionObserver
   useEffect(() => {
@@ -415,7 +715,7 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
       },
       { rootMargin: "-120px 0px -66% 0px", threshold: [0, 0.25, 0.5, 0.75, 1] },
     );
-    entries.forEach(({ slug }) => {
+    currentEntries.forEach(({ slug }) => {
       const el = document.getElementById(slug);
       if (el) observer.observe(el);
     });
@@ -423,28 +723,35 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
       observer.disconnect();
       visible.clear();
     };
-  }, [entries, isScrolling]);
+  }, [currentEntries, isScrolling]);
 
   const scrollToEntry = (slug: string) => {
     const el = document.getElementById(slug);
     if (!el) return;
     setIsScrolling(true);
+    setParkedSlug(slug);
     setActiveSlug(slug);
-    window.scrollTo({
-      top: el.getBoundingClientRect().top + window.scrollY - 140,
-      behavior: "smooth",
-    });
-    setTimeout(() => setIsScrolling(false), 1000);
+    
+    isProgrammaticScrollRef.current = true;
+    if (scrollEndTimeoutRef.current) clearTimeout(scrollEndTimeoutRef.current);
+    
+    const offset = el.getBoundingClientRect().top + window.scrollY - 140;
+    window.scrollTo({ top: offset, behavior: "smooth" });
+    
+    scrollEndTimeoutRef.current = setTimeout(() => {
+      isProgrammaticScrollRef.current = false;
+      setIsScrolling(false);
+    }, 150);
   };
 
-  const d = buildPath(nodeYs);
+  const d = trackMath.d;
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
       {/* Mobile version nav - BEFORE pt-24 so it's at y≈0 and immediately sticky at top-16 (flush under navbar) */}
       <div className="lg:hidden sticky top-16 z-40 bg-background/95 backdrop-blur border-t border-b border-border/50 relative">
         <MobileVersionNav
-          entries={entries}
+          entries={currentEntries}
           activeSlug={activeSlug}
           onSelect={scrollToEntry}
         />
@@ -491,20 +798,47 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
                 {/* Circuit SVG - desktop only */}
                 <svg
                   className="hidden md:block absolute top-0 pointer-events-none select-none overflow-visible"
-                  style={{ left: "7rem" }}
+                  style={{ left: "5.5rem" }}
                   width={SVG_W}
                   height={svgHeight}
                   aria-hidden="true"
                 >
                   {nodeYs.length >= 2 && (
-                    <path
-                      d={d}
-                      stroke="hsl(var(--border))"
-                      strokeWidth="1"
-                      strokeOpacity={0.5}
-                      fill="none"
-                      strokeLinecap="round"
-                    />
+                    <>
+                      <defs>
+                        <motion.linearGradient
+                          id="comet-gradient"
+                          gradientUnits="userSpaceOnUse"
+                          x1="0"
+                          x2="0"
+                          y1={gradientY1}
+                          y2={gradientY2}
+                        >
+                          <stop offset="0%" stopColor="hsl(var(--muted-foreground))" stopOpacity="0" />
+                          <stop offset="100%" stopColor="hsl(var(--foreground))" stopOpacity="1" />
+                        </motion.linearGradient>
+                      </defs>
+                      <path
+                        d={d}
+                        stroke="hsl(var(--border))"
+                        strokeWidth="1"
+                        strokeOpacity={0.5}
+                        fill="none"
+                        strokeLinecap="round"
+                      />
+                      <motion.path
+                        ref={pathRef}
+                        d={d}
+                        stroke="url(#comet-gradient)"
+                        strokeWidth="2"
+                        fill="none"
+                        strokeLinecap="round"
+                        style={{ strokeDasharray, strokeDashoffset: actualDashOffset }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: showComet ? 1 : 0 }}
+                        transition={{ opacity: { duration: FADE_DURATION_S, delay: showComet ? 0 : 0.4 } }}
+                      />
+                    </>
                   )}
                   {nodeYs.map((y, i) => (
                     <g key={i}>
@@ -529,13 +863,18 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
                 </svg>
 
                 {/* Entries */}
-                {entries.map((entry, index) => (
+                {currentEntries.map((entry, index) => {
+                  const { title: extractedTitle, remainingBody } = extractFirstParagraph(entry.body);
+                  const displayTitle = entry.title || extractedTitle || `Release v${entry.version}`;
+                  const hasLongTitle = displayTitle.length > 25;
+
+                  return (
                   <div
                     key={entry.slug}
                     id={entry.slug}
                     className={cn(
                       "scroll-mt-36",
-                      index < entries.length - 1 ? "pb-12 md:pb-16" : "pb-4",
+                      index < currentEntries.length - 1 ? "pb-12 md:pb-16" : "pb-4",
                     )}
                   >
                     {/* Desktop: side-by-side with date column + SVG spacer */}
@@ -569,7 +908,15 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
                             v{entry.version}
                           </span>
                         </div>
-                        <div>{renderMarkdownBody(entry.body)}</div>
+                        <h3 
+                          ref={(el) => { titleRefs.current[index] = el; }}
+                          className={cn("font-semibold tracking-tight text-foreground mb-4", hasLongTitle ? "text-xl md:text-2xl" : "text-lg md:text-xl")}
+                        >
+                          {renderInlineMarkdown(displayTitle.replace(/^###\s*/, ''), `title-${entry.version}`)}
+                        </h3>
+                        <div ref={(el) => { bodyRefs.current[index] = el; }}>
+                          {renderMarkdownBody(remainingBody)}
+                        </div>
                         {entry.authors.length > 0 && (
                           <div className="mt-5 pt-4 border-t border-border/30 flex items-center gap-4 flex-wrap">
                             {entry.authors.map((author) => (
@@ -599,7 +946,10 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
                           v{entry.version}
                         </span>
                       </div>
-                      <div>{renderMarkdownBody(entry.body)}</div>
+                      <h3 className={cn("font-semibold tracking-tight text-foreground mb-4", hasLongTitle ? "text-xl" : "text-lg")}>
+                        {renderInlineMarkdown(displayTitle.replace(/^###\s*/, ''), `mobile-title-${entry.version}`)}
+                      </h3>
+                      <div>{renderMarkdownBody(remainingBody)}</div>
                       {entry.authors.length > 0 && (
                         <div className="mt-4 pt-4 border-t border-border/30 flex items-center gap-4 flex-wrap">
                           {entry.authors.map((author) => (
@@ -609,8 +959,39 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
                       )}
                     </div>
                   </div>
-                ))}
+                )})}
               </div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between pt-8 pb-4 border-t border-border/50">
+                  <button
+                    onClick={() => {
+                      const offset = containerRef.current ? containerRef.current.getBoundingClientRect().top + window.scrollY - 140 : 0;
+                      setCurrentPage(p => Math.max(1, p - 1));
+                      window.scrollTo({ top: offset, behavior: "smooth" });
+                    }}
+                    disabled={currentPage === 1}
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-mono text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ArrowLeft className="w-4 h-4" /> Previous
+                  </button>
+                  <span className="text-sm font-mono text-muted-foreground/60">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button
+                    onClick={() => {
+                      const offset = containerRef.current ? containerRef.current.getBoundingClientRect().top + window.scrollY - 140 : 0;
+                      setCurrentPage(p => Math.min(totalPages, p + 1));
+                      window.scrollTo({ top: offset, behavior: "smooth" });
+                    }}
+                    disabled={currentPage === totalPages}
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-mono text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Next <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
             </SlideUp>
 
             {/* Sidebar */}
@@ -623,7 +1004,7 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
                 </div>
 
                 <nav className="space-y-1">
-                  {entries.map((entry) => {
+                  {currentEntries.map((entry) => {
                     const isActive = activeSlug === entry.slug;
                     return (
                       <button
