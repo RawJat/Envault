@@ -491,13 +491,16 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
-  const totalPages = Math.ceil(entries.length / itemsPerPage);
-  const currentEntries = entries.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const itemsPerPage = 14;
+  const totalPages = Math.max(1, Math.ceil(entries.length / itemsPerPage));
+  
+  const currentEntries = React.useMemo(() => {
+    return entries.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  }, [entries, currentPage]);
 
   useEffect(() => {
     setActiveSlug(currentEntries[0]?.slug ?? "");
-  }, [currentPage, currentEntries]);
+  }, [currentEntries]);
 
   // Comet state and physics
   const [showComet, setShowComet] = useState(false);
