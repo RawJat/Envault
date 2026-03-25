@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useEffect, useState } from "react";
-import { motion, AnimatePresence, useScroll, useSpring, useTransform, useVelocity, useMotionValueEvent, useMotionValue, useAnimationFrame, useMotionTemplate } from "framer-motion";
+import { motion, AnimatePresence, useScroll, useSpring, useVelocity, useMotionValue, useAnimationFrame, useMotionTemplate } from "framer-motion";
 import { ArrowLeft, ArrowRight, ChevronDown, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils/utils";
@@ -491,16 +491,15 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 14;
+  const itemsPerPage = 10;
   const totalPages = Math.ceil(entries.length / itemsPerPage);
   const currentEntries = entries.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   useEffect(() => {
     setActiveSlug(currentEntries[0]?.slug ?? "");
-  }, [currentPage]);
+  }, [currentPage, currentEntries]);
 
   // Comet state and physics
-  const [pathLength, setPathLength] = useState(0);
   const [showComet, setShowComet] = useState(false);
   const [containerTop, setContainerTop] = useState(0);
   const pathRef = useRef<SVGPathElement>(null);
@@ -610,12 +609,6 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
     gradientY1.set(tY);
     gradientY2.set(hY);
   });
-
-  useEffect(() => {
-    if (pathRef.current) {
-      setPathLength(pathRef.current.getTotalLength());
-    }
-  }, [nodeYs, titleYs, bodyYs, svgHeight]);
 
   useEffect(() => {
     // Only control length by scroll movement state, preventing rapid forced clipping when brushing the top boundary
