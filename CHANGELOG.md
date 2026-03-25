@@ -10,6 +10,28 @@ All notable changes to Envault are documented here.
 
 ---
 
+## 1.5.2 - 2026-03-22
+
+> Authors: Rajat Patra (RawJat)
+
+### UX Improvements
+
+- **Public-Route-Only Free-Tier Notice:** Restricted free-tier engine notification visibility to public-facing routes so authenticated app workflows are not interrupted by irrelevant upgrade prompts.
+
+---
+
+## 1.5.1 - 2026-03-20
+
+> Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
+
+### Authentication & Product Experience
+
+- **OAuth URL Resolution Hardening:** Improved authentication URL resolution and proxy OAuth handling to make callback behavior more reliable across deployment environments.
+- **Free-Tier Status Notification:** Added a reusable free-tier engine notification component and integrated it into key public surfaces.
+- **Branding Polish:** Updated website footer logo treatment for improved visual consistency.
+
+---
+
 ## 1.5.0 - 2026-03-18
 
 > Authors: Dinanath Dash (DinanathDash)

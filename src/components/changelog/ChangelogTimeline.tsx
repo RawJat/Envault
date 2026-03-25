@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect, useState } from "react";
 import { motion, AnimatePresence, useScroll, useSpring, useTransform, useVelocity, useMotionValueEvent, useMotionValue, useAnimationFrame, useMotionTemplate } from "framer-motion";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronDown, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils/utils";
 import { RegMark } from "@/components/landing/ui/RegMark";
@@ -247,10 +247,29 @@ const TRACK_JOG_Y = 20;
 const TRACK_TITLE_GAP = 8;
 const TRACK_BODY_GAP = 10;
 
-function buildPath(ys: number[], tYs: number[], bYs: number[]): string {
-  if (ys.length === 0) return "";
+interface TrackMath {
+  d: string;
+  dotLengths: number[];
+}
+
+function buildPath(ys: number[], tYs: number[], bYs: number[]): TrackMath {
+  if (ys.length === 0) return { d: "", dotLengths: [] };
   const parts = [`M ${CX} ${ys[0]}`];
+  let currentLen = 0;
+  let currentY = ys[0];
+  let currentX = CX;
   
+  const dotLengths: number[] = [0];
+  
+  function pushLine(nx: number, ny: number) {
+    const dx = nx - currentX;
+    const dy = ny - currentY;
+    currentLen += Math.sqrt(dx * dx + dy * dy);
+    currentX = nx;
+    currentY = ny;
+    parts.push(`L ${nx} ${ny}`);
+  }
+
   for (let i = 0; i < ys.length; i++) {
     const tY = tYs[i];
     const bY = bYs[i];
@@ -262,19 +281,21 @@ function buildPath(ys: number[], tYs: number[], bYs: number[]): string {
 
     if (tY && bY && jogEndY > jogStartY + TRACK_JOG_Y) {
       if (jogEndY + TRACK_JOG_Y < safeNextY) {
-        parts.push(
-          `L ${CX} ${jogStartY}`,
-          `L ${CX + TRACK_JOG_X} ${jogStartY + TRACK_JOG_Y}`,
-          `L ${CX + TRACK_JOG_X} ${jogEndY}`,
-          `L ${CX} ${jogEndY + TRACK_JOG_Y}`
-        );
+        pushLine(CX, jogStartY);
+        pushLine(CX + TRACK_JOG_X, jogStartY + TRACK_JOG_Y);
+        pushLine(CX + TRACK_JOG_X, jogEndY);
+        pushLine(CX, jogEndY + TRACK_JOG_Y);
       }
     }
     
-    parts.push(`L ${CX} ${safeNextY}`);
+    pushLine(CX, safeNextY);
+    
+    if (i < ys.length - 1) {
+      dotLengths.push(currentLen);
+    }
   }
   
-  return parts.join(" ");
+  return { d: parts.join(" "), dotLengths };
 }
 
 // ─── Author chip ──────────────────────────────────────────────────────────────
@@ -429,6 +450,44 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
   const [svgHeight, setSvgHeight] = useState(0);
   const [activeSlug, setActiveSlug] = useState<string>(entries[0]?.slug ?? "");
   const [isScrolling, setIsScrolling] = useState(false);
+  
+  const { scrollY } = useScroll();
+
+  // Exclusive Magnet State
+  const [parkedSlug, setParkedSlug] = useState<string | null>(null);
+  const isScrollingRef = useRef(false);
+  const parkedSlugRef = useRef<string | null>(null);
+  const hasScrolledRef = useRef(false);
+  
+  const isProgrammaticScrollRef = useRef(false);
+  const scrollEndTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const skipCometVisibilityRef = useRef(false);
+
+  useEffect(() => { isScrollingRef.current = isScrolling; }, [isScrolling]);
+  useEffect(() => { parkedSlugRef.current = parkedSlug; }, [parkedSlug]);
+
+  useEffect(() => {
+    const unsub = scrollY.on("change", (latestY) => {
+      if (latestY > 5) hasScrolledRef.current = true;
+      
+      if (isProgrammaticScrollRef.current) {
+        if (scrollEndTimeoutRef.current) clearTimeout(scrollEndTimeoutRef.current);
+        scrollEndTimeoutRef.current = setTimeout(() => {
+          isProgrammaticScrollRef.current = false;
+          setIsScrolling(false);
+        }, 150);
+      } else if (parkedSlugRef.current) {
+        setParkedSlug(null);
+        setShowComet(false);
+        skipCometVisibilityRef.current = true;
+        setTimeout(() => { skipCometVisibilityRef.current = false; }, 400);
+      }
+    });
+    return () => {
+      unsub();
+      if (scrollEndTimeoutRef.current) clearTimeout(scrollEndTimeoutRef.current);
+    };
+  }, [scrollY]);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -446,8 +505,6 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
   const [containerTop, setContainerTop] = useState(0);
   const pathRef = useRef<SVGPathElement>(null);
 
-  const { scrollY } = useScroll();
-  
   const rawCometY = useMotionValue(0);
   const springCometY = useSpring(rawCometY, {
     stiffness: SPRING_STIFFNESS,
@@ -468,6 +525,21 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
   const lastScrollY = useRef(0);
   const scrollDir = useRef(1); // 1 = down, -1 = up
 
+  const parkedIndex = parkedSlug ? currentEntries.findIndex(e => e.slug === parkedSlug) : -1;
+  const parkedDotY = parkedIndex !== -1 && nodeYs.length > 0 ? nodeYs[parkedIndex] : 0;
+  const parkedDotYRef = useRef(0);
+  
+  // Track geometry memoization (prevent duplicate loops)
+  const trackMath = React.useMemo(() => buildPath(nodeYs, titleYs, bodyYs), [nodeYs, titleYs, bodyYs]);
+  const nodeYsRef = useRef<number[]>([]);
+  const dotLengthsRef = useRef<number[]>([]);
+
+  useEffect(() => {
+    parkedDotYRef.current = parkedDotY;
+    nodeYsRef.current = nodeYs;
+    dotLengthsRef.current = trackMath.dotLengths;
+  }, [parkedDotY, nodeYs, trackMath]);
+
   useAnimationFrame(() => {
     const sy = scrollY.get();
     
@@ -479,17 +551,21 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
 
     // 1. Target Head Y calculation
     const vh = typeof window !== "undefined" ? window.innerHeight : 1000;
-    
     const normalTarget = sy + vh * 0.5 - containerTop;
     const firstDot = nodeYs.length > 0 ? nodeYs[0] : 0;
     
     const THRESHOLD = 250;
-    if (sy < THRESHOLD && nodeYs.length > 0) {
-      // Smoothly blend anchor visually into the absolute first node as scroll zeroes out
+    
+    if (isProgrammaticScrollRef.current) {
+      // Bind tightly to the expected scroll-padding margin height crossing dynamically on-screen
+      rawCometY.set(sy + 156 - containerTop);
+    } else if (parkedSlugRef.current && parkedDotYRef.current > 0) {
+      // Exclusive Sidebar lock perfectly snapped on target
+      rawCometY.set(parkedDotYRef.current);
+    } else if (sy < THRESHOLD && nodeYs.length > 0) {
       const progress = sy / THRESHOLD;
       rawCometY.set(firstDot + (normalTarget - firstDot) * progress);
     } else {
-      // Continuous scroll follow
       rawCometY.set(normalTarget);
     }
 
@@ -502,13 +578,33 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
     const dir = dirSpring.get();
     const tY = hY - dir * len;
 
-    // 3. Mathematical dash array/offset bounds
-    const pathRatio = svgHeight > 0 ? (pathLength / svgHeight) : 1;
+    // 3. Mathematical exact dash offset alignment scaling
     const minY = Math.min(hY, tY);
     const absLen = Math.abs(hY - tY);
+    
+    const yList = nodeYsRef.current;
+    const lList = dotLengthsRef.current;
+    
+    let pathDistance = 0;
+    if (yList.length > 0 && lList.length > 0) {
+      if (minY <= yList[0]) pathDistance = 0;
+      else if (minY >= yList[yList.length - 1]) {
+        pathDistance = lList[lList.length - 1] + (minY - yList[yList.length - 1]);
+      } else {
+        for (let i = 0; i < yList.length - 1; i++) {
+          if (minY >= yList[i] && minY <= yList[i + 1]) {
+            const segY = yList[i + 1] - yList[i];
+            const segL = lList[i + 1] - lList[i];
+            const progress = segY > 0 ? (minY - yList[i]) / segY : 0;
+            pathDistance = lList[i] + progress * segL;
+            break;
+          }
+        }
+      }
+    }
 
-    actualDashLength.set(absLen * pathRatio);
-    actualDashOffset.set(-(minY * pathRatio));
+    actualDashLength.set(absLen);
+    actualDashOffset.set(-pathDistance);
 
     // 4. Gradients map precisely to bounding edges
     gradientY1.set(tY);
@@ -530,8 +626,9 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
   useEffect(() => {
     let timeout: NodeJS.Timeout;
     const unsubscribe = springVelocity.on("change", (v) => {
+      if (skipCometVisibilityRef.current) return;
       const isMoving = Math.abs(v) > 5;
-      if (isMoving) {
+      if (isMoving && hasScrolledRef.current) {
         if (!showComet) setShowComet(true);
         clearTimeout(timeout);
         timeout = setTimeout(() => {
@@ -636,15 +733,22 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
     const el = document.getElementById(slug);
     if (!el) return;
     setIsScrolling(true);
+    setParkedSlug(slug);
     setActiveSlug(slug);
-    window.scrollTo({
-      top: el.getBoundingClientRect().top + window.scrollY - 140,
-      behavior: "smooth",
-    });
-    setTimeout(() => setIsScrolling(false), 1000);
+    
+    isProgrammaticScrollRef.current = true;
+    if (scrollEndTimeoutRef.current) clearTimeout(scrollEndTimeoutRef.current);
+    
+    const offset = el.getBoundingClientRect().top + window.scrollY - 140;
+    window.scrollTo({ top: offset, behavior: "smooth" });
+    
+    scrollEndTimeoutRef.current = setTimeout(() => {
+      isProgrammaticScrollRef.current = false;
+      setIsScrolling(false);
+    }, 150);
   };
 
-  const d = buildPath(nodeYs, titleYs, bodyYs);
+  const d = trackMath.d;
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -872,9 +976,9 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
                       window.scrollTo({ top: offset, behavior: "smooth" });
                     }}
                     disabled={currentPage === 1}
-                    className="px-4 py-2 text-sm font-mono text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-mono text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
-                    ← Previous
+                    <ArrowLeft className="w-4 h-4" /> Previous
                   </button>
                   <span className="text-sm font-mono text-muted-foreground/60">
                     Page {currentPage} of {totalPages}
@@ -886,9 +990,9 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
                       window.scrollTo({ top: offset, behavior: "smooth" });
                     }}
                     disabled={currentPage === totalPages}
-                    className="px-4 py-2 text-sm font-mono text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-mono text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
-                    Next →
+                    Next <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
               )}
