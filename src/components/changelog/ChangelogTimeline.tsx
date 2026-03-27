@@ -66,6 +66,8 @@ interface TimelineProps {
   entries: TimelineEntry[];
 }
 
+type PaginationItem = number | "ellipsis";
+
 // ─── Badge colours ────────────────────────────────────────────────────────────
 
 const BADGE_STYLES: Record<string, string> = {
@@ -88,6 +90,22 @@ const BADGE_STYLES: Record<string, string> = {
 
 function getBadgeStyle(category: string): string {
   return BADGE_STYLES[category.toLowerCase()] ?? BADGE_STYLES.release;
+}
+
+function getPaginationItems(currentPage: number, totalPages: number): PaginationItem[] {
+  if (totalPages <= 5) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  if (currentPage <= 3) {
+    return [1, 2, 3, 4, "ellipsis", totalPages];
+  }
+
+  if (currentPage >= totalPages - 2) {
+    return [1, "ellipsis", totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+  }
+
+  return [1, "ellipsis", currentPage - 1, currentPage, currentPage + 1, "ellipsis", totalPages];
 }
 
 function renderInlineMarkdown(
@@ -455,6 +473,12 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
 
   // Exclusive Magnet State
   const [parkedSlug, setParkedSlug] = useState<string | null>(null);
+  
+  // Delayed Pagination State
+  const [targetPage, setTargetPage] = useState<number | null>(null);
+  const targetPageRef = useRef<number | null>(null);
+  const scrollRafRef = useRef<number | null>(null);
+  useEffect(() => { targetPageRef.current = targetPage; }, [targetPage]);
   const isScrollingRef = useRef(false);
   const parkedSlugRef = useRef<string | null>(null);
   const hasScrolledRef = useRef(false);
@@ -469,7 +493,7 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
   useEffect(() => {
     const unsub = scrollY.on("change", (latestY) => {
       if (latestY > 5) hasScrolledRef.current = true;
-      
+
       if (isProgrammaticScrollRef.current) {
         if (scrollEndTimeoutRef.current) clearTimeout(scrollEndTimeoutRef.current);
         scrollEndTimeoutRef.current = setTimeout(() => {
@@ -498,9 +522,72 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
     return entries.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
   }, [entries, currentPage]);
 
+  const paginationItems = React.useMemo(
+    () => getPaginationItems(currentPage, totalPages),
+    [currentPage, totalPages],
+  );
+
   useEffect(() => {
     setActiveSlug(currentEntries[0]?.slug ?? "");
   }, [currentEntries]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  const changePage = (page: number) => {
+    const nextPage = Math.min(Math.max(page, 1), totalPages);
+    if (nextPage === currentPage || targetPage !== null) return;
+
+    if (window.scrollY <= 15) {
+      setCurrentPage(nextPage);
+      setActiveSlug("");
+      setParkedSlug(null);
+      return;
+    }
+
+    setTargetPage(nextPage);
+    setActiveSlug("");
+    setParkedSlug(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    
+    // Dynamically track the absolute real-time physics of the browser scroll without dumb timeouts
+    let lastY = window.scrollY;
+    let stableFrames = 0;
+    
+    const watchScroll = () => {
+      if (targetPageRef.current === null) return;
+      
+      const currentY = window.scrollY;
+      if (currentY <= 15) {
+        setCurrentPage(targetPageRef.current);
+        setTargetPage(null);
+        return;
+      }
+      
+      // Measure sub-pixel stalling
+      if (Math.abs(currentY - lastY) < 1) {
+        stableFrames++;
+        if (stableFrames > 12) { 
+          // Browser scroll completely paralyzed mid-way! Force UI payload dynamically and snap instantly.
+          setCurrentPage(targetPageRef.current);
+          setTargetPage(null);
+          window.scrollTo({ top: 0, behavior: "instant" });
+          return;
+        }
+      } else {
+        stableFrames = 0;
+      }
+      
+      lastY = currentY;
+      scrollRafRef.current = requestAnimationFrame(watchScroll);
+    };
+    
+    if (scrollRafRef.current) cancelAnimationFrame(scrollRafRef.current);
+    scrollRafRef.current = requestAnimationFrame(watchScroll);
+  };
 
   // Comet state and physics
   const [showComet, setShowComet] = useState(false);
@@ -964,32 +1051,70 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
 
               {/* Pagination Controls */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-between pt-8 pb-4 border-t border-border/50">
-                  <button
-                    onClick={() => {
-                      const offset = containerRef.current ? containerRef.current.getBoundingClientRect().top + window.scrollY - 140 : 0;
-                      setCurrentPage(p => Math.max(1, p - 1));
-                      window.scrollTo({ top: offset, behavior: "smooth" });
-                    }}
-                    disabled={currentPage === 1}
-                    className="flex items-center gap-2 px-4 py-2 text-sm font-mono text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                <div className="border-t border-border/50 pt-8 pb-4">
+                  <nav
+                    aria-label="Changelog pagination"
+                    className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 sm:justify-between"
                   >
-                    <ArrowLeft className="w-4 h-4" /> Previous
-                  </button>
-                  <span className="text-sm font-mono text-muted-foreground/60">
-                    Page {currentPage} of {totalPages}
-                  </span>
-                  <button
-                    onClick={() => {
-                      const offset = containerRef.current ? containerRef.current.getBoundingClientRect().top + window.scrollY - 140 : 0;
-                      setCurrentPage(p => Math.min(totalPages, p + 1));
-                      window.scrollTo({ top: offset, behavior: "smooth" });
-                    }}
-                    disabled={currentPage === totalPages}
-                    className="flex items-center gap-2 px-4 py-2 text-sm font-mono text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Next <ArrowRight className="w-4 h-4" />
-                  </button>
+                    <button
+                      onClick={() => changePage(currentPage - 1)}
+                      disabled={currentPage === 1 || targetPage !== null}
+                      aria-label="Go to previous page"
+                      className="flex items-center gap-2 px-4 py-2 text-sm font-mono text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                      Previous
+                    </button>
+
+                    <div className="flex items-center justify-center gap-4 sm:gap-5">
+                      {paginationItems.map((item, index) =>
+                        item === "ellipsis" ? (
+                          <span
+                            key={`ellipsis-${index}`}
+                            className="flex h-6 min-w-4 items-center justify-center text-[10px] font-mono text-muted-foreground/60 sm:h-7 sm:min-w-5 sm:text-[11px]"
+                            aria-hidden="true"
+                          >
+                            ...
+                          </span>
+                        ) : (
+                          <button
+                            key={item}
+                            onClick={() => changePage(item as number)}
+                            disabled={targetPage !== null}
+                            aria-label={`Go to page ${item}`}
+                            aria-current={currentPage === item ? "page" : undefined}
+                            className={cn(
+                              "inline-flex h-6 min-w-8 items-center justify-center rounded-full px-2.5 text-[10px] font-mono transition-colors sm:h-7 sm:min-w-9 sm:px-3 sm:text-[11px] cursor-pointer disabled:cursor-not-allowed",
+                              currentPage === item
+                                ? "bg-foreground text-background"
+                                : "text-foreground/90 hover:bg-accent/30 hover:text-foreground",
+                            )}
+                          >
+                            {item}
+                          </button>
+                        ),
+                      )}
+
+                      <span
+                        className="hidden text-[10px] font-mono text-muted-foreground/60 min-[420px]:inline sm:text-[11px]"
+                        aria-hidden="true"
+                      >
+                        /
+                      </span>
+                      <span className="hidden text-[10px] font-mono text-muted-foreground/60 min-[420px]:inline sm:text-[11px]">
+                        {totalPages}
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={() => changePage(currentPage + 1)}
+                      disabled={currentPage === totalPages || targetPage !== null}
+                      aria-label="Go to next page"
+                      className="flex items-center gap-2 px-4 py-2 text-sm font-mono text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                    >
+                      Next <ArrowRight className="h-4 w-4" />
+                    </button>
+                  </nav>
                 </div>
               )}
             </SlideUp>
@@ -1011,7 +1136,7 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
                         key={entry.slug}
                         onClick={() => scrollToEntry(entry.slug)}
                         className={cn(
-                          "w-full text-left text-sm transition-all duration-200 hover:text-foreground group relative py-2 px-3 rounded-md",
+                          "w-full text-left text-sm transition-all duration-200 hover:text-foreground group relative py-2 px-3 rounded-md cursor-pointer",
                           isActive
                             ? "text-foreground bg-accent/50 font-medium"
                             : "text-muted-foreground hover:bg-accent/30",
