@@ -574,7 +574,6 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
           // Browser scroll completely paralyzed mid-way! Force UI payload dynamically and snap instantly.
           setCurrentPage(targetPageRef.current);
           setTargetPage(null);
-          // @ts-ignore
           window.scrollTo({ top: 0, behavior: "instant" });
           return;
         }
