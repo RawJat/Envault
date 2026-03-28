@@ -1054,19 +1054,22 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
                 <div className="border-t border-border/50 pt-8 pb-4">
                   <nav
                     aria-label="Changelog pagination"
-                    className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 sm:justify-between"
+                    className="flex w-full items-center justify-between"
                   >
-                    <button
-                      onClick={() => changePage(currentPage - 1)}
-                      disabled={currentPage === 1 || targetPage !== null}
-                      aria-label="Go to previous page"
-                      className="flex items-center gap-2 px-4 py-2 text-sm font-mono text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
-                    >
-                      <ArrowLeft className="h-4 w-4" />
-                      Previous
-                    </button>
+                    <div className="flex flex-1 justify-start">
+                      <button
+                        onClick={() => changePage(currentPage - 1)}
+                        disabled={currentPage === 1 || targetPage !== null}
+                        aria-label="Go to previous page"
+                        className="flex items-center gap-1.5 sm:gap-2 pr-4 py-2 text-xs sm:text-sm font-mono text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                      >
+                        <ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                        <span className="hidden sm:inline">Previous</span>
+                        <span className="sm:hidden">Prev</span>
+                      </button>
+                    </div>
 
-                    <div className="flex items-center justify-center gap-4 sm:gap-5">
+                    <div className="flex items-center justify-center gap-2 sm:gap-5">
                       {paginationItems.map((item, index) =>
                         item === "ellipsis" ? (
                           <span
@@ -1084,7 +1087,7 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
                             aria-label={`Go to page ${item}`}
                             aria-current={currentPage === item ? "page" : undefined}
                             className={cn(
-                              "inline-flex h-6 min-w-8 items-center justify-center rounded-full px-2.5 text-[10px] font-mono transition-colors sm:h-7 sm:min-w-9 sm:px-3 sm:text-[11px] cursor-pointer disabled:cursor-not-allowed",
+                              "inline-flex h-6 min-w-7 items-center justify-center rounded-full px-2 text-[10px] font-mono transition-colors sm:h-7 sm:min-w-9 sm:px-3 sm:text-[11px] cursor-pointer disabled:cursor-not-allowed",
                               currentPage === item
                                 ? "bg-foreground text-background"
                                 : "text-foreground/90 hover:bg-accent/30 hover:text-foreground",
@@ -1096,24 +1099,28 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
                       )}
 
                       <span
-                        className="hidden text-[10px] font-mono text-muted-foreground/60 min-[420px]:inline sm:text-[11px]"
+                        className="text-[10px] font-mono text-muted-foreground/60 md:inline sm:text-[11px]"
                         aria-hidden="true"
                       >
                         /
                       </span>
-                      <span className="hidden text-[10px] font-mono text-muted-foreground/60 min-[420px]:inline sm:text-[11px]">
+                      <span className="text-[10px] font-mono text-muted-foreground/60 md:inline sm:text-[11px]">
                         {totalPages}
                       </span>
                     </div>
 
-                    <button
-                      onClick={() => changePage(currentPage + 1)}
-                      disabled={currentPage === totalPages || targetPage !== null}
-                      aria-label="Go to next page"
-                      className="flex items-center gap-2 px-4 py-2 text-sm font-mono text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
-                    >
-                      Next <ArrowRight className="h-4 w-4" />
-                    </button>
+                    <div className="flex flex-1 justify-end">
+                      <button
+                        onClick={() => changePage(currentPage + 1)}
+                        disabled={currentPage === totalPages || targetPage !== null}
+                        aria-label="Go to next page"
+                        className="flex items-center gap-1.5 sm:gap-2 pl-4 py-2 text-xs sm:text-sm font-mono text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                      >
+                        <span className="hidden sm:inline">Next</span>
+                        <span className="sm:hidden">Next</span>
+                        <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                      </button>
+                    </div>
                   </nav>
                 </div>
               )}

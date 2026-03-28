@@ -11,18 +11,18 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
 	"github.com/DinanathDash/Envault/cli-go/internal/ui"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
 )
 
 // AuditIssue represents a single finding from the audit.
 type AuditIssue struct {
-	Level   string   `json:"level"`            // "error" | "warning"
-	Code    string   `json:"code"`             // machine-readable identifier
-	Message string   `json:"message"`          // human-readable description
-	Keys    []string `json:"keys,omitempty"`   // affected env keys, if applicable
+	Level   string   `json:"level"`          // "error" | "warning"
+	Code    string   `json:"code"`           // machine-readable identifier
+	Message string   `json:"message"`        // human-readable description
+	Keys    []string `json:"keys,omitempty"` // affected env keys, if applicable
 }
 
 // AuditSummary holds counts of errors and warnings.

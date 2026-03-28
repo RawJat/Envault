@@ -22,6 +22,23 @@ Global flags:
 
 ---
 
+## `generate-hooks`
+
+Automatically injects a Git `post-merge` hook into your local repository to synchronize environment variables whenever you pull the latest code. This binds `envault pull` to `git pull`.
+
+**Usage**
+
+```bash
+envault generate-hooks
+```
+
+**What it does:**
+1. Verifies you are in a valid Git repository root.
+2. Creates or appends to `.git/hooks/post-merge` safely.
+3. Automatically avoids failure if `envault` is later detached or uninstalled.
+
+---
+
 ## `login`
 
 Authenticate with Envault using secure device flow.

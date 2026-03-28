@@ -68,6 +68,16 @@ npm install -g @dinanathdash/envault
    envault pull
    ```
 
+### Git Hooks Setup
+
+A common point of friction in development is pulling down the latest code but forgetting to sync environment variables. You can seamlessly bind Envault to Git operations by running:
+
+```bash
+envault generate-hooks
+```
+
+This command automatically creates an executable `post-merge` hook in your `.git/hooks/` directory. Whenever you run a `git pull` that merges new commits, this script triggers and safely executes `envault pull` to ensure your local secrets are in sync. If you uninstall `envault`, the hook safely skips the operation without breaking your git workflows.
+
 ## Development
 
 ### Requirements

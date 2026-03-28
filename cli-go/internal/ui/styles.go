@@ -44,25 +44,23 @@ func NewSpinner(msg string) *spinner.Spinner {
 }
 
 func RenderBox(title, content string, style lipgloss.Style) string {
-    // Lipgloss handles multiline content well, but title usually goes on border?
-    // Lipgloss doesn't have built-in title on border in the same way boxen does easily.
-    // We can render title inside or use complex border rendering.
-    // For simplicity, let's just render the content inside the box.
-    // Boxen puts title on top border.
-    // Let's just use content for now.
-    
-    // Actually, let's append title if needed manually or just let specific commands handle it.
-    // Node implementation: title: 'Authentication Code', titleAlignment: 'center'
-    
+	// Lipgloss handles multiline content well, but title usually goes on border?
+	// Lipgloss doesn't have built-in title on border in the same way boxen does easily.
+	// We can render title inside or use complex border rendering.
+	// For simplicity, let's just render the content inside the box.
+	// Boxen puts title on top border.
+	// Let's just use content for now.
 
+	// Actually, let's append title if needed manually or just let specific commands handle it.
+	// Node implementation: title: 'Authentication Code', titleAlignment: 'center'
 
-    // Keep it simple: helper to just return the style
-    return style.Render(content)
+	// Keep it simple: helper to just return the style
+	return style.Render(content)
 }
 
 // Logo
 func ShowLogo() {
-    logo := `
+	logo := `
   ███████╗███╗   ██╗██╗   ██╗ █████╗ ██╗   ██╗██╗  ████████╗
   ██╔════╝████╗  ██║██║   ██║██╔══██╗██║   ██║██║  ╚══██╔══╝
   █████╗  ██╔██╗ ██║██║   ██║███████║██║   ██║██║     ██║   
@@ -70,8 +68,8 @@ func ShowLogo() {
   ███████╗██║ ╚████║ ╚████╔╝ ██║  ██║╚██████╔╝███████╗██║   
   ╚══════╝╚═╝  ╚═══╝  ╚═══╝  ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝   
 `
-    // Convert #10B981 to Lipgloss color
-    colorStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#10B981")).Bold(true)
-    fmt.Println(colorStyle.Render(logo))
-    fmt.Println(ColorDim("  Secure Environment Variable Management\n"))
+	// Convert #10B981 to Lipgloss color
+	colorStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#10B981")).Bold(true)
+	fmt.Println(colorStyle.Render(logo))
+	fmt.Println(ColorDim("  Secure Environment Variable Management\n"))
 }

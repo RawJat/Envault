@@ -16,10 +16,10 @@ import (
 )
 
 const (
-	repoUrl          = "https://api.github.com/repos/DinanathDash/Envault/releases/latest"
-	ttlDuration      = 12 * time.Hour
-	refreshThrottle  = 5 * time.Minute // minimum gap between consecutive network calls
-	cacheFile        = "update_cache.json"
+	repoUrl         = "https://api.github.com/repos/DinanathDash/Envault/releases/latest"
+	ttlDuration     = 12 * time.Hour
+	refreshThrottle = 5 * time.Minute // minimum gap between consecutive network calls
+	cacheFile       = "update_cache.json"
 )
 
 type CacheData struct {
@@ -34,7 +34,7 @@ func PerformBackgroundCheck() {
 	if err != nil {
 		return
 	}
-	
+
 	cmd := exec.Command(exe, "__update_check")
 	_ = cmd.Start()
 	// We don't wait for it to finish, just let it run entirely in the background
@@ -118,12 +118,12 @@ func getCachePath() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	
+
 	configDir := filepath.Join(home, ".envault")
 	if _, err := os.Stat(configDir); os.IsNotExist(err) {
 		_ = os.Mkdir(configDir, 0700)
 	}
-	
+
 	return filepath.Join(configDir, cacheFile), nil
 }
 
@@ -168,7 +168,7 @@ func saveCache(version string) {
 func printUpdateWarning(current, latest string) {
 	updateCmd := getUpdateCommand()
 	warningMsg := fmt.Sprintf("\n  Update available: %s -> %s\n  Run '%s' to update.\n", current, latest, updateCmd)
-	
+
 	// Print a nicely formatted warning to stderr
 	fmt.Fprintln(os.Stderr, color.YellowString(warningMsg))
 }
