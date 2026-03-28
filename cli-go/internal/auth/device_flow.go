@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/atotto/clipboard"
 	"github.com/DinanathDash/Envault/cli-go/internal/api"
 	"github.com/DinanathDash/Envault/cli-go/internal/ui"
+	"github.com/atotto/clipboard"
 	"github.com/pkg/browser"
 	"github.com/spf13/viper"
 	"github.com/zalando/go-keyring"
@@ -38,7 +38,7 @@ func Login() error {
 	client := api.NewClient()
 
 	fmt.Println(ui.ColorBlue("  Starting Device Authentication Flow...\n"))
-	
+
 	// Spinner
 	s := ui.NewSpinner("Contacting Envault servers...")
 	s.Start()
@@ -48,7 +48,7 @@ func Login() error {
 		"hostname": hostname,
 		"platform": "cli-go",
 	}
-	
+
 	payload := map[string]interface{}{
 		"device_info": deviceInfo,
 	}
@@ -69,7 +69,7 @@ func Login() error {
 	fmt.Println(ui.ColorGreen("✔ Device code generated."))
 
 	fmt.Printf("\nPlease visit: %s\n", ui.ColorCyanUnderline(codeResp.VerificationURI))
-	
+
 	// Box for User Code
 	boxContent := fmt.Sprintf("Authentication Code\n\n%s", ui.ColorGreenBold(codeResp.UserCode))
 	fmt.Println(ui.BoxStyle.Render(boxContent))
@@ -100,12 +100,12 @@ func Login() error {
 		case <-sigChan:
 			s.Stop()
 			fmt.Println("\nCancelling login...")
-			
+
 			// Attempt to notify server of cancellation
 			_, _ = client.Post("/auth/device/cancel", map[string]string{
 				"device_code": codeResp.DeviceCode,
 			})
-			
+
 			return fmt.Errorf("login cancelled")
 		case <-time.After(interval):
 			// Continue polling
@@ -133,7 +133,7 @@ func Login() error {
 
 		var tokenResp TokenResponse
 		if err := json.Unmarshal(tokenBytes, &tokenResp); err != nil {
-			continue 
+			continue
 		}
 
 		if tokenResp.AccessToken != "" {
@@ -144,21 +144,21 @@ func Login() error {
 					return fmt.Errorf("failed to save config: %w", err)
 				}
 			}
-			
+
 			if tokenResp.RefreshToken != "" {
 				if err := keyring.Set("envault", "cli", tokenResp.RefreshToken); err != nil {
 					fmt.Println(ui.ColorYellow("\nWarning: Failed to save refresh token to system keyring. You may need to login again sooner."))
 				}
 			}
-			
+
 			// Fetch User Info to show email
-			// Update client with new token first? 
+			// Update client with new token first?
 			// The client struct reads from viper on NewClient, or we can update it manually.
-			// Let's just make a new client since token is now in viper? 
+			// Let's just make a new client since token is now in viper?
 			// Wait, viper.Get reads from memory if set? Yes.
 			// But NewClient reads once.
 			// Re-instantiate client.
-			clientWithAuth := api.NewClient() 
+			clientWithAuth := api.NewClient()
 			userBytes, err := clientWithAuth.Get("/me")
 			email := ""
 			if err == nil {
@@ -175,7 +175,7 @@ func Login() error {
 			}
 			return nil
 		}
-		
+
 		if tokenResp.Error != "" {
 			if tokenResp.Error == "authorization_pending" {
 				continue
