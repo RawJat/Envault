@@ -10,24 +10,19 @@ All notable changes to Envault are documented here.
 
 ---
 
-## 1.5.2 - 2026-03-22
+## 1.6.0 - 2026-03-29
 
 > Authors: Rajat Patra (RawJat)
 
-### UX Improvements
-
-- **Public-Route-Only Free-Tier Notice:** Restricted free-tier engine notification visibility to public-facing routes so authenticated app workflows are not interrupted by irrelevant upgrade prompts.
-
----
-
-## 1.5.1 - 2026-03-20
-
-> Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
-
-### Authentication & Product Experience
+### Authentication, Account Lifecycle & UX
 
 - **OAuth URL Resolution Hardening:** Improved authentication URL resolution and proxy OAuth handling to make callback behavior more reliable across deployment environments.
 - **Free-Tier Status Notification:** Added a reusable free-tier engine notification component and integrated it into key public surfaces.
+- **Public-Route-Only Free-Tier Notice:** Restricted free-tier engine notification visibility to public-facing routes so authenticated app workflows are not interrupted by irrelevant upgrade prompts.
+- **Account Soft Deletion + 7-Day Revival Window:** Account deletion now schedules a 7-day grace period instead of immediate hard deletion; signing back in during this window cancels the pending deletion.
+- **Automated Deletion Purge + Cleanup:** Added a scheduled account-deletion purge function to permanently delete expired accounts and clean linked user data after the grace window.
+- **Deletion Confirmation Email + Revival Toasts:** Added account deletion scheduling emails (timezone-aware) and in-app revival feedback when users return before deletion completes.
+- **Cron Endpoint Secret Enforcement:** Hardened scheduled edge-function invocations with `x-cron-secret` validation for account purge and key-rotation flows.
 - **Branding Polish:** Updated website footer logo treatment for improved visual consistency.
 
 ---

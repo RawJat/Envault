@@ -9,7 +9,7 @@ import { Redis } from "https://esm.sh/@upstash/redis";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
 const MASTER_KEY_HEX = Deno.env.get("ENCRYPTION_KEY")!;
@@ -70,12 +70,29 @@ Deno.serve(async (req: Request) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
-  try {
-    const authHeader = req.headers.get("Authorization");
-    let serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  if (req.method !== "GET" && req.method !== "POST") {
+    return new Response("Method Not Allowed", {
+      status: 405,
+      headers: corsHeaders,
+    });
+  }
 
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      serviceRoleKey = authHeader.split(" ")[1];
+  const expectedCronSecret =
+    Deno.env.get("ROTATE_KEYS_CRON_SECRET")?.trim() || "";
+  const receivedCronSecret = req.headers.get("x-cron-secret")?.trim() || "";
+
+  if (!expectedCronSecret || receivedCronSecret !== expectedCronSecret) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  try {
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+
+    if (!serviceRoleKey) {
+      throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY");
     }
 
     const supabaseClient = createClient(
@@ -84,9 +101,7 @@ Deno.serve(async (req: Request) => {
     );
 
     // Parse Request
-    const { action, job_id } = await req
-      .json()
-      .catch(() => ({ action: "scavenge", job_id: null }));
+    const { action } = await req.json().catch(() => ({ action: "scavenge" }));
 
     // Actions:
     // 'roll_key': Explicitly creates a new key and sets it as active.

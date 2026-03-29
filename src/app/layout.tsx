@@ -6,6 +6,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthSync } from "@/components/auth/auth-sync";
+import { AccountRevivalToastListener } from "@/components/auth/account-revival-toast-listener";
 import { createClient } from "@/lib/supabase/server";
 import { Analytics } from "@vercel/analytics/react";
 import { NotificationProvider } from "@/components/notifications/notification-provider";
@@ -156,6 +157,7 @@ export default async function RootLayout({
                   <GlobalScene />
                   {children}
                   <Toaster />
+                  <AccountRevivalToastListener />
                   <FreeTierNotification />
                   {user && (
                     <>

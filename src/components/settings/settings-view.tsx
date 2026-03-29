@@ -192,6 +192,12 @@ export default function SettingsView() {
   const hasCustomizedUsername = user?.username
     ? !defaultUsernameRegex.test(user.username)
     : false;
+  const localDeletionDeadlineText = new Date(
+    Date.now() + 7 * 24 * 60 * 60 * 1000,
+  ).toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
 
   const handleDeleteAccountClick = () => {
     setDeleteConfirmation("");
@@ -203,14 +209,15 @@ export default function SettingsView() {
     if (e) e.preventDefault();
     setIsDeletingAccount(true);
     try {
-      const result = await deleteAccountAction();
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const result = await deleteAccountAction(timezone);
       if (result?.error) {
         toast.error(result.error);
         setDeleteDialogOpen(false);
         return;
       }
       deleteAccount(); // Clear local store
-      toast.success("Account deleted");
+      toast.success("Account deletion scheduled");
       setDeleteDialogOpen(false);
     } finally {
       setIsDeletingAccount(false);
@@ -517,7 +524,7 @@ export default function SettingsView() {
                       Delete Account
                     </CardTitle>
                     <CardDescription>
-                      Permanently remove your account and all data.
+                      Deactivate now and permanently delete after 7 days.
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -532,7 +539,7 @@ export default function SettingsView() {
                       variant="destructive"
                       onClick={handleDeleteAccountClick}
                     >
-                      Delete Account
+                      Schedule Deletion
                     </Button>
                   </CardFooter>
                 </Card>
@@ -553,14 +560,12 @@ export default function SettingsView() {
             </AlertDialogDescription>
           </AlertDialogHeader>
 
-          <div className="py-4 space-y-4">
+          <div className="space-y-4">
             {isDeletingAccount && (
               <div className="p-3 border rounded-md bg-muted/50 text-sm text-muted-foreground flex items-start gap-2">
                 <Loader2 className="h-4 w-4 animate-spin mt-0.5 shrink-0" />
                 <p>
-                  Deletion is in progress. We are safely transferring any shared
-                  project secrets you created to the project owners and
-                  preserving audit history before removing your account.
+                  Scheduling deletion and signing you out...
                 </p>
               </div>
             )}
@@ -573,7 +578,8 @@ export default function SettingsView() {
                 </p>
                 <p className="text-sm text-muted-foreground">
                   Please consider migrating them before deletion. If you
-                  proceed, they will be permanently lost.
+                  proceed, they will be permanently deleted after the 7-day
+                  grace period.
                 </p>
                 <div className="flex items-center space-x-2 pt-2">
                   <input
@@ -587,7 +593,8 @@ export default function SettingsView() {
                     htmlFor="confirm-delete-projects"
                     className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                   >
-                    I understand that my projects will be permanently deleted.
+                    I understand my projects will be permanently deleted after
+                    7 days if I do not sign in again.
                   </label>
                 </div>
               </div>
@@ -636,10 +643,10 @@ export default function SettingsView() {
               {isDeletingAccount ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Transferring data and deleting...
+                  Scheduling deletion...
                 </>
               ) : (
-                "Delete Account"
+                "Schedule Account Deletion"
               )}
               {!isDeletingAccount && (
                 <div className="hidden sm:flex items-center gap-1">
