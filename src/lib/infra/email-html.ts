@@ -57,6 +57,7 @@ export function getEmailHtml({
     table { border-spacing: 0; width: 100%; }
     td { padding: 0; }
     img { border: 0; }
+    a { color: inherit; }
     
     /* Layout */
     .wrapper { 
@@ -70,7 +71,7 @@ export function getEmailHtml({
       background-color: ${cardColor}; 
       margin: 0 auto; 
       width: 96%; 
-      max-width: 540px; 
+      max-width: 560px; 
       border-radius: 16px; 
       overflow: hidden; 
       box-shadow: 0 4px 20px -1px rgba(0, 0, 0, 0.08);
@@ -79,7 +80,7 @@ export function getEmailHtml({
     
     /* Elements */
     .header { 
-      padding: 40px 48px 32px; 
+      padding: 36px 40px 26px; 
       text-align: center; 
     }
     
@@ -91,10 +92,21 @@ export function getEmailHtml({
       text-decoration: none; 
       letter-spacing: -0.75px; 
       display: inline-block;
+      line-height: 1;
+      color: ${textColor} !important;
+      text-decoration: none !important;
+    }
+
+    .logo,
+    .logo:visited,
+    .logo:hover,
+    .logo:active {
+      color: ${textColor} !important;
+      text-decoration: none !important;
     }
     
     .body { 
-      padding: 0 48px 48px 48px; 
+      padding: 0 40px 44px; 
     }
     
     .heading { 
@@ -113,6 +125,19 @@ export function getEmailHtml({
       color: ${mutedColor}; 
       margin: 0 0 24px; 
       text-align: left;
+    }
+
+    .text p {
+      margin: 0 0 18px;
+    }
+
+    .text p:last-child {
+      margin-bottom: 0;
+    }
+
+    .text strong {
+      color: ${textColor};
+      font-weight: 600;
     }
     
     .btn-container {
@@ -157,7 +182,7 @@ export function getEmailHtml({
     /* Responsive */
     @media only screen and (max-width: 600px) {
       .wrapper { padding: 20px 0; }
-      .header { padding: 32px 24px 24px; }
+      .header { padding: 30px 24px 22px; }
       .body { padding: 0 24px 32px; }
       .footer { padding: 24px; }
       .heading { font-size: 22px; }
@@ -174,9 +199,9 @@ export function getEmailHtml({
         <td align="center">
           <div class="main">
             <div class="header">
-              <a href="https://envault.tech" class="logo">
-                ${logoUrl ? `<img src="${logoUrl}" width="26" height="26" alt="" style="vertical-align: middle; margin-right: 8px;" />` : ""}
-                <span style="vertical-align: middle;">Envault</span>
+              <a href="https://envault.tech" class="logo" style="color: ${textColor} !important; text-decoration: none !important;">
+                ${logoUrl ? `<img src="${logoUrl}" width="26" height="26" alt="" style="display: inline-block; vertical-align: middle; margin-right: 10px;" />` : ""}
+                <span style="display: inline-block; vertical-align: middle; color: ${textColor} !important; text-decoration: none !important;">Envault</span>
               </a>
             </div>
             <div class="body">

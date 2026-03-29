@@ -4,10 +4,10 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { headers } from "next/headers";
 import { authRateLimit } from "@/lib/infra/ratelimit";
-import { logAuditEvent } from "@/lib/system/audit-logger";
 
 function resolveAuthBaseUrl(headersList: Headers): string {
   const envUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
@@ -27,6 +27,15 @@ function resolveAuthBaseUrl(headersList: Headers): string {
 
   // Final fallback to avoid malformed redirectTo like "null/auth/callback".
   return "https://envault.localhost:1355";
+}
+
+function isValidIanaTimezone(timezone: string): boolean {
+  try {
+    Intl.DateTimeFormat("en-US", { timeZone: timezone }).format(new Date());
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function signInWithGoogle(formData?: FormData) {
@@ -160,7 +169,7 @@ export async function signOut() {
   redirect("/");
 }
 
-export async function deleteAccountAction() {
+export async function deleteAccountAction(userTimezone?: string | null) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -172,141 +181,47 @@ export async function deleteAccountAction() {
 
   const { createAdminClient } = await import("@/lib/supabase/admin");
   const adminSupabase = createAdminClient();
+  const { data: scheduledAtData, error: schedulingError } =
+    await adminSupabase.rpc("schedule_account_deletion", { p_user_id: user.id });
 
-  const { data: profileData } = await adminSupabase
-    .from("profiles")
-    .select("username")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  const actorName =
-    profileData?.username ||
-    (typeof user.user_metadata?.username === "string"
-      ? user.user_metadata.username
-      : undefined) ||
-    (typeof user.user_metadata?.name === "string"
-      ? user.user_metadata.name
-      : undefined) ||
-    null;
-  const actorEmail = user.email ?? null;
-  const actorDisplayName =
-    actorName || actorEmail?.split("@")[0] || `user-${user.id.slice(0, 8)}`;
-
-  // 0. Reassign shared ownership references before deleting the auth user.
-  const { error: preparationError } = await adminSupabase.rpc(
-    "prepare_user_account_deletion",
-    {
-      p_user_id: user.id,
-      p_actor_name: actorName,
-      p_actor_email: actorEmail,
-    },
-  );
-
-  if (preparationError) {
-    console.error(
-      "Error preparing account deletion (reassignment/audit snapshot):",
-      preparationError,
-    );
-    return {
-      error:
-        "Failed to prepare account deletion safely. Please try again or contact support.",
-    };
+  if (schedulingError) {
+    console.error("Error scheduling account deletion:", schedulingError);
+    return { error: "Failed to schedule account deletion. Please try again." };
   }
 
-  // 0.5. Emit membership removal audit events before membership rows are deleted
-  // so project owners have a clear trail that this member account was deleted.
-  const { data: memberships } = await adminSupabase
-    .from("project_members")
-    .select("project_id, projects!inner(name)")
-    .eq("user_id", user.id);
+  const scheduledAtIso =
+    typeof scheduledAtData === "string"
+      ? scheduledAtData
+      : new Date().toISOString();
+  const deletionDeadlineIso = new Date(
+    new Date(scheduledAtIso).getTime() + 7 * 24 * 60 * 60 * 1000,
+  ).toISOString();
+  const userEmail = user.email;
+  const normalizedTimezone =
+    typeof userTimezone === "string" && isValidIanaTimezone(userTimezone)
+      ? userTimezone
+      : null;
 
-  if (memberships && memberships.length > 0) {
-    await Promise.allSettled(
-      memberships.map((membership) => {
-        const projectName =
-          (membership.projects as unknown as { name?: string })?.name ||
-          "Project";
-
-        return logAuditEvent({
-          projectId: membership.project_id,
-          actorId: user.id,
-          actorType: "user",
-          action: "member.removed",
-          targetResourceId: user.id,
-          metadata: {
-            actor_name: actorDisplayName,
-            actor_email: actorEmail || "",
-            member_user_id: user.id,
-            beneficiary_user_id: user.id,
-            beneficiary_name: actorDisplayName,
-            beneficiary_email: actorEmail || "",
-            project_name: projectName,
-            reason: "account_deleted",
-            initiated_by: "self",
-          },
-        });
-      }),
-    );
+  if (userEmail) {
+    after(async () => {
+      try {
+        const { sendAccountScheduledDeletionEmail } = await import(
+          "@/lib/infra/email"
+        );
+        await sendAccountScheduledDeletionEmail(
+          userEmail,
+          scheduledAtIso,
+          deletionDeadlineIso,
+          normalizedTimezone,
+        );
+      } catch (error) {
+        console.error("Failed to send scheduled deletion email:", error);
+      }
+    });
   }
 
-  // 1. Clean up user memberships and shared access
-  // We must clean these up explicitly because they might be on projects/secrets NOT owned by the user,
-  // or the foreign keys might not be set to CASCADE for these specific relationships.
-
-  // Access Requests (where user is requesting access)
-  const { error: reqError } = await adminSupabase
-    .from("access_requests")
-    .delete()
-    .eq("user_id", user.id);
-  if (reqError) console.error("Error deleting access requests:", reqError);
-
-  // Secret Shares (where user is a viewer)
-  const { error: shareError } = await adminSupabase
-    .from("secret_shares")
-    .delete()
-    .eq("user_id", user.id);
-  if (shareError) console.error("Error deleting secret shares:", shareError);
-
-  // Project Members (where user is a member)
-  const { error: memberError } = await adminSupabase
-    .from("project_members")
-    .delete()
-    .eq("user_id", user.id);
-  if (memberError)
-    console.error("Error deleting project memberships:", memberError);
-
-  // Secrets (where user updated them but doesn't own them)
-  // We must NULL out the reference, otherwise we can't delete the user.
-  // We do NOT want to delete the secret itself as it belongs to someone else.
-  const { error: updatedByError } = await adminSupabase
-    .from("secrets")
-    .update({ last_updated_by: null })
-    .eq("last_updated_by", user.id);
-
-  if (updatedByError)
-    console.error("Error nullifying updated_by:", updatedByError);
-
-  // 2. Delete user's projects
-  const { error: projectsError } = await adminSupabase
-    .from("projects")
-    .delete()
-    .eq("user_id", user.id);
-
-  if (projectsError) {
-    console.error("Error deleting user projects:", projectsError);
-    return { error: "Failed to clean up user data (projects)" };
-  }
-
-  // 3. Delete the user account
-  const { error } = await adminSupabase.auth.admin.deleteUser(user.id);
-
-  if (error) {
-    console.error("Error deleting user:", error);
-    return { error: error.message };
-  }
-
-  await supabase.auth.signOut();
-  redirect("/?accountDeleted=true");
+  await supabase.auth.signOut({ scope: "global" });
+  redirect("/login?accountDeletionScheduled=true");
 }
 
 export async function forgotPassword(formData: FormData) {

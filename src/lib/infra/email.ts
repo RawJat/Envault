@@ -22,6 +22,28 @@ const SENDERS = {
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://envault.tech";
 const LOGO_URL = `https://www.envault.tech/favicon.png`;
 
+function isValidTimezone(timezone: string): boolean {
+  try {
+    Intl.DateTimeFormat("en-US", { timeZone: timezone }).format(new Date());
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function formatDateInTimezone(isoDate: string, timezone: string): string {
+  const date = new Date(isoDate);
+  if (Number.isNaN(date.getTime())) {
+    return isoDate;
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    dateStyle: "long",
+    timeStyle: "short",
+  }).format(date);
+}
+
 /**
  * Send a test email to verify Resend configuration
  */
@@ -47,6 +69,68 @@ export async function sendTestEmail(to: string) {
   } catch (error) {
     console.error("Failed to send test email:", error);
     return { success: false, error };
+  }
+}
+
+export async function sendAccountScheduledDeletionEmail(
+  to: string,
+  scheduledAtIso: string,
+  deletionDueAtIso: string,
+  timezone?: string | null,
+) {
+  if (process.env.NODE_ENV === "development" && !process.env.RESEND_API_KEY) {
+    console.log(
+      "Skipping account deletion schedule email in DEV (No API Key).",
+    );
+    return;
+  }
+
+  const displayTimezone =
+    timezone && isValidTimezone(timezone) ? timezone : "UTC";
+  const scheduledAtText = formatDateInTimezone(scheduledAtIso, displayTimezone);
+  const deletionDueText = formatDateInTimezone(
+    deletionDueAtIso,
+    displayTimezone,
+  );
+  const fallbackCopy =
+    displayTimezone === "UTC"
+      ? "<p>We couldn't determine your local timezone, so times are shown in UTC.</p>"
+      : "";
+
+  try {
+    const html = getEmailHtml({
+      heading: "Account Deletion Scheduled",
+      content: `
+        <p>We received your request to delete your Envault account.</p>
+        <p><strong>Requested (${displayTimezone}):</strong> ${scheduledAtText}</p>
+        <p><strong>Permanently deleted after (${displayTimezone}):</strong> ${deletionDueText}</p>
+        ${fallbackCopy}
+        <p>If you change your mind, sign in before the deadline to cancel deletion.</p>
+      `,
+      action: {
+        text: "Sign In to Cancel Deletion",
+        url: `${APP_URL}/login`,
+      },
+      footerText:
+        "If this wasn't you, sign in immediately and secure your account.",
+      logoUrl: LOGO_URL,
+    });
+
+    const { error } = await resend.emails.send({
+      from: SENDERS.security,
+      to,
+      subject: "Your Envault account is scheduled for deletion",
+      html,
+    });
+
+    if (error) {
+      console.error(
+        "Resend API failed to send scheduled deletion email:",
+        error,
+      );
+    }
+  } catch (error) {
+    console.error("Failed to send scheduled deletion email:", error);
   }
 }
 

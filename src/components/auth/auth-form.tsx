@@ -57,18 +57,26 @@ export function AuthForm() {
   const searchParams = useSearchParams();
 
   React.useEffect(() => {
+    if (searchParams.get("accountDeletionScheduled")) {
+      setTimeout(() => {
+        toast.success(
+          "Your account is scheduled for deletion. Sign in within 7 days to cancel it.",
+        );
+        router.replace("/login");
+      }, 100);
+    }
     if (searchParams.get("accountDeleted")) {
       setTimeout(() => {
         toast.success("Account deleted successfully");
         // Clean up the URL
-        router.replace("/");
+        router.replace("/login");
       }, 100);
     }
     if (searchParams.get("emailConfirmed")) {
       setTimeout(() => {
         toast.success("Email confirmed! You can now sign in.");
         // Clean up the URL
-        router.replace("/");
+        router.replace("/login");
       }, 100);
     }
   }, [searchParams, router]);
