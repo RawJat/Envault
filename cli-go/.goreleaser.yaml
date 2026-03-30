@@ -7,7 +7,8 @@ before:
     - go mod tidy
 
 builds:
-  - env:
+  - id: envault
+    env:
       - CGO_ENABLED=0
     goos:
       - linux
@@ -23,7 +24,10 @@ builds:
       - -X github.com/DinanathDash/Envault/cli-go/cmd.date={{.Date}}
 
 archives:
-  - formats:
+  - id: cli-tarballs
+    ids:
+      - envault
+    formats:
       - tar.gz
     # this name template makes the OS and Arch compatible with the results of uname.
     name_template: >-
@@ -38,6 +42,18 @@ archives:
       - goos: windows
         formats:
           - zip
+  - id: cli-cask-zips
+    ids:
+      - envault
+    formats:
+      - zip
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
 
 checksum:
   name_template: 'checksums.txt'
@@ -61,6 +77,27 @@ changelog:
       - '^docs:'
       - '^test:'
 
+# Homebrew formula configuration
+brews:
+  - repository:
+      owner: DinanathDash
+      name: homebrew-envault
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    directory: Formula
+    name: envault
+    homepage: "https://envault.tech"
+    description: "Envault CLI - Securely manage your environment variables"
+    license: "Apache-2.0"
+    ids:
+      - cli-tarballs
+    commit_author:
+      name: github-actions[bot]
+      email: 41898282+github-actions[bot]@users.noreply.github.com
+    install: |
+      bin.install "envault"
+    test: |
+      system "#{bin}/envault", "--version"
+
 # Homebrew cask configuration
 homebrew_casks:
   - repository:
@@ -71,5 +108,11 @@ homebrew_casks:
     name: envault
     homepage: "https://envault.tech"
     description: "Envault CLI - Securely manage your environment variables"
+    ids:
+      - cli-cask-zips
+    commit_author:
+      name: github-actions[bot]
+      email: 41898282+github-actions[bot]@users.noreply.github.com
+    binary: envault
     url:
       verified: github.com/DinanathDash/Envault
