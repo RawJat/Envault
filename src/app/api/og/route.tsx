@@ -165,7 +165,7 @@ export async function GET(request: Request) {
                 style={{ display: "flex", alignItems: "center", gap: "12px" }}
               >
                 <ChevronRight color="#22C55E" />
-                <span>npm install -g envault-cli</span>
+                <span>npm install -g @dinanathdash/envault</span>
               </div>
               <div
                 style={{

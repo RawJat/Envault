@@ -37,18 +37,6 @@ archives:
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
-  - id: cli-cask-zips
-    ids:
-      - envault
-    formats:
-      - zip
-    name_template: >-
-      {{ .ProjectName }}_
-      {{- title .Os }}_
-      {{- if eq .Arch "amd64" }}x86_64
-      {{- else if eq .Arch "386" }}i386
-      {{- else }}{{ .Arch }}{{ end }}
-      {{- if .Arm }}v{{ .Arm }}{{ end }}
 
 checksum:
   name_template: 'checksums.txt'
@@ -92,22 +80,3 @@ brews:
       bin.install "envault"
     test: |
       system "#{bin}/envault", "--version"
-
-# Homebrew cask configuration
-homebrew_casks:
-  - repository:
-      owner: DinanathDash
-      name: homebrew-envault
-      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-    directory: Casks
-    name: envault
-    homepage: "https://envault.tech"
-    description: "Envault CLI - Securely manage your environment variables"
-    ids:
-      - cli-cask-zips
-    commit_author:
-      name: github-actions[bot]
-      email: 41898282+github-actions[bot]@users.noreply.github.com
-    binary: envault
-    url:
-      verified: github.com/DinanathDash/Envault

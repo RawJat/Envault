@@ -50,6 +50,19 @@ jobs:
         run: |
           npm install --no-save semantic-release @semantic-release/commit-analyzer @semantic-release/release-notes-generator @semantic-release/npm @semantic-release/git @semantic-release/exec conventional-changelog-conventionalcommits
 
+      - name: Validate Homebrew formula-only release config
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -q "^homebrew_casks:" cli-go/.goreleaser.yaml; then
+            echo "homebrew_casks is not allowed. Envault ships Homebrew formula only."
+            exit 1
+          fi
+          if grep -q "cli-cask-zips" cli-go/.goreleaser.yaml; then
+            echo "cli-cask-zips archive is not allowed in formula-only mode."
+            exit 1
+          fi
+
       - name: Ensure CLI changes exist since last tag
         id: cli_scope
         shell: bash
