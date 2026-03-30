@@ -35,7 +35,7 @@ export default async function PrivacyPage() {
   return (
     <LegalLayout
       title="Privacy Policy"
-      lastUpdated="24 February 2026"
+      lastUpdated="30 March 2026"
       sections={sections}
     >
       <section
@@ -350,6 +350,11 @@ export default async function PrivacyPage() {
             that cannot be disabled, such as account access from new devices.
           </li>
           <li className="leading-relaxed">
+            <strong>Account Deletion Notices</strong>: When account deletion is
+            requested, we send a transactional security email with the request
+            time, scheduled deletion deadline, and recovery instructions.
+          </li>
+          <li className="leading-relaxed">
             <strong>Service Communications</strong>: Updates about new features,
             maintenance, or policy changes.
           </li>
@@ -469,8 +474,11 @@ export default async function PrivacyPage() {
           <ul className="space-y-3 text-muted-foreground">
             <li className="leading-relaxed">
               <strong className="text-foreground">Account Data</strong>:
-              Retained for the duration of your account. Deleted within 30 days
-              of account deletion, except where required for legal compliance.
+              Retained for the duration of your account. When deletion is
+              requested, account data enters a 7-day soft-delete window and is
+              permanently purged after the grace period unless you sign back in
+              to revive the account. Limited records may be retained longer
+              where required for legal compliance.
             </li>
             <li className="leading-relaxed">
               <strong className="text-foreground">Encrypted Secrets</strong>:

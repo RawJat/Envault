@@ -94,9 +94,13 @@ This visibility enables collaborative teams to maintain security awareness and a
 
 When a member deletes their account, Envault preserves project integrity and attribution context:
 
+- **Deletion is scheduled (soft-delete)** for a 7-day grace period instead of immediate hard deletion.
+- **Signing back in during the grace window cancels deletion** and restores normal account status.
 - **Shared secrets are not deleted** during account removal.
 - **Ownership pointers are safely reassigned** to the project owner where required.
 - **Creator/updater identity snapshots are retained** on secret records so project history remains understandable in variable tables and audit timelines.
+
+After the grace window expires, automated purge jobs permanently remove the account and clean up linked user-scoped records.
 
 If a live user profile can no longer be resolved, UI surfaces a fallback identity label while preserving available metadata from prior snapshots.
 

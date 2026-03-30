@@ -27,7 +27,7 @@ Preferences are grouped into seven matched categories for email and in‑app cha
 | <UserPlus className="inline w-4 h-4 mr-1" /> Access Requests                   | `access_request_received`                                                                        | same         |
 | <CheckCircle2 className="inline w-4 h-4 mr-1" /> Access Granted / Role Changes | approvals, denials, invitations, membership changes                                              | same         |
 | <Smartphone className="inline w-4 h-4 mr-1" /> Device Activity                 | new device access, new location, unknown login                                                   | same         |
-| <ShieldAlert className="inline w-4 h-4 mr-1" /> Security Alerts                | password/email changes, 2FA events, encryption failures, security advisories                     | same         |
+| <ShieldAlert className="inline w-4 h-4 mr-1" /> Security Alerts                | password/email changes, 2FA events, encryption failures, security advisories, account deletion scheduled | same         |
 | <FolderPlus className="inline w-4 h-4 mr-1" /> Project Activity                | secrets added/updated/deleted, bulk ops, project CRUD, settings changes, members joining/leaving | same         |
 | <Terminal className="inline w-4 h-4 mr-1" /> CLI Activity                      | `secrets_pulled`, `secrets_pushed`                                                               | same         |
 | <ServerCrash className="inline w-4 h-4 mr-1" /> System Updates                 | system releases, maintenance notices, rate‑limit warnings, email failures                        | same         |
@@ -111,6 +111,16 @@ If users do not receive expected email notifications:
 3. Check mail logs for bounces or rate‑limit errors (also surfaced as `email_failed` notifications in‑app).
 
 For high‑volume installations, review the `supabase/migrations/20260224000001_expand_notification_preferences.sql` migration, which adds the granular preference columns and sets secure defaults.
+
+## Account Deletion Emails
+
+When account deletion is requested from Settings, Envault sends a security email that includes:
+
+- The deletion request time.
+- The permanent deletion deadline (7 days later).
+- A sign-in action link to cancel deletion before the deadline.
+
+If the user timezone is unavailable, timestamps are shown in UTC.
 
 ---
 

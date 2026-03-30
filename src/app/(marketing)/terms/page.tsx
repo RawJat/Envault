@@ -39,7 +39,7 @@ export default async function TermsPage() {
   return (
     <LegalLayout
       title="Terms of Service"
-      lastUpdated="24 February 2026"
+      lastUpdated="30 March 2026"
       sections={sections}
     >
       <section
@@ -84,6 +84,11 @@ export default async function TermsPage() {
           responsibility to maintain account security. If you link multiple
           OAuth providers, you agree that any linked provider can be used to
           access your account.
+        </p>
+        <p className="text-muted-foreground mt-4 leading-relaxed">
+          If you request account deletion, Envault applies a 7-day soft-delete
+          grace period before permanent deletion. Signing back in during this
+          period revives your account and cancels pending deletion.
         </p>
       </section>
 
@@ -409,6 +414,11 @@ export default async function TermsPage() {
             for account protection.
           </li>
           <li>
+            Account deletion scheduling notices may be sent as transactional
+            security emails, including the deletion deadline and revival
+            instructions.
+          </li>
+          <li>
             You agree that we may send service announcements and updates via
             email or in-app notifications.
           </li>
@@ -450,8 +460,10 @@ export default async function TermsPage() {
           We may terminate or suspend your account immediately, without prior
           notice or liability, for any reason whatsoever, including without
           limitation if you breach the Terms. Upon termination, your right to
-          use the Service will immediately cease. If you wish to terminate your
-          account, you may simply discontinue using the Service.
+          use the Service will immediately cease. If you request account
+          deletion through the Service, deletion is scheduled with a 7-day
+          grace period and may be canceled by signing back in during that
+          window.
         </p>
       </section>
 
