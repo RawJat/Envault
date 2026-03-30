@@ -102,7 +102,7 @@ func installPreCommitHook() (alreadyInstalled bool, binPath string, err error) {
 	// Prefer the PATH-based lookup so the hook embeds the stable symlink
 	// (e.g. /opt/homebrew/bin/envault) rather than the versioned Cellar path
 	// (/opt/homebrew/Cellar/envault/1.20.0/bin/envault).  Using the symlink
-	// means the hook survives `brew upgrade envault` without needing
+	// means the hook survives `brew upgrade --formula envault` without needing
 	// re-installation.  Fall back to os.Executable() when not on PATH.
 	execPath, lookErr := exec.LookPath("envault")
 	if lookErr != nil {

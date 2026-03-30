@@ -194,8 +194,11 @@ func getUpdateCommand() string {
 	if strings.Contains(path, "bun") {
 		return "bun add -g @dinanathdash/envault"
 	}
+	if strings.Contains(path, "Caskroom") {
+		return "brew uninstall --cask dinanathdash/envault/envault && brew install --formula envault"
+	}
 	if strings.Contains(path, "brew") || strings.Contains(path, "Cellar") || strings.Contains(path, "linuxbrew") {
-		return "brew upgrade envault"
+		return "brew upgrade --formula envault"
 	}
 	if strings.Contains(path, "/go/bin/") || strings.Contains(path, "GOPATH") {
 		return "go install github.com/DinanathDash/Envault/cli-go@latest"

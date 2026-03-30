@@ -64,8 +64,8 @@ export function Hero() {
 
               <TabsContent value="brew" className="mt-0">
                 <InstallTerminal
-                  command="brew tap DinanathDash/envault && brew install envault"
-                  label="Homebrew"
+                  command="brew tap DinanathDash/envault && brew install --formula envault"
+                  label="Homebrew (Formula)"
                 />
               </TabsContent>
 

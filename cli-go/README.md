@@ -40,7 +40,23 @@ curl -fsSL https://raw.githubusercontent.com/DinanathDash/Envault/main/install.s
 
 ```bash
 brew tap DinanathDash/envault
-brew install envault
+brew install --formula envault
+```
+
+Homebrew cask installs are deprecated. If you previously installed with cask, migrate to formula:
+
+```bash
+brew uninstall --cask dinanathdash/envault/envault
+brew install --formula envault
+```
+
+If Homebrew still resolves an older version, refresh metadata and upgrade explicitly:
+
+```bash
+brew update
+brew untap dinanathdash/envault || true
+brew tap dinanathdash/envault
+brew upgrade --formula envault
 ```
 
 ### Via NPM (Backward Compatible Wrapper)

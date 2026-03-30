@@ -46,7 +46,7 @@ For additional enforcement in pull request checks or deployment gates, use `enva
 steps:
   - uses: actions/checkout@v3
   - name: Install Envault CLI
-    run: curl -sL https://envault.app/install.sh | bash
+    run: curl -fsSL https://raw.githubusercontent.com/DinanathDash/Envault/main/install.sh | sh
   - name: Audit env files
     run: envault audit --strict --format=json
 ```
@@ -76,7 +76,7 @@ jobs:
           node-version: 18
           
       - name: Install Envault CLI
-        run: curl -sL https://envault.app/install.sh | bash
+        run: curl -fsSL https://raw.githubusercontent.com/DinanathDash/Envault/main/install.sh | sh
 
       - name: Install Dependencies
         run: npm ci
@@ -97,7 +97,7 @@ build_app:
   variables:
     ENVAULT_TOKEN: $ENVAULT_SERVICE_TOKEN
   before_script:
-    - curl -sL https://envault.app/install.sh | bash
+    - curl -fsSL https://raw.githubusercontent.com/DinanathDash/Envault/main/install.sh | sh
   script:
     - npm ci
     - envault run --project proj_123 --env production -- npm run build
@@ -111,7 +111,7 @@ You can use Envault to inject secrets at container runtime.
 FROM node:18-alpine
 
 # Install Envault
-RUN curl -sL https://envault.app/install.sh | bash
+RUN curl -fsSL https://raw.githubusercontent.com/DinanathDash/Envault/main/install.sh | sh
 
 WORKDIR /app
 COPY . .

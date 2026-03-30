@@ -26,7 +26,29 @@ If you use Homebrew, you can install Envault via our official tap.
 
 ```bash
 brew tap DinanathDash/envault
-brew install envault
+brew install --formula envault
+```
+
+Homebrew cask installs are deprecated. If you installed Envault via cask, migrate to formula:
+
+```bash
+brew uninstall --cask dinanathdash/envault/envault
+brew install --formula envault
+```
+
+If Homebrew shows an older formula version than the latest release, refresh tap metadata:
+
+```bash
+brew update
+brew untap dinanathdash/envault || true
+brew tap dinanathdash/envault
+brew upgrade --formula envault
+```
+
+You can also run diagnostics with:
+
+```bash
+envault doctor
 ```
 
 ### JS Package Managers
@@ -130,6 +152,7 @@ Then run commands without repeating `--file`.
 - `envault deploy` or `envault push`: push local secrets to remote
 - `envault run -- <cmd>`: run a command with injected secrets
 - `envault env map|unmap|default`: manage local file mappings/default env
+- `envault doctor`: diagnose installation and update issues
 - `envault version` or `envault --version`: print version
 - `envault completion <shell>`: generate shell completion
 
