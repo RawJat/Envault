@@ -192,12 +192,6 @@ export default function SettingsView() {
   const hasCustomizedUsername = user?.username
     ? !defaultUsernameRegex.test(user.username)
     : false;
-  const localDeletionDeadlineText = new Date(
-    Date.now() + 7 * 24 * 60 * 60 * 1000,
-  ).toLocaleString(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
 
   const handleDeleteAccountClick = () => {
     setDeleteConfirmation("");
@@ -564,9 +558,7 @@ export default function SettingsView() {
             {isDeletingAccount && (
               <div className="p-3 border rounded-md bg-muted/50 text-sm text-muted-foreground flex items-start gap-2">
                 <Loader2 className="h-4 w-4 animate-spin mt-0.5 shrink-0" />
-                <p>
-                  Scheduling deletion and signing you out...
-                </p>
+                <p>Scheduling deletion and signing you out...</p>
               </div>
             )}
 
@@ -593,8 +585,8 @@ export default function SettingsView() {
                     htmlFor="confirm-delete-projects"
                     className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                   >
-                    I understand my projects will be permanently deleted after
-                    7 days if I do not sign in again.
+                    I understand my projects will be permanently deleted after 7
+                    days if I do not sign in again.
                   </label>
                 </div>
               </div>
