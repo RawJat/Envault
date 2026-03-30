@@ -20,6 +20,9 @@ Before deploying, ensure you have the following environment variables configured
 | `ENCRYPTION_KEY` | 32-byte hex string for Master Key | Yes |
 | `NEXT_PUBLIC_SITE_URL` | The URL where your app is hosted (e.g. `https://envault.app`) | Yes |
 | `NEXT_PUBLIC_APP_URL` | Same as `NEXT_PUBLIC_SITE_URL` - used for GitHub callback redirects | Yes |
+| `CRON_SECRET` | Secret used by `/api/cron/digest` email digest endpoint | For notification digests |
+| `ACCOUNT_DELETION_CRON_SECRET` | Secret header validation for `process-account-deletions` Edge Function | Yes (recommended for production) |
+| `ROTATE_KEYS_CRON_SECRET` | Secret header validation for `rotate-keys` Edge Function | Yes (recommended for production) |
 | `ENVAULT_GITHUB_APP_CLIENT_ID` | GitHub App Client ID | For GitHub Integration |
 | `ENVAULT_GITHUB_APP_CLIENT_SECRET` | GitHub App Client Secret | For GitHub Integration |
 | `ENVAULT_GITHUB_APP_PRIVATE_KEY` | RSA private key, single-line `\n`-escaped | For GitHub Integration |
@@ -105,3 +108,20 @@ Before deploying, ensure you have the following environment variables configured
 - **HTTPS**: Ensure your domain is serving over HTTPS.
 - **Database Backups**: Enable Point-in-Time Recovery (PITR) on Supabase.
 - **Key Backup**: Securely back up your `ENCRYPTION_KEY` in a password manager. If you lose this, all data is lost.
+
+### Required Scheduled Jobs
+
+Configure these recurring jobs after deploy:
+
+1. **Email Digest Cron** (`/api/cron/digest`)
+  - Send authenticated `GET` requests with `Authorization: Bearer <CRON_SECRET>`.
+2. **Account Deletion Purge** (`supabase/functions/v1/process-account-deletions`)
+  - Trigger daily with `x-cron-secret: <ACCOUNT_DELETION_CRON_SECRET>`.
+3. **Key Rotation / Scavenger** (`supabase/functions/v1/rotate-keys`)
+  - Trigger with `x-cron-secret: <ROTATE_KEYS_CRON_SECRET>` on your desired cadence.
+
+<Callout type="info">
+  For Supabase-hosted schedules, use the SQL migration templates under
+  `supabase/migrations` and replace the placeholder cron secrets before
+  applying in production.
+</Callout>
