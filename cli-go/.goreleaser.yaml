@@ -37,11 +37,6 @@ archives:
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
-    # use zip for windows
-    format_overrides:
-      - goos: windows
-        formats:
-          - zip
   - id: cli-cask-zips
     ids:
       - envault
