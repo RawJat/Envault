@@ -1,0 +1,61 @@
+---
+title: Accessibility
+description: How Envault combines keyboard-first navigation and global haptic feedback to enhance accessibility and user experience.
+---
+
+# Accessibility
+
+Envault is designed with accessibility and sensory comfort in mind. A core part of our interactive experience is **Global Haptic Feedback**.
+
+## Haptic Feedback
+
+To provide a more tactile and responsive user experience, Envault implements a dual-path haptics system that triggers physical device vibrations during high-value interactions.
+
+### High-Value Interactions Only
+
+We strictly reserve haptic feedback for critical actions to avoid sensory fatigue. You will feel haptic feedback during:
+
+- **Errors**: Form validation failures (e.g., missing usernames) or critical API errors.
+- **Success**: Positive confirmations, such as successfully updating your profile and reviving an account.
+- **Destructive Actions**: High-risk operations like scheduling an account deletion or permanently deleting a project.
+
+Routine navigation, tab switching, and standard button clicks remain completely silent. Furthermore, asynchronous actions utilize "pre-flight" light haptics immediately upon interaction so users always feel a responsive click.
+
+### Dual-Path Compatibility
+
+Envault's haptics system works across both major mobile OS boundaries:
+
+- **Android**: Utilizes the native `navigator.vibrate` API for granular, precise vibration patterns.
+- **iOS / Safari**: Utilizes a graceful fallback mechanism leveraging a hidden `<input type="checkbox" switch>` element to trigger Safari's native physical switch haptics.
+
+### User Opt-Out
+
+Accessibility is about choice. If you prefer not to experience haptic feedback, or if you are prone to sensory fatigue, you can disable it globally:
+
+1. Navigate to **Settings > Profile**.
+2. Scroll down to the **Preferences** section.
+3. Toggle off **Enable Haptic Feedback**.
+
+This preference is instantly saved to your browser's local storage (`envault_haptics_enabled`) and will be respected across the entire Envault application.
+
+## Keyboard Navigation
+
+Envault embraces a keyboard-first philosophy, allowing power users and those relying on assistive technologies to navigate the entire platform without a mouse.
+
+### Global Command Palette
+
+Press **`⌘` + `K`** (or **`Ctrl` + `K`** on Windows/Linux) from anywhere in the app to open the Global Search Dialog. From here you can:
+
+- **Search Projects**: Instantly jump to any project environment by name.
+- **Access Settings**: Quickly navigate to Profile, Security, or Appearance settings.
+- **Switch Contexts**: Move between the dashboard, documentation, and support pages seamlessly.
+
+### Contextual Shortcuts
+
+Throughout the Envault UI, you will notice small hints (e.g., **`N`**, **`⌘ + ↵`**) attached to buttons and actions. These are contextual shortcuts designed to speed up your workflow:
+
+- **Project Editor:** Press **`N`** to open the "Add Variable" dialog instantly while viewing a project.
+- **Universal Actions:** Depending on your role, background shortcuts are available to quickly **Delete**, **Share**, **Download**, or **Import** environments without clicking through dropdowns.
+- **Form Submission:** Most dialogs and forms (such as saving profiles, confirming deletions, or adding variables) can be submitted using **`⌘` + `Enter`** (or **`Ctrl` + `Enter`**).
+
+All shortcuts are designed to be conflict-free and respect browser defaults, turning your environment management into a seamless, accessible experience.

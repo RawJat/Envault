@@ -10,6 +10,17 @@ All notable changes to Envault are documented here.
 
 ---
 
+## 1.6.1 - 2026-04-01
+
+> Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
+
+### Improvements & Accessibility
+
+- **Global Haptics Feedback:** Added a dual-path iOS/Android haptics utility and a global accessibility opt-out toggle, wired directly into high-value interactions like profile saves and project deletions.
+- **Account Deletion Documentation:** Updated documentation and environment variables for the account deletion process, detailing the 7-day soft-delete grace period and notification workflows.
+
+---
+
 ## 1.6.0 - 2026-03-29
 
 > Authors: Rajat Patra (RawJat)

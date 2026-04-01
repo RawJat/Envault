@@ -46,6 +46,7 @@ import {
 import { Project, useEnvaultStore } from "@/lib/stores/store";
 import { toast } from "sonner";
 import { deleteProject as deleteProjectAction } from "@/app/project-actions";
+import { triggerHaptic } from "@/lib/haptic";
 
 import { ShareProjectDialog } from "@/components/dialogs/share-project-dialog";
 import { RenameProjectDialog } from "@/components/dialogs/rename-project-dialog";
@@ -118,14 +119,17 @@ export function ProjectCard({ project }: ProjectCardProps) {
     if (e) {
       e.preventDefault();
     }
+    triggerHaptic("light");
     setIsDeleting(true);
     const result = await deleteProjectAction(project.id);
     if (result.error) {
+      triggerHaptic("error");
       toast.error(result.error);
       setIsDeleting(false);
       return;
     }
     deleteProject(project.id);
+    triggerHaptic("cancel");
     toast.success("Project deleted");
     setDeleteDialogOpen(false);
     router.refresh();

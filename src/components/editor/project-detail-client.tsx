@@ -24,6 +24,7 @@ import { VariableDialog } from "@/components/dialogs/variable-dialog";
 import { ImportEnvDialog } from "@/components/dialogs/import-env-dialog";
 import { Project, useEnvaultStore } from "@/lib/stores/store";
 import { createClient } from "@/lib/supabase/client";
+import { triggerHaptic } from "@/lib/haptic";
 
 import {
   DropdownMenu,
@@ -290,14 +291,17 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
 
   const handleDeleteConfirm = async (e?: React.MouseEvent) => {
     if (e) e.preventDefault();
+    triggerHaptic("light");
     setIsDeleting(true);
     const result = await deleteProjectAction(project.id);
     if (result.error) {
+      triggerHaptic("error");
       toast.error(result.error);
       setIsDeleting(false);
       return;
     }
     deleteProject(project.id);
+    triggerHaptic("cancel");
     toast.success("Project deleted");
     setDeleteDialogOpen(false);
     router.push("/dashboard");
