@@ -31,6 +31,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { triggerHaptic } from "@/lib/haptic";
 import { Kbd } from "@/components/ui/kbd";
 import { CornerDownLeft } from "lucide-react";
 
@@ -59,6 +60,7 @@ export function AuthForm() {
   React.useEffect(() => {
     if (searchParams.get("accountDeletionScheduled")) {
       setTimeout(() => {
+        triggerHaptic("cancel");
         toast.success(
           "Your account is scheduled for deletion. Sign in within 7 days to cancel it.",
         );

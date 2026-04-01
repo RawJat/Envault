@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
+import { triggerHaptic } from "@/lib/haptic";
 
 const REVIVAL_TOAST_WINDOW_MS = 15 * 1000;
 
@@ -43,6 +44,7 @@ export function AccountRevivalToastListener() {
           }
 
           sessionStorage.setItem(dedupeKey, "1");
+          triggerHaptic("success");
           toast.success(
             "Welcome back! Your account deletion request has been cancelled.",
           );

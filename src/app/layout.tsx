@@ -20,6 +20,7 @@ import { SystemStatusBanner } from "@/components/ui/system-status-banner";
 import { GlobalScene } from "@/components/landing/ui/GlobalScene";
 import { RootRefreshHandler } from "@/components/RootRefreshHandler";
 import { FreeTierNotification } from "@/components/free-tier-notification";
+import { HapticProvider } from "@/components/providers/haptics-provider";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.envault.tech"),
@@ -154,8 +155,10 @@ export default async function RootLayout({
             <TooltipProvider>
               <ShortcutProvider>
                 <HmacProvider>
-                  <GlobalScene />
-                  {children}
+                  <HapticProvider>
+                    <GlobalScene />
+                    {children}
+                  </HapticProvider>
                   <Toaster />
                   <AccountRevivalToastListener />
                   <FreeTierNotification />

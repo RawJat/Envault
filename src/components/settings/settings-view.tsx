@@ -3,10 +3,12 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, usePathname } from "next/navigation";
 import { useEnvaultStore } from "@/lib/stores/store";
+import { useHaptics } from "@/components/providers/haptics-provider";
 import { SecurityTab } from "./security-tab";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { SupportView } from "@/components/support/support-view";
 import {
   Card,
@@ -30,6 +32,7 @@ import {
   CornerDownLeft,
 } from "lucide-react";
 import { toast } from "sonner";
+import { triggerHaptic } from "@/lib/haptic";
 import { NotificationPreferences } from "@/components/notifications/notification-preferences";
 import {
   AlertDialog,
@@ -57,6 +60,7 @@ const ModKey = () => (
 
 export default function SettingsView() {
   const { user, updateUser, deleteAccount, projects } = useEnvaultStore();
+  const { isHapticsEnabled, setIsHapticsEnabled } = useHaptics();
 
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -109,7 +113,9 @@ export default function SettingsView() {
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   const handleUpdateProfile = async () => {
+    triggerHaptic("light");
     if (!username || username.trim() === "") {
+      triggerHaptic("error");
       toast.error("Username cannot be empty");
       return;
     }
@@ -130,6 +136,7 @@ export default function SettingsView() {
       "admin",
     ];
     if (RESERVED_USERNAMES.includes(username.toLowerCase())) {
+      triggerHaptic("error");
       toast.error(
         `"${username}" is a reserved keyword and cannot be used as a username.`,
       );
@@ -150,6 +157,7 @@ export default function SettingsView() {
           .maybeSingle();
 
         if (existingProfile && existingProfile.id !== user?.id) {
+          triggerHaptic("error");
           toast.error("This username is already taken. Please choose another.");
           return;
         }
@@ -165,6 +173,7 @@ export default function SettingsView() {
       });
 
       if (error) {
+        triggerHaptic("error");
         toast.error("Failed to update profile");
         return;
       }
@@ -174,6 +183,7 @@ export default function SettingsView() {
         lastName,
         username,
       });
+      triggerHaptic("success");
       toast.success("Profile updated successfully");
     } finally {
       setIsUpdatingProfile(false);
@@ -201,16 +211,19 @@ export default function SettingsView() {
 
   const handleDeleteAccountConfirm = async (e?: React.MouseEvent) => {
     if (e) e.preventDefault();
+    triggerHaptic("light");
     setIsDeletingAccount(true);
     try {
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
       const result = await deleteAccountAction(timezone);
       if (result?.error) {
+        triggerHaptic("error");
         toast.error(result.error);
         setDeleteDialogOpen(false);
         return;
       }
       deleteAccount(); // Clear local store
+      triggerHaptic("cancel");
       toast.success("Account deletion scheduled");
       setDeleteDialogOpen(false);
     } finally {
@@ -474,6 +487,28 @@ export default function SettingsView() {
                           </>
                         )}
                       </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <div className="md:hidden">
+                  <h2 className="text-lg font-medium mt-8">Preferences</h2>
+                </div>
+
+                <Card className="md:hidden">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="haptics-toggle">Haptic feedback</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Receive tactile feedback for important actions on supported devices.
+                        </p>
+                      </div>
+                      <Switch
+                        id="haptics-toggle"
+                        checked={isHapticsEnabled}
+                        onCheckedChange={setIsHapticsEnabled}
+                      />
                     </div>
                   </CardContent>
                 </Card>
