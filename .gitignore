@@ -59,6 +59,7 @@ cli-go/.env
 
 # Generated documentation
 public/llms-full.txt
+commit-log.txt
 
 # CLI Wrapper Binaries
 cli-wrapper/bin/envault.exe

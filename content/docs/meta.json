@@ -5,7 +5,6 @@
     "guides",
     "core",
     "cli",
-    "configuration",
-    "api"
+    "configuration"
   ]
 }
