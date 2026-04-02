@@ -50,6 +50,14 @@ function createNoopTransition() {
   };
 }
 
+function runTransitionUpdateSafely(update?: () => unknown) {
+  try {
+    Promise.resolve(update?.()).catch(() => {});
+  } catch {
+    // swallow known transition update errors
+  }
+}
+
 export function ViewTransitionGuard() {
   useEffect(() => {
     const doc = document as Document & {
@@ -61,37 +69,30 @@ export function ViewTransitionGuard() {
       };
     };
 
+    const originalStartViewTransition = doc.startViewTransition?.bind(document);
+
+    const runWithoutNativeTransition = ((update?: () => unknown) => {
+      runTransitionUpdateSafely(update);
+      return createNoopTransition();
+    }) as typeof doc.startViewTransition;
+
     // In dev, route compiles can exceed native transition callback timeout.
-    // Keep the provider/hooks active but disable browser-native transitions.
+    // Keep the provider/hooks active with a no-op fallback transition.
     if (process.env.NODE_ENV === "development") {
-      const mutableDoc = doc as unknown as { startViewTransition?: unknown };
-      const hadOwn = Object.prototype.hasOwnProperty.call(
-        mutableDoc,
-        "startViewTransition",
-      );
-      const ownValue = mutableDoc.startViewTransition;
-      mutableDoc.startViewTransition = undefined;
+      doc.startViewTransition = runWithoutNativeTransition;
 
       return () => {
-        if (hadOwn) {
-          mutableDoc.startViewTransition = ownValue;
-        } else {
-          delete mutableDoc.startViewTransition;
+        if (originalStartViewTransition) {
+          doc.startViewTransition = originalStartViewTransition;
         }
       };
     }
-
-    const originalStartViewTransition = doc.startViewTransition?.bind(document);
 
     if (originalStartViewTransition) {
       doc.startViewTransition = ((update?: () => unknown) => {
         // If tab is hidden, skip transitions entirely and run update directly.
         if (document.visibilityState !== "visible") {
-          try {
-            Promise.resolve(update?.()).catch(() => {});
-          } catch {
-            // swallow known transition update errors
-          }
+          runTransitionUpdateSafely(update);
           return createNoopTransition();
         }
 
@@ -104,16 +105,15 @@ export function ViewTransitionGuard() {
           return transition;
         } catch (error) {
           if (isIgnoredViewTransitionError(error)) {
-            try {
-              Promise.resolve(update?.()).catch(() => {});
-            } catch {
-              // swallow known transition update errors
-            }
+            runTransitionUpdateSafely(update);
             return createNoopTransition();
           }
           throw error;
         }
       }) as typeof doc.startViewTransition;
+    } else {
+      // Provide a safe API surface for browsers without native View Transitions.
+      doc.startViewTransition = runWithoutNativeTransition;
     }
 
     const onUnhandledRejection = (event: PromiseRejectionEvent) => {
@@ -128,6 +128,11 @@ export function ViewTransitionGuard() {
       window.removeEventListener("unhandledrejection", onUnhandledRejection);
       if (originalStartViewTransition) {
         doc.startViewTransition = originalStartViewTransition;
+      } else {
+        const mutableDoc = doc as unknown as {
+          startViewTransition?: unknown;
+        };
+        delete mutableDoc.startViewTransition;
       }
     };
   }, []);
