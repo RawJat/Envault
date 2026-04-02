@@ -48,6 +48,7 @@ export async function proxy(request: NextRequest) {
     "/api/system-status",
     "/api/cli-version",
     "/api/search",
+    "/api/docs/markdown",
     "/api/avatar",
     "/api/cli/auth/device/code",
     "/api/cli/auth/device/token",
