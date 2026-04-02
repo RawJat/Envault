@@ -10,6 +10,42 @@ All notable changes to Envault are documented here.
 
 ---
 
+## 1.6.2 - 2026-04-02
+
+> Authors: Dinanath Dash (DinanathDash)
+
+### UI, Navigation & Interaction
+
+- **Account Menu Navigation Enhancements:** Added direct `Dashboard` and `Notifications` entries in the account dropdown with corresponding shortcut hints for faster navigation.
+- **Dashboard Header Navigation Update:** Updated the in-app Envault logo target in dashboard contexts to route to the landing page for quicker public-site access without sign-out.
+- **System Status Header Consistency:** Aligned the System Status page header to match the app’s standard page-heading + back-navigation pattern.
+- **Notification Tooltip Behavior Fix:** Notification tooltip now appears only on hover and no longer reopens unexpectedly after dialog/dropdown close.
+- **Typing-Safe Keyboard Shortcuts:** Global single-letter hotkeys are suppressed while users are typing in form fields/contenteditable regions to prevent accidental actions.
+
+### Secrets UX & Keyboard Visuals
+
+- **Add Variable Dialog Refactor:** Renamed and normalized the variable dialog flow (`add-variable-dialog`) and updated dependent imports.
+- **Masked Secret Rendering:** Added a reusable masked-dots UI component and applied it across variable table/import views for cleaner, consistent hidden-value presentation.
+- **Modifier Key Visual Standardization:** Migrated modifier key rendering to Lucide-based key icons via shared utility updates.
+
+### Runtime Stability & Accessibility
+
+- **View Transition Guard:** Added a browser transition guard to handle hidden-tab and timeout-related view transition runtime errors more safely.
+- **Client Script Rendering Compliance:** Switched inline JSON-LD script handling to `next/script` to avoid client-render script warnings.
+- **Dialog Accessibility Metadata:** Added missing dialog descriptions in affected UI surfaces to address `DialogContent` accessibility warnings.
+
+### CLI, Docs & Text Normalization
+
+- **ASCII-Safe CLI Output:** Standardized CLI status markers and separators to ASCII-safe patterns for better terminal compatibility.
+- **Docs Keyboard Hint Cleanup:** Unified keyboard hint visuals/content across docs pages and supporting UI components.
+- **Punctuation and Copy Normalization:** Replaced inconsistent special punctuation/symbol usage with standard ASCII text in scripts, API comments, and user-facing copy where appropriate.
+
+### Dependency & Tooling Alignment
+
+- **Dependency Compatibility Pins:** Aligned `mermaid`, `three`, and `@types/three` versions for stable runtime and type compatibility.
+
+---
+
 ## 1.6.1 - 2026-04-01
 
 > Authors: Rajat Patra (RawJat)
