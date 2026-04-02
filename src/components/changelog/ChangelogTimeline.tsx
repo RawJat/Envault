@@ -16,22 +16,14 @@ import {
   ArrowRight,
   ChevronDown,
   ChevronRight,
-  Command as CommandIcon,
-  CornerDownLeft,
   Dot,
 } from "lucide-react";
 import Link from "next/link";
-import {
-  MDXRemote,
-  type MDXRemoteSerializeResult,
-  type MDXRemoteProps,
-} from "next-mdx-remote";
 import { cn } from "@/lib/utils/utils";
 import { RegMark } from "@/components/landing/ui/RegMark";
 import { ScrollProgress } from "@/components/ui/scroll-progress";
 import { SlideUp } from "@/components/landing/animations/SlideUp";
 import { FadeIn } from "@/components/landing/animations/FadeIn";
-import { Kbd } from "@/components/ui/kbd";
 import type { Author } from "@/lib/system/changelog-parser";
 
 // --- Tunable Constants --------------------------------------------------------
@@ -56,7 +48,7 @@ export interface TimelineEntry {
   date: string;
   category: string;
   title?: string;
-  bodyMdx: MDXRemoteSerializeResult;
+  body: React.ReactNode;
   slug: string;
   authors: Author[];
 }
@@ -196,86 +188,6 @@ function renderInlineMarkdown(
 
   return nodes;
 }
-
-const changelogMdxComponents: MDXRemoteProps["components"] = {
-  Kbd: ({ className, ...props }: React.ComponentProps<typeof Kbd>) => (
-    <Kbd className={cn("align-middle", className)} {...props} />
-  ),
-  Command: ({ className }: React.ComponentProps<"svg">) => (
-    <CommandIcon className={cn("block w-4 h-4 shrink-0", className)} />
-  ),
-  CornerDownLeft: ({ className }: React.ComponentProps<"svg">) => (
-    <CornerDownLeft className={cn("block w-4 h-4 shrink-0", className)} />
-  ),
-  ChevronRight: ({ className }: React.ComponentProps<"svg">) => (
-    <ChevronRight className={cn("block w-4 h-4 shrink-0", className)} />
-  ),
-  p: ({ className, children, ...props }: React.ComponentProps<"p">) => (
-    <p
-      className={cn(
-        "text-sm text-muted-foreground leading-relaxed my-1.5",
-        className,
-      )}
-      {...props}
-    >
-      {children}
-    </p>
-  ),
-  h3: ({ className, children, ...props }: React.ComponentProps<"h3">) => (
-    <h3
-      className={cn(
-        "text-sm font-semibold text-foreground/80 mt-4 mb-2 uppercase tracking-wider font-mono first:mt-0",
-        className,
-      )}
-      {...props}
-    >
-      {children}
-    </h3>
-  ),
-  ul: ({ className, children, ...props }: React.ComponentProps<"ul">) => (
-    <ul className={cn("space-y-1.5 my-2", className)} {...props}>
-      {children}
-    </ul>
-  ),
-  li: ({ className, children, ...props }: React.ComponentProps<"li">) => (
-    <li
-      className={cn(
-        "text-sm text-muted-foreground flex gap-2 leading-relaxed",
-        className,
-      )}
-      {...props}
-    >
-      <ChevronRight className="h-4 w-4 text-primary/50 mt-0.5 shrink-0" />
-      <span>{children}</span>
-    </li>
-  ),
-  a: ({
-    href,
-    children,
-    ...props
-  }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
-    <a
-      href={href}
-      {...props}
-      className="text-primary hover:underline underline-offset-4"
-      target={href?.startsWith("/") ? undefined : "_blank"}
-      rel={href?.startsWith("/") ? undefined : "noreferrer noopener"}
-    >
-      {children}
-    </a>
-  ),
-  code: ({ className, children, ...props }: React.ComponentProps<"code">) => (
-    <code
-      className={cn(
-        "text-xs font-mono bg-muted/60 text-primary px-1 py-0.5 rounded-sm",
-        className,
-      )}
-      {...props}
-    >
-      {children}
-    </code>
-  ),
-};
 
 // --- Circuit-path SVG ---------------------------------------------------------
 
@@ -1077,10 +989,7 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
                               bodyRefs.current[index] = el;
                             }}
                           >
-                            <MDXRemote
-                              {...entry.bodyMdx}
-                              components={changelogMdxComponents}
-                            />
+                            {entry.body}
                           </div>
                           {entry.authors.length > 0 && (
                             <div className="mt-5 pt-4 border-t border-border/30 flex items-center gap-4 flex-wrap">
@@ -1127,12 +1036,7 @@ export function ChangelogTimeline({ entries }: TimelineProps) {
                             `mobile-title-${entry.version}`,
                           )}
                         </h3>
-                        <div>
-                          <MDXRemote
-                            {...entry.bodyMdx}
-                            components={changelogMdxComponents}
-                          />
-                        </div>
+                        <div>{entry.body}</div>
                         {entry.authors.length > 0 && (
                           <div className="mt-4 pt-4 border-t border-border/30 flex items-center gap-4 flex-wrap">
                             {entry.authors.map((author) => (
