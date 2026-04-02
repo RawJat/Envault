@@ -18,16 +18,19 @@ Before deploying, ensure you have the following environment variables configured
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your Supabase Anon Key | Yes |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase Service Role Key (for Admin tasks) | Yes |
 | `ENCRYPTION_KEY` | 32-byte hex string for Master Key | Yes |
-| `NEXT_PUBLIC_SITE_URL` | The URL where your app is hosted (e.g. `https://envault.app`) | Yes |
-| `NEXT_PUBLIC_APP_URL` | Same as `NEXT_PUBLIC_SITE_URL` - used for GitHub callback redirects | Yes |
+| `NEXT_PUBLIC_APP_URL` | Public app URL used in callbacks and email links (e.g. `https://envault.app`) | Yes |
+| `NEXT_PUBLIC_API_SIGNATURE_SALT` | HMAC secret used to verify mutation signatures | Strongly recommended |
+| `UPSTASH_REDIS_REST_URL` | Upstash Redis REST URL for cache-backed access checks and metadata caching | Strongly recommended |
+| `UPSTASH_REDIS_REST_TOKEN` | Token for `UPSTASH_REDIS_REST_URL` | Strongly recommended |
 | `CRON_SECRET` | Secret used by `/api/cron/digest` email digest endpoint | For notification digests |
 | `ACCOUNT_DELETION_CRON_SECRET` | Secret header validation for `process-account-deletions` Edge Function | Yes (recommended for production) |
 | `ROTATE_KEYS_CRON_SECRET` | Secret header validation for `rotate-keys` Edge Function | Yes (recommended for production) |
 | `ENVAULT_GITHUB_APP_CLIENT_ID` | GitHub App Client ID | For GitHub Integration |
-| `ENVAULT_GITHUB_APP_CLIENT_SECRET` | GitHub App Client Secret | For GitHub Integration |
 | `ENVAULT_GITHUB_APP_PRIVATE_KEY` | RSA private key, single-line `\n`-escaped | For GitHub Integration |
 | `ENVAULT_GITHUB_WEBHOOK_SECRET` | Secret to verify GitHub webhook payloads | For GitHub Integration |
 | `NEXT_PUBLIC_GITHUB_APP_NAME` | Your GitHub App's slug name | For GitHub Integration |
+| `RESEND_API_KEY` | Resend key for transactional + digest emails | For email delivery |
+| `EMAIL_DOMAIN` | Sender domain for outgoing emails | Optional (defaults to `mail.envault.tech`) |
 
 <Callout type="warn">
   Never check your `SUPABASE_SERVICE_ROLE_KEY` or `ENCRYPTION_KEY` into version control. Always set them in your deployment platform's dashboard.
