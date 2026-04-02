@@ -496,7 +496,7 @@ func checkParity() []AuditIssue {
 		issues = append(issues, AuditIssue{
 			Level:   "error",
 			Code:    "PLACEHOLDER_VALUES",
-			Message: fmt.Sprintf("%d key(s) in '%s' have empty or placeholder values.", len(placeholderKeys), auditEnvFile),
+			Message: fmt.Sprintf("%d key(s) in '%s' have empty or placeholder values.", len(placeholderKeys), resolvedEnvFile),
 			Keys:    placeholderKeys,
 		})
 	}
