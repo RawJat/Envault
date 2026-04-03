@@ -3,6 +3,10 @@
   "version": "1.0.1",
   "type": "module",
   "description": "MCP server for Envault CLI operations",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DinanathDash/Envault"
+  },
   "main": "server.mjs",
   "bin": {
     "envault-mcp-server": "server.mjs"

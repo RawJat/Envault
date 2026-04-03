@@ -3,6 +3,10 @@
   "version": "1.0.1",
   "description": "Envault TypeScript SDK",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DinanathDash/Envault"
+  },
   "type": "module",
   "main": "./dist/agent-interceptor.cjs",
   "module": "./dist/agent-interceptor.js",
