@@ -67,4 +67,5 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
-        run: npx semantic-release --config ./release.mcp.config.js
+          RELEASE_TARGET: mcp
+        run: npx semantic-release

@@ -1,4 +1,7 @@
-const config = {
+import sdkConfig from "./release.sdk.config.js";
+import mcpConfig from "./release.mcp.config.js";
+
+const cliConfig = {
   branches: ["main"],
   tagFormat: "v${version}",
   plugins: [
@@ -43,4 +46,9 @@ const config = {
   ],
 };
 
-export default config;
+const target = (process.env.RELEASE_TARGET || "").trim().toLowerCase();
+
+const selectedConfig =
+  target === "sdk" ? sdkConfig : target === "mcp" ? mcpConfig : cliConfig;
+
+export default selectedConfig;
