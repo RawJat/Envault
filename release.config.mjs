@@ -1,5 +1,5 @@
-import sdkConfig from "./release.sdk.config.js";
-import mcpConfig from "./release.mcp.config.js";
+import sdkConfig from "./release.sdk.config.mjs";
+import mcpConfig from "./release.mcp.config.mjs";
 
 const cliConfig = {
   branches: ["main"],

@@ -7,7 +7,7 @@ on:
     paths:
       - "mcp-server/**"
       - ".github/workflows/publish-mcp.yml"
-      - "release.mcp.config.js"
+      - "release.mcp.config.mjs"
   workflow_dispatch:
 
 permissions:

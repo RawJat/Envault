@@ -7,7 +7,7 @@ on:
     paths:
       - "src/lib/sdk/**"
       - ".github/workflows/publish-sdk.yml"
-      - "release.sdk.config.js"
+      - "release.sdk.config.mjs"
   workflow_dispatch:
 
 permissions:

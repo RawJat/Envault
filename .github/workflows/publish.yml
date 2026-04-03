@@ -8,7 +8,7 @@ on:
       - "cli-go/**"
       - "cli-wrapper/**"
       - ".github/workflows/publish.yml"
-      - "release.config.js"
+      - "release.config.mjs"
   workflow_dispatch:
 
 permissions:
