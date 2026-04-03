@@ -131,6 +131,9 @@ Notes:
 - npm is not the only option, but it is the lowest-friction default for MCP users.
 - You can also keep this private/internal and distribute via local path configs.
 
+Release note:
+- Package versioning and npm publication are managed by semantic-release workflows.
+
 ## Behavior
 
 - For "set key" workflows, use `envault_set_local_key` then `envault_push` (or set `autoPush=true`).

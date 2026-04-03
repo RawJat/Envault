@@ -38,3 +38,6 @@ npm install @dinanathdash/envault-sdk@latest
 Runtime behavior:
 - SDK warns when a newer version is available.
 - SDK can enforce a minimum supported version returned by the Envault server.
+
+Release note:
+- Package versioning and npm publication are managed by semantic-release workflows.
