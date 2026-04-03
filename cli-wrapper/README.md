@@ -27,6 +27,8 @@ When you install this package, a `postinstall` script runs to:
 
 This allows you to keep using your existing NPM-based workflows while benefiting from the speed and reliability of the Go implementation.
 
+Release note: npm package publishing and `v*` tags are managed by semantic-release.
+
 ## License
 
 MIT © [Envault](https://envault.tech)

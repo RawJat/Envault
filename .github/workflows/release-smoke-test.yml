@@ -1,0 +1,76 @@
+name: Release Smoke Test
+
+on:
+  workflow_run:
+    workflows:
+      - Publish SDK
+      - Publish MCP Server
+    types:
+      - completed
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke-test:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    name: Smoke test published packages
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - sdk
+          - mcp
+
+    steps:
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: Verify package install and basic runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          wait_for_package() {
+            local pkg="$1"
+            local attempts=6
+            local delay=10
+
+            for i in $(seq 1 "$attempts"); do
+              if npm view "$pkg" version --registry=https://registry.npmjs.org >/dev/null 2>&1; then
+                npm view "$pkg" version --registry=https://registry.npmjs.org
+                return 0
+              fi
+
+              if [ "$i" -lt "$attempts" ]; then
+                echo "Package $pkg not visible yet. Retry $i/$attempts..."
+                sleep "$delay"
+              fi
+            done
+
+            echo "::error::Package $pkg is not visible on npm after retries."
+            return 1
+          }
+
+          mkdir smoke
+          cd smoke
+          npm init -y >/dev/null
+
+          if [ "${{ matrix.target }}" = "sdk" ]; then
+            PKG="@dinanathdash/envault-sdk"
+            wait_for_package "$PKG"
+            npm install "$PKG@latest"
+            node -e "import('@dinanathdash/envault-sdk').then((m)=>{ if (!m.EnvaultAgentClient) { throw new Error('EnvaultAgentClient export missing'); } console.log('SDK smoke test passed'); }).catch((e)=>{ console.error(e); process.exit(1); })"
+          else
+            PKG="@dinanathdash/envault-mcp-server"
+            wait_for_package "$PKG"
+            npm install "$PKG@latest"
+            npx --yes envault-mcp-server --version
+            npx --yes envault-mcp-server --help | grep -q "Usage:"
+            echo "MCP smoke test passed"
+          fi
