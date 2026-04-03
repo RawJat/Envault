@@ -41,3 +41,4 @@ Runtime behavior:
 
 Release note:
 - Package versioning and npm publication are managed by semantic-release workflows.
+- Repository metadata is included in package manifests for npm provenance checks.
