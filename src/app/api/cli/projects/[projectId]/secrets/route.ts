@@ -446,6 +446,10 @@ export async function POST(
   const requestedEnvironment = new URL(request.url).searchParams.get(
     "environment",
   );
+  const actorSource = (await headers())
+    .get("x-envault-actor-source")
+    ?.trim()
+    .toLowerCase();
   const body = await request.json();
   const validation = PushSecretsSchema.safeParse(body);
 
@@ -482,6 +486,8 @@ export async function POST(
   }
 
   let userId = "";
+  let actorAttributionName: string | null = null;
+  let actorAttributionEmail: string | null = null;
 
   if (result.type === "service") {
     if (result.projectId !== projectId) {
@@ -530,28 +536,54 @@ export async function POST(
         );
       }
     }
+
+    if (actorSource === "mcp") {
+      const { data: actorProfile } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("id", userId)
+        .maybeSingle();
+
+      const { data: actorAuth } = await supabase.auth.admin.getUserById(userId);
+      const actorUsername = actorProfile?.username || "Unknown User";
+      actorAttributionName = `Envault Agent via ${actorUsername}`;
+      actorAttributionEmail = actorAuth?.user?.email || null;
+    }
   }
 
   // Process Upsert
   // Fetch existing keys for IDs and original creator (user_id)
   const { data: existingSecrets } = await supabase
     .from("secrets")
-    .select("id, key, user_id")
+    .select("id, key, user_id, value")
     .eq("project_id", projectId)
     .eq("environment_id", resolvedEnvironment.environment.id);
 
   const keyMap = new Map(
     (existingSecrets || []).map((s) => [
       s.key,
-      { id: s.id, user_id: s.user_id },
+      { id: s.id, user_id: s.user_id, value: s.value },
     ]),
   );
 
   const upsertData = await Promise.all(
     secrets.map(async (s) => {
+      const existing = keyMap.get(s.key);
+
+      // Avoid touching metadata/timestamps when the incoming plaintext value did not change.
+      if (existing) {
+        try {
+          const existingPlaintext = await decrypt(existing.value);
+          if (existingPlaintext === s.value) {
+            return null;
+          }
+        } catch {
+          // If legacy/corrupt ciphertext cannot be decrypted, continue with rewrite.
+        }
+      }
+
       const encryptedValue = await encrypt(s.value);
       const keyId = encryptedValue.split(":")[1];
-      const existing = keyMap.get(s.key);
 
       return {
         id: existing ? existing.id : uuidv4(),
@@ -562,13 +594,18 @@ export async function POST(
         value: encryptedValue,
         key_id: keyId,
         last_updated_by: userId,
+        last_updated_by_user_id_snapshot: userId,
+        last_updated_by_name: actorAttributionName,
+        last_updated_by_email: actorAttributionEmail,
         last_updated_at: new Date().toISOString(),
       };
     }),
   );
 
-  if (upsertData.length > 0) {
-    const { error } = await supabase.from("secrets").upsert(upsertData);
+  const filteredUpsertData = upsertData.filter((item) => item !== null);
+
+  if (filteredUpsertData.length > 0) {
+    const { error } = await supabase.from("secrets").upsert(filteredUpsertData);
 
     if (error) {
       console.error("Deploy error:", error);
@@ -591,7 +628,7 @@ export async function POST(
       projectName,
       projectId,
       "CLI",
-      upsertData.length,
+      filteredUpsertData.length,
       projectSlug,
     ).catch((e) => console.error("Failed to create push notification:", e));
 
@@ -606,7 +643,7 @@ export async function POST(
             userData.user.email,
             projectName,
             "pushed",
-            upsertData.length,
+            filteredUpsertData.length,
             "CLI",
             projectId,
             userId,
@@ -628,14 +665,15 @@ export async function POST(
   const actorId = result.type === "service" ? result.tokenId : userId;
   const actorType = result.type === "service" ? "machine" : "user";
 
-  if (upsertData.length > 0) {
+  if (filteredUpsertData.length > 0) {
+    const effectiveUpserts = filteredUpsertData;
     const existingIds = new Set(
       (existingSecrets || []).map((secret) => secret.id),
     );
-    const createdCount = upsertData.filter(
+    const createdCount = effectiveUpserts.filter(
       (item) => !existingIds.has(item.id),
     ).length;
-    const updatedCount = upsertData.length - createdCount;
+    const updatedCount = effectiveUpserts.length - createdCount;
 
     if (createdCount > 0) {
       await logAuditEvent({
@@ -648,6 +686,7 @@ export async function POST(
           count: createdCount,
           environment: resolvedEnvironment.environment.slug,
           source: "cli",
+          ...(actorSource === "mcp" ? { agent_label: actorAttributionName } : {}),
           ...(actorType === "user" ? { beneficiary_user_id: userId } : {}),
         },
       });
@@ -664,6 +703,7 @@ export async function POST(
           count: updatedCount,
           environment: resolvedEnvironment.environment.slug,
           source: "cli",
+          ...(actorSource === "mcp" ? { agent_label: actorAttributionName } : {}),
           ...(actorType === "user" ? { beneficiary_user_id: userId } : {}),
         },
       });
@@ -672,7 +712,7 @@ export async function POST(
 
   return NextResponse.json({
     success: true,
-    count: upsertData.length,
+    count: filteredUpsertData.length,
     environment: resolvedEnvironment.environment.slug,
   });
 }

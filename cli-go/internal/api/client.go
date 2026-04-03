@@ -211,6 +211,9 @@ func (c *Client) doReqCtx(ctx context.Context, method, path string, body interfa
 	if c.Token != "" {
 		req.Header.Set("Authorization", "Bearer "+c.Token)
 	}
+	if actorSource := strings.TrimSpace(os.Getenv("ENVAULT_CLI_ACTOR_SOURCE")); actorSource != "" {
+		req.Header.Set("X-Envault-Actor-Source", actorSource)
+	}
 
 	resp, err := httpClient.Do(req)
 	if err != nil {

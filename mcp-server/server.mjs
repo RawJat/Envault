@@ -199,9 +199,14 @@ function removeEnvLine(content, key) {
 
 async function runEnvault(args, cwd) {
   try {
+    const env = {
+      ...process.env,
+      ENVAULT_CLI_ACTOR_SOURCE: "mcp",
+    };
+
     const { stdout, stderr } = await execFileAsync("envault", args, {
       cwd,
-      env: process.env,
+      env,
       timeout: 120000,
       maxBuffer: 1024 * 1024,
     });
