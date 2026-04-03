@@ -13,7 +13,8 @@
   "types": "./dist/agent-interceptor.d.ts",
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "postinstall.js"
   ],
   "exports": {
     ".": {
