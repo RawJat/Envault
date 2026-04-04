@@ -41,6 +41,17 @@ const authSchema = z.object({
 });
 
 type AuthValues = z.infer<typeof authSchema>;
+type AuthProvider = "google" | "github" | "passkey";
+
+const LAST_USED_AUTH_PROVIDER_KEY = "envault:last_used_auth_provider";
+const LAST_USED_AUTH_PROVIDER_COOKIE = "envault_last_used_auth_provider";
+
+function toAuthProvider(value: string | null | undefined): AuthProvider | null {
+  if (value === "google" || value === "github" || value === "passkey") {
+    return value;
+  }
+  return null;
+}
 
 const ModKey = () => (
   <>
@@ -49,10 +60,18 @@ const ModKey = () => (
   </>
 );
 
+const LastUsedBadge = () => (
+  <span className="pointer-events-none absolute right-2 top-0 z-20 inline-flex h-5 -translate-y-1/2 select-none items-center whitespace-nowrap rounded-full border border-input bg-background px-3 text-[10px] font-semibold leading-none tracking-[0.14em] text-foreground/80">
+    LAST USED
+  </span>
+);
+
 export function AuthForm() {
   const [isLoading, setIsLoading] = React.useState(false);
   const [isPasskeyLoading, setIsPasskeyLoading] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState("login");
+  const [lastUsedProvider, setLastUsedProvider] =
+    React.useState<AuthProvider | null>(null);
   const router = useRouter();
 
   const searchParams = useSearchParams();
@@ -82,6 +101,47 @@ export function AuthForm() {
       }, 100);
     }
   }, [searchParams, router]);
+
+  React.useEffect(() => {
+    try {
+      const savedFromStorage = toAuthProvider(
+        window.localStorage.getItem(LAST_USED_AUTH_PROVIDER_KEY),
+      );
+      const cookieValue = toAuthProvider(
+        document.cookie
+          .split("; ")
+          .find((row) => row.startsWith(`${LAST_USED_AUTH_PROVIDER_COOKIE}=`))
+          ?.split("=")[1],
+      );
+
+      // OAuth callback writes cookie after successful auth. Prefer it over stale local storage.
+      const savedProvider = cookieValue || savedFromStorage;
+      if (savedProvider) {
+        setLastUsedProvider(savedProvider);
+        if (savedFromStorage !== savedProvider) {
+          window.localStorage.setItem(
+            LAST_USED_AUTH_PROVIDER_KEY,
+            savedProvider,
+          );
+        }
+      }
+    } catch {
+      // Ignore storage access errors (private mode, blocked storage, etc).
+    }
+  }, []);
+
+  const rememberLastUsedProvider = React.useCallback(
+    (provider: AuthProvider) => {
+      setLastUsedProvider(provider);
+      try {
+        window.localStorage.setItem(LAST_USED_AUTH_PROVIDER_KEY, provider);
+        document.cookie = `${LAST_USED_AUTH_PROVIDER_COOKIE}=${provider}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
+      } catch {
+        // Ignore storage write errors and continue auth flow.
+      }
+    },
+    [],
+  );
 
   const {
     register,
@@ -154,6 +214,7 @@ export function AuthForm() {
         error?: string;
       };
       if (verifyResp.ok && verification.success) {
+        rememberLastUsedProvider("passkey");
         toast.success("Signed in with Passkey");
         const next = searchParams.get("next");
         if (next && next.startsWith("/")) {
@@ -221,7 +282,7 @@ export function AuthForm() {
                   <TabsTrigger value="signup">Sign Up</TabsTrigger>
                 </TabsList>
 
-                <form action={onGoogleSignIn} className="mb-2">
+                <form action={onGoogleSignIn} className="mb-4">
                   <input
                     type="hidden"
                     name="next"
@@ -231,8 +292,9 @@ export function AuthForm() {
                     id="google-signin-btn"
                     variant="outline"
                     type="submit"
-                    className="w-full flex items-center justify-center gap-2"
+                    className="relative w-full overflow-visible flex items-center justify-center gap-2"
                   >
+                    {lastUsedProvider === "google" ? <LastUsedBadge /> : null}
                     <svg
                       className="h-4 w-4"
                       aria-hidden="true"
@@ -261,8 +323,9 @@ export function AuthForm() {
                     id="github-signin-btn"
                     variant="outline"
                     type="submit"
-                    className="w-full flex items-center justify-center gap-2"
+                    className="relative w-full overflow-visible flex items-center justify-center gap-2"
                   >
+                    {lastUsedProvider === "github" ? <LastUsedBadge /> : null}
                     <svg
                       className="h-4 w-4"
                       xmlns="http://www.w3.org/2000/svg"
@@ -283,8 +346,9 @@ export function AuthForm() {
                     variant="outline"
                     onClick={onPasskeyLogin}
                     disabled={isPasskeyLoading || isLoading}
-                    className="w-full flex items-center justify-center gap-2 border-primary/20 hover:bg-primary/5 hover:text-primary transition-colors"
+                    className="relative w-full overflow-visible flex items-center justify-center gap-2 border-primary/20 hover:bg-primary/5 hover:text-primary transition-colors"
                   >
+                    {lastUsedProvider === "passkey" ? <LastUsedBadge /> : null}
                     {isPasskeyLoading ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
