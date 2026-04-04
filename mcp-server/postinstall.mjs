@@ -83,3 +83,4 @@ async function fixMcpConfig() {
 }
 
 fixMcpConfig();
+// force release
