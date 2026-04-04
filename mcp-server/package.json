@@ -13,7 +13,8 @@
   },
   "files": [
     "server.mjs",
-    "README.md"
+    "README.md",
+    "postinstall.mjs"
   ],
   "engines": {
     "node": ">=18"
