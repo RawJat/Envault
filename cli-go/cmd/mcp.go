@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 
@@ -13,6 +14,7 @@ import (
 
 var globalInstall bool
 var localInstall bool
+var mcpConfigOnly bool
 
 var mcpCmd = &cobra.Command{
 	Use:   "mcp",
@@ -49,11 +51,19 @@ var mcpUpdateCmd = &cobra.Command{
 	Use:   "update",
 	Short: "Update the Envault MCP Server integration",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Updating Envault MCP Server Configurations...")
-		
-		// Because the integration strictly uses `npx -y @dinanathdash/envault-mcp-server@latest`, 
-		// the MCP server automatically updates itself natively whenever it boots.
-		// However, we trigger an install again just in case schemas or settings have changed structurally.
+		fmt.Println("Updating Envault MCP Server...")
+
+		if !mcpConfigOnly {
+			if err := runNpmGlobalInstall("@dinanathdash/envault-mcp-server@latest"); err != nil {
+				fmt.Printf("[WARN] Global MCP package update failed: %v\n", err)
+				fmt.Println("[WARN] Continuing with config refresh. You can run `npm install -g @dinanathdash/envault-mcp-server@latest` manually.")
+			} else {
+				fmt.Println("[OK] Updated global MCP package to latest.")
+			}
+		}
+
+		fmt.Println("Refreshing MCP client configurations...")
+
 		if !globalInstall && !localInstall {
 			globalInstall = true
 			localInstall = true
@@ -68,7 +78,7 @@ var mcpUpdateCmd = &cobra.Command{
 			installLocalVSCodeMCP()
 		}
 
-		fmt.Println("\n[OK] Envault MCP is fully upgraded! Note: Your AI assistant already runs the latest version automatically via `npx @latest` on every execution.")
+		fmt.Println("\n[OK] Envault MCP update completed.")
 	},
 }
 
@@ -82,6 +92,14 @@ func init() {
 
 	mcpUpdateCmd.Flags().BoolVarP(&globalInstall, "global", "g", false, "Update global installations")
 	mcpUpdateCmd.Flags().BoolVarP(&localInstall, "local", "l", false, "Update local project installations")
+	mcpUpdateCmd.Flags().BoolVar(&mcpConfigOnly, "config-only", false, "Only refresh MCP configuration files without npm global package update")
+}
+
+func runNpmGlobalInstall(pkg string) error {
+	cmd := exec.Command("npm", "install", "-g", pkg)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
 
 func getClaudeConfigPath() string {

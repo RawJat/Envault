@@ -365,6 +365,12 @@ Update SDK to latest using the detected package manager:
 envault sdk update
 ```
 
+Update SDK globally via npm:
+
+```bash
+envault sdk update --global
+```
+
 npm fallback commands:
 
 ```bash
@@ -394,6 +400,12 @@ Refresh/update MCP configuration:
 
 ```bash
 envault mcp update
+```
+
+Config-only refresh (skip npm global package update):
+
+```bash
+envault mcp update --config-only
 ```
 
 npm fallback for standalone MCP package installs:

@@ -28,6 +28,9 @@ Update SDK to latest:
 envault sdk update
 # npm fallback:
 npm install @dinanathdash/envault-sdk@latest
+
+# global npm install/update mode:
+envault sdk update --global
 ```
 
 ### MCP
@@ -52,6 +55,9 @@ Update MCP integration to the latest runtime behavior:
 envault mcp update
 # npm fallback (standalone package installs):
 npm install -g @dinanathdash/envault-mcp-server@latest
+
+# config-only refresh (no npm install -g):
+envault mcp update --config-only
 ```
 
 When you use this command, the CLI completely automates creating the standard `mcp.json` or `cline_mcp_settings.json` format configuration for you pointing to `npx -y @dinanathdash/envault-mcp-server@latest`.

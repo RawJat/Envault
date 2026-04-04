@@ -10,6 +10,27 @@ All notable changes to Envault are documented here.
 
 ---
 
+## 1.9.0 - 2026-04-05
+
+> Authors: Dinanath Dash (DinanathDash)
+
+### MCP Distribution, Auth Continuity, and Release Reliability
+
+- **MCP Lifecycle Management:** Added dedicated MCP integration management commands and improved the command surface for more predictable local setup and day-to-day usage.
+- **MCP Packaging Stability:** Fixed MCP publish contents to reliably include `postinstall.mjs`, closing installation regressions across npm flows.
+- **SDK Packaging Hardening:** Fixed SDK package layout and imports for package-local typecheck/build paths, and ensured postinstall assets are included in published artifacts.
+- **Auth Continuity UX:** Improved sign-in continuity by remembering the last auth provider and hydrating user state earlier in the flow.
+- **Platform Messaging:** Updated landing and docs surfaces to better present the SDK + MCP platform story and AI safety/GUI integration guidance.
+
+### Release & CI Improvements
+
+- **Provenance-Ready Publishing:** Added required repository metadata for npm provenance and aligned release streams for app, SDK, and MCP.
+- **Pipeline Isolation:** Split semantic-release configurations by target stream and tightened CI authentication (including OIDC-only npm publishing for SDK/MCP).
+- **Post-Release Validation:** Added package smoke verification after publish to catch artifact/runtime issues earlier.
+- **Build/Repo Hygiene:** Migrated Tailwind config to `mjs`, removed obsolete MCP config files, and refined ignore rules for local editor artifacts and secret-safe workflows.
+
+---
+
 ## 1.8.0 - 2026-04-03
 
 > Authors: Dinanath Dash (DinanathDash)

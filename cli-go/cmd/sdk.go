@@ -8,6 +8,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var sdkGlobal bool
+var sdkLocal bool
+
 var sdkCmd = &cobra.Command{
 	Use:   "sdk",
 	Short: "Manage the Envault TypeScript SDK",
@@ -18,7 +21,20 @@ var sdkInstallCmd = &cobra.Command{
 	Short: "Install the Envault TS SDK",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Installing Envault SDK...")
-		runPkgManagerCommand("install", "@dinanathdash/envault-sdk")
+
+		local, global := resolveSDKInstallModes()
+
+		if local {
+			runPkgManagerCommand("install", "@dinanathdash/envault-sdk")
+		}
+
+		if global {
+			if err := runNpmGlobalInstall("@dinanathdash/envault-sdk"); err != nil {
+				fmt.Printf("Failed to globally install SDK via npm: %v\n", err)
+				os.Exit(1)
+			}
+			fmt.Println("\n[OK] Global SDK install completed via npm.")
+		}
 	},
 }
 
@@ -27,7 +43,20 @@ var sdkUpdateCmd = &cobra.Command{
 	Short: "Update the Envault TS SDK to the latest version",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Updating Envault SDK...")
-		runPkgManagerCommand("install", "@dinanathdash/envault-sdk@latest")
+
+		local, global := resolveSDKInstallModes()
+
+		if local {
+			runPkgManagerCommand("update", "@dinanathdash/envault-sdk@latest")
+		}
+
+		if global {
+			if err := runNpmGlobalInstall("@dinanathdash/envault-sdk@latest"); err != nil {
+				fmt.Printf("Failed to globally update SDK via npm: %v\n", err)
+				os.Exit(1)
+			}
+			fmt.Println("\n[OK] Global SDK update completed via npm.")
+		}
 	},
 }
 
@@ -35,6 +64,24 @@ func init() {
 	rootCmd.AddCommand(sdkCmd)
 	sdkCmd.AddCommand(sdkInstallCmd)
 	sdkCmd.AddCommand(sdkUpdateCmd)
+
+	sdkInstallCmd.Flags().BoolVarP(&sdkLocal, "local", "l", false, "Install SDK into the current project")
+	sdkInstallCmd.Flags().BoolVarP(&sdkGlobal, "global", "g", false, "Install SDK globally via npm")
+
+	sdkUpdateCmd.Flags().BoolVarP(&sdkLocal, "local", "l", false, "Update SDK in the current project")
+	sdkUpdateCmd.Flags().BoolVarP(&sdkGlobal, "global", "g", false, "Update SDK globally via npm")
+}
+
+func resolveSDKInstallModes() (local bool, global bool) {
+	if sdkLocal || sdkGlobal {
+		return sdkLocal, sdkGlobal
+	}
+
+	if _, err := os.Stat("package.json"); err == nil {
+		return true, false
+	}
+
+	return false, true
 }
 
 func getPackageManager() string {
