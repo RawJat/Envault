@@ -121,3 +121,15 @@ SDK and MCP are versioned independently using dedicated release workflows:
 - MCP tags: `mcp-v<version>`
 
 This keeps package updates decoupled from CLI and web releases.
+
+## AI Context Safety (`.copilotignore`)
+
+To prevent your raw `.env` secrets from being inadvertently read and uploaded into LLM context windows (via tools like GitHub Copilot or Cursor), Envault automatically guards your pulled environment variables.
+Whenever you run `envault pull` or initialize a project, Envault automatically updates `.gitignore` and `.copilotignore` to exclude `.env` files.
+
+## Windows and GUI Integrations
+
+If you integrate the MCP server into editors like VS Code or Claude Desktop, you might historically encounter `spawn npx ENOENT` errors on Windows or macOS GUI environments where the `PATH` isn't completely passed down.
+Installing `@dinanathdash/envault-mcp-server` now automatically hooks via `postinstall` to rewrite `.vscode/mcp.json` or `.cursor/mcp.json`, pointing directly to the absolute path of Node, eliminating startup crashes.
+
+Additionally, the Envault CLI wrapper automatically resolves Windows native `.tar.gz` extractions so it downloads and installs successfully without `404` errors.

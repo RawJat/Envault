@@ -36,7 +36,8 @@ function getPlatform() {
 
 function downloadBinary() {
     const { osName, archName } = getPlatform();
-    const extension = os.platform() === 'win32' ? '.zip' : '.tar.gz';
+    // GoReleaser only ships tar.gz (even for Windows) as configured in .goreleaser.yaml
+    const extension = '.tar.gz';
     const fileName = `envault_${osName}_${archName}${extension}`;
     const url = `https://github.com/${REPO}/releases/download/${VERSION}/${fileName}`;
 
