@@ -26,9 +26,9 @@ export function Hero() {
           <p className="text-sm md:text-base lg:text-lg font-mono text-muted-foreground max-w-lg leading-relaxed border-l-2 border-primary/20 pl-4">
             STOP MANUAL. ENV SHUFFLING.
             <br />
-            SYNC SECRETS ACROSS YOUR TEAM IN &lt; 2 MINUTES.
+            RUN SECRETS THROUGH CLI, SDK, AND MCP.
             <br />
-            ZERO-KNOWLEDGE ARCHITECTURE.
+            HUMAN-IN-THE-LOOP APPROVALS. ZERO-KNOWLEDGE ARCHITECTURE.
           </p>
 
           {/* Tabbed Installation UI */}

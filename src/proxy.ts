@@ -48,6 +48,8 @@ export async function proxy(request: NextRequest) {
   const unauthenticatedApiRoutes = [
     "/api/system-status",
     "/api/cli-version",
+    "/api/sdk-version",
+    "/api/mcp-version",
     "/api/search",
     "/api/docs/markdown",
     "/api/avatar",
