@@ -38,7 +38,7 @@ npm start
 Check installed MCP server version:
 
 ```bash
-npx -y @dinanathdash/envault-mcp-server --version
+envault-mcp-server --version
 # or inside this folder
 npm run version
 ```
@@ -46,7 +46,7 @@ npm run version
 Check whether an npm update is available:
 
 ```bash
-npx -y @dinanathdash/envault-mcp-server --check-update
+envault-mcp-server --check-update
 # or inside this folder
 npm run check:update
 ```
@@ -73,6 +73,38 @@ You have 3 practical distribution models:
 
 ### Recommended MCP config after npm publish
 
+If you install globally (`npm install -g @dinanathdash/envault-mcp-server`):
+
+```json
+{
+  "mcpServers": {
+    "envault": {
+      "command": "envault-mcp-server",
+      "args": []
+    }
+  }
+}
+```
+
+*Note: If you encounter an `ENOENT` error (e.g. `spawn npx ENOENT` or `spawn envault-mcp-server ENOENT`) in GUI applications like VS Code or Claude Desktop, this means your system PATH isn't fully loaded. To fix this, use the absolute path to the executable (e.g. `/path/to/global/node_modules/bin/envault-mcp-server` or `npx.cmd` on Windows).*
+
+If you install locally in a workspace (`npm install @dinanathdash/envault-mcp-server`):
+
+```json
+{
+  "mcpServers": {
+    "envault": {
+      "command": "node",
+      "args": [
+        "node_modules/@dinanathdash/envault-mcp-server/server.mjs"
+      ]
+    }
+  }
+}
+```
+
+### Using `npx` (Requires Shell PATH)
+
 ```json
 {
   "mcpServers": {
@@ -84,6 +116,7 @@ You have 3 practical distribution models:
   }
 }
 ```
+*Note: Using `npx` directly in MCP configuration often fails on Windows (requires `npx.cmd`) and macOS GUI apps due to missing shell environment variables.*
 
 ### MCP config for local repo path
 

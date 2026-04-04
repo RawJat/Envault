@@ -23,7 +23,8 @@
     "version": "node server.mjs --version",
     "check:update": "node server.mjs --check-update",
     "check": "node --check server.mjs",
-    "prepublishOnly": "npm run check"
+    "prepublishOnly": "npm run check",
+    "postinstall": "node postinstall.mjs"
   },
   "publishConfig": {
     "access": "public"

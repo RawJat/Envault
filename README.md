@@ -287,13 +287,13 @@ Runtime behavior:
 Check installed MCP version:
 
 ```bash
-npx -y @dinanathdash/envault-mcp-server --version
+envault-mcp-server --version
 ```
 
 Check MCP update availability:
 
 ```bash
-npx -y @dinanathdash/envault-mcp-server --check-update
+envault-mcp-server --check-update
 ```
 
 Update MCP globally:
