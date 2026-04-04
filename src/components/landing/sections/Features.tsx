@@ -1,4 +1,4 @@
-import { Shield, Lock, Users, Code, Keyboard, GitBranch } from "lucide-react";
+import { Lock, Users, Fingerprint, Activity, UserCheck, Github } from "lucide-react";
 import { SlideUp } from "@/components/landing/animations/SlideUp";
 import { FadeIn } from "@/components/landing/animations/FadeIn";
 
@@ -13,43 +13,43 @@ const features = [
   },
   {
     spec: "SPEC_02",
-    title: "AUTHENTICATION",
-    value: "MULTI_AUTH",
+    title: "PASSWORDLESS AUTH",
+    value: "PASSKEY + OAUTH",
     description:
-      "WebAuthn passkeys, OAuth (Gmail, GitHub), and device flow authentication with zero knowledge.",
-    icon: Shield,
+      "Sign in securely with WebAuthn passkeys and provider OAuth, reducing credential friction for daily access.",
+    icon: Fingerprint,
   },
   {
     spec: "SPEC_03",
-    title: "INTERFACE_MODE",
-    value: "KEYBOARD_FIRST",
+    title: "GITHUB-INTEGRATED ACCESS",
+    value: "MULTI-ACCOUNT READY",
     description:
-      "Navigate efficiently with fully customizable keyboard shortcuts for every action.",
-    icon: Keyboard,
+      "Connect repositories, support multiple GitHub accounts, and streamline collaborator access with fewer manual steps.",
+    icon: Github,
   },
   {
     spec: "SPEC_04",
-    title: "DEVELOPER_TOOLS",
-    value: "CLI + API",
+    title: "ENVIRONMENT-SCOPED PERMISSIONS",
+    value: "LEAST PRIVILEGE",
     description:
-      "Powerful CLI and simple API to manage secrets directly from your terminal workflow.",
-    icon: Code,
-  },
-  {
-    spec: "SPEC_05",
-    title: "COLLABORATION",
-    value: "TEAM_ACCESS",
-    description:
-      "Share projects with your team securely using granular permissions (Owner, Editor, Viewer).",
+      "Grant access per environment with owner/editor/viewer roles so teams can ship fast without broad secret exposure.",
     icon: Users,
   },
   {
-    spec: "SPEC_06",
-    title: "ENVIRONMENT MANAGEMENT",
-    value: "WORKSPACE_MODE",
+    spec: "SPEC_05",
+    title: "REAL-TIME SYNC RELIABILITY",
+    value: "HYBRID REFRESH",
     description:
-      "Multi-environment scoping for dev, staging, and production with context-aware CLI commands.",
-    icon: GitBranch,
+      "Hybrid realtime + focus-aware refresh keeps secret state fresh across dashboard, editor, and audit workflows.",
+    icon: Activity,
+  },
+  {
+    spec: "SPEC_06",
+    title: "ACCOUNT LIFECYCLE SAFETY",
+    value: "SOFT DELETE + RECOVERY",
+    description:
+      "7-day recovery windows, controlled purge flow, and identity continuity protect teams during account transitions.",
+    icon: UserCheck,
   },
 ];
 
@@ -59,10 +59,10 @@ export function Features() {
       <div className="container px-4 md:px-6">
         <SlideUp className="text-center mb-16 space-y-4">
           <h2 className="text-4xl md:text-6xl font-serif font-bold tracking-tight text-void dark:text-bone">
-            Technical Specifications & Security Features
+            What Teams Choose Envault For
           </h2>
           <p className="max-w-[700px] mx-auto font-mono text-sm uppercase tracking-wider text-void/60 dark:text-bone/60">
-            INDUSTRIAL-GRADE SECURITY / DEVELOPER-CENTRIC DESIGN
+            HIGH-TRUST SECURITY / PRACTICAL DAILY OPERATIONS
           </p>
         </SlideUp>
 

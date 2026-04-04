@@ -54,7 +54,7 @@ export async function signInWithGoogle(formData?: FormData) {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}`,
+      redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}&authProvider=google`,
       queryParams: {
         prompt: "select_account",
       },
@@ -87,7 +87,7 @@ export async function signInWithGithub(formData?: FormData) {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "github",
     options: {
-      redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}`,
+      redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}&authProvider=github`,
       queryParams: {
         prompt: "select_account",
       },

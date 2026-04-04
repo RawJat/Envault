@@ -9,12 +9,10 @@ import { SlideUp } from "@/components/landing/animations/SlideUp";
 export async function CliSection() {
   let version: string | null = null;
   try {
-    // In dev with portless, Node SSR cannot always resolve *.localhost hostnames.
-    // Use the internal Next dev server port directly when available.
+    // Resolve absolute URL for SSR route fetch across local/dev/prod.
     const headersList = await headers();
-    const internalDevPort =
-      process.env.NODE_ENV === "development" ? process.env.PORT : undefined;
-
+    const isDev = process.env.NODE_ENV === "development";
+    const internalDevPort = process.env.PORT || "3000";
     const host =
       headersList.get("x-forwarded-host") ||
       headersList.get("host") ||
@@ -22,17 +20,17 @@ export async function CliSection() {
     const protocol =
       headersList.get("x-forwarded-proto") ||
       (host.includes("localhost") ? "http" : "https");
-
-    const baseUrl = internalDevPort
+    const baseUrl = isDev
       ? `http://127.0.0.1:${internalDevPort}`
       : `${protocol}://${host}`;
 
-    const res = await fetch(`${baseUrl}/api/cli-version`, {
-      next: { revalidate: 3600 },
-    });
+    const res = await fetch(
+      `${baseUrl}/api/cli-version`,
+      isDev ? { cache: "no-store" } : { next: { revalidate: 3600 } },
+    );
     if (res.ok) {
-      const data = await res.json();
-      version = data.version;
+      const data = (await res.json()) as { version?: string };
+      version = data.version ?? null;
     }
   } catch {
     console.warn("Could not fetch CLI version during SSR");

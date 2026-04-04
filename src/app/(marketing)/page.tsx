@@ -1,4 +1,5 @@
 import { Hero } from "@/components/landing/sections/Hero";
+import { PlatformHighlights } from "@/components/landing/sections/PlatformHighlights";
 import { Features } from "@/components/landing/sections/Features";
 import { WorkflowSection } from "@/components/landing/sections/WorkflowSection";
 import { CliSection } from "@/components/landing/sections/CliSection";
@@ -30,6 +31,7 @@ export default async function LandingPage() {
         <Hero />
         <WorkflowSection />
         <CliSection />
+        <PlatformHighlights />
         <Features />
         <Testimonials />
         <RegMark position="bottom-left" />

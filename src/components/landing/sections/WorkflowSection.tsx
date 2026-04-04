@@ -6,25 +6,25 @@ import { FadeIn } from "@/components/landing/animations/FadeIn";
 
 const workflowSteps = [
   {
-    title: "Secure Variable Generation",
+    title: "Request Access With Scope",
     description:
-      "Generate type-safe, realistic environment variables for local development and testing without exposing sensitive production keys.",
+      "Users request access only to the environments they need. Owners review and approve with clear scope before any secret access is granted.",
     color: "text-blue-500",
     bg: "bg-blue-500/10",
     icon: Database,
   },
   {
-    title: "Collaborative Environments",
+    title: "Collaborate Across GitHub + Teams",
     description:
-      "Share and sync environment configurations across your team, ensuring consistency from development to production.",
+      "Sync secrets across teammates and repos with role-based permissions and GitHub integration built for real project workflows.",
     color: "text-green-500",
     bg: "bg-green-500/10",
     icon: Users,
   },
   {
-    title: "Automated Security & Compliance",
+    title: "Trace Every Sensitive Action",
     description:
-      "Enforce security policies, manage access controls, and maintain compliance with automated secret rotation and governance.",
+      "Immutable audit logs and approval trails keep every pull, push, and access decision accountable for operational and security review.",
     color: "text-purple-500",
     bg: "bg-purple-500/10",
     icon: Shield,
@@ -37,15 +37,14 @@ export function WorkflowSection() {
       <div className="container px-4 md:px-6">
         <SlideUp className="text-center mb-16 space-y-4">
           <h2 className="text-3xl md:text-5xl lg:text-6xl font-serif font-bold tracking-tight text-foreground leading-[1.1]">
-            Smarter secrets, all
+            Strong access control,
             <br />
-            in one place.
+            without slowing teams down.
           </h2>
           <p className="max-w-[700px] mx-auto font-mono text-sm uppercase tracking-wider text-muted-foreground">
-            Power your development workflow with high-quality, privacy-safe
-            environment variables - generated,
+            REQUEST. APPROVE. SYNC. AUDIT.
             <br />
-            validated, and secured from a single platform.
+            THE CORE FLOW YOUR TEAM NEEDS EVERY DAY.
           </p>
         </SlideUp>
 
