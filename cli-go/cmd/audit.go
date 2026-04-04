@@ -326,23 +326,15 @@ func isTrackedByGit(path string) bool {
 	return err == nil
 }
 
-// ensureGitignoreEntry guarantees the given filename is covered by at least
-// one pattern in .gitignore. If .gitignore does not exist it is created; if it
-// exists but has no covering pattern, the exact filename is appended.
-//
-// "Covered" means one of these lines already appears in the file:
-//
-//	.env   *.env   .env.*   **/.env   or an exact match of filename
-func ensureGitignoreEntry(filename string) (added bool, err error) {
-	// Strip any leading "./" from filename for comparison.
+// ensureIgnoreFileEntry guarantees the given file is covered by at least
+// one pattern. If the ignore file does not exist it is created.
+func ensureIgnoreFileEntry(ignoreFile, filename string) (added bool, err error) {
 	base := strings.TrimPrefix(filename, "./")
 
-	// Patterns that broadly cover standard .env files.
 	broadPatterns := []string{".env", "*.env", ".env.*", "**/.env"}
 
-	data, readErr := os.ReadFile(".gitignore")
+	data, readErr := os.ReadFile(ignoreFile)
 	if readErr == nil {
-		// File exists - scan line by line.
 		scanner := bufio.NewScanner(strings.NewReader(string(data)))
 		for scanner.Scan() {
 			line := strings.TrimSpace(scanner.Text())
@@ -359,14 +351,12 @@ func ensureGitignoreEntry(filename string) (added bool, err error) {
 			}
 		}
 
-		// Not covered - append the exact filename.
-		f, openErr := os.OpenFile(".gitignore", os.O_APPEND|os.O_WRONLY, 0644)
+		f, openErr := os.OpenFile(ignoreFile, os.O_APPEND|os.O_WRONLY, 0644)
 		if openErr != nil {
-			return false, fmt.Errorf("could not open .gitignore: %w", openErr)
+			return false, fmt.Errorf("could not open %s: %w", ignoreFile, openErr)
 		}
 		defer f.Close()
 
-		// Ensure we start on a new line.
 		if len(data) > 0 && data[len(data)-1] != '\n' {
 			if _, writeErr := f.WriteString("\n"); writeErr != nil {
 				return false, writeErr
@@ -378,9 +368,8 @@ func ensureGitignoreEntry(filename string) (added bool, err error) {
 		return true, nil
 	}
 
-	// .gitignore does not exist - create it.
-	if writeErr := os.WriteFile(".gitignore", []byte(base+"\n"), 0644); writeErr != nil {
-		return false, fmt.Errorf("could not create .gitignore: %w", writeErr)
+	if writeErr := os.WriteFile(ignoreFile, []byte(base+"\n"), 0644); writeErr != nil {
+		return false, fmt.Errorf("could not create %s: %w", ignoreFile, writeErr)
 	}
 	return true, nil
 }

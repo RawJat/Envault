@@ -238,11 +238,19 @@ var pullCmd = &cobra.Command{
 
 		// Safety checkpoint: real secrets are now on disk.
 		// 1. Ensure .gitignore covers the written file - create/update it automatically.
-		giAdded, giErr := ensureGitignoreEntry(targetFile)
+		giAdded, giErr := ensureIgnoreFileEntry(".gitignore", targetFile)
 		if giErr != nil {
 			fmt.Fprintln(os.Stderr, ui.ColorYellow(fmt.Sprintf("  [!] Could not update .gitignore: %v", giErr)))
 		} else if giAdded {
 			fmt.Println(ui.ColorGreen("  [OK] Added '" + targetFile + "' to .gitignore - it will not be committed."))
+		}
+
+		// 1.b Also protect from LLM ingestion by adding it to .copilotignore
+		coAdded, coErr := ensureIgnoreFileEntry(".copilotignore", targetFile)
+		if coErr != nil {
+			fmt.Fprintln(os.Stderr, ui.ColorYellow(fmt.Sprintf("  [!] Could not update .copilotignore: %v", coErr)))
+		} else if coAdded {
+			fmt.Println(ui.ColorGreen("  [OK] Added '" + targetFile + "' to .copilotignore - it will be hidden from AI agents."))
 		}
 
 		// 2. Attempt to install the pre-commit hook.
