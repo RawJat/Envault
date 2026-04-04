@@ -1,7 +1,7 @@
-import type { Config } from "tailwindcss";
 import animate from "tailwindcss-animate";
 
-const config: Config = {
+/** @type {import('tailwindcss').Config} */
+const config = {
     darkMode: "class",
     content: [
         "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
@@ -80,7 +80,7 @@ const config: Config = {
                     from: { height: "var(--radix-accordion-content-height)" },
                     to: { height: "0" },
                 },
-                "shake": {
+                shake: {
                     "0%, 100%": { transform: "translateX(0)" },
                     "10%, 30%, 50%, 70%, 90%": { transform: "translateX(-4px)" },
                     "20%, 40%, 60%, 80%": { transform: "translateX(4px)" },
@@ -94,7 +94,7 @@ const config: Config = {
             animation: {
                 "accordion-down": "accordion-down 0.4s cubic-bezier(0.16,1,0.3,1)",
                 "accordion-up": "accordion-up 0.4s cubic-bezier(0.16,1,0.3,1)",
-                "shake": "shake 0.4s ease-in-out",
+                shake: "shake 0.4s ease-in-out",
                 "shake-dialog": "shake-dialog 0.4s ease-in-out",
             },
         },
@@ -104,4 +104,5 @@ const config: Config = {
     },
     plugins: [animate],
 };
+
 export default config;
