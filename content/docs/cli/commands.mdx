@@ -349,6 +349,61 @@ Subcommands:
 
 ---
 
+## `sdk`
+
+Manage the Envault TypeScript SDK from your current project.
+
+Install SDK using the detected package manager (`npm`, `yarn`, `pnpm`, or `bun`):
+
+```bash
+envault sdk install
+```
+
+Update SDK to latest using the detected package manager:
+
+```bash
+envault sdk update
+```
+
+npm fallback commands:
+
+```bash
+npm install @dinanathdash/envault-sdk
+npm install @dinanathdash/envault-sdk@latest
+```
+
+---
+
+## `mcp`
+
+Manage Envault MCP integration config for Claude Desktop, Cursor, VS Code, RooCode/Cline.
+
+Install MCP configuration globally + locally (`.vscode/mcp.json`) by default:
+
+```bash
+envault mcp install
+```
+
+Install only local workspace config:
+
+```bash
+envault mcp install --local
+```
+
+Refresh/update MCP configuration:
+
+```bash
+envault mcp update
+```
+
+npm fallback for standalone MCP package installs:
+
+```bash
+npm install -g @dinanathdash/envault-mcp-server@latest
+```
+
+---
+
 ## `completion`
 
 Generate shell completion scripts.

@@ -24,7 +24,15 @@
 
 ## CLI
 
-Envault comes with a high-performance Go CLI to manage your secrets without leaving your terminal.
+Envault natively supports the Model Context Protocol (MCP), so AI coding assistants like Claude Desktop, Cursor, and RooCode/Cline can pull and push your secure environments effortlessly. 
+
+```bash
+# Automatically configure your AI clients (Global & Local Workspaces)
+envault mcp install
+
+# Or install strictly for the current workspace
+envault mcp install --local
+```
 
 ### Installation
 
@@ -272,7 +280,13 @@ npm ls @dinanathdash/envault-sdk
 npm view @dinanathdash/envault-sdk version
 ```
 
-Update SDK:
+Update SDK (preferred via Envault CLI):
+
+```bash
+envault sdk update
+```
+
+Update SDK (npm fallback):
 
 ```bash
 npm install @dinanathdash/envault-sdk@latest
@@ -284,19 +298,25 @@ Runtime behavior:
 
 ### MCP (`@dinanathdash/envault-mcp-server`)
 
-Check installed MCP version:
+Check installed MCP version (standalone MCP package installs):
 
 ```bash
 envault-mcp-server --version
 ```
 
-Check MCP update availability:
+Check MCP update availability (standalone MCP package installs):
 
 ```bash
 envault-mcp-server --check-update
 ```
 
-Update MCP globally:
+Update MCP integration (preferred via Envault CLI):
+
+```bash
+envault mcp update
+```
+
+Update MCP globally (npm fallback for standalone installs):
 
 ```bash
 npm install -g @dinanathdash/envault-mcp-server@latest

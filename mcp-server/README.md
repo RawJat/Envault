@@ -54,6 +54,10 @@ npm run check:update
 Update to latest package version:
 
 ```bash
+# Preferred (updates generated MCP configs to latest runtime setup)
+envault mcp update
+
+# npm fallback for standalone global package installs
 npm install -g @dinanathdash/envault-mcp-server@latest
 ```
 
@@ -73,14 +77,14 @@ You have 3 practical distribution models:
 
 ### Recommended MCP config after npm publish
 
-If you install globally (`npm install -g @dinanathdash/envault-mcp-server`):
+If you configure globally (`envault mcp install`):
 
 ```json
 {
   "mcpServers": {
     "envault": {
-      "command": "envault-mcp-server",
-      "args": []
+      "command": "npx",
+      "args": ["-y", "@dinanathdash/envault-mcp-server@latest"]
     }
   }
 }

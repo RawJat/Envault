@@ -19,52 +19,42 @@ This guide covers Envault's TypeScript SDK and MCP server for machine-agent work
 Install SDK:
 
 ```bash
-npm install @dinanathdash/envault-sdk
-```
-
-Check installed SDK version:
-
-```bash
-npm ls @dinanathdash/envault-sdk
-```
-
-Check latest published SDK version:
-
-```bash
-npm view @dinanathdash/envault-sdk version
+envault sdk install
 ```
 
 Update SDK to latest:
 
 ```bash
+envault sdk update
+# npm fallback:
 npm install @dinanathdash/envault-sdk@latest
 ```
 
 ### MCP
 
-Install MCP globally:
+Our MCP server integrates natively with tools like Claude Desktop, Cursor, and VS Code (RooCode/Cline). To install and configure the integration, simply run the setup command from the Envault CLI.
+
+Install MCP strictly for your current workspace (.vscode):
 
 ```bash
-npm install -g @dinanathdash/envault-mcp-server
+envault mcp install --local
 ```
 
-Check installed MCP version:
+Or install it globally for all your IDEs and Claude Desktop:
 
 ```bash
-envault-mcp-server --version
+envault mcp install
 ```
 
-Check for MCP updates:
+Update MCP integration to the latest runtime behavior:
 
 ```bash
-envault-mcp-server --check-update
-```
-
-Update MCP globally:
-
-```bash
+envault mcp update
+# npm fallback (standalone package installs):
 npm install -g @dinanathdash/envault-mcp-server@latest
 ```
+
+When you use this command, the CLI completely automates creating the standard `mcp.json` or `cline_mcp_settings.json` format configuration for you pointing to `npx -y @dinanathdash/envault-mcp-server@latest`.
 
 ## HITL Approval Flow
 
@@ -130,6 +120,4 @@ Whenever you run `envault pull` or initialize a project, Envault automatically u
 ## Windows and GUI Integrations
 
 If you integrate the MCP server into editors like VS Code or Claude Desktop, you might historically encounter `spawn npx ENOENT` errors on Windows or macOS GUI environments where the `PATH` isn't completely passed down.
-Installing `@dinanathdash/envault-mcp-server` now automatically hooks via `postinstall` to rewrite `.vscode/mcp.json` or `.cursor/mcp.json`, pointing directly to the absolute path of Node, eliminating startup crashes.
-
-Additionally, the Envault CLI wrapper automatically resolves Windows native `.tar.gz` extractions so it downloads and installs successfully without `404` errors.
+Installing via `envault mcp install` now automatically hooks the configurations to use cross-platform safe executions (`npx -y`), eliminating startup crashes.

@@ -21,7 +21,7 @@ var (
 
 var rootCmd = &cobra.Command{
 	Use:   "envault",
-	Short: "Envault CLI - Securely manage your environment variables",
+	Short: "Envault CLI - Securely manage your environment variables and MCP AI configurations",
 	Long: `Envault CLI is a tool to securely manage your environment variables
 across your development workflow.`,
 	Run: func(cmd *cobra.Command, args []string) {
