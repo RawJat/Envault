@@ -60,7 +60,12 @@ export type NotificationType =
   | "email_changed"
   | "unknown_login"
   | "2fa_enabled"
-  | "2fa_disabled";
+  | "2fa_disabled"
+  // MCP Token Lifecycle
+  | "mcp_token_created"
+  | "mcp_token_regenerated"
+  | "mcp_token_revoked"
+  | "mcp_token_expired";
 
 export type NotificationVariant =
   | "default"
@@ -137,4 +142,8 @@ export const NOTIFICATION_ICONS: Record<NotificationType, string> = {
   unknown_login: "AlertOctagon",
   "2fa_enabled": "ShieldCheck",
   "2fa_disabled": "ShieldOff",
+  mcp_token_created: "KeyRound",
+  mcp_token_regenerated: "RefreshCw",
+  mcp_token_revoked: "Trash2",
+  mcp_token_expired: "TimerOff",
 };

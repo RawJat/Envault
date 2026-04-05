@@ -35,7 +35,11 @@ const config = {
     [
       "@semantic-release/git",
       {
-        assets: ["src/lib/sdk/package.json", "src/lib/sdk/package-lock.json"],
+        assets: [
+          "src/lib/sdk/package.json",
+          "src/lib/sdk/package-lock.json",
+          "src/lib/sdk/version.ts",
+        ],
         message:
           "chore(sdk-release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}",
       },

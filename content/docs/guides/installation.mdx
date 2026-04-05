@@ -35,6 +35,9 @@ Before you begin, ensure you have the following installed:
 
 ```bash
 git clone https://github.com/dinanathdash/envault.git
+```
+
+```bash
 cd envault
 ```
 
@@ -72,7 +75,13 @@ If you will work on SDK and MCP packages, also install dependencies in each pack
 
 ```bash
 cd src/lib/sdk && npm install
-cd ../../.. && cd mcp-server && npm install
+```
+
+```bash
+cd ../../../mcp-server && npm install
+```
+
+```bash
 cd ..
 ```
 
@@ -96,6 +105,9 @@ You will need to populate `.env.local` with your Supabase credentials.
 
 ```bash
 npm install -g portless
+```
+
+```bash
 npm run dev
 ```
 
@@ -146,6 +158,9 @@ To ensure everything is working correctly:
 
 ```bash
 npm run sdk:check
+```
+
+```bash
 npm run mcp:check
 ```
 

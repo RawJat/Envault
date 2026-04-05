@@ -101,6 +101,10 @@ async function shouldCreateNotification(
     case "email_changed":
     case "2fa_enabled":
     case "2fa_disabled":
+    case "mcp_token_created":
+    case "mcp_token_regenerated":
+    case "mcp_token_revoked":
+    case "mcp_token_expired":
     case "encryption_failed":
       return prefs.app_security_alerts !== false;
 
@@ -809,6 +813,104 @@ export async function createSecurityAlertNotification(
     variant: "error",
     metadata: metadata ?? {},
     actionUrl: "/settings",
+    actionType: "view_settings",
+  });
+}
+
+export async function createMcpTokenCreatedNotification(
+  userId: string,
+  tokenName: string,
+  ttlDays: number,
+  expiresAt: string,
+) {
+  return createNotification({
+    userId,
+    type: "mcp_token_created",
+    title: "MCP Token Created",
+    message: `Created MCP token \"${tokenName}\" for ${ttlDays} days`,
+    variant: "success",
+    metadata: {
+      source: "mcp_web",
+      event: "token_created",
+      tokenName,
+      ttlDays,
+      expiresAt,
+    },
+    actionUrl: "/settings?tab=security",
+    actionType: "view_settings",
+  });
+}
+
+export async function createMcpTokenRegeneratedNotification(
+  userId: string,
+  tokenName: string,
+  ttlDays: number,
+  expiresAt: string,
+) {
+  return createNotification({
+    userId,
+    type: "mcp_token_regenerated",
+    title: "MCP Token Regenerated",
+    message: `Regenerated MCP token \"${tokenName}\" for ${ttlDays} days`,
+    variant: "warning",
+    metadata: {
+      source: "mcp_web",
+      event: "token_regenerated",
+      tokenName,
+      ttlDays,
+      expiresAt,
+    },
+    actionUrl: "/settings?tab=security",
+    actionType: "view_settings",
+  });
+}
+
+export async function createMcpTokenRevokedNotification(
+  userId: string,
+  tokenName: string | null,
+  ttlDays: number | null,
+) {
+  return createNotification({
+    userId,
+    type: "mcp_token_revoked",
+    title: "MCP Token Revoked",
+    message: tokenName
+      ? `Revoked MCP token \"${tokenName}\"`
+      : "Revoked MCP token",
+    variant: "warning",
+    metadata: {
+      source: "mcp_web",
+      event: "token_revoked",
+      tokenName,
+      ttlDays,
+    },
+    actionUrl: "/settings?tab=security",
+    actionType: "view_settings",
+  });
+}
+
+export async function createMcpTokenExpiredNotification(
+  userId: string,
+  tokenName: string | null,
+  ttlDays: number | null,
+  expiresAt: string | null,
+) {
+  return createNotification({
+    userId,
+    type: "mcp_token_expired",
+    title: "MCP Token Expired",
+    message: tokenName
+      ? `MCP token \"${tokenName}\" expired and was removed`
+      : "MCP token expired and was removed",
+    variant: "info",
+    metadata: {
+      source: "mcp_web",
+      event: "token_expired_auto_deleted",
+      tokenName,
+      ttlDays,
+      expiresAt,
+    },
+    actionUrl: "/settings?tab=security",
     actionType: "view_settings",
   });
 }

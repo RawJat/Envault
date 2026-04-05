@@ -3,6 +3,14 @@
   "version": "1.2.0",
   "type": "module",
   "description": "MCP server for Envault CLI operations",
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "claude",
+    "secrets-management",
+    "envault"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/DinanathDash/Envault"
