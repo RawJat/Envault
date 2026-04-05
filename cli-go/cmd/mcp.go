@@ -155,6 +155,13 @@ func readOrCreateJSON(path string) map[string]interface{} {
 	return data
 }
 
+func resolveNpxCommand() string {
+	if runtime.GOOS == "windows" {
+		return "npx.cmd"
+	}
+	return "npx"
+}
+
 func injectClaudeConfig(config map[string]interface{}) {
 	servers, ok := config["mcpServers"].(map[string]interface{})
 	if !ok || servers == nil {
@@ -163,7 +170,7 @@ func injectClaudeConfig(config map[string]interface{}) {
 	}
 
 	servers["envault"] = map[string]interface{}{
-		"command": "npx",
+		"command": resolveNpxCommand(),
 		"args": []string{
 			"-y",
 			"@dinanathdash/envault-mcp-server@latest",
@@ -184,7 +191,7 @@ func injectVSCodeMCPConfig(config map[string]interface{}) {
 	}
 
 	servers["envault"] = map[string]interface{}{
-		"command": "npx",
+		"command": resolveNpxCommand(),
 		"args": []string{
 			"-y",
 			"@dinanathdash/envault-mcp-server@latest",

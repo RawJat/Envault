@@ -32,6 +32,7 @@
     "version": "node server.mjs --version",
     "check:update": "node server.mjs --check-update",
     "check": "node --check server.mjs",
+    "test:postinstall": "node --test postinstall.test.mjs",
     "prepublishOnly": "npm run check",
     "postinstall": "node postinstall.mjs"
   },

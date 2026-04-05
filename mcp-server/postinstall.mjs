@@ -1,19 +1,24 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
+import { pathToFileURL } from "node:url";
 
-const INIT_CWD = process.env.INIT_CWD || process.cwd();
+const PACKAGE_NAME = "@dinanathdash/envault-mcp-server";
+const PACKAGE_SPEC = `${PACKAGE_NAME}@latest`;
 
-async function fixMcpConfig() {
-  const isGlobal = process.env.npm_config_global === "true";
-  
+export async function fixMcpConfig(options = {}) {
+  const initCwd = options.initCwd || process.env.INIT_CWD || process.cwd();
+  const platform = options.platform || process.env.ENVAULT_TEST_PLATFORM || process.platform;
+  const log = options.log || console.log;
+  const warn = options.warn || console.error;
+
   // Potential locations for an MCP config file in the workspace
   const configPaths = [
-    path.join(INIT_CWD, ".vscode", "mcp.json"),
-    path.join(INIT_CWD, ".cursor", "mcp.json"),
+    path.join(initCwd, ".vscode", "mcp.json"),
+    path.join(initCwd, ".cursor", "mcp.json"),
     // Also try checking one level up in case of monorepos
-    path.join(INIT_CWD, "..", ".vscode", "mcp.json"),
-    path.join(INIT_CWD, "..", ".cursor", "mcp.json"),
+    path.join(initCwd, "..", ".vscode", "mcp.json"),
+    path.join(initCwd, "..", ".cursor", "mcp.json"),
   ];
 
   for (const configPath of configPaths) {
@@ -32,41 +37,37 @@ async function fixMcpConfig() {
       for (const [key, srv] of Object.entries(serversObj)) {
         if (
           key.includes("envault") || 
-          (srv.args && srv.args.includes("@dinanathdash/envault-mcp-server"))
+          (Array.isArray(srv.args) && srv.args.some((a) => String(a).includes(PACKAGE_NAME)))
         ) {
-          if (srv.command === "npx" || srv.command === "npx.cmd") {
-            const isWindows = process.platform === "win32";
-            
-            if (isGlobal) {
-              srv.command = process.execPath;
-              srv.args = [
-                path.resolve(process.execPath, "../../lib/node_modules/@dinanathdash/envault-mcp-server/server.mjs")
-              ];
-              if (isWindows) {
-                srv.args = [
-                  path.resolve(process.execPath, "../../node_modules/@dinanathdash/envault-mcp-server/server.mjs")
-                ];
-              }
-            } else {
-              srv.command = process.execPath;
-              
-              // We'll replace npx with node and use a workspace-relative path
-              let scriptPath = "node_modules/@dinanathdash/envault-mcp-server/server.mjs";
-              
-              // Remove '-y' or package name from args, leaving any custom flags
-              let newArgs = [scriptPath];
-              if (srv.args) {
-                 const extraArgs = srv.args.filter(a => a !== "-y" && a !== "@dinanathdash/envault-mcp-server");
-                 newArgs.push(...extraArgs);
-              }
-              
-              srv.args = newArgs;
-            }
+          // Keep npx launch to let npm resolve/download the package reliably.
+          const isWindows = platform === "win32";
+          const desiredCommand = isWindows ? "npx.cmd" : "npx";
+          const currentArgs = Array.isArray(srv.args) ? srv.args.map((a) => String(a)) : [];
+          const extraArgs = currentArgs.filter(
+            (a) =>
+              a !== "-y" &&
+              a !== PACKAGE_NAME &&
+              a !== PACKAGE_SPEC &&
+              !a.includes(`${PACKAGE_NAME}/server.mjs`) &&
+              !a.includes("node_modules/@dinanathdash/envault-mcp-server/server.mjs"),
+          );
 
-            if (srv.cwd === "/absolute/path/to/your/project") {
-              delete srv.cwd;
-            }
+          const newArgs = ["-y", PACKAGE_SPEC, ...extraArgs];
+          if (srv.command !== desiredCommand) {
+            srv.command = desiredCommand;
+            changed = true;
+          }
+          if (JSON.stringify(currentArgs) !== JSON.stringify(newArgs)) {
+            srv.args = newArgs;
+            changed = true;
+          }
+          if (srv.type !== "stdio" && config.servers) {
+            srv.type = "stdio";
+            changed = true;
+          }
 
+          if (srv.cwd === "/absolute/path/to/your/project") {
+            delete srv.cwd;
             changed = true;
           }
         }
@@ -74,13 +75,18 @@ async function fixMcpConfig() {
 
       if (changed) {
         await fs.writeFile(configPath, JSON.stringify(config, null, "\t"));
-        console.log(`[Envault MCP] Fixed npx ENOENT issue in ${configPath}`);
+        log(`[Envault MCP] Fixed npx ENOENT issue in ${configPath}`);
       }
     } catch (e) {
-      console.error(`[Envault MCP] Could not check/fix ${configPath}:`, e.message);
+      warn(`[Envault MCP] Could not check/fix ${configPath}:`, e.message);
     }
   }
 }
 
-fixMcpConfig();
-// force release
+const isEntrypoint = process.argv[1]
+  ? pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url
+  : false;
+
+if (isEntrypoint) {
+  fixMcpConfig();
+}
