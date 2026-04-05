@@ -119,6 +119,10 @@ If Windows cannot resolve `npx` from GUI-launched apps, use `npx.cmd` (or absolu
 </Callout>
 
 <Callout type="warn">
+  If standalone MCP returns `401 Unauthorized`, the token is invalid for the target API host. Common causes: masked/partial token copy, token expired, token revoked/regenerated, or host mismatch (`ENVAULT_BASE_URL` points to a different Envault instance than where the token was created).
+</Callout>
+
+<Callout type="warn">
   MCP dashboard token behavior:
   - Only one active MCP token per user account at a time.
   - Token is shown in full only once at generation time; after closing the dialog, the dashboard shows a masked value.

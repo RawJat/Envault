@@ -276,16 +276,26 @@ async function callEnvaultApi({ pathName, method = "GET", query, body }) {
     const raw = await response.text();
     const parsed = safeJsonParse(raw, null);
 
+    const defaultError = raw || `HTTP ${response.status}`;
+    const parsedError =
+      parsed && typeof parsed.error === "string" ? parsed.error : defaultError;
+
+    const authHint =
+      response.status === 401
+        ? {
+            authHint:
+              "Unauthorized with ENVAULT_TOKEN. Use a fresh full MCP token (not masked), ensure it is not expired/revoked, and ensure ENVAULT_BASE_URL matches where the token was issued.",
+          }
+        : {};
+
     return {
       ok: response.ok,
       status: response.status,
       data: parsed ?? raw,
-      error:
-        response.ok
-          ? null
-          : (parsed && typeof parsed.error === "string" ? parsed.error : raw || `HTTP ${response.status}`),
+      error: response.ok ? null : parsedError,
       url: url.toString(),
       method,
+      ...authHint,
     };
   } catch (error) {
     return {
@@ -939,6 +949,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 
   if (name === "envault_login") {
+    if (standaloneToken) {
+      return toToolResponse({
+        ok: true,
+        mode: "api",
+        message:
+          "ENVAULT_TOKEN is configured; CLI login is not required for standalone MCP core tools.",
+      });
+    }
+
     const result = await runEnvault(["login"], cwd);
     return toToolResponse(result, !result.ok);
   }
