@@ -220,11 +220,148 @@ async function runEnvault(args, cwd) {
     return {
       ok: false,
       command: `envault ${args.join(" ")}`,
-      message: error?.message || "Unknown error",
+      message:
+        error?.code === "ENOENT"
+          ? "Envault CLI binary not found in PATH. Configure ENVAULT_TOKEN for standalone MCP mode, or install Envault CLI."
+          : error?.message || "Unknown error",
       stdout: error?.stdout?.trim?.() || "",
       stderr: error?.stderr?.trim?.() || "",
     };
   }
+}
+
+function resolveBaseUrl() {
+  const candidate =
+    (process.env.ENVAULT_BASE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://envault.tech").trim();
+  return candidate.replace(/\/+$/, "");
+}
+
+function getStandaloneToken() {
+  const token = (process.env.ENVAULT_TOKEN || "").trim();
+  return token || null;
+}
+
+async function callEnvaultApi({ pathName, method = "GET", query, body }) {
+  const token = getStandaloneToken();
+  if (!token) {
+    return {
+      ok: false,
+      status: 401,
+      error:
+        "ENVAULT_TOKEN is not configured. Add ENVAULT_TOKEN in MCP env for standalone mode.",
+    };
+  }
+
+  const baseUrl = resolveBaseUrl();
+  const url = new URL(`${baseUrl}${pathName}`);
+  if (query && typeof query === "object") {
+    for (const [key, value] of Object.entries(query)) {
+      if (value !== undefined && value !== null && String(value).trim()) {
+        url.searchParams.set(key, String(value).trim());
+      }
+    }
+  }
+
+  try {
+    const response = await fetch(url, {
+      method,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        "x-envault-actor-source": "mcp",
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+
+    const raw = await response.text();
+    const parsed = safeJsonParse(raw, null);
+
+    return {
+      ok: response.ok,
+      status: response.status,
+      data: parsed ?? raw,
+      error:
+        response.ok
+          ? null
+          : (parsed && typeof parsed.error === "string" ? parsed.error : raw || `HTTP ${response.status}`),
+      url: url.toString(),
+      method,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      status: 500,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+function parseEnvFile(content) {
+  const out = new Map();
+  for (const line of String(content || "").split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const idx = line.indexOf("=");
+    if (idx <= 0) continue;
+    const key = line.slice(0, idx).trim();
+    const value = line.slice(idx + 1);
+    if (key) out.set(key, value);
+  }
+  return out;
+}
+
+function toSortedEnvFile(map) {
+  return [...map.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, value]) => `${key}=${value}`)
+    .join("\n")
+    .concat(map.size > 0 ? "\n" : "");
+}
+
+function resolveProjectId(args, config) {
+  if (isNonEmptyString(args?.projectId)) return args.projectId.trim();
+  if (isNonEmptyString(config?.projectId)) return config.projectId.trim();
+  return "";
+}
+
+function resolveEnvironment(args, config) {
+  if (isNonEmptyString(args?.environment)) return args.environment.trim();
+  if (isNonEmptyString(config?.defaultEnvironment)) return config.defaultEnvironment.trim();
+  return "development";
+}
+
+function buildDiff(localMap, remoteSecrets) {
+  const remoteMap = new Map((remoteSecrets || []).map((s) => [s.key, s.value]));
+
+  const additions = [];
+  const deletions = [];
+  const modifications = [];
+  let unchanged = 0;
+
+  for (const [key, localValue] of localMap.entries()) {
+    if (!remoteMap.has(key)) {
+      additions.push(key);
+      continue;
+    }
+    const remoteValue = remoteMap.get(key);
+    if (remoteValue !== localValue) modifications.push(key);
+    else unchanged += 1;
+  }
+
+  for (const key of remoteMap.keys()) {
+    if (!localMap.has(key)) deletions.push(key);
+  }
+
+  additions.sort();
+  deletions.sort();
+  modifications.sort();
+
+  return {
+    additions,
+    deletions,
+    modifications,
+    unchanged,
+  };
 }
 
 function toToolResponse(payload, isError = false) {
@@ -275,6 +412,20 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           projectId: {
             type: "string",
             description: "Optional project ID override for status call.",
+          },
+        },
+      },
+    },
+    {
+      name: "envault_context",
+      description:
+        "Alias of envault_status for explicit context retrieval. Returns auth, project, role, permissions, active environment, and local env mapping.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          projectId: {
+            type: "string",
+            description: "Optional project ID override for context/status call.",
           },
         },
       },
@@ -546,8 +697,18 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args = {} } = request.params;
   const cwd = process.cwd();
+  const config = await readEnvaultConfig(cwd);
+  const standaloneToken = getStandaloneToken();
 
-  if (name === "envault_status") {
+  if (name === "envault_status" || name === "envault_context") {
+    if (standaloneToken) {
+      const apiResult = await callEnvaultApi({
+        pathName: "/api/cli/status",
+        query: { projectId: args.projectId },
+      });
+      return toToolResponse(apiResult, !apiResult.ok);
+    }
+
     const cliArgs = ["status"];
     pushOptionalFlag(cliArgs, "--project", args.projectId);
     const result = await runEnvault(cliArgs, cwd);
@@ -555,6 +716,59 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 
   if (name === "envault_pull") {
+    if (standaloneToken) {
+      const projectId = resolveProjectId(args, config);
+      if (!projectId) {
+        return toToolResponse(
+          { error: "projectId is required (or set projectId in envault.json) for standalone pull." },
+          true,
+        );
+      }
+
+      const environment = resolveEnvironment(args, config);
+      const apiResult = await callEnvaultApi({
+        pathName: `/api/cli/projects/${projectId}/secrets`,
+        query: { environment },
+      });
+
+      if (!apiResult.ok) {
+        return toToolResponse(apiResult, true);
+      }
+
+      const targetFile = resolveLocalEnvFile(config, environment, args.file);
+      const absoluteTarget = path.join(cwd, targetFile);
+
+      if (args.force === false) {
+        try {
+          const existing = await fs.readFile(absoluteTarget, "utf-8");
+          if (existing.trim()) {
+            return toToolResponse(
+              {
+                error: `Refusing to overwrite non-empty ${targetFile} without force=true.`,
+                file: targetFile,
+              },
+              true,
+            );
+          }
+        } catch {
+          // file does not exist, safe to continue
+        }
+      }
+
+      const secrets = Array.isArray(apiResult?.data?.secrets) ? apiResult.data.secrets : [];
+      const envMap = new Map(secrets.map((s) => [s.key, s.value]));
+      await fs.writeFile(absoluteTarget, toSortedEnvFile(envMap), "utf-8");
+
+      return toToolResponse({
+        ok: true,
+        mode: "api",
+        projectId,
+        environment,
+        file: targetFile,
+        count: envMap.size,
+      });
+    }
+
     const cliArgs = ["pull"];
     pushProjectAndEnvironment(cliArgs, args);
     if (args.force !== false) cliArgs.push("--force");
@@ -564,6 +778,65 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 
   if (name === "envault_push" || name === "envault_deploy") {
+    if (standaloneToken) {
+      const projectId = resolveProjectId(args, config);
+      if (!projectId) {
+        return toToolResponse(
+          { error: "projectId is required (or set projectId in envault.json) for standalone push." },
+          true,
+        );
+      }
+
+      const environment = resolveEnvironment(args, config);
+      const targetFile = resolveLocalEnvFile(config, environment, args.file);
+      const absoluteTarget = path.join(cwd, targetFile);
+
+      let content = "";
+      try {
+        content = await fs.readFile(absoluteTarget, "utf-8");
+      } catch {
+        return toToolResponse(
+          { error: `Local env file not found: ${targetFile}` },
+          true,
+        );
+      }
+
+      const localMap = parseEnvFile(content);
+      const secrets = [...localMap.entries()].map(([key, value]) => ({ key, value }));
+
+      if (args.dryRun === true) {
+        const remoteResult = await callEnvaultApi({
+          pathName: `/api/cli/projects/${projectId}/secrets`,
+          query: { environment },
+        });
+
+        if (!remoteResult.ok) {
+          return toToolResponse(remoteResult, true);
+        }
+
+        const diff = buildDiff(localMap, remoteResult?.data?.secrets || []);
+        return toToolResponse({
+          ok: true,
+          mode: "api",
+          dryRun: true,
+          projectId,
+          environment,
+          file: targetFile,
+          localCount: localMap.size,
+          diff,
+        });
+      }
+
+      const apiResult = await callEnvaultApi({
+        pathName: `/api/cli/projects/${projectId}/secrets`,
+        method: "POST",
+        query: { environment },
+        body: { secrets },
+      });
+
+      return toToolResponse(apiResult, !apiResult.ok);
+    }
+
     const cliArgs = ["push"];
     pushProjectAndEnvironment(cliArgs, args);
     if (args.force !== false) cliArgs.push("--force");
@@ -578,11 +851,64 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     if (!approvalId) {
       return toToolResponse({ error: "approvalId is required" }, true);
     }
+    if (standaloneToken) {
+      const apiResult = await callEnvaultApi({
+        pathName: `/api/approve/${approvalId}`,
+        method: "POST",
+        body: { action: "approve" },
+      });
+      return toToolResponse(apiResult, !apiResult.ok);
+    }
+
     const result = await runEnvault(["approve", approvalId], cwd);
     return toToolResponse(result, !result.ok);
   }
 
   if (name === "envault_diff") {
+    if (standaloneToken) {
+      const projectId = resolveProjectId(args, config);
+      if (!projectId) {
+        return toToolResponse(
+          { error: "projectId is required (or set projectId in envault.json) for standalone diff." },
+          true,
+        );
+      }
+
+      const environment = resolveEnvironment(args, config);
+      const targetFile = resolveLocalEnvFile(config, environment, args.file);
+      const absoluteTarget = path.join(cwd, targetFile);
+
+      let content = "";
+      try {
+        content = await fs.readFile(absoluteTarget, "utf-8");
+      } catch {
+        return toToolResponse({ error: `Local env file not found: ${targetFile}` }, true);
+      }
+
+      const localMap = parseEnvFile(content);
+      const remoteResult = await callEnvaultApi({
+        pathName: `/api/cli/projects/${projectId}/secrets`,
+        query: { environment },
+      });
+      if (!remoteResult.ok) {
+        return toToolResponse(remoteResult, true);
+      }
+
+      const diff = buildDiff(localMap, remoteResult?.data?.secrets || []);
+      return toToolResponse({
+        ok: true,
+        mode: "api",
+        projectId,
+        environment,
+        file: targetFile,
+        localCount: localMap.size,
+        remoteCount: Array.isArray(remoteResult?.data?.secrets)
+          ? remoteResult.data.secrets.length
+          : 0,
+        diff,
+      });
+    }
+
     const cliArgs = ["diff"];
     pushProjectAndEnvironment(cliArgs, args);
     pushOptionalFlag(cliArgs, "--file", args.file);
@@ -739,6 +1065,36 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     };
 
     if (args.autoPush === true) {
+      if (standaloneToken) {
+        const projectId = resolveProjectId(args, config);
+        if (!projectId) {
+          return toToolResponse(
+            {
+              ...response,
+              autoPushed: false,
+              pushResult: {
+                ok: false,
+                error: "projectId is required (or set projectId in envault.json) for standalone autoPush.",
+              },
+            },
+            true,
+          );
+        }
+
+        const environment = resolveEnvironment(args, config);
+        const localContent = await fs.readFile(absoluteTarget, "utf-8");
+        const secrets = [...parseEnvFile(localContent).entries()].map(([k, v]) => ({ key: k, value: v }));
+        const pushResult = await callEnvaultApi({
+          pathName: `/api/cli/projects/${projectId}/secrets`,
+          method: "POST",
+          query: { environment },
+          body: { secrets },
+        });
+
+        response.autoPushed = pushResult.ok;
+        return toToolResponse({ ...response, pushResult }, !pushResult.ok);
+      }
+
       const pushArgs = ["push", "--force"];
       if (typeof args.environment === "string" && args.environment.trim()) {
         pushArgs.push("--env", args.environment.trim());
@@ -780,6 +1136,36 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     };
 
     if (args.autoPush === true) {
+      if (standaloneToken) {
+        const projectId = resolveProjectId(args, config);
+        if (!projectId) {
+          return toToolResponse(
+            {
+              ...response,
+              autoPushed: false,
+              pushResult: {
+                ok: false,
+                error: "projectId is required (or set projectId in envault.json) for standalone autoPush.",
+              },
+            },
+            true,
+          );
+        }
+
+        const environment = resolveEnvironment(args, config);
+        const localContent = await fs.readFile(absoluteTarget, "utf-8");
+        const secrets = [...parseEnvFile(localContent).entries()].map(([k, v]) => ({ key: k, value: v }));
+        const pushResult = await callEnvaultApi({
+          pathName: `/api/cli/projects/${projectId}/secrets`,
+          method: "POST",
+          query: { environment },
+          body: { secrets },
+        });
+
+        response.autoPushed = pushResult.ok;
+        return toToolResponse({ ...response, pushResult }, !pushResult.ok);
+      }
+
       const pushArgs = ["push", "--force"];
       if (typeof args.environment === "string" && args.environment.trim()) {
         pushArgs.push("--env", args.environment.trim());

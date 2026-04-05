@@ -50,6 +50,8 @@ Primary install path (recommended): copy-paste raw MCP JSON config. This does no
 2. Copy the MCP config below into your MCP client settings file.
 3. Replace `<YOUR_ENVAULT_TOKEN>` before saving.
 
+Claude Desktop / Cursor format (`mcpServers`):
+
 ```json
 {
   "mcpServers": {
@@ -64,6 +66,24 @@ Primary install path (recommended): copy-paste raw MCP JSON config. This does no
 }
 ```
 
+VS Code MCP format (`servers`):
+
+```json
+{
+  "servers": {
+    "envault": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@dinanathdash/envault-mcp-server@latest"],
+      "env": {
+        "ENVAULT_TOKEN": "<YOUR_ENVAULT_TOKEN>"
+      }
+    }
+  },
+  "inputs": []
+}
+```
+
 ### MCP config file locations by platform
 
 - macOS (Claude Desktop): `~/Library/Application Support/Claude/claude_desktop_config.json`
@@ -72,8 +92,30 @@ Primary install path (recommended): copy-paste raw MCP JSON config. This does no
 - Cursor: open Cursor Settings -> MCP and paste the same `mcpServers.envault` block in the MCP JSON editor.
 - VS Code MCP clients (for example Cline/RooCode): use the extension MCP settings file (commonly `.vscode/mcp.json` in the current workspace).
 
+If Windows cannot resolve `npx` from GUI-launched apps, use `npx.cmd` (or absolute path):
+
+```json
+{
+  "servers": {
+    "envault": {
+      "type": "stdio",
+      "command": "npx.cmd",
+      "args": ["-y", "@dinanathdash/envault-mcp-server@latest"],
+      "env": {
+        "ENVAULT_TOKEN": "<YOUR_ENVAULT_TOKEN>"
+      }
+    }
+  },
+  "inputs": []
+}
+```
+
 <Callout type="info">
   `ENVAULT_TOKEN` for MCP is generated directly from the Envault web dashboard. CLI installation is optional for MCP-only workflows.
+</Callout>
+
+<Callout type="info">
+  Standalone MCP coverage (no local Envault CLI required): `envault_status`, `envault_context`, `envault_pull`, `envault_push`, `envault_deploy`, `envault_approve`, `envault_diff`, and `autoPush` from local key helpers. Other maintenance/setup commands remain CLI-backed.
 </Callout>
 
 <Callout type="warn">
@@ -199,6 +241,7 @@ Global and project kill switches can be toggled in the UI under security and pro
 The MCP server exposes these tools:
 
 - `envault_status`
+- `envault_context`
 - `envault_pull`
 - `envault_push`
 - `envault_deploy`

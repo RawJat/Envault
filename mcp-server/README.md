@@ -5,6 +5,7 @@ This MCP server exposes direct Envault operations so blank chats can call tools 
 ## Tools
 
 - `envault_status`
+- `envault_context`
 - `envault_pull`
 - `envault_push`
 - `envault_deploy`
@@ -36,18 +37,28 @@ cd mcp-server
 npm install
 ```
 
-2. Ensure `envault` CLI is installed and authenticated:
+2. Configure standalone MCP auth (recommended):
+
+```bash
+export ENVAULT_TOKEN=envault_at_xxx
+# Optional override for self-hosted/staging
+# export ENVAULT_BASE_URL=https://envault.tech
+```
+
+3. Optional: install/authenticate Envault CLI if you want CLI-dependent tools (`envault_run`, `envault_login`, `envault_init`, `envault_generate_hooks`, `envault_audit`, `envault_env_*`, `envault_mcp_*`, `envault_sdk_*`, `envault_doctor`, `envault_version`):
 
 ```bash
 envault login
 envault status
 ```
 
-3. Start server:
+4. Start server:
 
 ```bash
 npm start
 ```
+
+Core tools work without CLI when `ENVAULT_TOKEN` is set: `envault_status`, `envault_context`, `envault_pull`, `envault_push`, `envault_deploy`, `envault_approve`, `envault_diff`, plus `autoPush` for local key set/remove helpers.
 
 ## Version and update commands
 
@@ -103,6 +114,21 @@ If you configure globally (`envault mcp install`):
       "args": ["-y", "@dinanathdash/envault-mcp-server@latest"]
     }
   }
+}
+```
+
+For VS Code MCP (`.vscode/mcp.json`), use `servers` schema:
+
+```json
+{
+  "servers": {
+    "envault": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@dinanathdash/envault-mcp-server@latest"]
+    }
+  },
+  "inputs": []
 }
 ```
 
