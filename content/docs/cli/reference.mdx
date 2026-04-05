@@ -26,6 +26,9 @@ If you use Homebrew, you can install Envault via our official tap.
 
 ```bash
 brew tap DinanathDash/envault
+```
+
+```bash
 brew install --formula envault
 ```
 
@@ -33,6 +36,9 @@ Homebrew cask installs are deprecated. If you installed Envault via cask, migrat
 
 ```bash
 brew uninstall --cask dinanathdash/envault/envault
+```
+
+```bash
 brew install --formula envault
 ```
 
@@ -40,8 +46,17 @@ If Homebrew shows an older formula version than the latest release, refresh tap 
 
 ```bash
 brew update
+```
+
+```bash
 brew untap dinanathdash/envault || true
+```
+
+```bash
 brew tap dinanathdash/envault
+```
+
+```bash
 brew upgrade --formula envault
 ```
 
@@ -97,19 +112,29 @@ All commands accept these global flags:
 ```bash
 # 1) Authenticate once
 envault login
+```
 
+```bash
 # 2) Link current directory to a project
 envault init
+```
 
+```bash
 # 3) Inspect current context (user, role, project, environment)
 envault status
+```
 
+```bash
 # 4) Pull one environment to local file
 envault pull --env preview --file .env.preview
+```
 
+```bash
 # 5) Compare local vs remote before deploy
 envault diff --env preview --file .env.preview
+```
 
+```bash
 # 6) Deploy to target environment
 envault deploy --env preview --file .env.preview
 ```
@@ -135,8 +160,17 @@ Recommended setup:
 
 ```bash
 envault env map --env development --file .env.development
+```
+
+```bash
 envault env map --env preview --file .env.preview
+```
+
+```bash
 envault env map --env production --file .env.production
+```
+
+```bash
 envault env default --env development
 ```
 
@@ -184,6 +218,9 @@ To test against a local instance of Envault:
 
 ```bash
 export ENVAULT_CLI_URL="https://envault.localhost:1355/api/cli"
+```
+
+```bash
 envault login
 ```
 

@@ -36,6 +36,7 @@ import {
 import { useHotkeys } from "@/hooks/use-hotkeys";
 import { Kbd } from "@/components/ui/kbd";
 import { getModifierKey } from "@/lib/utils/utils";
+import { McpTokenManager } from "./mcp-token-manager";
 
 interface Token {
   id: string;
@@ -527,6 +528,8 @@ export function SecurityTab({ user }: { user: User | null }) {
           </div>
         </CardContent>
       </Card>
+
+      <McpTokenManager />
 
       <Card>
         <CardHeader>

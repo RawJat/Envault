@@ -17,8 +17,9 @@
     "sdk:check": "cd src/lib/sdk && npm run typecheck && npm run build",
     "sdk:publish": "cd src/lib/sdk && npm publish --access public",
     "test:sdk": "tsx --test tests/agent-interceptor.test.ts",
+    "test:mcp-token": "tsx --test tests/mcp-token-lifecycle.test.ts",
     "test:go": "cd cli-go && go test ./...",
-    "test:all": "npm run test:sdk && npm run test:go",
+    "test:all": "npm run test:sdk && npm run test:mcp-token && npm run test:go",
     "test:email": "tsx scripts/send-test-email.ts",
     "test:notification": "tsx scripts/test-notification.ts"
   },

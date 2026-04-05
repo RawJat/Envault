@@ -26,41 +26,137 @@ Update SDK to latest:
 
 ```bash
 envault sdk update
-# npm fallback:
-npm install @dinanathdash/envault-sdk@latest
+```
 
-# global npm install/update mode:
+npm fallback:
+
+```bash
+npm install @dinanathdash/envault-sdk@latest
+```
+
+Global npm install/update mode:
+
+```bash
 envault sdk update --global
 ```
 
 ### MCP
 
-Our MCP server integrates natively with tools like Claude Desktop, Cursor, and VS Code (RooCode/Cline). To install and configure the integration, simply run the setup command from the Envault CLI.
+Our MCP server integrates with Claude Desktop, Cursor, and VS Code (RooCode/Cline).
 
-Install MCP strictly for your current workspace (.vscode):
+Primary install path (recommended): copy-paste raw MCP JSON config. This does not require installing the Envault CLI.
+
+1. Generate an `ENVAULT_TOKEN` from the Envault web dashboard (Account/Settings -> MCP Token).
+2. Copy the MCP config below into your MCP client settings file.
+3. Replace `<YOUR_ENVAULT_TOKEN>` before saving.
+
+```json
+{
+  "mcpServers": {
+    "envault": {
+      "command": "npx",
+      "args": ["-y", "@dinanathdash/envault-mcp-server@latest"],
+      "env": {
+        "ENVAULT_TOKEN": "<YOUR_ENVAULT_TOKEN>"
+      }
+    }
+  }
+}
+```
+
+### MCP config file locations by platform
+
+- macOS (Claude Desktop): `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows (Claude Desktop): `%APPDATA%\\Claude\\claude_desktop_config.json`
+- Linux (Claude Desktop): `~/.config/Claude/claude_desktop_config.json`
+- Cursor: open Cursor Settings -> MCP and paste the same `mcpServers.envault` block in the MCP JSON editor.
+- VS Code MCP clients (for example Cline/RooCode): use the extension MCP settings file (commonly `.vscode/mcp.json` in the current workspace).
+
+<Callout type="info">
+  `ENVAULT_TOKEN` for MCP is generated directly from the Envault web dashboard. CLI installation is optional for MCP-only workflows.
+</Callout>
+
+<Callout type="warn">
+  MCP dashboard token behavior:
+  - Only one active MCP token per user account at a time.
+  - Token is shown in full only once at generation time; after closing the dialog, the dashboard shows a masked value.
+  - Token TTL options are fixed to 7, 15, or 30 days and is automatically invalidated/deleted after expiry.
+  - Expiry is stored as end-of-day UTC so scheduled cleanup can run daily with low database overhead.
+  - Users can regenerate within active validity or create a new token after expiry.
+  - Token format stays compatible with current Envault auth parsing used by MCP/SDK.
+</Callout>
+
+### MCP token cleanup automation
+
+MCP web tokens are auto-cleaned through a protected cron endpoint:
+
+- Endpoint: `/api/cron/mcp-token-cleanup`
+- Auth: `Authorization: Bearer <CRON_SECRET>`
+- Schedule: daily (recommended for free-tier efficiency)
+
+Set `CRON_SECRET` in your runtime environment (local `.env.local` and production environment variables), then schedule the job in Supabase SQL Editor using:
+
+- `supabase/migrations/20260405000000_add_mcp_web_token_columns_to_profiles.sql`
+- `scripts/setup-mcp-token-cleanup-cron.sql`
+
+<Callout type="info">
+  The cron SQL file unschedules legacy hourly cleanup names before creating the daily schedule. This is intentional and safe to run repeatedly.
+</Callout>
+
+### Local validation checklist (before deploy)
+
+1. Generate MCP token from Settings -> Security.
+2. Validate token on CLI-protected routes:
+
+```bash
+curl -k -i \
+  -H "Authorization: Bearer <FULL_MCP_TOKEN>" \
+  "https://envault.localhost:1355/api/cli/me"
+```
+
+3. Force-expire token in database, then trigger cleanup manually:
+
+```bash
+curl -k -i \
+  -H "Authorization: Bearer <CRON_SECRET>" \
+  "https://envault.localhost:1355/api/cron/mcp-token-cleanup"
+```
+
+4. Confirm token is invalid after cleanup and MCP profile token fields are cleared.
+
+### Alternative: CLI Automated Setup
+
+If you prefer automated config generation, use the Envault CLI:
+
+Install MCP strictly for current workspace (`.vscode`):
 
 ```bash
 envault mcp install --local
 ```
 
-Or install it globally for all your IDEs and Claude Desktop:
+Install globally for all supported IDE integrations:
 
 ```bash
 envault mcp install
 ```
 
-Update MCP integration to the latest runtime behavior:
+Update MCP integration runtime behavior:
 
 ```bash
 envault mcp update
-# npm fallback (standalone package installs):
-npm install -g @dinanathdash/envault-mcp-server@latest
+```
 
-# config-only refresh (no npm install -g):
+Config-only refresh (skip npm global package update):
+
+```bash
 envault mcp update --config-only
 ```
 
-When you use this command, the CLI completely automates creating the standard `mcp.json` or `cline_mcp_settings.json` format configuration for you pointing to `npx -y @dinanathdash/envault-mcp-server@latest`.
+npm fallback (standalone package installs):
+
+```bash
+npm install -g @dinanathdash/envault-mcp-server@latest
+```
 
 ## HITL Approval Flow
 
@@ -105,7 +201,23 @@ The MCP server exposes these tools:
 - `envault_status`
 - `envault_pull`
 - `envault_push`
+- `envault_deploy`
 - `envault_approve`
+- `envault_diff`
+- `envault_run`
+- `envault_login`
+- `envault_init`
+- `envault_generate_hooks`
+- `envault_audit`
+- `envault_env_map`
+- `envault_env_unmap`
+- `envault_env_default`
+- `envault_mcp_install`
+- `envault_mcp_update`
+- `envault_sdk_install`
+- `envault_sdk_update`
+- `envault_doctor`
+- `envault_version`
 - `envault_set_local_key`
 - `envault_remove_local_key`
 

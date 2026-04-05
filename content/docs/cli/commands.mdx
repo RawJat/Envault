@@ -132,7 +132,13 @@ This makes diffs, version-control reviews, and manual comparisons predictable re
 
 ```bash
 git rm --cached .env
+```
+
+```bash
 echo '.env' >> .gitignore
+```
+
+```bash
 git commit -m 'stop tracking .env'
 ```
 
@@ -302,7 +308,9 @@ Make sure your local environment files are structurally valid and safe to commit
 ```bash
 # run a quick check in your repository
 envault audit
+```
 
+```bash
 # specify a different file or template
 envault audit --file .env.staging --template .env.staging.example
 ```
@@ -337,7 +345,13 @@ Manage local environment mappings and default environment.
 
 ```bash
 envault env map --env development --file .env.development
+```
+
+```bash
 envault env default --env development
+```
+
+```bash
 envault env unmap --env preview
 ```
 
@@ -375,6 +389,9 @@ npm fallback commands:
 
 ```bash
 npm install @dinanathdash/envault-sdk
+```
+
+```bash
 npm install @dinanathdash/envault-sdk@latest
 ```
 
@@ -422,8 +439,17 @@ Generate shell completion scripts.
 
 ```bash
 envault completion zsh
+```
+
+```bash
 envault completion bash
+```
+
+```bash
 envault completion fish
+```
+
+```bash
 envault completion powershell
 ```
 
@@ -435,7 +461,13 @@ Print CLI version.
 
 ```bash
 envault version
+```
+
+```bash
 envault --version
+```
+
+```bash
 envault -v
 ```
 

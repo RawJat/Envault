@@ -58,6 +58,7 @@ export async function proxy(request: NextRequest) {
     "/api/cli/auth/device/cancel",
     "/api/cli/auth/refresh",
     "/api/cron/digest",
+    "/api/cron/mcp-token-cleanup",
     "/api/auth/webauthn/authenticate/options",
     "/api/auth/webauthn/authenticate/verify",
     "/api/github/callback",

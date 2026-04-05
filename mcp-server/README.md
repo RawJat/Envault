@@ -7,7 +7,23 @@ This MCP server exposes direct Envault operations so blank chats can call tools 
 - `envault_status`
 - `envault_pull`
 - `envault_push`
+- `envault_deploy`
 - `envault_approve`
+- `envault_diff`
+- `envault_run`
+- `envault_login`
+- `envault_init`
+- `envault_generate_hooks`
+- `envault_audit`
+- `envault_env_map`
+- `envault_env_unmap`
+- `envault_env_default`
+- `envault_mcp_install`
+- `envault_mcp_update`
+- `envault_sdk_install`
+- `envault_sdk_update`
+- `envault_doctor`
+- `envault_version`
 - `envault_set_local_key`
 - `envault_remove_local_key`
 
@@ -155,8 +171,8 @@ npm publish --access public
 
 ## Release alignment (SDK + MCP)
 
-- SDK package: `@dinanathdash/envault-sdk` (version `1.0.0`)
-- MCP package: `@dinanathdash/envault-mcp-server` (version `1.0.0`)
+- SDK package: `@dinanathdash/envault-sdk`
+- MCP package: `@dinanathdash/envault-mcp-server`
 
 Suggested publish sequence:
 

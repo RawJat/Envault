@@ -234,10 +234,27 @@ function toToolResponse(payload, isError = false) {
   };
 }
 
+function isNonEmptyString(value) {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function pushOptionalFlag(cliArgs, flag, value) {
+  if (isNonEmptyString(value)) {
+    cliArgs.push(flag, value.trim());
+  }
+}
+
+function pushProjectAndEnvironment(cliArgs, args) {
+  pushOptionalFlag(cliArgs, "--project", args.projectId);
+  pushOptionalFlag(cliArgs, "--env", args.environment);
+}
+
+const RUNTIME_VERSION = await getCurrentPackageVersion();
+
 const server = new Server(
   {
     name: "envault-mcp-server",
-    version: "0.1.0",
+    version: RUNTIME_VERSION,
   },
   {
     capabilities: {
@@ -250,7 +267,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
   tools: [
     {
       name: "envault_status",
-      description: "Show Envault CLI auth/project/environment status.",
+      description:
+        "Read-only context check for auth, project, role, permissions, active environment, and mapped local env file. Use this first when context is unclear.",
       inputSchema: {
         type: "object",
         properties: {
@@ -263,10 +281,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: "envault_pull",
-      description: "Pull remote secrets into the local env file for an environment.",
+      description:
+        "Fetch remote secrets into a local env file. Use before local development runs, diffs, or edits. This updates local files only and does not require HITL approval.",
       inputSchema: {
         type: "object",
         properties: {
+          projectId: { type: "string" },
           environment: { type: "string" },
           file: { type: "string" },
           force: { type: "boolean", default: true },
@@ -275,10 +295,27 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: "envault_push",
-      description: "Deploy local env file values to Envault for an environment.",
+      description:
+        "Submit local secret changes for HITL approval. IMPORTANT: treat this as an approval-request step, not immediate execution. If the response indicates pending approval (for example HTTP 202 Accepted with approval_id/approval_url), you must explicitly show the approval_url to the user, instruct them to open it in a browser and approve/reject, then wait for user confirmation or poll status before assuming changes are applied.",
       inputSchema: {
         type: "object",
         properties: {
+          projectId: { type: "string" },
+          environment: { type: "string" },
+          file: { type: "string" },
+          force: { type: "boolean", default: true },
+          dryRun: { type: "boolean", default: false },
+        },
+      },
+    },
+    {
+      name: "envault_deploy",
+      description:
+        "Alias of envault_push. Same HITL behavior applies: if pending approval is returned, provide approval_url to the user and wait for approval completion before claiming success.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          projectId: { type: "string" },
           environment: { type: "string" },
           file: { type: "string" },
           force: { type: "boolean", default: true },
@@ -288,7 +325,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: "envault_approve",
-      description: "Approve a pending Envault HITL approval by ID.",
+      description:
+        "Approve a pending HITL request by approval ID. Use after envault_push/envault_deploy returns a pending approval. This executes the human approval action.",
       inputSchema: {
         type: "object",
         properties: {
@@ -298,9 +336,183 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
       },
     },
     {
+      name: "envault_diff",
+      description:
+        "Compare local env file against remote secrets and return additions, deletions, and modifications before proposing a push.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          projectId: { type: "string" },
+          environment: { type: "string" },
+          file: { type: "string" },
+        },
+      },
+    },
+    {
+      name: "envault_run",
+      description:
+        "Run a local command with Envault secrets injected into process environment. Use when the user asks to run an app/script with managed secrets.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          projectId: { type: "string" },
+          environment: { type: "string" },
+          command: { type: "string" },
+          args: {
+            type: "array",
+            items: { type: "string" },
+          },
+        },
+        required: ["command"],
+      },
+    },
+    {
+      name: "envault_login",
+      description:
+        "Start CLI device-flow login in the browser and store local CLI access token. Use when auth is missing or expired.",
+      inputSchema: {
+        type: "object",
+        properties: {},
+      },
+    },
+    {
+      name: "envault_init",
+      description:
+        "Initialize envault.json and project linkage in the current directory. Use for first-time project setup.",
+      inputSchema: {
+        type: "object",
+        properties: {},
+      },
+    },
+    {
+      name: "envault_generate_hooks",
+      description:
+        "Create or update git post-merge hook that triggers envault pull after merges.",
+      inputSchema: {
+        type: "object",
+        properties: {},
+      },
+    },
+    {
+      name: "envault_audit",
+      description:
+        "Audit local env safety and key parity. Can install pre-commit hook and emit text or JSON output.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          strict: { type: "boolean", default: false },
+          format: { type: "string", enum: ["text", "json"] },
+          installHook: { type: "boolean", default: false },
+          template: { type: "string" },
+          file: { type: "string" },
+        },
+      },
+    },
+    {
+      name: "envault_env_map",
+      description:
+        "Map an environment slug to a local env file path in envault.json.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          environment: { type: "string" },
+          file: { type: "string" },
+        },
+        required: ["environment", "file"],
+      },
+    },
+    {
+      name: "envault_env_unmap",
+      description: "Remove an environment-to-file mapping from envault.json.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          environment: { type: "string" },
+        },
+        required: ["environment"],
+      },
+    },
+    {
+      name: "envault_env_default",
+      description: "Set the default environment in envault.json.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          environment: { type: "string" },
+        },
+        required: ["environment"],
+      },
+    },
+    {
+      name: "envault_mcp_install",
+      description:
+        "Install MCP integration config for local workspace and/or global editor clients.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          global: { type: "boolean", default: false },
+          local: { type: "boolean", default: false },
+        },
+      },
+    },
+    {
+      name: "envault_mcp_update",
+      description:
+        "Update MCP package/config for local workspace and/or global editor clients.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          global: { type: "boolean", default: false },
+          local: { type: "boolean", default: false },
+          configOnly: { type: "boolean", default: false },
+        },
+      },
+    },
+    {
+      name: "envault_sdk_install",
+      description:
+        "Install Envault TypeScript SDK either in current project, globally, or both.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          global: { type: "boolean", default: false },
+          local: { type: "boolean", default: false },
+        },
+      },
+    },
+    {
+      name: "envault_sdk_update",
+      description:
+        "Update Envault TypeScript SDK either in current project, globally, or both.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          global: { type: "boolean", default: false },
+          local: { type: "boolean", default: false },
+        },
+      },
+    },
+    {
+      name: "envault_doctor",
+      description:
+        "Run local diagnostics for CLI installation, Homebrew source, and version parity.",
+      inputSchema: {
+        type: "object",
+        properties: {},
+      },
+    },
+    {
+      name: "envault_version",
+      description: "Print installed Envault CLI version.",
+      inputSchema: {
+        type: "object",
+        properties: {},
+      },
+    },
+    {
       name: "envault_set_local_key",
       description:
-        "Set or update a key=value pair in the local env file resolved from envault.json/environment mapping. Optionally push immediately.",
+        "Set/update a key=value in local env file. If autoPush=true, this triggers envault_push and may return pending HITL approval requiring browser approval.",
       inputSchema: {
         type: "object",
         properties: {
@@ -316,7 +528,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     {
       name: "envault_remove_local_key",
       description:
-        "Remove a key from the local env file resolved from envault.json/environment mapping. Optionally push immediately.",
+        "Remove a key from local env file. If autoPush=true, this triggers envault_push and may return pending HITL approval requiring browser approval.",
       inputSchema: {
         type: "object",
         properties: {
@@ -337,36 +549,26 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   if (name === "envault_status") {
     const cliArgs = ["status"];
-    if (typeof args.projectId === "string" && args.projectId.trim()) {
-      cliArgs.push("--project", args.projectId.trim());
-    }
+    pushOptionalFlag(cliArgs, "--project", args.projectId);
     const result = await runEnvault(cliArgs, cwd);
     return toToolResponse(result, !result.ok);
   }
 
   if (name === "envault_pull") {
     const cliArgs = ["pull"];
+    pushProjectAndEnvironment(cliArgs, args);
     if (args.force !== false) cliArgs.push("--force");
-    if (typeof args.environment === "string" && args.environment.trim()) {
-      cliArgs.push("--env", args.environment.trim());
-    }
-    if (typeof args.file === "string" && args.file.trim()) {
-      cliArgs.push("--file", args.file.trim());
-    }
+    pushOptionalFlag(cliArgs, "--file", args.file);
     const result = await runEnvault(cliArgs, cwd);
     return toToolResponse(result, !result.ok);
   }
 
-  if (name === "envault_push") {
+  if (name === "envault_push" || name === "envault_deploy") {
     const cliArgs = ["push"];
+    pushProjectAndEnvironment(cliArgs, args);
     if (args.force !== false) cliArgs.push("--force");
     if (args.dryRun === true) cliArgs.push("--dry-run");
-    if (typeof args.environment === "string" && args.environment.trim()) {
-      cliArgs.push("--env", args.environment.trim());
-    }
-    if (typeof args.file === "string" && args.file.trim()) {
-      cliArgs.push("--file", args.file.trim());
-    }
+    pushOptionalFlag(cliArgs, "--file", args.file);
     const result = await runEnvault(cliArgs, cwd);
     return toToolResponse(result, !result.ok);
   }
@@ -377,6 +579,133 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       return toToolResponse({ error: "approvalId is required" }, true);
     }
     const result = await runEnvault(["approve", approvalId], cwd);
+    return toToolResponse(result, !result.ok);
+  }
+
+  if (name === "envault_diff") {
+    const cliArgs = ["diff"];
+    pushProjectAndEnvironment(cliArgs, args);
+    pushOptionalFlag(cliArgs, "--file", args.file);
+    const result = await runEnvault(cliArgs, cwd);
+    return toToolResponse(result, !result.ok);
+  }
+
+  if (name === "envault_run") {
+    const command = isNonEmptyString(args.command) ? args.command.trim() : "";
+    if (!command) {
+      return toToolResponse({ error: "command is required" }, true);
+    }
+
+    const cliArgs = ["run"];
+    pushProjectAndEnvironment(cliArgs, args);
+    cliArgs.push("--", command);
+
+    if (Array.isArray(args.args)) {
+      for (const arg of args.args) {
+        if (typeof arg === "string") {
+          cliArgs.push(arg);
+        }
+      }
+    }
+
+    const result = await runEnvault(cliArgs, cwd);
+    return toToolResponse(result, !result.ok);
+  }
+
+  if (name === "envault_login") {
+    const result = await runEnvault(["login"], cwd);
+    return toToolResponse(result, !result.ok);
+  }
+
+  if (name === "envault_init") {
+    const result = await runEnvault(["init"], cwd);
+    return toToolResponse(result, !result.ok);
+  }
+
+  if (name === "envault_generate_hooks") {
+    const result = await runEnvault(["generate-hooks"], cwd);
+    return toToolResponse(result, !result.ok);
+  }
+
+  if (name === "envault_audit") {
+    const cliArgs = ["audit"];
+    if (args.strict === true) cliArgs.push("--strict");
+    if (args.installHook === true) cliArgs.push("--install-hook");
+    pushOptionalFlag(cliArgs, "--format", args.format);
+    pushOptionalFlag(cliArgs, "--template", args.template);
+    pushOptionalFlag(cliArgs, "--file", args.file);
+    const result = await runEnvault(cliArgs, cwd);
+    return toToolResponse(result, !result.ok);
+  }
+
+  if (name === "envault_env_map") {
+    const environment = isNonEmptyString(args.environment) ? args.environment.trim() : "";
+    const file = isNonEmptyString(args.file) ? args.file.trim() : "";
+    if (!environment || !file) {
+      return toToolResponse({ error: "environment and file are required" }, true);
+    }
+    const result = await runEnvault(["env", "map", "--env", environment, "--file", file], cwd);
+    return toToolResponse(result, !result.ok);
+  }
+
+  if (name === "envault_env_unmap") {
+    const environment = isNonEmptyString(args.environment) ? args.environment.trim() : "";
+    if (!environment) {
+      return toToolResponse({ error: "environment is required" }, true);
+    }
+    const result = await runEnvault(["env", "unmap", "--env", environment], cwd);
+    return toToolResponse(result, !result.ok);
+  }
+
+  if (name === "envault_env_default") {
+    const environment = isNonEmptyString(args.environment) ? args.environment.trim() : "";
+    if (!environment) {
+      return toToolResponse({ error: "environment is required" }, true);
+    }
+    const result = await runEnvault(["env", "default", "--env", environment], cwd);
+    return toToolResponse(result, !result.ok);
+  }
+
+  if (name === "envault_mcp_install") {
+    const cliArgs = ["mcp", "install"];
+    if (args.global === true) cliArgs.push("--global");
+    if (args.local === true) cliArgs.push("--local");
+    const result = await runEnvault(cliArgs, cwd);
+    return toToolResponse(result, !result.ok);
+  }
+
+  if (name === "envault_mcp_update") {
+    const cliArgs = ["mcp", "update"];
+    if (args.global === true) cliArgs.push("--global");
+    if (args.local === true) cliArgs.push("--local");
+    if (args.configOnly === true) cliArgs.push("--config-only");
+    const result = await runEnvault(cliArgs, cwd);
+    return toToolResponse(result, !result.ok);
+  }
+
+  if (name === "envault_sdk_install") {
+    const cliArgs = ["sdk", "install"];
+    if (args.global === true) cliArgs.push("--global");
+    if (args.local === true) cliArgs.push("--local");
+    const result = await runEnvault(cliArgs, cwd);
+    return toToolResponse(result, !result.ok);
+  }
+
+  if (name === "envault_sdk_update") {
+    const cliArgs = ["sdk", "update"];
+    if (args.global === true) cliArgs.push("--global");
+    if (args.local === true) cliArgs.push("--local");
+    const result = await runEnvault(cliArgs, cwd);
+    return toToolResponse(result, !result.ok);
+  }
+
+  if (name === "envault_doctor") {
+    const result = await runEnvault(["doctor"], cwd);
+    return toToolResponse(result, !result.ok);
+  }
+
+  if (name === "envault_version") {
+    const result = await runEnvault(["version"], cwd);
     return toToolResponse(result, !result.ok);
   }
 
