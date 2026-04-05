@@ -1,0 +1,94 @@
+---
+title: MCP & Agent Development
+description: Local development, testing, and architecture for the Envault Model Context Protocol (MCP) server.
+---
+
+# MCP & Agent Development
+
+The Envault MCP Server (`mcp-server/`) acts as a bridge between AI assistants (like Claude Desktop, Cursor, and RooCode) and the Envault backend.
+
+This document outlines how to set up, test, and maintain the MCP server infrastructure locally.
+
+## Development Setup
+
+The MCP server is a standalone Node.js package located in `./mcp-server`. To develop locally:
+
+1. Navigate to the directory and install dependencies:
+
+   ```bash
+   cd mcp-server
+   ```
+
+   ```bash
+   npm install
+   ```
+
+2. Build the server:
+   ```bash
+   npm run build
+   ```
+3. To test your local build with an MCP client, you can modify your client's configuration to point to your local executable instead of the published npm package:
+   ```json
+   {
+     "server": {
+       "envault-dev": {
+         "command": "node",
+         "args": ["/absolute/path/to/Envault/mcp-server/server.mjs"],
+         "env": {
+           "ENVAULT_TOKEN": "<YOUR_DEV_TOKEN>",
+           "ENVAULT_BASE_URL": "http://localhost:3000"
+         }
+       }
+     }
+   }
+   ```
+
+## MCP Token Cleanup Automation
+
+MCP web tokens are automatically cleaned up through a protected cron endpoint. When developing locally or self-hosting, you need to ensure this cron job is configured.
+
+- **Endpoint:** `/api/cron/mcp-token-cleanup`
+- **Auth:** `Authorization: Bearer <CRON_SECRET>`
+- **Database:** Supabase pg_cron
+
+### Setting up the Cron Job
+
+1. Ensure `CRON_SECRET` is set in your `.env.local` and production environments.
+2. Schedule the job in the Supabase SQL Editor by executing the following scripts in order:
+   - `supabase/migrations/20260405000000_add_mcp_web_token_columns_to_profiles.sql`
+   - `scripts/setup-mcp-token-cleanup-cron.sql`
+
+_Note: The cron SQL file safely unschedules legacy hourly cleanup routines before creating the daily schedule._
+
+## Local Validation Checklist
+
+Before merging MCP-related PRs, execute this local validation checklist:
+
+1. **Generate Token:** Generate a fresh MCP token from your local Envault dashboard (Settings -> Security).
+2. **Validate Auth:** Run a curl request against a CLI-protected route to ensure the token parses correctly:
+   ```bash
+   curl -k -i \
+     -H "Authorization: Bearer <FULL_MCP_TOKEN>" \
+     "http://localhost:3000/api/cli/me"
+   ```
+3. **Trigger Cleanup:** Force-expire the token directly in the database, then trigger the cleanup manually:
+   ```bash
+   curl -k -i \
+     -H "Authorization: Bearer <CRON_SECRET>" \
+     "http://localhost:3000/api/cron/mcp-token-cleanup"
+   ```
+4. **Verify Deletion:** Confirm the token is now invalid and the MCP profile token fields in the database are cleared.
+
+## HITL (Human-in-the-Loop) Interceptor Testing
+
+Testing the MCP server interaction is crucial because it handles AI-driven modifications to secrets. The `mcp-agent` interceptor enforces human approvals.
+
+Run the integration tests to exercise token cleanup, lifecycle events, and the HITL approval endpoints:
+
+```bash
+npx vitest tests/mcp-token-lifecycle.test.ts
+```
+
+```bash
+npx vitest tests/agent-interceptor.test.ts
+```

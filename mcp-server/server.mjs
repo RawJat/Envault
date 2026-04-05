@@ -285,12 +285,9 @@ async function callEnvaultApi({ pathName, method = "GET", query, body }) {
     const parsedError =
       parsed && typeof parsed.error === "string" ? parsed.error : defaultError;
 
-    const authHint =
+    const authDetails =
       response.status === 401
-        ? {
-            authHint:
-              "Unauthorized with ENVAULT_TOKEN. Use a fresh full MCP token (not masked), ensure it is not expired/revoked, and ensure ENVAULT_BASE_URL matches where the token was issued.",
-          }
+        ? classifyTokenAuthIssue({ error: parsedError, data: parsed })
         : {};
 
     return {
@@ -300,7 +297,7 @@ async function callEnvaultApi({ pathName, method = "GET", query, body }) {
       error: response.ok ? null : parsedError,
       url: url.toString(),
       method,
-      ...authHint,
+      ...authDetails,
     };
   } catch (error) {
     return {
@@ -346,6 +343,73 @@ function resolveEnvironment(args, config) {
   return "development";
 }
 
+function classifyTokenAuthIssue(apiResult) {
+  const raw = String(apiResult?.error || apiResult?.data?.error || "")
+    .trim()
+    .toLowerCase();
+
+  if (raw.includes("token_expired") || raw.includes("expired")) {
+    return {
+      authIssue: "token_expired",
+      authHint:
+        "ENVAULT_TOKEN appears expired. Generate a new MCP token in dashboard settings, update MCP env, and restart the MCP server.",
+    };
+  }
+
+  if (raw.includes("invalid token") || raw.includes("invalid service token")) {
+    return {
+      authIssue: "token_invalid_or_revoked",
+      authHint:
+        "ENVAULT_TOKEN is invalid or revoked. Generate a fresh MCP token, use the full unmasked value, then restart the MCP server.",
+    };
+  }
+
+  return {
+    authIssue: "unauthorized",
+    authHint:
+      "Unauthorized with ENVAULT_TOKEN. Use a fresh full MCP token (not masked), ensure it is not expired/revoked, and ensure ENVAULT_BASE_URL matches where the token was issued.",
+  };
+}
+
+function enrichProjectEnvironmentError(apiResult, context) {
+  const rawError = String(apiResult?.error || apiResult?.data?.error || "");
+  const lower = rawError.toLowerCase();
+
+  const details = {
+    projectId: context.projectId,
+    environment: context.environment,
+    projectIdSource: context.projectIdSource,
+    environmentSource: context.environmentSource,
+  };
+
+  if (apiResult?.status === 404 && lower.includes("environment")) {
+    return {
+      ...apiResult,
+      configHint:
+        context.environmentSource === "envault.json"
+          ? `Environment '${context.environment}' from envault.json defaultEnvironment was not found for project '${context.projectId}'. Update envault.json or pass environment explicitly.`
+          : `Environment '${context.environment}' was not found for project '${context.projectId}'. Check the environment slug.`,
+      configDetails: details,
+    };
+  }
+
+  if (
+    (apiResult?.status === 404 && (lower.includes("project") || lower.includes("not found"))) ||
+    (apiResult?.status === 403 && (lower.includes("forbidden") || lower.includes("access_required")))
+  ) {
+    return {
+      ...apiResult,
+      configHint:
+        context.projectIdSource === "envault.json"
+          ? `Project '${context.projectId}' from envault.json projectId is invalid or inaccessible for this token. Update envault.json projectId or pass projectId explicitly.`
+          : `Project '${context.projectId}' is invalid or inaccessible for this token. Check project access and projectId.`,
+      configDetails: details,
+    };
+  }
+
+  return apiResult;
+}
+
 function buildDiff(localMap, remoteSecrets) {
   const remoteMap = new Map((remoteSecrets || []).map((s) => [s.key, s.value]));
 
@@ -377,6 +441,37 @@ function buildDiff(localMap, remoteSecrets) {
     deletions,
     modifications,
     unchanged,
+  };
+}
+
+async function buildSyncVerification({ projectId, environment, localMap }) {
+  const remoteResult = await callEnvaultApi({
+    pathName: `/api/cli/projects/${projectId}/secrets`,
+    query: { environment },
+  });
+
+  if (!remoteResult.ok) {
+    return {
+      verified: false,
+      checkError: remoteResult.error || "Failed to verify remote state",
+    };
+  }
+
+  const remoteSecrets = Array.isArray(remoteResult?.data?.secrets)
+    ? remoteResult.data.secrets
+    : [];
+  const diff = buildDiff(localMap, remoteSecrets);
+  const isClean =
+    diff.additions.length === 0 &&
+    diff.deletions.length === 0 &&
+    diff.modifications.length === 0;
+
+  return {
+    verified: true,
+    isClean,
+    localCount: localMap.size,
+    remoteCount: remoteSecrets.length,
+    diff,
   };
 }
 
@@ -734,6 +829,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   if (name === "envault_pull") {
     if (standaloneToken) {
+      const projectIdSource = isNonEmptyString(args.projectId)
+        ? "arguments"
+        : "envault.json";
+      const environmentSource = isNonEmptyString(args.environment)
+        ? "arguments"
+        : "envault.json";
       const projectId = resolveProjectId(args, config);
       if (!projectId) {
         return toToolResponse(
@@ -752,7 +853,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       });
 
       if (!apiResult.ok) {
-        return toToolResponse(apiResult, true);
+        return toToolResponse(
+          enrichProjectEnvironmentError(apiResult, {
+            projectId,
+            environment,
+            projectIdSource,
+            environmentSource,
+          }),
+          true,
+        );
       }
 
       const targetFile = resolveLocalEnvFile(config, environment, args.file);
@@ -801,6 +910,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   if (name === "envault_push" || name === "envault_deploy") {
     if (standaloneToken) {
+      const projectIdSource = isNonEmptyString(args.projectId)
+        ? "arguments"
+        : "envault.json";
+      const environmentSource = isNonEmptyString(args.environment)
+        ? "arguments"
+        : "envault.json";
       const projectId = resolveProjectId(args, config);
       if (!projectId) {
         return toToolResponse(
@@ -839,7 +954,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         });
 
         if (!remoteResult.ok) {
-          return toToolResponse(remoteResult, true);
+          return toToolResponse(
+            enrichProjectEnvironmentError(remoteResult, {
+              projectId,
+              environment,
+              projectIdSource,
+              environmentSource,
+            }),
+            true,
+          );
         }
 
         const diff = buildDiff(localMap, remoteResult?.data?.secrets || []);
@@ -862,7 +985,35 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         body: { secrets, pruneMissing: true },
       });
 
-      return toToolResponse(apiResult, !apiResult.ok);
+      if (!apiResult.ok) {
+        return toToolResponse(
+          enrichProjectEnvironmentError(apiResult, {
+            projectId,
+            environment,
+            projectIdSource,
+            environmentSource,
+          }),
+          true,
+        );
+      }
+
+      const sync = await buildSyncVerification({
+        projectId,
+        environment,
+        localMap,
+      });
+
+      const payload = {
+        ...apiResult,
+        sync,
+      };
+
+      if (sync.verified && !sync.isClean) {
+        payload.warning =
+          "Push/deploy completed but remote state still differs from local file. Server may not yet support full prune sync for this route deployment.";
+      }
+
+      return toToolResponse(payload, false);
     }
 
     const cliArgs = ["push"];
@@ -895,6 +1046,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   if (name === "envault_diff") {
     if (standaloneToken) {
+      const projectIdSource = isNonEmptyString(args.projectId)
+        ? "arguments"
+        : "envault.json";
+      const environmentSource = isNonEmptyString(args.environment)
+        ? "arguments"
+        : "envault.json";
       const projectId = resolveProjectId(args, config);
       if (!projectId) {
         return toToolResponse(
@@ -926,7 +1083,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         query: { environment },
       });
       if (!remoteResult.ok) {
-        return toToolResponse(remoteResult, true);
+        return toToolResponse(
+          enrichProjectEnvironmentError(remoteResult, {
+            projectId,
+            environment,
+            projectIdSource,
+            environmentSource,
+          }),
+          true,
+        );
       }
 
       const diff = buildDiff(localMap, remoteResult?.data?.secrets || []);
@@ -1156,8 +1321,29 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           body: { secrets, pruneMissing: true },
         });
 
-        response.autoPushed = pushResult.ok;
-        return toToolResponse({ ...response, pushResult }, !pushResult.ok);
+        const sync = pushResult.ok
+          ? await buildSyncVerification({ projectId, environment, localMap: parseEnvFile(localContent) })
+          : null;
+
+        const finalPushResult =
+          pushResult.ok && sync
+            ? {
+                ...pushResult,
+                sync,
+                ...(sync.verified && !sync.isClean
+                  ? {
+                      warning:
+                        "autoPush completed but remote state still differs from local file. Server may not yet support full prune sync for this route deployment.",
+                    }
+                  : {}),
+              }
+            : pushResult;
+
+        response.autoPushed = finalPushResult.ok;
+        return toToolResponse(
+          { ...response, pushResult: finalPushResult },
+          !finalPushResult.ok,
+        );
       }
 
       const pushArgs = ["push", "--force"];
@@ -1230,8 +1416,29 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           body: { secrets, pruneMissing: true },
         });
 
-        response.autoPushed = pushResult.ok;
-        return toToolResponse({ ...response, pushResult }, !pushResult.ok);
+        const sync = pushResult.ok
+          ? await buildSyncVerification({ projectId, environment, localMap: parseEnvFile(localContent) })
+          : null;
+
+        const finalPushResult =
+          pushResult.ok && sync
+            ? {
+                ...pushResult,
+                sync,
+                ...(sync.verified && !sync.isClean
+                  ? {
+                      warning:
+                        "autoPush completed but remote state still differs from local file. Server may not yet support full prune sync for this route deployment.",
+                    }
+                  : {}),
+              }
+            : pushResult;
+
+        response.autoPushed = finalPushResult.ok;
+        return toToolResponse(
+          { ...response, pushResult: finalPushResult },
+          !finalPushResult.ok,
+        );
       }
 
       const pushArgs = ["push", "--force"];

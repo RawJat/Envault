@@ -107,7 +107,7 @@ export async function CliSection() {
             </div>
 
             <FadeIn delay={0.4} className="pt-4 flex items-center gap-4">
-              <Link href="/docs/cli/reference">
+              <Link href="/docs/platform/cli/reference">
                 <Button
                   size="lg"
                   className="h-12 px-8 text-base shadow-lg shadow-primary/20 rounded-none"

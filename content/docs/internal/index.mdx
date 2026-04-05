@@ -1,0 +1,34 @@
+---
+title: Contributor Guide
+description: Welcome to the Envault Contributor Guide. Discover how to build, run, and test Envault locally.
+icon: Bookmark
+---
+
+# Welcome to the Contributor Guide
+
+This documentation is specifically tailored for **Envault core contributors** and anyone looking to set up the Envault stack for local development or inspection.
+
+Here we isolate the underlying machinery away from the public user-facing platform docs so it is clean, structured, and strictly technical.
+
+## Repository Structure
+
+The Envault repository is a monorepo consisting of:
+
+- **`src/` and `app/`**: The core Next.js web application encompassing the marketing pages, dashboard, project management, and the documentation UI itself.
+- **`cli-go/`**: The robust, zero-dependency Go implementation of the Envault CLI. Handles E2E encryption and API interactions.
+- **`mcp-server/`**: Connects Envault with Model Context Protocol compatible AI agents (like Claude Desktop and Cursor), enabling AI to directly pull/push secrets and propose code changes.
+- **`cli-wrapper/`**: An npm wrapper for distributing the cross-platform CLI simply to Node JS users.
+- **`supabase/`**: Defines the database schema, PostgREST policies (RLS), edge functions, and realtime triggers.
+- **`content/docs/`**: Where this exact documentation lives, partitioned cleanly into `platform` (End Users) and `internal` (Contributors).
+
+## Prerequisite Tooling
+
+Before you begin contributing, ensure you have the following installed on your workstation:
+
+1. **Node.js** (v20+) & **npm**
+2. **Go** (v1.21+) for compiling the CLI
+3. **Docker** and **Supabase CLI** (for running the local database and auth stack)
+
+## Next Steps
+
+Read the [Architecture](./architecture) guide to understand how AES-256 E2E encryption functions, and review the [Local Setup](./local-setup) to spin up the local web and backend services.

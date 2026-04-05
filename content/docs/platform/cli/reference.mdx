@@ -1,0 +1,131 @@
+---
+title: CLI Overview
+description: Install, authenticate, and use Envault from your terminal workspace.
+---
+
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+import { Callout } from "fumadocs-ui/components/callout";
+import { Step, Steps } from "fumadocs-ui/components/steps";
+
+The Envault CLI is the fastest, most secure way to securely sync your environment variables across `Development`, `Staging`, and `Production` environments without ever leaving your terminal or sharing `.env` files over Slack.
+
+---
+
+## 1. Installation
+
+### macOS & Linux (Recommended)
+
+Our universal installation script automatically detects your architecture and installs the pre-compiled, zero-dependency Go binary directly to your system path.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/DinanathDash/Envault/main/install.sh | sh
+```
+
+### macOS (Homebrew)
+
+For Mac users who prefer to manage packages through Homebrew:
+
+```bash
+brew tap DinanathDash/envault
+```
+
+```bash
+brew install --formula envault
+```
+
+### Node package managers (NPM / PNPM / Bun)
+
+If you're working in a Node ecosystem, you can install the CLI globally via our NPM wrapper script:
+
+<Tabs items={["npm", "pnpm", "yarn", "bun"]}>
+  <Tab value="npm">```bash npm install -g @dinanathdash/envault ```</Tab>
+  <Tab value="pnpm">```bash pnpm add -g @dinanathdash/envault ```</Tab>
+  <Tab value="yarn">```bash yarn global add @dinanathdash/envault ```</Tab>
+  <Tab value="bun">```bash bun add -g @dinanathdash/envault ```</Tab>
+</Tabs>
+
+---
+
+## 2. Authentication
+
+Envault CLI relies on the secure OAuth Device Flow. This means you do not need to type your password into the terminal.
+
+```bash
+envault login
+```
+
+Running this command will open your default browser. Once you click "Approve" in the Envault Dashboard, your CLI is instantly authorized.
+
+### How Sessions Work
+
+- Your **Access Token** is securely rotated every 60 minutes automatically behind the scenes.
+- Your **Refresh Token** is stored deep inside your OS's Secure Enclave (macOS Keychain, Windows Credential Manager).
+- You will stay logged in seamlessly for up to 30 days without needing to re-authenticate.
+
+---
+
+## 3. Quick Workflow Setup
+
+Getting a new repository wired up with Envault takes seconds:
+
+<Steps>
+  <Step>
+    ### Initialize the Directory
+    Navigate to your codebase and link it to your Envault Cloud Project:
+    
+    ```bash
+    envault init
+    ```
+
+    This creates an `envault.json` file. Commit this to GitHub so your team knows which project this repo belongs to.
+
+  </Step>
+
+  <Step>
+    ### Map your Environments
+    Tell Envault where you want your secrets to live locally. For example, to map the `development` environment:
+    
+    ```bash
+    envault env map --env development --file .env.development
+    ```
+
+    To map other environments such as `preview` or `production`, run the corresponding commands individually:
+
+    ```bash
+    envault env map --env preview --file .env.preview
+    ```
+
+    ```bash
+    envault env map --env production --file .env.production
+    ```
+
+    You can also set a default so you don't have to type the environment name every time:
+
+    ```bash
+    envault env default --env development
+    ```
+
+  </Step>
+
+  <Step>
+    ### Pull Secrets
+    Now, whenever you or your teammates need the latest variables, simply run:
+    
+    ```bash
+    envault pull
+    ```
+
+    Because you mapped `development` to `.env.development`, Envault knows exactly where to securely decrypt and save the records.
+
+  </Step>
+</Steps>
+
+---
+
+## 4. Automatic Overwrite Protection (Security)
+
+Envault automatically protects you from accidentally committing secrets to GitHub.
+
+Whenever you run `envault pull`, the CLI intercepts the operation and verifies your `.gitignore` file. If `.env` or your target file is missing, Envault will **automatically add it to `.gitignore`** before writing the secrets to your hard drive.
+
+Furthermore, if the target file is _already_ tracked by git, `envault pull` will instantly abort the operation and throw an error to prevent a credential leak.

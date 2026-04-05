@@ -1,0 +1,42 @@
+---
+title: Architecture
+description: Overview of Envault architecture, security primitives, and system components.
+---
+
+# Architecture Overview
+
+Our primary goal with Envault is to build a high-performance, developer-friendly Secrets Management platform without compromising security.
+
+## Core Concepts
+
+### 1. The Web Application (Next.js)
+
+The web dashboard is the main interface for users to create workspaces, manage projects, and invite team members.
+
+- It is heavily integrated with **Supabase Auth**.
+- Passkey support is implemented to provide seamless, passwordless login flows for security-first access.
+- Uses **React Three Fiber** for immersive 3D marketing elements, kept lightweight intentionally.
+- **Role-Based Access Control (RBAC)** ensures only Project Owners and Editors can request sensitive variables.
+
+### 2. End-to-End (E2E) Encryption Model
+
+Security is not bolted-on; Envault's architecture relies on AES-256-GCM.
+
+- When an Editor creates a variable in the dashboard (or via the CLI), the payload is encrypted locally using the **Project Master Key** before leaving the client context.
+- The backend (Supabase) exclusively deals with ciphertexts.
+- Decryption happens exclusively in the browser context or within the local CLI proxy on the developer's workstation.
+
+### 3. The Local Envault CLI (Go)
+
+Written in Go to remain dependency-free and lightning fast.
+
+- Handles the **Device Flow** to authenticate terminals securely.
+- Connects directly to the Envault backend, verifying Editor/Viewer privileges before operations.
+- Intercepts requests directly from CI/CD systems or MCP agents.
+
+### 4. Model Context Protocol (MCP) Subsystem
+
+The `mcp-server` Node.js package implements exactly with the open `smithery.yaml` spec. This daemon operates as a bridge for AI clients (like Claude or Cursor) to contextualize the local development environment using tools like:
+
+- `envault_status`
+- `envault_pull` & `envault_push` (which invokes Human-In-The-Loop approvals via the `mcp-agent` interceptor).

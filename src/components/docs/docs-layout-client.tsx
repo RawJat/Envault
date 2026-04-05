@@ -3,7 +3,8 @@
 import { DocsLayout } from "fumadocs-ui/layouts/docs";
 import { RootProvider } from "fumadocs-ui/provider/next";
 import type { ReactNode } from "react";
-import { ShieldCheck, Command } from "lucide-react";
+import { ShieldCheck, Command, BookOpen, TerminalSquare } from "lucide-react";
+import { usePathname } from "next/navigation";
 import * as PageTree from "fumadocs-core/page-tree";
 
 interface DocsLayoutClientProps {
@@ -17,6 +18,11 @@ export default function DocsLayoutClient({
   tree,
   os,
 }: DocsLayoutClientProps) {
+  const pathname = usePathname();
+  const docsThemeClass = pathname.startsWith("/docs/internal")
+    ? "docs-theme-internal"
+    : "docs-theme-platform";
+
   const modifierDisplay =
     os === "mac" ? (
       <span className="inline-flex items-center align-middle">
@@ -44,6 +50,22 @@ export default function DocsLayoutClient({
     >
       <DocsLayout
         tree={tree}
+        tabMode="auto"
+        containerProps={{ className: docsThemeClass }}
+        tabs={[
+          {
+            title: "Platform Documentation",
+            url: "/docs/platform",
+            description: "Envault Cloud and CLI guides",
+            icon: <BookOpen className="size-5 text-fd-primary" />,
+          },
+          {
+            title: "Contributor Guide",
+            url: "/docs/internal",
+            description: "Local development and architecture",
+            icon: <TerminalSquare className="size-5 text-fd-primary" />,
+          },
+        ]}
         nav={{
           title: (
             <div

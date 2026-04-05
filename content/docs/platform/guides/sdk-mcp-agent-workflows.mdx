@@ -1,0 +1,172 @@
+---
+title: AI Agents & MCP
+description: Build secure agent workflows with Envault using the Model Context Protocol (MCP) and Human-in-the-Loop (HITL) approvals.
+---
+
+import { Step, Steps } from "fumadocs-ui/components/steps";
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+import { Callout } from "fumadocs-ui/components/callout";
+
+Envault provides first-class support for AI workflows through our seamless **Model Context Protocol (MCP)** server. Use your favorite AI coding assistants (like Claude Desktop, Cursor, and RooCode) to fetch, diff, and propose changes to your environment variables without ever leaving your editor.
+
+Because AI agents can hallucinate or overwrite critical production secrets, Envault enforces a strict **Human-In-The-Loop (HITL) Approval Model**. Agents can propose changes, but a human must explicitly approve them via the CLI or Dashboard before they take effect.
+
+---
+
+## 1. Setting up the MCP Server
+
+The absolute fastest way to give your AI assistants access to your Envault environment context is by using the CLI's automated installer.
+
+There are no manual JSON files to edit and no separate tokens to generate. The MCP Server runs as a local shadow daemon and inherits your terminal's secure OAuth session.
+
+<Steps>
+  <Step>
+    ### Install the MCP Server
+    To map the MCP Server strictly to your current VS Code workspace, run:
+    
+    ```bash
+    envault mcp install --local
+    ```
+
+    Alternatively, to install the server globally (so every Cursor window or Claude Desktop instance inherently has access to Envault without needing a `.vscode/mcp.json` file inside the repo), run:
+
+    ```bash
+    envault mcp install
+    ```
+
+  </Step>
+
+  <Step>
+    ### Restart your Client
+    After the script finishes injecting the configurations, fully restart your AI application (or reload the VS Code window) to initialize the Envault MCP Server.
+
+    When you update the `@dinanathdash/envault-mcp-server` integration in the future, just run:
+
+    ```bash
+    envault mcp update
+    ```
+
+  </Step>
+</Steps>
+
+## 2. Manual Configuration (Standalone MCP Tokens)
+
+For advanced users running isolated IDE instances (like a cloud-hosted DevContainer) where the standard Envault CLI OAuth session (`envault login`) is unavailable, or if you prefer to edit configurations manually, you can generate a standalone "Web Token".
+
+<Steps>
+  <Step>
+    ### Generate an MCP Token
+    Log in to your Envault web dashboard. Navigate to **Account Settings -> Security -> MCP Token**.
+    
+    Click **Generate Token**. *Copy this securely, as it will only be shown once.* 
+    
+    <Callout type="warn">
+      You can only have one active MCP token at a time. Generating a new one instantly revokes the previous token.
+    </Callout>
+  </Step>
+
+  <Step>
+    ### Configure your AI Client
+    Install the server into your AI client of choice. 
+
+    <Tabs items={['Claude Desktop', 'Cursor / Windsurf', 'VS Code (Cline)']}>
+      <Tab value="Claude Desktop">
+        Edit your Claude Desktop configuration file:
+        * **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+        * **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+
+        ```json title="claude_desktop_config.json"
+        {
+          "mcpServers": {
+            "envault": {
+              "command": "npx",
+              "args": ["-y", "@dinanathdash/envault-mcp-server@latest"],
+              "env": {
+                "ENVAULT_TOKEN": "<YOUR_ENVAULT_TOKEN>",
+                "ENVAULT_BASE_URL": "https://www.envault.tech"
+              }
+            }
+          }
+        }
+        ```
+      </Tab>
+      <Tab value="Cursor / Windsurf">
+        Open **Settings -> Features -> MCP** and add a new MCP Server:
+        * **Name:** `envault`
+        * **Type:** `command`
+        * **Command:** `npx -y @dinanathdash/envault-mcp-server@latest`
+        
+        Then add the exact Environment Variables:
+        * `ENVAULT_TOKEN` = `<YOUR_ENVAULT_TOKEN>`
+        * `ENVAULT_BASE_URL` = `https://www.envault.tech`
+      </Tab>
+      <Tab value="VS Code (Cline)">
+        Edit your workspace or global `.vscode/mcp.json`:
+
+        ```json title="mcp.json"
+        {
+          "servers": {
+            "envault": {
+              "command": "npx",
+              "args": ["-y", "@dinanathdash/envault-mcp-server@latest"],
+              "env": {
+                "ENVAULT_TOKEN": "<YOUR_ENVAULT_TOKEN>",
+                "ENVAULT_BASE_URL": "https://www.envault.tech"
+              }
+            }
+          }
+        }
+        ```
+      </Tab>
+    </Tabs>
+
+    <Callout type="info">
+      **Windows Users:** If `npx` fails to start within GUI apps (like Claude Desktop), change the command from `"npx"` to `"npx.cmd"`.
+    </Callout>
+
+  </Step>
+  
+  <Step>
+    ### Restart your Client
+    After modifying the configuration, fully restart your AI application (or reload the VS Code window) to initialize the Envault MCP Server.
+  </Step>
+</Steps>
+
+---
+
+## 3. How the HITL Approval Flow Works
+
+When you ask an AI Agent (like Claude) to "add a STRIPE_KEY environment variable to my production Envault project", the following secure sequence occurs:
+
+1. **Agent Request:** The agent uses its MCP `envault_push` tool to request the mutation.
+2. **Envault Intercepts:** Instead of updating the database, Envault creates a `pending_approvals` record and returns a `202 Accepted` response.
+3. **Agent Pauses:** The agent receives an `approval_id` and an `approval_url`. It will pause execution or inform you that an approval is required.
+4. **Human Verification:** You click the `approval_url` to view the requested changes in the Envault Web Dashboard, or approve it via your terminal:
+
+   ```bash
+   envault approve <approval_id>
+   ```
+
+5. **Execution:** Once approved, the mutation is securely executed, and the agent proceeds with its task.
+
+<Callout type="info">
+  All agent requests, approvals, and rejections are permanently recorded in your
+  Project Audit Logs to ensure total compliance.
+</Callout>
+
+## 4. MCP Tools Reference
+
+Once connected, your AI Agent gains access to the following tools:
+
+- **Read-Only Tools:** `envault_status`, `envault_context`, `envault_diff`, `envault_pull`
+- **Mutation Tools (Requires HITL):** `envault_push`, `envault_deploy`, `envault_set_local_key`, `envault_remove_local_key`
+- **Execution Tools:** `envault_run` (Injects secrets dynamically into a local command)
+
+## Security Kill Switches
+
+If an agent behaves unexpectedly or an MCP token is compromised, you do not need to delete the project.
+
+Envault provides instant **Kill Switches**:
+
+- **User Level:** Navigate to Settings -> Security and disable "Agent Access". This instantly stops all agents using your tokens across all projects.
+- **Project Level:** Workspace Owners can navigate to Project Settings -> Access Control to disable "Agent Workflows", immediately protecting that specific project from all automated AI modifications.

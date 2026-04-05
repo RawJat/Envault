@@ -1,1 +1,29 @@
 @import 'fumadocs-ui/style.css';
+
+.docs-theme-platform {
+	--color-fd-primary: hsl(216 88% 52%);
+	--color-fd-primary-foreground: hsl(0 0% 100%);
+	--color-fd-accent: hsl(214 100% 94%);
+	--color-fd-accent-foreground: hsl(217 58% 29%);
+}
+
+.docs-theme-internal {
+	--color-fd-primary: hsl(38 92% 46%);
+	--color-fd-primary-foreground: hsl(24 100% 10%);
+	--color-fd-accent: hsl(42 86% 90%);
+	--color-fd-accent-foreground: hsl(32 52% 27%);
+}
+
+.dark .docs-theme-platform {
+	--color-fd-primary: hsl(214 100% 72%);
+	--color-fd-primary-foreground: hsl(221 58% 12%);
+	--color-fd-accent: hsl(218 42% 20%);
+	--color-fd-accent-foreground: hsl(214 78% 86%);
+}
+
+.dark .docs-theme-internal {
+	--color-fd-primary: hsl(38 95% 60%);
+	--color-fd-primary-foreground: hsl(33 64% 12%);
+	--color-fd-accent: hsl(34 28% 20%);
+	--color-fd-accent-foreground: hsl(43 80% 84%);
+}

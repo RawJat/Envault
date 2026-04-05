@@ -1,0 +1,92 @@
+---
+title: Projects & Environments
+description: Understanding the hierarchy of secrets in Envault
+---
+
+import { Briefcase, FolderGit2, Braces } from "lucide-react";
+import { Card, Cards } from "fumadocs-ui/components/card";
+import { Callout } from "fumadocs-ui/components/callout";
+import { Mermaid } from "@/components/mermaid";
+
+Envault organizes your secrets using a logical hierarchy designed to mirror modern development workflows. Instead of maintaining massive, bloated `.env` files, Envault segments your variables intuitively.
+
+---
+
+## 1. The Hierarchy
+
+The structure consists of three main entities:
+
+1.  **Organization** (Team)
+2.  **Projects** (Apps/Services)
+3.  **Environments** (Development, Staging, Production)
+
+<Mermaid
+  chart={`
+graph TD
+    Org[Organization] --> Proj1["Project: Web App"]
+    Org --> Proj2["Project: API Service"]
+    
+    Proj1 --> EnvDev[Development]
+    Proj1 --> EnvStaging[Staging]
+    Proj1 --> EnvProd[Production]
+    
+    EnvDev --> Secret1[DATABASE_URL]
+    EnvDev --> Secret2[STRIPE_KEY]
+`}
+/>
+
+---
+
+## 2. Projects
+
+A **Project** represents a single application, service, or repository. For example, your Next.js frontend would be one project, and your Golang backend would be another.
+
+<Callout type="info">
+  **Security Boundary:** Each project generates and maintains its own set of
+  Data Encryption Keys. If a team member only has access to the "Web App"
+  project, they physically cannot decrypt secrets belonging to the "API Service"
+  project.
+</Callout>
+
+### Creating a Project
+
+When you create a project, you are automatically assigned the **Owner** role. You can then navigate to the Project Settings to invite your team members and assign them Role-Based Access controls (Editor, Viewer, etc.).
+
+---
+
+## 3. Environments
+
+Every project comes with three default isolated environments:
+
+- **Development**: Variables used when engineers are building the application on their local machines.
+- **Preview / Staging**: Variables specifically for testing, CI/CD, and pull request preview deployments.
+- **Production**: Variables actively currently powering your live application.
+
+<Callout type="warn">
+  **Environment Isolation:** Secrets in Production are completely
+  cryptographically separated from Development. A variable named `DATABASE_URL`
+  can (and should) have entirely different, securely isolated values in each
+  environment.
+</Callout>
+
+---
+
+## 4. Secrets
+
+Secrets are the actual key-value pairs stored securely within an Environment. Envault enforces strict formatting rules to ensure compatibility across all operating systems and Docker containers.
+
+- **Keys**: Must be uppercase, numbers, and underscores only. No spaces. (e.g., `NEXT_PUBLIC_API_URL`).
+- **Values**: Can be any string. Multi-line values are fully supported, which is highly useful for storing RSA Private Keys or certificates.
+
+### Referencing Secrets (Variable Expansion)
+
+You can dynamically construct values by referencing other secrets within the same environment using the standard `${SECRET_NAME}` syntax. The Envault CLI will automatically resolve these at runtime.
+
+**Example:**
+
+```properties
+BASE_URL=https://api.envault.tech
+STRIPE_WEBHOOK_ENDPOINT=${BASE_URL}/api/webhooks/stripe
+```
+
+When you run `envault pull`, the output `.env` file will correctly compute `STRIPE_WEBHOOK_ENDPOINT` as `https://api.envault.tech/api/webhooks/stripe`.

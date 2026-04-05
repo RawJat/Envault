@@ -206,7 +206,7 @@ export function SupportView({ inDashboard = false }: SupportViewProps) {
         </div>
 
         {/* Documentation Card */}
-        <Link href="/docs" className="group block h-full">
+        <Link href="/docs/platform" className="group block h-full">
           <div className="h-full border bg-card text-card-foreground rounded-xl p-6 transition-all hover:shadow-md hover:border-primary/50 relative overflow-hidden">
             <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-4 group-hover:translate-x-0">
               <ExternalLink className="w-5 h-5 text-muted-foreground" />

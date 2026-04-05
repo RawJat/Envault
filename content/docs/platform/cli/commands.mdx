@@ -1,0 +1,270 @@
+---
+title: Commands
+description: Full command reference for Envault CLI
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { XCircle, ShieldOff, FileX, GitBranch } from "lucide-react";
+
+## CLI Commands
+
+## Global Usage
+
+```bash
+envault [command] [flags]
+```
+
+Global flags:
+
+- `--config <path>`: custom CLI config file
+- `-e, --env <slug>`: target environment
+- `-v, --version`: print version
+
+---
+
+## `login`
+
+Authenticate your machine with your Envault account using a secure device flow.
+
+```bash
+envault login
+```
+
+This opens an authorization page in your browser and securely stores a personal access token in your machine's keychain.
+
+---
+
+## `init`
+
+Initialize the current directory and link it to an Envault project.
+
+```bash
+envault init
+```
+
+If you don't have a project yet, the CLI will seamlessly guide you through creating one, asking for a workspace mode and your preferred default environment.
+
+---
+
+## `pull`
+
+Fetch encrypted remote secrets, decrypt them in-memory, and write them to your local environment file.
+
+```bash
+envault pull --env development
+```
+
+Flags:
+
+- `-p, --project <id>`: Target a specific project UUID instead of the linked one
+- `--file <path>`: Override the output file path (e.g., `--file .env.custom`)
+- `-f, --force`: Skip overwrite confirmations
+
+### Automatic Safety Guards
+
+Every time you `pull`, Envault runs three active safeguards:
+
+1. <XCircle className="inline w-4 h-4 mr-1 text-red-500" /> **Tracked-file
+   Block**: Refuses to write to a file that is already tracked in Git,
+   preventing accidental secret commits.
+2. <FileX className="inline w-4 h-4 mr-1 text-yellow-500" /> **Auto-gitignore**:
+   Automatically appends the target `.env` file to your `.gitignore` if it's
+   missing.
+3. <GitBranch className="inline w-4 h-4 mr-1 text-green-500" /> **Pre-commit
+   Hook**: Installs a local git hook to prevent future accidental secret
+   commits.
+
+### Secret Ordering
+
+Secrets are always written **alphabetically (A-Z) by key**. This ensures that Git diffs (if you are utilizing secure templates) and file comparisons remain clean and predictable across all machines.
+
+---
+
+## `deploy`
+
+Push local environment file values to a remote Envault environment.
+
+```bash
+envault deploy --env production
+```
+
+Alias: `envault push`
+
+Behavior:
+
+1. Reads your local environment file.
+2. Computes the cryptographic difference against the remote vault.
+3. Prints a visual diff summary (additions, deletions, modifications).
+4. Requests final confirmation before mutating remote state.
+
+<Callout type="warn">
+  **Tracked-file Block**: Just like `pull`, `deploy` will strictly refuse to run
+  if the file you are attempting to push is already tracked in your git
+  repository. It will print the exact `git rm --cached` commands needed to
+  untrack it before proceeding.
+</Callout>
+
+---
+
+## `status`
+
+View the current state of your local CLI context.
+
+```bash
+envault status
+```
+
+Output includes your authenticated profile, resolved project ID, your RBAC role, the default environment, and the local file mapping for the active path.
+
+---
+
+## `diff`
+
+Compare your local `.env` file against remote secrets without actually deploying or modifying anything.
+
+```bash
+envault diff --env preview
+```
+
+Output color markers:
+
+- **Green `+`**: Additions (exists locally, missing remotely)
+- **Red `-`**: Deletions (missing locally, exists remotely)
+- **Yellow `~`**: Modifications (same key, different value)
+
+---
+
+## `run`
+
+Inject target environment secrets directly into a localized process, without writing anything to disk.
+
+```bash
+envault run --env preview -- npm run dev
+```
+
+The `run` command fetches secrets and dynamically pipes them into the specified process's environment variables.
+This is the most secure method of utilizing secrets locally, as plaintext variables never touch your hard drive.
+
+---
+
+## `audit`
+
+Analyze your local environment setup for structural and security vulnerabilities.
+
+```bash
+envault audit
+```
+
+Validates that:
+
+- `.gitignore` correctly covers your `.env` files.
+- No active `.env` files are tracked in the Git index.
+- Your local keys have complete parity against your team's template (`.env.example`).
+- No placeholder values (like `TODO` or `<insert here>`) are left unconfigured.
+
+<Callout type="info">
+  Use `--strict` to upgrade all warnings to hard errors (useful in CI pipelines
+  with `--format=json`).
+</Callout>
+
+---
+
+## `approve`
+
+Approve a pending automated agent mutation directly from the terminal.
+
+```bash
+envault approve <approval_id>
+```
+
+When an MCP Agent or SDK script triggers a protected mutation, it halts and generates an `approval_id`. You can instantly approve this transaction from your CLI if you have the appropriate `Owner` or `Editor` RBAC permissions.
+
+---
+
+## `env`
+
+Manage local environment file mappings.
+
+Map the `development` environment to write to `.env.development`:
+
+```bash
+envault env map --env development --file .env.development
+```
+
+Set the default environment to `development` so you don't need the `--env` flag:
+
+```bash
+envault env default --env development
+```
+
+---
+
+## `generate-hooks`
+
+Automatically binds `envault pull` to your local repository's `git pull` sequence.
+
+```bash
+envault generate-hooks
+```
+
+Injects a `post-merge` git hook that ensures your local environment variables are immediately synchronized whenever you pull new code from your team.
+
+---
+
+## `sdk`
+
+Installs or updates the Envault TypeScript SDK into your current workspace. Envault automatically detects your package manager (`npm`, `yarn`, `pnpm`, or `bun`) and runs the appropriate installation bindings.
+
+Install the SDK in your project:
+
+```bash
+envault sdk install
+```
+
+Update an existing SDK installation to the latest version:
+
+```bash
+envault sdk update
+```
+
+---
+
+## `mcp`
+
+Configure Envault Model Context Protocol integrations for local AI agents (Claude Desktop, Cursor, VS Code, RooCode/Cline). Automatically generates the requisite `.vscode/mcp.json` or modifies global configuration files to bind the Envault MCP Server to your editor's AI context.
+
+Install the MCP integration:
+
+```bash
+envault mcp install
+```
+
+Update your AI configurations with the latest MCP settings:
+
+```bash
+envault mcp update
+```
+
+---
+
+## `completion`
+
+Generate fast autocompletion bindings for your preferred shell.
+
+For Zsh:
+
+```bash
+envault completion zsh
+```
+
+For Bash:
+
+```bash
+envault completion bash
+```
+
+For Fish:
+
+```bash
+envault completion fish
+```

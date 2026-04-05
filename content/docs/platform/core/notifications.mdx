@@ -1,0 +1,78 @@
+---
+title: Notifications
+description: Overview of Envault's email and in-app notification system and how to configure preferences.
+---
+
+import {
+  Bell,
+  UserPlus,
+  CheckCircle2,
+  Smartphone,
+  ShieldAlert,
+  FolderPlus,
+  Terminal,
+  ServerCrash,
+} from "lucide-react";
+import { Callout } from "fumadocs-ui/components/callout";
+
+Envault sends both **in-app** and **email** notifications to keep your team informed about activity, deployments, and security events. This page explains the types of alerts available and how they can be customized.
+
+---
+
+## 1. Notification Categories
+
+From your Account Settings, you can fine-tune exactly what events trigger an email or an in-app ping. Preferences are grouped cleanly into seven categories:
+
+| Category                                                                                            | Description                                                                                    |
+| :-------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------- |
+| <UserPlus className="inline w-4 h-4 mr-1 text-blue-500" /> **Access Requests**                      | Alerts when a developer requests access to your workspace via JIT or CLI.                      |
+| <CheckCircle2 className="inline w-4 h-4 mr-1 text-emerald-500" /> **Access Granted / Role Changes** | Alerts for approvals, denials, workspace invitations, and role escalations.                    |
+| <Smartphone className="inline w-4 h-4 mr-1 text-gray-500" /> **Device Activity**                    | Alerts for new device access, unknown locations, and unusual login behavior.                   |
+| <ShieldAlert className="inline w-4 h-4 mr-1 text-red-500" /> **Security Alerts**                    | Alerts for password/email changes, Passkey events, encryption issues, and security advisories. |
+| <FolderPlus className="inline w-4 h-4 mr-1 text-amber-500" /> **Project Activity**                  | Alerts when secrets are added, updated, or deleted, or when project settings are modified.     |
+| <Terminal className="inline w-4 h-4 mr-1 text-purple-500" /> **CLI Activity**                       | Alerts mapping directly to `envault pull` and `envault push` execution logs.                   |
+| <ServerCrash className="inline w-4 h-4 mr-1 text-indigo-500" /> **System Updates**                  | Alerts regarding Envault platform releases, maintenance notices, and status degradation.       |
+
+---
+
+## 2. Notification Frequency (Digests)
+
+We know alert fatigue is a real problem. Envault features a powerful **Digest Frequency** engine that controls whether your email notifications are sent instantly, or bundled together.
+
+You can configure your email delivery to:
+
+- **Instant:** Every event triggers an immediate email.
+- **Daily Digest:** Events are aggregated and sent as a single, beautifully formatted brief every 24 hours.
+- **Weekly Digest:** Events are aggregated across a 7-day window.
+- **None:** Emails are entirely muted for this category.
+
+<Callout type="info">
+  **Critical Overrides:** Even if you set your preferences to `Weekly Digest`,
+  critical security events (like a Password Change or New Device Login) bypass
+  your digest queue and are immediately dispatched for your protection.
+</Callout>
+
+---
+
+## 3. Reading In-App Notifications
+
+When an event triggers an in-app ping, the <Bell className="inline w-4 h-4 mx-1" /> icon in your Envault navigation bar will display a badge.
+
+Clicking the bell opens the Notifications Hub. From here:
+
+1. **Interactive Links:** Every notification contextually deep-links you exactly where you need to go. For instance, clicking a "Variables Updated" notification teleports you directly to the Project and displays the specific environment that was altered.
+2. **Mark as Read:** Unread notifications are highlighted. You can selectively dismiss them or hit `Mark All As Read` to clear your inbox.
+3. **Approval Actions:** "Access Requests" and "Agent Mutations" render interactive `Approve` or `Reject` buttons directly inside the notification payload, so you don't have to hunt for the project dashboard to authorize a deployment.
+
+---
+
+## 4. Default Settings
+
+When a new account is created, Envault initializes your preferences with secure defaults to ensure you aren't overwhelmed:
+
+- **Security Alerts** are mandatory and enabled via `Instant Email`.
+- **Access Requests** are enabled via `Instant Email` and `In-App`.
+- **Project Activity** (Secret modification) defaults to a `Daily Digest`.
+- **CLI Activity** (`pull`/`push` events) defaults to `In-App` only to prevent inbox spam during busy CI runs.
+
+You can always adjust these settings manually from **Account -> Notifications**.

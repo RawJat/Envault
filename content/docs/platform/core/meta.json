@@ -1,9 +1,7 @@
 {
   "title": "Core Concepts",
   "pages": [
-    "architecture",
     "security",
-    "projects",
     "projects-environments",
     "access-control",
     "system-status",

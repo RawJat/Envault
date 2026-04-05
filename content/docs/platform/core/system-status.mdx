@@ -1,0 +1,63 @@
+---
+title: System Status
+description: Real-time monitoring of Envault system health and incident reporting.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+Envault prioritizes complete transparency regarding application uptime and infrastructure health. We provide a built-in system status layer that offers real-time visibility into the health of all Envault core components (API, Database, Authentication).
+
+## 1. The Status Page
+
+You can verify the current operational health of Envault at any time by navigating to our dedicated status page at `https://www.envault.tech/status`.
+
+This page provides:
+
+- **Overall System Health:** A single, top-level indicator confirming if the platform is fully operational.
+- **Component Status:** Granular health metrics for individual backend services.
+- **Active Incidents:** Live updates and timelines for any currently active disruptions.
+- **Incident History:** A log of resolved incidents and maintenance windows from the last 90 days.
+
+## 2. Status Levels
+
+All status indicators across the Envault platform share the same four universal levels:
+
+| Level           | Indicator Color | Meaning                                                       |
+| :-------------- | :-------------- | :------------------------------------------------------------ |
+| **Operational** | Emerald         | Everything is running perfectly normally.                     |
+| **Degraded**    | Amber           | Some services are currently impacted or experiencing latency. |
+| **Outage**      | Red             | One or more critical services are completely unavailable.     |
+| **Maintenance** | Blue            | Scheduled maintenance is currently in progress.               |
+
+## 3. In-App Status Banner
+
+During the rare event that the system is not fully operational, a non-intrusive banner will automatically appear at the top of your Envault Dashboard.
+
+This banner immediately surfaces the incident message and current severity level, ensuring you are aware of infrastructure issues _before_ you attempt to modify critical production secrets.
+
+- You can dismiss the banner for your current session.
+- The banner includes a direct link to the full `/status` page for live timeline updates.
+
+## 4. Public API Endpoint
+
+If you need to programmatically verify Envault's status before running a deployment pipeline, you can hit our unauthenticated status endpoint:
+
+```bash
+curl https://api.envault.tech/api/system-status
+```
+
+**Response Example:**
+
+```json
+{
+  "level": "degraded",
+  "message": "We are investigating elevated API error rates.",
+  "incidentCount": 1
+}
+```
+
+<Callout type="info">
+  **Rate Limits:** This endpoint is heavily cached via our global edge network.
+  It is entirely safe to poll this from your raw CI/CD monitoring tools or
+  external status widgets before triggering an `envault pull`.
+</Callout>

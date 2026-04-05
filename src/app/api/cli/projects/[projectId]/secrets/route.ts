@@ -465,6 +465,8 @@ export async function POST(
   }
 
   const { secrets, pruneMissing } = validation.data;
+  const shouldPruneMissing =
+    pruneMissing === true || (pruneMissing === undefined && actorSource === "mcp");
   const supabase = createAdminClient();
   let resolvedEnvironment;
   try {
@@ -606,7 +608,7 @@ export async function POST(
   const filteredUpsertData = upsertData.filter((item) => item !== null);
   let deletedCount = 0;
 
-  if (pruneMissing === true) {
+  if (shouldPruneMissing) {
     const keysToDelete = (existingSecrets || [])
       .map((s) => s.key)
       .filter((key) => !incomingKeys.has(key));
