@@ -3,9 +3,9 @@ title: Installation
 description: How to install and run Envault locally
 ---
 
-import { Step, Steps } from 'fumadocs-ui/components/steps';
-import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
-import { Callout } from 'fumadocs-ui/components/callout';
+import { Step, Steps } from "fumadocs-ui/components/steps";
+import { Tab, Tabs } from "fumadocs-ui/components/tabs";
+import { Callout } from "fumadocs-ui/components/callout";
 
 Envault is a self-hostable application. You can run it locally for development or deploy it to your own infrastructure.
 
@@ -48,27 +48,11 @@ cd envault
 
 We recommend using `pnpm` for faster installation, but `npm` or `yarn` work just as well.
 
-<Tabs items={['npm', 'pnpm', 'yarn', 'bun']}>
-  <Tab value="npm">
-  ```bash
-  npm install
-  ```
-  </Tab>
-  <Tab value="pnpm">
-  ```bash
-  pnpm install
-  ```
-  </Tab>
-  <Tab value="yarn">
-  ```bash
-  yarn install
-  ```
-  </Tab>
-  <Tab value="bun">
-  ```bash
-  bun install
-  ```
-  </Tab>
+<Tabs items={["npm", "pnpm", "yarn", "bun"]}>
+  <Tab value="npm">```bash npm install ```</Tab>
+  <Tab value="pnpm">```bash pnpm install ```</Tab>
+  <Tab value="yarn">```bash yarn install ```</Tab>
+  <Tab value="bun">```bash bun install ```</Tab>
 </Tabs>
 
 If you will work on SDK and MCP packages, also install dependencies in each package folder:
@@ -121,7 +105,7 @@ Visit `https://envault.localhost:1355` to see your Envault instance running.
 For a quick local setup with all dependencies (including Redis and Postgres), you can use Docker Compose.
 
 ```yaml
-version: '3.8'
+version: "3.8"
 services:
   envault:
     build: .
@@ -133,12 +117,12 @@ services:
     depends_on:
       - db
       - redis
-  
+
   db:
     image: postgres:15-alpine
     environment:
       POSTGRES_PASSWORD: postgres
-      
+
   redis:
     image: redis:alpine
 ```
@@ -165,17 +149,22 @@ npm run mcp:check
 ```
 
 <Callout type="info">
-  If you see an error about `ENCRYPTION_KEY` missing, ensure you have generated a valid 32-byte key in your `.env.local`.
+  If you see an error about `ENCRYPTION_KEY` missing, ensure you have generated
+  a valid 32-byte key in your `.env.local`.
 </Callout>
 
 ## Troubleshooting
 
 ### `ENCRYPTION_KEY` Error
+
 If you see "Invalid Encryption Key", run this command to generate a valid one:
+
 ```bash
 openssl rand -hex 32
 ```
+
 Add the output to your `.env.local`.
 
 ### Database Connection Failed
+
 Check your `DATABASE_URL` and ensure your Supabase project is active. If running locally, make sure your local Supabase instance is running with `npx supabase start`.

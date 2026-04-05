@@ -1,0 +1,99 @@
+---
+title: GitHub Integration (JIT Access)
+description: Link a GitHub repository to enable Just-in-Time (JIT) access for your team.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+import { Steps, Step } from "fumadocs-ui/components/steps";
+import { Settings, Github, Link, Unlink } from "lucide-react";
+
+The Envault GitHub Integration lets you link your Envault project directly to a specific GitHub repository.
+
+Instead of manually inviting every developer to your Envault project, Envault automatically cross-references a developer's GitHub identity when they run `envault pull`. If they are an active collaborator on the linked GitHub repository, they are granted **Viewer** access on the spot—no manual invites required.
+
+<Callout type="info">
+  **Role Limitations:** JIT (Just-In-Time) access only grants the **Viewer**
+  role. To give a team member Editor or Owner capabilities (such as the ability
+  to create variables), they must be invited manually from the project settings.
+</Callout>
+
+---
+
+## 1. Preparation
+
+Before developers can pull automatically, you need to map your local workspace to your Envault project. This tells the CLI which project and environment to pull when they run `envault pull`.
+
+Run the initialization command at the root of your project:
+
+```bash
+envault init
+```
+
+This generates an `envault.json` file inside your repository that tracks the Project ID. **Make sure to commit `envault.json` to GitHub.**
+
+## 2. Setting up the Integration
+
+Linking your project takes less than a minute.
+
+<Steps>
+  <Step>
+    ### Install the Envault GitHub App
+    Open your Envault Web Dashboard and navigate to your project.
+    
+    Click the **Settings** icon in the project header and select **GitHub Integration**. Click **Connect GitHub Account**.
+    
+    You will be redirected to GitHub OAuth to confirm your identity. After selecting your account, you will install the Envault GitHub App onto the organization or personal account that owns the repository.
+  </Step>
+
+  <Step>
+    ### Link your Repository
+    Once authorized, Envault will return you to your project settings.
+    
+    A dialog will display all repositories available to the GitHub account you selected. Search for and select the exact repository corresponding to this Envault project.
+
+    <Callout type="warn">
+      Each GitHub repository can only be linked to a single Envault project at a time to prevent conflicting access maps.
+    </Callout>
+
+  </Step>
+
+  <Step>
+    ### You're Done!
+    The dialog will confirm the **Linked Repository**. From this moment forward, any GitHub collaborator on that repository who authenticates their terminal via `envault login` and runs `envault pull` inside the folder containing `envault.json` will instantly receive the variables securely.
+  </Step>
+</Steps>
+
+---
+
+## 3. Managing Access
+
+### The Access Request Flow
+
+When a developer runs `envault pull` on your project but they _are not_ a collaborator on the linked repository, the CLI immediately halts and prompts:
+
+> **You do not have access to this project.**  
+> Would you like to send an access request to the project owner? (y/N)
+
+If they press `y`, an access request is dispatched. The project owner receives both an email and an in-app notification detailing who requested access, and specifically which environment they tried to pull (e.g., `staging`).
+
+Once the owner approves the request in the Envault Dashboard, the developer can run `envault pull` again successfully.
+
+### Unlinking a Repository
+
+If you need to change the linked repository:
+
+1. Open the project **Settings -> GitHub Integration**.
+2. Click **Unlink**.
+
+This clears the linkage but keeps the Envault App installed on your GitHub account, meaning you can immediately select a different repository without re-authenticating through OAuth. To completely revoke Envault's access, uninstall the app directly from your [GitHub Installations page](https://github.com/settings/installations).
+
+---
+
+## 4. Auditing & Compliance
+
+Security is paramount. Every integration interaction is logged permanently in your Project Audit Logs, including:
+
+- `github.account_connected`: Someone completed the OAuth flow.
+- `github.account_disconnected`: The connection was revoked via Webhook.
+- `github.repo_linked`: A repository was mapped.
+- `github.repo_unlinked`: A repository was removed from the map.

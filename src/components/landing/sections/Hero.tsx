@@ -88,7 +88,7 @@ export function Hero() {
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
-            <Link href="/docs">
+            <Link href="/docs/platform">
               <Button
                 variant="outline"
                 size="lg"

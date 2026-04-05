@@ -1,0 +1,18 @@
+{
+  "root": true,
+  "pages": [
+    "index",
+    "---Getting Started---",
+    "installation",
+    "initial-setup",
+    "local-setup",
+    "---Advanced---",
+    "architecture",
+    "envelope-encryption-architecture",
+    "configuration",
+    "regression",
+    "mcp-agent-development",
+    "production-deployment",
+    "ci-cd-deployment"
+  ]
+}

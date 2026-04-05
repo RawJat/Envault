@@ -85,7 +85,7 @@ export async function generateMetadata({
     title: page.data.title,
     description: page.data.description,
     alternates: {
-      canonical: slug ? `/docs/${slug.join("/")}` : "/docs",
+      canonical: slug ? `/docs/${slug.join("/")}` : "/docs/platform",
     },
     openGraph: {
       url: slug

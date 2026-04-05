@@ -1,0 +1,46 @@
+---
+title: Regressions & Testing
+description: Steps taking to test, lint, and prevent regressions in Envault.
+---
+
+# Testing & Regression Prevention
+
+Reliability is critical for secrets management. We leverage rigorous testing across the Web, CLI, and MCP boundaries.
+
+## Web Testing
+
+We use standard React/Next.js testing setups. Before generating a PR:
+
+- Ensure `npm run lint` passes without errors.
+- Ensure TypeScript compilation `npx tsc --noEmit` validates all types.
+
+## CLI & E2E Validation
+
+The Go CLI comes with extensive internal unit and integration tests.
+
+```bash
+cd cli-go
+```
+
+```bash
+go test ./... -v
+```
+
+These tests rigorously mock:
+
+- Encryption / Decryption cycles to ensure corrupted data is rejected gracefully.
+- Authentication paths for invalid device flow tokens.
+- **Git Hygiene**: Verification that `envault pull` does not overwrite manually `.gitignore` protected files wrongly.
+
+## Model Context Protocol (MCP)
+
+Testing the MCP server interaction is specific because it handles AI-driven modifications to secrets.
+
+- Check `tests/mcp-token-lifecycle.test.ts`.
+- It exercises token cleanup, lifecycle events, and the Human-in-The-Loop (HITL) approval endpoints.
+
+```bash
+npx vitest tests/mcp-token-lifecycle.test.ts
+```
+
+We employ aggressive caching and token sanitization schemas which are specifically tested to ensure revoked tokens automatically invalidate active agent sessions.

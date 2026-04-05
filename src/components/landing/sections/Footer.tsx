@@ -93,7 +93,7 @@ export function Footer({ user }: FooterProps) {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
                 <FooterLink
-                  href="/docs"
+                  href="/docs/platform"
                   className="hover:text-foreground transition-colors"
                   pathname={pathname}
                 >

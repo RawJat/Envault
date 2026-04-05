@@ -1,0 +1,45 @@
+---
+title: Security
+description: Security architecture and protection mechanisms
+---
+
+## Enterprise-Grade Security Architecture
+
+Envault provides bank-grade security to ensure your team's sensitive data is protected at rest, in transit, and during execution.
+
+## Envelope Encryption
+
+Envault implements an **Envelope Encryption** architecture. Your environment variables are never stored in plaintext within the database.
+
+- **Data Encryption Keys (DEK)**: Every project has a unique, cryptographically secure Data Key. When your team saves an environment variable, it is immediately encrypted using this DEK via **AES-256-GCM** encryption.
+- **Master Encryption Key (MEK)**: The Data Keys themselves are then encrypted using a global Master Encryption Key. The vault acts as a zero-knowledge store; it cannot natively decrypt your variables without the active injection of the Master Key at runtime.
+
+### Key Rotation
+
+In the event of a suspected security event (such as a leaked `DATABASE_URL` string), Envault allows Project Owners to seamlessly rotate the Data Key for a specific project. This re-encrypts all associated variables with a new DEK, limiting the blast radius of a potential breach without affecting other teams.
+
+## Transport Security
+
+All communication between the Envault CLI, SDKs, MCP Agents, and the Core Server is strictly forced over **HTTPS/TLS**. The vault actively rejects any plaintext HTTP connections, ensuring secrets cannot be intercepted over public or compromised networks.
+
+## Data Governance & Identity Control
+
+- **Row Level Security (RLS)**: Envault enforces access policies at the absolute lowest database tier. Even if a backend application flaw occurs, the database engine physically prevents an unauthorized user from reading rows belonging to a project they are not a member of.
+- **Immutable Audit Logs**: Every critical action—mutating a secret, rotating a key, agent delegations, and permission changes—is permanently recorded in an append-only, immutable `audit_logs` ledger. Project Owners can review precisely who changed what, and when.
+- **Identity Snapshots**: If a team member leaves the company and their account is deleted, Envault preserves static, non-identifying metadata snapshots on the secrets they modified. This ensures your project's historical audit trail remains intact and readable.
+- **Ownership Handshakes**: Transferring project ownership requires a deliberate, two-step cryptographic handshake. The recipient must actively accept the transfer, preventing forced liability or unauthorized delegation.
+
+## Authentication Guardrails
+
+- **Passkeys & WebAuthn**: Envault supports passwordless, biometric authentication (e.g., TouchID, Windows Hello, YubiKey). This guarantees phishing-resistant, hardware-backed logins that are significantly more secure than traditional passwords. You can easily register your device under **Settings** > **Security**.
+- **Rolling Secure Sessions**: The CLI does not store plaintext passwords or long-lived authentication tokens in accessible files. Instead, it securely embeds Refresh Tokens directly into your operating system’s native Secure Enclave (macOS Keychain, Linux Secret Service, Windows Credential Manager).
+- **Service Token Fencing**: For CI/CD environments and headless machines, Envault issues scoped Service Tokens. The CLI possesses active context-awareness—if a developer attempts to accidentally run a Service Token on their local laptop, the CLI will automatically block the execution to prevent catastrophic local leakage.
+
+## Automated Agent Fencing (SDK/MCP)
+
+When utilizing Envault's SDK or MCP for automated AI workflows, multiple security layers actively intercept the event:
+
+- **Delegated Credentials**: AI Agents are issued restricted, dynamically scoped `envault_agt_` JWTs. They do not inherit your full user privileges.
+- **Project Isolation**: Agents are strictly fenced to the project explicitly defined in your `.vscode/mcp.json` or SDK initialization script.
+- **Human-in-the-Loop (HITL)**: Crucial mutations (e.g., an AI attempting to overwrite your production `STRIPE_SECRET_KEY`) require explicit approval from a human Project Owner or Editor via the UI or CLI `approve` command before execution.
+- **Kill Switches**: You maintain ultimate control. Agent integration can be instantly severed via your user Security Settings (global) or specific Project Settings (isolated).

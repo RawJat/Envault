@@ -14,6 +14,16 @@ const nextConfig: NextConfig = {
 
   allowedDevOrigins: ["envault.localhost", "*.envault.localhost"],
 
+  async redirects() {
+    return [
+      {
+        source: "/docs",
+        destination: "/docs/platform",
+        permanent: false,
+      },
+    ];
+  },
+
   experimental: {
     // Optimize barrel-file imports so Turbopack only compiles used exports.
     // lucide-react alone is imported in 59 files - without this, every file

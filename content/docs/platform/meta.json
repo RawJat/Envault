@@ -1,0 +1,12 @@
+{
+  "root": true,
+  "pages": [
+    "index",
+    "---Getting Started---",
+    "guides",
+    "---Features---",
+    "core",
+    "---References---",
+    "cli"
+  ]
+}

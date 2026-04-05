@@ -107,7 +107,7 @@ export function Navbar({ user }: NavbarProps) {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex gap-6 text-sm font-medium items-center">
             <NavItem
-              href="/docs"
+              href="/docs/platform"
               className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
               pathname={pathname}
             >
@@ -173,7 +173,7 @@ export function Navbar({ user }: NavbarProps) {
             >
               <nav className="flex flex-col gap-4 text-lg font-medium">
                 <NavItem
-                  href="/docs"
+                  href="/docs/platform"
                   className="text-muted-foreground hover:text-foreground transition-colors border-b border-muted/20 text-left"
                   pathname={pathname}
                   setIsOpen={setIsOpen}

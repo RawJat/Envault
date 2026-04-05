@@ -101,7 +101,7 @@ export async function PlatformHighlights() {
           className="mt-8 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between"
         >
           <div className="flex flex-col sm:flex-row gap-3">
-            <Link href="/docs/guides/sdk-mcp-agent-workflows">
+            <Link href="/docs/platform/guides/sdk-mcp-agent-workflows">
               <Button size="lg" className="rounded-none h-12 px-8 w-full sm:w-auto">
                 Explore SDK + MCP
                 <ArrowRight className="w-4 h-4 -rotate-45" />

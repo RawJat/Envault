@@ -1,0 +1,81 @@
+---
+title: CI/CD Deployment
+description: Integrating Envault into build pipelines (GitHub Actions, GitLab, Docker).
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+This guide covers how to deploy the Envault stack or how we integrate Envault CLI inside continuous integration systems.
+
+## GitHub Actions
+
+To run Envault operations dynamically during a GitHub Actions build (so that secrets are injected without being saved to `.env`), use the `envault run` wrapper.
+
+```yaml title=".github/workflows/deploy.yml"
+name: Build and Deploy
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      ENVAULT_TOKEN: ${{ secrets.ENVAULT_SERVICE_TOKEN }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Envault CLI
+        run: curl -fsSL https://raw.githubusercontent.com/DinanathDash/Envault/main/install.sh | sh
+
+      - name: Build Application with Envault Secrets
+        run: envault run --project proj_123 --env production -- npm run build
+```
+
+## GitLab CI
+
+For GitLab users, pipeline variables are defined in the repository settings and exposed to the `.gitlab-ci.yml`.
+
+```yaml title=".gitlab-ci.yml"
+stages:
+  - build
+
+build_app:
+  stage: build
+  image: node:18
+  variables:
+    ENVAULT_TOKEN: $ENVAULT_SERVICE_TOKEN
+  before_script:
+    - curl -fsSL https://raw.githubusercontent.com/DinanathDash/Envault/main/install.sh | sh
+  script:
+    - npm ci
+    - envault run --project proj_123 --env production -- npm run build
+```
+
+## Docker Entrypoint
+
+Use Envault as the primary entrypoint to inject secrets dynamically just before a Node app boots inside a Docker container.
+
+```dockerfile title="Dockerfile"
+FROM node:18-alpine
+
+RUN curl -fsSL https://raw.githubusercontent.com/DinanathDash/Envault/main/install.sh | sh
+
+WORKDIR /app
+COPY . .
+RUN npm install
+
+CMD ["envault", "run", "--project", "proj_123", "--", "node", "server.js"]
+```
+
+## Pipeline Auditing
+
+To audit code commits for leaked environment keys using `envault audit`:
+
+```yaml
+steps:
+  - uses: actions/checkout@v3
+  - name: Install Envault
+    run: curl -fsSL https://raw.githubusercontent.com/DinanathDash/Envault/main/install.sh | sh
+  - name: Audit Repository for Leaked Env files
+    run: envault audit --strict --format=json
+```

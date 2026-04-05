@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-04-03T11:48:10.473Z",
+  "generatedAt": "2026-04-05T14:54:56.224Z",
   "sourceDir": "cli-go/cmd",
   "commands": [
     {
       "varName": "rootCmd",
       "use": "envault",
-      "short": "Envault CLI - Securely manage your environment variables",
+      "short": "Envault CLI - Securely manage your environment variables and MCP AI configurations",
       "aliases": [],
       "hidden": false,
       "flags": [
@@ -224,6 +224,67 @@
       "path": "envault login"
     },
     {
+      "varName": "mcpCmd",
+      "use": "mcp",
+      "short": "Manage Envault MCP integrations for AI assistants",
+      "aliases": [],
+      "hidden": false,
+      "flags": [],
+      "parentVar": "rootCmd",
+      "path": "envault mcp"
+    },
+    {
+      "varName": "mcpInstallCmd",
+      "use": "install",
+      "short": "Install Envault MCP globally (Claude/Cursor) or locally (.vscode)",
+      "aliases": [],
+      "hidden": false,
+      "flags": [
+        {
+          "name": "global",
+          "short": "g",
+          "usage": "Install globally for Claude Desktop and global VS Code/Cursor",
+          "persistent": false
+        },
+        {
+          "name": "local",
+          "short": "l",
+          "usage": "Install locally in the current project (.vscode/mcp.json)",
+          "persistent": false
+        }
+      ],
+      "parentVar": "mcpCmd",
+      "path": "envault mcp install"
+    },
+    {
+      "varName": "mcpUpdateCmd",
+      "use": "update",
+      "short": "Update the Envault MCP Server integration",
+      "aliases": [],
+      "hidden": false,
+      "flags": [
+        {
+          "name": "global",
+          "short": "g",
+          "usage": "Update global installations",
+          "persistent": false
+        },
+        {
+          "name": "local",
+          "short": "l",
+          "usage": "Update local project installations",
+          "persistent": false
+        },
+        {
+          "name": "config-only",
+          "usage": "Only refresh MCP configuration files without npm global package update",
+          "persistent": false
+        }
+      ],
+      "parentVar": "mcpCmd",
+      "path": "envault mcp update"
+    },
+    {
       "varName": "pullCmd",
       "use": "pull",
       "short": "Fetch secrets and write to .env",
@@ -267,6 +328,62 @@
       ],
       "parentVar": "rootCmd",
       "path": "envault run"
+    },
+    {
+      "varName": "sdkCmd",
+      "use": "sdk",
+      "short": "Manage the Envault TypeScript SDK",
+      "aliases": [],
+      "hidden": false,
+      "flags": [],
+      "parentVar": "rootCmd",
+      "path": "envault sdk"
+    },
+    {
+      "varName": "sdkInstallCmd",
+      "use": "install",
+      "short": "Install the Envault TS SDK",
+      "aliases": [],
+      "hidden": false,
+      "flags": [
+        {
+          "name": "local",
+          "short": "l",
+          "usage": "Install SDK into the current project",
+          "persistent": false
+        },
+        {
+          "name": "global",
+          "short": "g",
+          "usage": "Install SDK globally via npm",
+          "persistent": false
+        }
+      ],
+      "parentVar": "sdkCmd",
+      "path": "envault sdk install"
+    },
+    {
+      "varName": "sdkUpdateCmd",
+      "use": "update",
+      "short": "Update the Envault TS SDK to the latest version",
+      "aliases": [],
+      "hidden": false,
+      "flags": [
+        {
+          "name": "local",
+          "short": "l",
+          "usage": "Update SDK in the current project",
+          "persistent": false
+        },
+        {
+          "name": "global",
+          "short": "g",
+          "usage": "Update SDK globally via npm",
+          "persistent": false
+        }
+      ],
+      "parentVar": "sdkCmd",
+      "path": "envault sdk update"
     },
     {
       "varName": "statusCmd",

@@ -1,0 +1,78 @@
+---
+title: Configuration & Integrations
+description: Configuring the Envault server and third-party OAuth apps.
+---
+
+## Server Configuration
+
+These environment variables are required to run the Envault server (Next.js app).
+
+### Core Variables
+
+| Variable                        | Description                                         | Example                   |
+| :------------------------------ | :-------------------------------------------------- | :------------------------ |
+| `NEXT_PUBLIC_SUPABASE_URL`      | The URL of your Supabase project.                   | `https://xyz.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | The anonymous public key for Supabase.              | `eyJhbGcis...`            |
+| `SUPABASE_SERVICE_ROLE_KEY`     | The secret service role key. **Critical Security**. | `eyJhbGcis...`            |
+| `ENCRYPTION_KEY`                | 32-byte hex string used as the Master Key.          | `a1b2c3d4...`             |
+| `NEXT_PUBLIC_APP_URL`           | Public app URL used in links/callbacks/emails.      | `https://envault.tech`    |
+
+---
+
+## Setting up GitHub App OAuth (JIT Access)
+
+If you are self-hosting Envault or developing locally, you must create your own GitHub App to enable the GitHub Integration (Just-In-Time access) feature.
+
+### 1. Create the GitHub App
+
+Navigate to your GitHub account or organization settings: **Developer Settings -> GitHub Apps -> New GitHub App**.
+
+Set the following exactly:
+
+- **Callback URL**: `https://your-domain.com/api/github/callback`
+- **Setup URL**: `https://your-domain.com/api/github/callback`
+- **Webhook URL**: `https://your-domain.com/api/github/webhook`
+- **Permissions**: `Repository metadata: Read-only`, `Members: Read-only`
+- **Events**: Subscribe to `Installation`
+
+### 2. Environment Variables
+
+Once created, populate your `.env.local` or production environment with the generated keys:
+
+| Variable                         | Description                                                  |
+| :------------------------------- | :----------------------------------------------------------- |
+| `ENVAULT_GITHUB_APP_CLIENT_ID`   | Client ID from your newly created GitHub App settings.       |
+| `ENVAULT_GITHUB_APP_PRIVATE_KEY` | RSA private key (single-line, `\n`-escaped).                 |
+| `ENVAULT_GITHUB_WEBHOOK_SECRET`  | Secret you define to verify webhook payloads from GitHub.    |
+| `NEXT_PUBLIC_GITHUB_APP_NAME`    | The slug name of your GitHub App (e.g. `envault-local-dev`). |
+
+> **Note:** The `ENVAULT_GITHUB_APP_PRIVATE_KEY` must be stored as a single line with literal `\n` characters replacing line breaks. Multi-line values in `.env` files are truncated by most platforms like Vercel or Docker.
+
+---
+
+## Setting up Notifications (Resend & Cron)
+
+If you are self-hosting Envault, the platform requires an active **Resend** account to send emails (like invites and security alerts).
+
+### 1. Resend Configuration
+
+Sign up at [resend.com](https://resend.com) and generate an API key. Add it to your `.env.local` or production environment:
+
+| Variable         | Description         |
+| :--------------- | :------------------ |
+| `RESEND_API_KEY` | Your Resend API Key |
+
+### 2. Cron Configuration for Digests
+
+Envault uses a cron endpoint to bundle user notifications into daily/weekly digested emails.
+
+Generate a strong random string (e.g. `openssl rand -hex 32`) and set it as:
+
+| Variable      | Description                                           |
+| :------------ | :---------------------------------------------------- |
+| `CRON_SECRET` | Secret used to secure the `/api/cron/digest` endpoint |
+
+Once deployed, set up a cron job (via GitHub Actions, Vercel Cron, or a Linux `crontab`) that calls:
+`GET https://your-domain.com/api/cron/digest`
+using the header: `Authorization: Bearer <CRON_SECRET>`.
+This triggers Envault to process the notification queue and send the formatted emails out via Resend.
