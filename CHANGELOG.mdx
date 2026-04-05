@@ -10,6 +10,32 @@ All notable changes to Envault are documented here.
 
 ---
 
+## 1.10.0 - 2026-04-05
+
+> Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
+
+### MCP Security, Lifecycle & Agent Reliability
+
+- **MCP Token Lifecycle Management:** Added full MCP token lifecycle support with creation, regeneration, revocation, expiration handling, and lifecycle notifications.
+- **Automated Token Cleanup:** Added cron-backed cleanup flow for expired MCP tokens, including supporting security logic and lifecycle test coverage.
+- **Standalone MCP Mode:** Enhanced MCP server behavior with standalone mode support for broader integration scenarios.
+- **Context Retrieval Expansion:** Added new context retrieval tooling for improved MCP agent workflows and runtime introspection.
+- **Cross-Platform MCP Setup Stability:** Improved platform-specific command handling and MCP config/postinstall behavior for more reliable installation and execution across environments.
+
+### Secrets API, Error Handling & Configuration
+
+- **Secrets Sync Controls:** Added `pruneMissing` support in secrets management paths to improve state reconciliation behavior.
+- **Environment Base URL Support:** Added `ENVAULT_BASE_URL` support across relevant MCP and API integration paths.
+- **Auth/Error UX Improvements:** Improved API error handling with clearer authentication hints, especially for `401` scenarios during setup and agent-driven operations.
+
+### Documentation & Platform Clarity
+
+- **Comprehensive Docs Expansion:** Added and expanded documentation for accessibility, notifications, projects/environments, security, and system status.
+- **SDK + MCP Workflow Guidance:** Enhanced setup and operational guidance for SDK/MCP agent workflows with clearer structure and execution paths.
+- **Platform Information Architecture:** Improved docs organization and navigability across core, configuration, and platform-focused documentation surfaces.
+
+---
+
 ## 1.9.0 - 2026-04-05
 
 > Authors: Dinanath Dash (DinanathDash)
