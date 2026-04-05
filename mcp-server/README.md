@@ -111,7 +111,11 @@ If you configure globally (`envault mcp install`):
   "mcpServers": {
     "envault": {
       "command": "npx",
-      "args": ["-y", "@dinanathdash/envault-mcp-server@latest"]
+      "args": ["-y", "@dinanathdash/envault-mcp-server@latest"],
+      "env": {
+        "ENVAULT_TOKEN": "<YOUR_ENVAULT_TOKEN>",
+        "ENVAULT_BASE_URL": "https://www.envault.tech"
+      }
     }
   }
 }
@@ -125,7 +129,11 @@ For VS Code MCP (`.vscode/mcp.json`), use `servers` schema:
     "envault": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@dinanathdash/envault-mcp-server@latest"]
+      "args": ["-y", "@dinanathdash/envault-mcp-server@latest"],
+      "env": {
+        "ENVAULT_TOKEN": "<YOUR_ENVAULT_TOKEN>",
+        "ENVAULT_BASE_URL": "https://www.envault.tech"
+      }
     }
   },
   "inputs": []
@@ -133,6 +141,8 @@ For VS Code MCP (`.vscode/mcp.json`), use `servers` schema:
 ```
 
 *Note: If you encounter an `ENOENT` error (e.g. `spawn npx ENOENT` or `spawn envault-mcp-server ENOENT`) in GUI applications like VS Code or Claude Desktop, this means your system PATH isn't fully loaded. To fix this, use the absolute path to the executable (e.g. `/path/to/global/node_modules/bin/envault-mcp-server` or `npx.cmd` on Windows).*
+
+*If you see `401 Unauthorized` in standalone mode, verify `ENVAULT_TOKEN` is a fresh full token and set `ENVAULT_BASE_URL` to the canonical cloud host `https://www.envault.tech`. After editing MCP config env values, fully restart the MCP server (or reload the IDE window) so the new env is picked up.*
 
 If you install locally in a workspace (`npm install @dinanathdash/envault-mcp-server`):
 

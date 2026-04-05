@@ -24,7 +24,9 @@ function parseSemver(input) {
     .trim()
     .replace(/^v/i, "")
     .split(".")
-    .map((segment) => Number.parseInt(segment.replace(/[^0-9].*$/, ""), 10) || 0);
+    .map(
+      (segment) => Number.parseInt(segment.replace(/[^0-9].*$/, ""), 10) || 0,
+    );
 }
 
 function compareSemver(a, b) {
@@ -231,8 +233,11 @@ async function runEnvault(args, cwd) {
 }
 
 function resolveBaseUrl() {
-  const candidate =
-    (process.env.ENVAULT_BASE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://envault.tech").trim();
+  const candidate = (
+    process.env.ENVAULT_BASE_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    "https://www.envault.tech"
+  ).trim();
   return candidate.replace(/\/+$/, "");
 }
 
@@ -336,7 +341,8 @@ function resolveProjectId(args, config) {
 
 function resolveEnvironment(args, config) {
   if (isNonEmptyString(args?.environment)) return args.environment.trim();
-  if (isNonEmptyString(config?.defaultEnvironment)) return config.defaultEnvironment.trim();
+  if (isNonEmptyString(config?.defaultEnvironment))
+    return config.defaultEnvironment.trim();
   return "development";
 }
 
@@ -435,7 +441,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         properties: {
           projectId: {
             type: "string",
-            description: "Optional project ID override for context/status call.",
+            description:
+              "Optional project ID override for context/status call.",
           },
         },
       },
@@ -730,7 +737,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const projectId = resolveProjectId(args, config);
       if (!projectId) {
         return toToolResponse(
-          { error: "projectId is required (or set projectId in envault.json) for standalone pull." },
+          {
+            error:
+              "projectId is required (or set projectId in envault.json) for standalone pull.",
+          },
           true,
         );
       }
@@ -765,7 +775,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
       }
 
-      const secrets = Array.isArray(apiResult?.data?.secrets) ? apiResult.data.secrets : [];
+      const secrets = Array.isArray(apiResult?.data?.secrets)
+        ? apiResult.data.secrets
+        : [];
       const envMap = new Map(secrets.map((s) => [s.key, s.value]));
       await fs.writeFile(absoluteTarget, toSortedEnvFile(envMap), "utf-8");
 
@@ -792,7 +804,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const projectId = resolveProjectId(args, config);
       if (!projectId) {
         return toToolResponse(
-          { error: "projectId is required (or set projectId in envault.json) for standalone push." },
+          {
+            error:
+              "projectId is required (or set projectId in envault.json) for standalone push.",
+          },
           true,
         );
       }
@@ -812,7 +827,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       const localMap = parseEnvFile(content);
-      const secrets = [...localMap.entries()].map(([key, value]) => ({ key, value }));
+      const secrets = [...localMap.entries()].map(([key, value]) => ({
+        key,
+        value,
+      }));
 
       if (args.dryRun === true) {
         const remoteResult = await callEnvaultApi({
@@ -841,7 +859,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         pathName: `/api/cli/projects/${projectId}/secrets`,
         method: "POST",
         query: { environment },
-        body: { secrets },
+        body: { secrets, pruneMissing: true },
       });
 
       return toToolResponse(apiResult, !apiResult.ok);
@@ -857,7 +875,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 
   if (name === "envault_approve") {
-    const approvalId = typeof args.approvalId === "string" ? args.approvalId.trim() : "";
+    const approvalId =
+      typeof args.approvalId === "string" ? args.approvalId.trim() : "";
     if (!approvalId) {
       return toToolResponse({ error: "approvalId is required" }, true);
     }
@@ -879,7 +898,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const projectId = resolveProjectId(args, config);
       if (!projectId) {
         return toToolResponse(
-          { error: "projectId is required (or set projectId in envault.json) for standalone diff." },
+          {
+            error:
+              "projectId is required (or set projectId in envault.json) for standalone diff.",
+          },
           true,
         );
       }
@@ -892,7 +914,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       try {
         content = await fs.readFile(absoluteTarget, "utf-8");
       } catch {
-        return toToolResponse({ error: `Local env file not found: ${targetFile}` }, true);
+        return toToolResponse(
+          { error: `Local env file not found: ${targetFile}` },
+          true,
+        );
       }
 
       const localMap = parseEnvFile(content);
@@ -984,30 +1009,48 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 
   if (name === "envault_env_map") {
-    const environment = isNonEmptyString(args.environment) ? args.environment.trim() : "";
+    const environment = isNonEmptyString(args.environment)
+      ? args.environment.trim()
+      : "";
     const file = isNonEmptyString(args.file) ? args.file.trim() : "";
     if (!environment || !file) {
-      return toToolResponse({ error: "environment and file are required" }, true);
+      return toToolResponse(
+        { error: "environment and file are required" },
+        true,
+      );
     }
-    const result = await runEnvault(["env", "map", "--env", environment, "--file", file], cwd);
+    const result = await runEnvault(
+      ["env", "map", "--env", environment, "--file", file],
+      cwd,
+    );
     return toToolResponse(result, !result.ok);
   }
 
   if (name === "envault_env_unmap") {
-    const environment = isNonEmptyString(args.environment) ? args.environment.trim() : "";
+    const environment = isNonEmptyString(args.environment)
+      ? args.environment.trim()
+      : "";
     if (!environment) {
       return toToolResponse({ error: "environment is required" }, true);
     }
-    const result = await runEnvault(["env", "unmap", "--env", environment], cwd);
+    const result = await runEnvault(
+      ["env", "unmap", "--env", environment],
+      cwd,
+    );
     return toToolResponse(result, !result.ok);
   }
 
   if (name === "envault_env_default") {
-    const environment = isNonEmptyString(args.environment) ? args.environment.trim() : "";
+    const environment = isNonEmptyString(args.environment)
+      ? args.environment.trim()
+      : "";
     if (!environment) {
       return toToolResponse({ error: "environment is required" }, true);
     }
-    const result = await runEnvault(["env", "default", "--env", environment], cwd);
+    const result = await runEnvault(
+      ["env", "default", "--env", environment],
+      cwd,
+    );
     return toToolResponse(result, !result.ok);
   }
 
@@ -1093,7 +1136,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               autoPushed: false,
               pushResult: {
                 ok: false,
-                error: "projectId is required (or set projectId in envault.json) for standalone autoPush.",
+                error:
+                  "projectId is required (or set projectId in envault.json) for standalone autoPush.",
               },
             },
             true,
@@ -1102,12 +1146,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
         const environment = resolveEnvironment(args, config);
         const localContent = await fs.readFile(absoluteTarget, "utf-8");
-        const secrets = [...parseEnvFile(localContent).entries()].map(([k, v]) => ({ key: k, value: v }));
+        const secrets = [...parseEnvFile(localContent).entries()].map(
+          ([k, v]) => ({ key: k, value: v }),
+        );
         const pushResult = await callEnvaultApi({
           pathName: `/api/cli/projects/${projectId}/secrets`,
           method: "POST",
           query: { environment },
-          body: { secrets },
+          body: { secrets, pruneMissing: true },
         });
 
         response.autoPushed = pushResult.ok;
@@ -1164,7 +1210,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               autoPushed: false,
               pushResult: {
                 ok: false,
-                error: "projectId is required (or set projectId in envault.json) for standalone autoPush.",
+                error:
+                  "projectId is required (or set projectId in envault.json) for standalone autoPush.",
               },
             },
             true,
@@ -1173,12 +1220,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
         const environment = resolveEnvironment(args, config);
         const localContent = await fs.readFile(absoluteTarget, "utf-8");
-        const secrets = [...parseEnvFile(localContent).entries()].map(([k, v]) => ({ key: k, value: v }));
+        const secrets = [...parseEnvFile(localContent).entries()].map(
+          ([k, v]) => ({ key: k, value: v }),
+        );
         const pushResult = await callEnvaultApi({
           pathName: `/api/cli/projects/${projectId}/secrets`,
           method: "POST",
           query: { environment },
-          body: { secrets },
+          body: { secrets, pruneMissing: true },
         });
 
         response.autoPushed = pushResult.ok;

@@ -59,7 +59,8 @@ Claude Desktop / Cursor format (`mcpServers`):
       "command": "npx",
       "args": ["-y", "@dinanathdash/envault-mcp-server@latest"],
       "env": {
-        "ENVAULT_TOKEN": "<YOUR_ENVAULT_TOKEN>"
+        "ENVAULT_TOKEN": "<YOUR_ENVAULT_TOKEN>",
+        "ENVAULT_BASE_URL": "https://www.envault.tech"
       }
     }
   }
@@ -76,7 +77,8 @@ VS Code MCP format (`servers`):
       "command": "npx",
       "args": ["-y", "@dinanathdash/envault-mcp-server@latest"],
       "env": {
-        "ENVAULT_TOKEN": "<YOUR_ENVAULT_TOKEN>"
+        "ENVAULT_TOKEN": "<YOUR_ENVAULT_TOKEN>",
+        "ENVAULT_BASE_URL": "https://www.envault.tech"
       }
     }
   },
@@ -102,7 +104,8 @@ If Windows cannot resolve `npx` from GUI-launched apps, use `npx.cmd` (or absolu
       "command": "npx.cmd",
       "args": ["-y", "@dinanathdash/envault-mcp-server@latest"],
       "env": {
-        "ENVAULT_TOKEN": "<YOUR_ENVAULT_TOKEN>"
+        "ENVAULT_TOKEN": "<YOUR_ENVAULT_TOKEN>",
+        "ENVAULT_BASE_URL": "https://www.envault.tech"
       }
     }
   },
@@ -120,6 +123,10 @@ If Windows cannot resolve `npx` from GUI-launched apps, use `npx.cmd` (or absolu
 
 <Callout type="warn">
   If standalone MCP returns `401 Unauthorized`, the token is invalid for the target API host. Common causes: masked/partial token copy, token expired, token revoked/regenerated, or host mismatch (`ENVAULT_BASE_URL` points to a different Envault instance than where the token was created).
+
+  For Envault Cloud, set `ENVAULT_BASE_URL` to `https://www.envault.tech` (canonical host). Some clients can drop `Authorization` headers across cross-host redirects (for example `envault.tech` -> `www.envault.tech`).
+
+  After changing token or env values in MCP config, fully restart the MCP server (or reload the IDE window) so the new environment is applied.
 </Callout>
 
 <Callout type="warn">

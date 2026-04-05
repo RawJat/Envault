@@ -70,8 +70,10 @@ export async function proxy(request: NextRequest) {
     matchesRoute(pathname, route),
   );
   const isCliBearerRequest = isCliApiRoute && hasBearerAuth;
-  const isSdkBearerRequest = isSdkApiRoute && authHeader.startsWith("Bearer envault_agt_");
+  const isSdkBearerRequest =
+    isSdkApiRoute && authHeader.startsWith("Bearer envault_agt_");
   const isApproveMutation = pathname.startsWith("/api/approve/");
+  const isApproveBearerRequest = isApproveMutation && hasBearerAuth;
   const isSdkAuthDelegate = pathname === "/api/sdk/auth/delegate";
 
   // HMAC Verification for mutations
@@ -80,7 +82,7 @@ export async function proxy(request: NextRequest) {
     !isPublicApi &&
     !isCliBearerRequest &&
     !isSdkBearerRequest &&
-    !isApproveMutation &&
+    !isApproveBearerRequest &&
     !isTransferApiRoute &&
     !isSdkAuthDelegate
   ) {
@@ -200,7 +202,11 @@ export async function proxy(request: NextRequest) {
     isProtectedRoute ||
     isPublicRoute ||
     isDynamicHandleRoute ||
-    (pathname.startsWith("/api") && !isPublicApi && !isCliBearerRequest && !isSdkBearerRequest);
+    (pathname.startsWith("/api") &&
+      !isPublicApi &&
+      !isCliBearerRequest &&
+      !isSdkBearerRequest &&
+      !isApproveBearerRequest);
 
   let supabaseResponse = NextResponse.next({
     request,
@@ -259,6 +265,7 @@ export async function proxy(request: NextRequest) {
     !isPublicApi &&
     !isCliBearerRequest &&
     !isSdkBearerRequest &&
+    !isApproveBearerRequest &&
     !isSdkAuthDelegate &&
     !user
   ) {

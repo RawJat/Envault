@@ -464,7 +464,7 @@ export async function POST(
     );
   }
 
-  const { secrets } = validation.data;
+  const { secrets, pruneMissing } = validation.data;
   const supabase = createAdminClient();
   let resolvedEnvironment;
   try {
@@ -565,6 +565,7 @@ export async function POST(
       { id: s.id, user_id: s.user_id, value: s.value },
     ]),
   );
+  const incomingKeys = new Set(secrets.map((s) => s.key));
 
   const upsertData = await Promise.all(
     secrets.map(async (s) => {
@@ -603,6 +604,31 @@ export async function POST(
   );
 
   const filteredUpsertData = upsertData.filter((item) => item !== null);
+  let deletedCount = 0;
+
+  if (pruneMissing === true) {
+    const keysToDelete = (existingSecrets || [])
+      .map((s) => s.key)
+      .filter((key) => !incomingKeys.has(key));
+
+    if (keysToDelete.length > 0) {
+      const { error: deleteError } = await supabase
+        .from("secrets")
+        .delete()
+        .eq("project_id", projectId)
+        .eq("environment_id", resolvedEnvironment.environment.id)
+        .in("key", keysToDelete);
+
+      if (deleteError) {
+        return NextResponse.json(
+          { error: deleteError.message },
+          { status: 500 },
+        );
+      }
+
+      deletedCount = keysToDelete.length;
+    }
+  }
 
   if (filteredUpsertData.length > 0) {
     const { error } = await supabase.from("secrets").upsert(filteredUpsertData);
@@ -686,7 +712,9 @@ export async function POST(
           count: createdCount,
           environment: resolvedEnvironment.environment.slug,
           source: "cli",
-          ...(actorSource === "mcp" ? { agent_label: actorAttributionName } : {}),
+          ...(actorSource === "mcp"
+            ? { agent_label: actorAttributionName }
+            : {}),
           ...(actorType === "user" ? { beneficiary_user_id: userId } : {}),
         },
       });
@@ -703,16 +731,36 @@ export async function POST(
           count: updatedCount,
           environment: resolvedEnvironment.environment.slug,
           source: "cli",
-          ...(actorSource === "mcp" ? { agent_label: actorAttributionName } : {}),
+          ...(actorSource === "mcp"
+            ? { agent_label: actorAttributionName }
+            : {}),
           ...(actorType === "user" ? { beneficiary_user_id: userId } : {}),
         },
       });
     }
   }
 
+  if (deletedCount > 0) {
+    await logAuditEvent({
+      projectId,
+      actorId,
+      actorType,
+      action: "secret.deleted",
+      targetResourceId: projectId,
+      metadata: {
+        count: deletedCount,
+        environment: resolvedEnvironment.environment.slug,
+        source: "cli",
+        ...(actorSource === "mcp" ? { agent_label: actorAttributionName } : {}),
+        ...(actorType === "user" ? { beneficiary_user_id: userId } : {}),
+      },
+    });
+  }
+
   return NextResponse.json({
     success: true,
     count: filteredUpsertData.length,
+    deletedCount,
     environment: resolvedEnvironment.environment.slug,
   });
 }

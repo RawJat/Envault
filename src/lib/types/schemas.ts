@@ -74,6 +74,7 @@ export const SecretSchema = z.object({
 
 export const PushSecretsSchema = z.object({
   secrets: z.array(SecretSchema).min(1, "At least one secret is required"),
+  pruneMissing: z.boolean().optional(),
 });
 
 export const ProjectIdParamSchema = z.object({
