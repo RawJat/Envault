@@ -1,6 +1,6 @@
 "use client";
 
-import { Link } from "next-view-transitions";
+import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
 import HamburgerMenu from "@/components/ui/hamburger-menu";
 import { Button } from "@/components/ui/button";
@@ -47,7 +47,7 @@ const NavItem = ({
     );
   }
   return (
-    <Link href={href} className={className}>
+    <Link href={href} transitionTypes={[]} className={className}>
       {children}
     </Link>
   );

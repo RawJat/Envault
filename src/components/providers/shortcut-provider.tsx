@@ -8,6 +8,7 @@ import { ShortcutHelpModal } from "@/components/dialogs/shortcut-help-modal";
 import { SearchDialog } from "@/components/dialogs/search-dialog";
 import { useEnvaultStore } from "@/lib/stores/store";
 import { signOut } from "@/app/actions";
+import { pushWithTransition } from "@/lib/utils/view-transition-navigation";
 
 export function ShortcutProvider({ children }: { children: React.ReactNode }) {
   const { theme, setTheme } = useTheme();
@@ -77,21 +78,21 @@ export function ShortcutProvider({ children }: { children: React.ReactNode }) {
 
   useHotkeys("h", () => {
     if (lastKeyWasG) {
-      router.push("/dashboard");
+      pushWithTransition(router, "/dashboard", "nav-back");
       setLastKeyWasG(false);
     }
   });
 
   useHotkeys("o", () => {
     if (lastKeyWasG) {
-      router.push("/settings");
+      pushWithTransition(router, "/settings");
       setLastKeyWasG(false);
     }
   });
 
   useHotkeys("l", () => {
     if (lastKeyWasG) {
-      router.push("/notifications");
+      pushWithTransition(router, "/notifications");
       setLastKeyWasG(false);
       return;
     }
@@ -99,7 +100,7 @@ export function ShortcutProvider({ children }: { children: React.ReactNode }) {
 
   useHotkeys("s", () => {
     if (lastKeyWasG) {
-      router.push("/admin/system");
+      pushWithTransition(router, "/admin/system");
       setLastKeyWasG(false);
       return;
     }
@@ -246,7 +247,7 @@ export function ShortcutProvider({ children }: { children: React.ReactNode }) {
     const isProjectView = window.location.pathname.includes("/project/");
 
     if (!isOverlayOpen && isProjectView) {
-      router.push("/dashboard");
+      pushWithTransition(router, "/dashboard", "nav-back");
     }
   });
 

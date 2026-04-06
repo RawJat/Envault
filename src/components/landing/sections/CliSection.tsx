@@ -1,6 +1,6 @@
 import { Terminal, GitBranch, Zap, Shield, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link } from "next-view-transitions";
+import Link from "next/link";
 import { AnimatedTerminal } from "@/components/landing/animations/animated-terminal";
 import { headers } from "next/headers";
 import { FadeIn } from "@/components/landing/animations/FadeIn";
@@ -107,7 +107,7 @@ export async function CliSection() {
             </div>
 
             <FadeIn delay={0.4} className="pt-4 flex items-center gap-4">
-              <Link href="/docs/platform/cli/reference">
+              <Link href="/docs/platform/cli/reference" transitionTypes={[]}>
                 <Button
                   size="lg"
                   className="h-12 px-8 text-base shadow-lg shadow-primary/20 rounded-none"

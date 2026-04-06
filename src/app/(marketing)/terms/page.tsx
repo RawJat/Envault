@@ -1,5 +1,5 @@
 import { LegalLayout } from "@/components/legal/LegalLayout";
-import { Link } from "next-view-transitions";
+import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -137,6 +137,7 @@ export default async function TermsPage() {
           release date. For more details, see our{" "}
           <Link
             href="/licensing"
+            transitionTypes={[]}
             className="font-mono text-sm text-foreground hover:text-primary transition-colors underline underline-offset-4"
           >
             Licensing Page
@@ -144,6 +145,7 @@ export default async function TermsPage() {
           or the{" "}
           <Link
             href="/LICENSE"
+            transitionTypes={[]}
             className="font-mono text-sm text-foreground hover:text-primary transition-colors underline underline-offset-4"
           >
             LICENSE

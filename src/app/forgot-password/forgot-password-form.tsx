@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { Loader2, ArrowLeft } from 'lucide-react'
-import { Link } from 'next-view-transitions'
+import Link from 'next/link'
 import { toast } from 'sonner'
 
 
@@ -79,7 +79,7 @@ export function ForgotPasswordForm() {
                                 Please check your inbox and click the link to reset your password.
                             </p>
                             <Button asChild className="w-full" variant="outline">
-                                <Link href="/login">
+                                <Link href="/login" transitionTypes={["nav-back"]}>
                                     Return to Login
                                 </Link>
                             </Button>
@@ -110,6 +110,7 @@ export function ForgotPasswordForm() {
                     <CardFooter className="justify-center">
                         <Link
                             href="/login"
+                            transitionTypes={["nav-back"]}
                             className="flex items-center text-sm text-muted-foreground hover:text-primary transition-colors"
                         >
                             <ArrowLeft className="w-4 h-4 mr-2" />

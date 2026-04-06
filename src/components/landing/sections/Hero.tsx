@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Link } from "next-view-transitions";
+import Link from "next/link";
 import { ShieldCheck, ArrowRight } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { InstallTerminal } from "@/components/landing/ui/install-terminal";
@@ -79,7 +79,7 @@ export function Hero() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-            <Link href="/login">
+            <Link href="/login" transitionTypes={[]}>
               <Button
                 size="lg"
                 className="w-full sm:w-auto min-w-[180px] h-12 text-base font-mono uppercase tracking-wider rounded-none flex items-center gap-2"
@@ -88,7 +88,7 @@ export function Hero() {
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
-            <Link href="/docs/platform">
+            <Link href="/docs/platform" transitionTypes={[]}>
               <Button
                 variant="outline"
                 size="lg"

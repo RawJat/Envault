@@ -1,4 +1,4 @@
-import { Link } from "next-view-transitions";
+import Link from "next/link";
 import { Navbar } from "@/components/landing/ui/Navbar";
 import { Footer } from "@/components/landing/sections/Footer";
 import { RegMark } from "@/components/landing/ui/RegMark";
@@ -34,7 +34,7 @@ export default async function NotFound() {
 
             <div className="flex flex-row items-center justify-center gap-4 pt-4">
               <BackButton />
-              <Link href="/">
+              <Link href="/" transitionTypes={[]}>
                 <Button size="lg">Return Home</Button>
               </Link>
             </div>

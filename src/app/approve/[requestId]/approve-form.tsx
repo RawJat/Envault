@@ -14,6 +14,7 @@ import { Loader2 } from "lucide-react";
 import { approveRequest, rejectRequest } from "@/app/invite-actions";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
+import { pushWithTransition } from "@/lib/utils/view-transition-navigation";
 
 interface ApproveFormProps {
   requestId: string;
@@ -77,13 +78,13 @@ export function ApproveForm({
       setIsApproving(false);
       return;
     }
-    router.push("/dashboard?approved=true");
+    pushWithTransition(router, "/dashboard?approved=true", "nav-back");
   };
 
   const handleDeny = async () => {
     setIsDenying(true);
     await rejectRequest(requestId);
-    router.push("/dashboard?denied=true");
+    pushWithTransition(router, "/dashboard?denied=true", "nav-back");
   };
 
   return (

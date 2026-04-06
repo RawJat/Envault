@@ -1,6 +1,6 @@
 "use client";
 
-import { Link } from "next-view-transitions";
+import Link from "next/link";
 import { Github, Mail, Copyright } from "lucide-react";
 import { StatusBadge } from "@/components/landing/ui/StatusBadge";
 import { usePathname } from "next/navigation";
@@ -38,7 +38,7 @@ const FooterLink = ({
     );
   }
   return (
-    <Link href={href} className={className}>
+    <Link href={href} transitionTypes={[]} className={className}>
       {children}
     </Link>
   );

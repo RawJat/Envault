@@ -28,6 +28,7 @@ import { useHotkeys } from "@/hooks/use-hotkeys";
 import { Kbd } from "@/components/ui/kbd";
 import { DateDisplay } from "@/components/ui/date-display";
 import { formatEnvironmentLabel } from "@/lib/utils/environment-label";
+import { pushWithTransition } from "@/lib/utils/view-transition-navigation";
 
 interface AccessRequest {
   id: string;
@@ -120,7 +121,7 @@ export function AccessRequestsPanel() {
   }, [fetchRequests]);
 
   const handleApproveRedirect = (requestId: string) => {
-    router.push(`/approve/${requestId}`);
+    pushWithTransition(router, `/approve/${requestId}`);
   };
 
   const handleReject = async (requestId: string, projectName: string) => {

@@ -79,7 +79,9 @@ export default async function TransferRequestPage({
             </CardHeader>
             <CardContent>
               <Button asChild className="w-full h-11" variant="outline">
-                <Link href="/dashboard">Return to Dashboard</Link>
+                <Link href="/dashboard" transitionTypes={["nav-back"]}>
+                  Return to Dashboard
+                </Link>
               </Button>
             </CardContent>
             <CardFooter className="justify-center text-xs text-muted-foreground">
@@ -112,7 +114,9 @@ export default async function TransferRequestPage({
             </CardHeader>
             <CardContent>
               <Button asChild className="w-full h-11" variant="outline">
-                <Link href="/dashboard">Return to Dashboard</Link>
+                <Link href="/dashboard" transitionTypes={["nav-back"]}>
+                  Return to Dashboard
+                </Link>
               </Button>
             </CardContent>
             <CardFooter className="justify-center text-xs text-muted-foreground">
@@ -170,7 +174,9 @@ export default async function TransferRequestPage({
             )}
 
             <Button variant="ghost" asChild className="w-full h-11">
-              <Link href="/dashboard">Back to Dashboard</Link>
+              <Link href="/dashboard" transitionTypes={["nav-back"]}>
+                Back to Dashboard
+              </Link>
             </Button>
           </CardContent>
           <CardFooter className="justify-center text-xs text-muted-foreground">

@@ -1,6 +1,6 @@
 "use client";
 
-import { Link } from "next-view-transitions";
+import Link from "next/link";
 import { useState, useEffect } from "react";
 import { STATUS_CONFIG, type StatusLevel } from "@/lib/system/status-config";
 import type { SystemStatusSummary } from "@/lib/system/system-status";
@@ -35,6 +35,7 @@ export function StatusBadge() {
   return (
     <Link
       href="/status"
+      transitionTypes={[]}
       className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold tracking-tight transition-all duration-300 border ${cfg.border} ${cfg.bg} ${cfg.color} hover:scale-105`}
     >
       <Icon className="size-4 shrink-0 animate-pulse" />

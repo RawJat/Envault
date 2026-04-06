@@ -1,5 +1,5 @@
-import PageTransition from '@/components/page-transition';
+import { DirectionalPageTransition } from "@/components/transitions/directional-page-transition";
 
 export default function Template({ children }: { children: React.ReactNode }) {
-    return <PageTransition>{children}</PageTransition>;
+  return <DirectionalPageTransition>{children}</DirectionalPageTransition>;
 }

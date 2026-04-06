@@ -1,6 +1,6 @@
 "use client";
 
-import { Link } from "next-view-transitions";
+import Link from "next/link";
 import {
   ShieldCheck,
   Settings as SettingsIcon,
@@ -29,6 +29,7 @@ import { NotificationDropdown } from "@/components/notifications/notification-dr
 import { useEnvaultStore } from "@/lib/stores/store";
 import { signOut } from "@/app/actions";
 import { useRouter } from "next/navigation";
+import { pushWithTransition } from "@/lib/utils/view-transition-navigation";
 
 interface AppHeaderProps {
   title?: string | React.ReactNode;
@@ -50,11 +51,11 @@ export function AppHeader({
     // Use explicit route back targets to avoid browser-history loops when
     // users bounce between contextual pages (e.g. project <-> audit logs).
     if (backTo) {
-      router.push(backTo);
+      pushWithTransition(router, backTo, "nav-back");
       return;
     }
 
-    router.push("/dashboard");
+    pushWithTransition(router, "/dashboard", "nav-back");
   };
 
   const handleLogout = async () => {
@@ -149,6 +150,7 @@ export function AppHeader({
                   <DropdownMenuItem asChild>
                     <Link
                       href="/admin/system"
+                      transitionTypes={["nav-forward"]}
                       className="cursor-pointer flex w-full items-center"
                     >
                       <Activity className="mr-2 h-4 w-4 text-green-600" />
@@ -165,6 +167,7 @@ export function AppHeader({
               <DropdownMenuItem asChild>
                 <Link
                   href="/dashboard"
+                  transitionTypes={["nav-back"]}
                   className="cursor-pointer flex w-full items-center"
                 >
                   <LayoutDashboard className="mr-2 h-4 w-4" />
@@ -178,6 +181,7 @@ export function AppHeader({
               <DropdownMenuItem asChild>
                 <Link
                   href="/notifications"
+                  transitionTypes={["nav-forward"]}
                   className="cursor-pointer flex w-full items-center"
                 >
                   <Bell className="mr-2 h-4 w-4" />
@@ -191,6 +195,7 @@ export function AppHeader({
               <DropdownMenuItem asChild>
                 <Link
                   href="/settings"
+                  transitionTypes={["nav-forward"]}
                   className="cursor-pointer flex w-full items-center"
                 >
                   <SettingsIcon className="mr-2 h-4 w-4" />

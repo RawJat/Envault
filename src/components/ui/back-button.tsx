@@ -3,13 +3,14 @@
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { pushWithTransition } from "@/lib/utils/view-transition-navigation"
 
 export function BackButton() {
     const router = useRouter()
 
     const handleGoBack = () => {
         if (typeof window === 'undefined') {
-            router.push("/dashboard")
+            pushWithTransition(router, "/dashboard", "nav-back")
             return
         }
 
@@ -19,9 +20,10 @@ export function BackButton() {
             !!referrer && new URL(referrer).origin === window.location.origin
 
         if (hasHistory && isInternalReferrer) {
-            router.back()
+            const referrerPath = new URL(referrer).pathname + new URL(referrer).search
+            pushWithTransition(router, referrerPath || "/dashboard", "nav-back")
         } else {
-            router.push("/dashboard")
+            pushWithTransition(router, "/dashboard", "nav-back")
         }
     }
 

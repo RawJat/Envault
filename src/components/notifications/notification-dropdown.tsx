@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useNotificationStore } from "@/lib/stores/notification-store";
 import { Inbox, Trash2 } from "lucide-react";
-import { Link } from "next-view-transitions";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useHotkeys } from "@/hooks/use-hotkeys";
 import { NotificationSkeleton } from "./notification-skeleton";
@@ -21,6 +21,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Kbd } from "@/components/ui/kbd";
+import { pushWithTransition } from "@/lib/utils/view-transition-navigation";
 
 export function NotificationDropdown() {
   const [mounted, setMounted] = useState(false);
@@ -97,7 +98,7 @@ export function NotificationDropdown() {
     "v",
     () => {
       if (open) {
-        router.push("/notifications");
+        pushWithTransition(router, "/notifications");
         setOpen(false);
       }
     },
@@ -200,7 +201,11 @@ export function NotificationDropdown() {
         {/* Footer */}
         {notifications.length > 5 && (
           <div className="border-t p-2">
-            <Link href="/notifications" onClick={() => setOpen(false)}>
+            <Link
+              href="/notifications"
+              transitionTypes={["nav-forward"]}
+              onClick={() => setOpen(false)}
+            >
               <Button variant="ghost" className="w-full text-sm">
                 View all notifications
                 <Kbd variant="ghost" size="xs" className="ml-2">
