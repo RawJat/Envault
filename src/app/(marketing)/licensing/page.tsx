@@ -1,5 +1,5 @@
 import { LegalLayout } from "@/components/legal/LegalLayout";
-import { Link } from "next-view-transitions";
+import Link from "next/link";
 import { CheckCircle2, XCircle } from "lucide-react";
 import type { Metadata } from "next";
 

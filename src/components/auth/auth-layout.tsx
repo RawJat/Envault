@@ -1,6 +1,6 @@
 import { ShieldCheck } from "lucide-react"
 import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler"
-import { Link } from "next-view-transitions"
+import Link from "next/link"
 
 interface AuthLayoutProps {
     children: React.ReactNode
@@ -11,7 +11,11 @@ export function AuthLayout({ children }: AuthLayoutProps) {
         <main className="min-h-screen grid grid-cols-1 lg:grid-cols-2 relative overflow-hidden font-sans blueprint-grid sharp">
             {/* Header - Logo & Theme Toggler */}
             <div className="absolute top-0 left-0 right-0 z-50 flex items-center justify-between p-4 md:p-8">
-                <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                <Link
+                    href="/"
+                    transitionTypes={[]}
+                    className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                >
                     <ShieldCheck className="w-8 h-8 text-primary" />
                     <h1 className="text-4xl font-bold tracking-tight text-primary font-serif">Envault</h1>
                 </Link>

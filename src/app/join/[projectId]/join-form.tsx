@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { createAccessRequest } from "@/app/invite-actions";
 import { toast } from "sonner";
+import { pushWithTransition } from "@/lib/utils/view-transition-navigation";
 
 interface JoinFormProps {
   projectId: string;
@@ -23,7 +24,7 @@ export function JoinForm({ projectId }: JoinFormProps) {
       setIsRequesting(false);
       return;
     }
-    router.push("/dashboard?requested=true");
+    pushWithTransition(router, "/dashboard?requested=true", "nav-back");
   };
 
   return (

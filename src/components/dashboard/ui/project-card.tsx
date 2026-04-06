@@ -1,6 +1,6 @@
 "use client";
 
-import { Link } from "next-view-transitions";
+import Link from "next/link";
 import { DateDisplay } from "@/components/ui/date-display";
 import {
   Folder,
@@ -155,6 +155,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
             ? `/${project.owner_username}/${project.slug}`
             : `/project/${project.slug}`
         }
+        transitionTypes={["nav-forward"]}
         className="block h-full outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl transition-all"
       >
         <Card className="h-full transition-all hover:border-primary/50 hover:shadow-md group relative overflow-hidden">

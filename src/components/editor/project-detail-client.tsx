@@ -60,6 +60,7 @@ import {
   logSecretBatchRead,
 } from "@/app/project-actions";
 import { createAccessRequest } from "@/app/invite-actions";
+import { pushWithTransition } from "@/lib/utils/view-transition-navigation";
 import { ShareProjectDialog } from "@/components/dialogs/share-project-dialog";
 import { RenameProjectDialog } from "@/components/dialogs/rename-project-dialog";
 import { GitHubIntegrationDialog } from "@/components/dialogs/github-integration-dialog";
@@ -333,7 +334,7 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
     triggerHaptic("cancel");
     toast.success("Project deleted");
     setDeleteDialogOpen(false);
-    router.push("/dashboard");
+    pushWithTransition(router, "/dashboard", "nav-back");
   };
 
   const [projectNameCopied, setProjectNameCopied] = useState(false);
@@ -503,7 +504,11 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
             {project.role === "owner" && (
               <DropdownMenuItem
                 onClick={() =>
-                  router.push(`/project/${project.slug}/audit-logs`)
+                  pushWithTransition(
+                    router,
+                    `/project/${project.slug}/audit-logs`,
+                    "nav-forward",
+                  )
                 }
               >
                 <ShieldCheck className="w-4 h-4 mr-2" /> Audit Logs
@@ -831,7 +836,9 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
             </Button>
             <Button
               onClick={() => void handleToggleProjectAgentAccess()}
-              disabled={!hasProjectAgentAccessChanges || isUpdatingProjectAgentAccess}
+              disabled={
+                !hasProjectAgentAccessChanges || isUpdatingProjectAgentAccess
+              }
             >
               {isUpdatingProjectAgentAccess && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

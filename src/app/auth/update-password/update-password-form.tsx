@@ -19,6 +19,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { updatePassword } from "@/app/actions";
+import { pushWithTransition } from "@/lib/utils/view-transition-navigation";
 
 const updatePasswordSchema = z
   .object({
@@ -58,7 +59,7 @@ export function UpdatePasswordForm() {
       setIsLoading(false);
     } else {
       toast.success("Password updated successfully");
-      router.push("/login");
+      pushWithTransition(router, "/login", "nav-back");
     }
   }
 

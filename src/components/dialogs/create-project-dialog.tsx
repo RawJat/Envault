@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import { createProject } from "@/app/project-actions";
 import { Kbd } from "@/components/ui/kbd";
+import { pushWithTransition } from "@/lib/utils/view-transition-navigation";
 
 const projectSchema = z.object({
   name: z.string().min(1, "Project name is required"),
@@ -89,7 +90,7 @@ export function CreateProjectDialog({
     });
     setUiMode("simple");
     setDefaultEnvironmentSlug("development");
-    router.push(`/project/${result.data?.slug}`);
+    pushWithTransition(router, `/project/${result.data?.slug}`);
   }
 
   const handleOpenChange = (nextOpen: boolean) => {

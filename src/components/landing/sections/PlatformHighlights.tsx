@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import { Link } from "next-view-transitions";
+import Link from "next/link";
 import { ArrowRight, Bot, Boxes, PackageCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SlideUp } from "@/components/landing/animations/SlideUp";
@@ -101,7 +101,10 @@ export async function PlatformHighlights() {
           className="mt-8 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between"
         >
           <div className="flex flex-col sm:flex-row gap-3">
-            <Link href="/docs/platform/guides/sdk-mcp-agent-workflows">
+            <Link
+              href="/docs/platform/guides/sdk-mcp-agent-workflows"
+              transitionTypes={[]}
+            >
               <Button size="lg" className="rounded-none h-12 px-8 w-full sm:w-auto">
                 Explore SDK + MCP
                 <ArrowRight className="w-4 h-4 -rotate-45" />

@@ -28,6 +28,7 @@ import { Kbd } from "@/components/ui/kbd";
 import { Project } from "@/lib/stores/store";
 import { renameProject } from "@/app/project-actions";
 import { useHotkeys } from "@/hooks/use-hotkeys";
+import { replaceWithTransition } from "@/lib/utils/view-transition-navigation";
 
 const ModKey = () => (
   <>
@@ -138,7 +139,7 @@ export function RenameProjectDialog({
     // Redirect to the new slug immediately.
     // Uses `replace` since it's the exact same project ID logically.
     if (result.data?.slug && result.data.slug !== project.slug) {
-      router.replace(`/project/${result.data.slug}`);
+      replaceWithTransition(router, `/project/${result.data.slug}`);
     } else {
       router.refresh();
     }

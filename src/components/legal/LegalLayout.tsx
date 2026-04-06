@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { RegMark } from "@/components/landing/ui/RegMark";
 import { ChevronRight, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Link } from "next-view-transitions";
+import Link from "next/link";
 import { SlideUp } from "@/components/landing/animations/SlideUp";
 import { FadeIn } from "@/components/landing/animations/FadeIn";
 import { ScrollProgress } from "@/components/ui/scroll-progress";

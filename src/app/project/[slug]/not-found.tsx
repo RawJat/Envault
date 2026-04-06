@@ -21,7 +21,9 @@ export default function ProjectNotFound() {
             you lack access to view it.
           </p>
           <Button asChild>
-            <Link href="/dashboard">Return to Dashboard</Link>
+            <Link href="/dashboard" transitionTypes={["nav-back"]}>
+              Return to Dashboard
+            </Link>
           </Button>
         </div>
       </main>

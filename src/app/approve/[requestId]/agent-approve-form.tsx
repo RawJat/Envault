@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
+import { pushWithTransition } from "@/lib/utils/view-transition-navigation";
 
 type AgentApproveFormProps = {
   requestId: string;
@@ -40,7 +41,7 @@ export function AgentApproveForm({ requestId, redirectPath }: AgentApproveFormPr
         throw new Error(parsedError || body || "Approval request failed");
       }
 
-      router.push(redirectPath || "/dashboard");
+      pushWithTransition(router, redirectPath || "/dashboard", "nav-back");
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Approval request failed");

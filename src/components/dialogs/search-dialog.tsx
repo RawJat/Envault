@@ -40,6 +40,7 @@ import { signOut } from "@/app/actions";
 import { cn } from "@/lib/utils/utils";
 import { usePathname } from "next/navigation";
 import { Plus } from "lucide-react";
+import { pushWithTransition } from "@/lib/utils/view-transition-navigation";
 
 interface SearchDialogProps {
   open: boolean;
@@ -93,7 +94,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
   const handleNavigation = React.useCallback(
     (path: string) => {
       savedScrollPosition.current = window.scrollY;
-      router.push(path);
+      pushWithTransition(router, path);
     },
     [router],
   );
@@ -292,9 +293,9 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
         action: () => {
           savedScrollPosition.current = window.scrollY;
           if (p.isShared && p.owner_username && p.role !== "owner") {
-            router.push(`/${p.owner_username}/${p.slug}`);
+            pushWithTransition(router, `/${p.owner_username}/${p.slug}`);
           } else {
-            router.push(`/project/${p.slug}`);
+            pushWithTransition(router, `/project/${p.slug}`);
           }
         },
       }));

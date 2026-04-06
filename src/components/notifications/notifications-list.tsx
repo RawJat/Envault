@@ -20,6 +20,7 @@ import { DateDisplay } from "@/components/ui/date-display";
 import { useRouter } from "next/navigation";
 import { useHotkeys } from "@/hooks/use-hotkeys";
 import { Kbd } from "@/components/ui/kbd";
+import { pushWithTransition } from "@/lib/utils/view-transition-navigation";
 
 import {
   Table,
@@ -173,7 +174,7 @@ export function NotificationsList() {
     }
 
     if (notification.action_url) {
-      router.push(notification.action_url);
+      pushWithTransition(router, notification.action_url);
     }
   };
 

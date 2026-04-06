@@ -9,7 +9,7 @@ import { Loader2, Lock, Command, Fingerprint } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { startAuthentication } from "@simplewebauthn/browser";
 import type { PublicKeyCredentialRequestOptionsJSON } from "@simplewebauthn/browser";
-import { Link } from "next-view-transitions";
+import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -34,6 +34,10 @@ import { toast } from "sonner";
 import { triggerHaptic } from "@/lib/utils/haptic";
 import { Kbd } from "@/components/ui/kbd";
 import { CornerDownLeft } from "lucide-react";
+import {
+  pushWithTransition,
+  replaceWithTransition,
+} from "@/lib/utils/view-transition-navigation";
 
 const authSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -83,21 +87,21 @@ export function AuthForm() {
         toast.success(
           "Your account is scheduled for deletion. Sign in within 7 days to cancel it.",
         );
-        router.replace("/login");
+        replaceWithTransition(router, "/login");
       }, 100);
     }
     if (searchParams.get("accountDeleted")) {
       setTimeout(() => {
         toast.success("Account deleted successfully");
         // Clean up the URL
-        router.replace("/login");
+        replaceWithTransition(router, "/login");
       }, 100);
     }
     if (searchParams.get("emailConfirmed")) {
       setTimeout(() => {
         toast.success("Email confirmed! You can now sign in.");
         // Clean up the URL
-        router.replace("/login");
+        replaceWithTransition(router, "/login");
       }, 100);
     }
   }, [searchParams, router]);
@@ -218,9 +222,9 @@ export function AuthForm() {
         toast.success("Signed in with Passkey");
         const next = searchParams.get("next");
         if (next && next.startsWith("/")) {
-          router.push(next);
+          pushWithTransition(router, next);
         } else {
-          router.push("/dashboard");
+          pushWithTransition(router, "/dashboard");
         }
         router.refresh();
       } else {

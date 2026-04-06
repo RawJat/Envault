@@ -146,7 +146,9 @@ export default async function JoinPage({ params }: JoinPageProps) {
             </CardHeader>
             <CardContent>
               <Button asChild className="w-full h-11" variant="outline">
-                <Link href="/dashboard">Return to Dashboard</Link>
+                <Link href="/dashboard" transitionTypes={["nav-back"]}>
+                  Return to Dashboard
+                </Link>
               </Button>
             </CardContent>
             <CardFooter className="justify-center text-xs text-muted-foreground">
@@ -194,7 +196,9 @@ export default async function JoinPage({ params }: JoinPageProps) {
               </Button>
             )}
             <Button variant="ghost" asChild className="w-full h-11">
-              <Link href="/dashboard">Cancel and Return</Link>
+              <Link href="/dashboard" transitionTypes={["nav-back"]}>
+                Cancel and Return
+              </Link>
             </Button>
           </CardContent>
           <CardFooter className="justify-center text-xs text-muted-foreground">

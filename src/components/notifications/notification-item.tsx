@@ -8,6 +8,7 @@ import { useNotificationStore } from "@/lib/stores/notification-store";
 import { cn } from "@/lib/utils/utils";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
+import { pushWithTransition } from "@/lib/utils/view-transition-navigation";
 
 interface NotificationItemProps {
   notification: Notification;
@@ -27,7 +28,7 @@ export function NotificationItem({
     }
 
     if (notification.action_url) {
-      router.push(notification.action_url);
+      pushWithTransition(router, notification.action_url);
       onClose?.();
     }
   };

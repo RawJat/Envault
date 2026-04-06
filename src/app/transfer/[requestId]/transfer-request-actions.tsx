@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { pushWithTransition } from "@/lib/utils/view-transition-navigation";
 
 interface TransferRequestActionsProps {
   requestId: string;
@@ -47,7 +48,7 @@ export function TransferRequestActions({
           : `Transfer request for ${projectName} was rejected.`,
       );
 
-      router.push("/dashboard");
+      pushWithTransition(router, "/dashboard", "nav-back");
       router.refresh();
     } catch (error) {
       console.error(`[transfer:${action}] request failed`, error);
