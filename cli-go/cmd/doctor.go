@@ -76,7 +76,10 @@ var doctorCmd = &cobra.Command{
 		}
 
 		if isHomebrewPath(normalizedPath) {
+			loader := ui.NewLoader(ui.LoaderThemeCheck, "ScanGrid checking Homebrew metadata...")
+			loader.Start()
 			checks = append(checks, runHomebrewChecks(version)...)
+			loader.Stop()
 		}
 
 		hasIssue := false

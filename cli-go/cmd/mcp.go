@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/DinanathDash/Envault/cli-go/internal/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -34,13 +35,19 @@ var mcpInstallCmd = &cobra.Command{
 
 		if globalInstall {
 			fmt.Println("\n--- Global Installations ---")
+			globalLoader := ui.NewLoader(ui.LoaderThemeSync, "Updating global MCP client configs...")
+			globalLoader.Start()
 			installClaudeDesktop()
 			installGlobalCline()
+			globalLoader.Stop()
 		}
 
 		if localInstall {
 			fmt.Println("\n--- Local Workspace Installations ---")
+			localLoader := ui.NewLoader(ui.LoaderThemeSync, "Updating local VS Code MCP config...")
+			localLoader.Start()
 			installLocalVSCodeMCP()
+			localLoader.Stop()
 		}
 
 		fmt.Println("\n[OK] Installed MCP Server integrations! Please restart your AI client if it's currently open.")
@@ -54,10 +61,14 @@ var mcpUpdateCmd = &cobra.Command{
 		fmt.Println("Updating Envault MCP Server...")
 
 		if !mcpConfigOnly {
+			pkgLoader := ui.NewLoader(ui.LoaderThemeDeploy, "Updating global MCP package...")
+			pkgLoader.Start()
 			if err := runNpmGlobalInstall("@dinanathdash/envault-mcp-server@latest"); err != nil {
+				pkgLoader.Stop()
 				fmt.Printf("[WARN] Global MCP package update failed: %v\n", err)
 				fmt.Println("[WARN] Continuing with config refresh. You can run `npm install -g @dinanathdash/envault-mcp-server@latest` manually.")
 			} else {
+				pkgLoader.Stop()
 				fmt.Println("[OK] Updated global MCP package to latest.")
 			}
 		}
@@ -70,12 +81,18 @@ var mcpUpdateCmd = &cobra.Command{
 		}
 
 		if globalInstall {
+			globalLoader := ui.NewLoader(ui.LoaderThemeSync, "Refreshing global MCP client configs...")
+			globalLoader.Start()
 			installClaudeDesktop()
 			installGlobalCline()
+			globalLoader.Stop()
 		}
 
 		if localInstall {
+			localLoader := ui.NewLoader(ui.LoaderThemeSync, "Refreshing local MCP config...")
+			localLoader.Start()
 			installLocalVSCodeMCP()
+			localLoader.Stop()
 		}
 
 		fmt.Println("\n[OK] Envault MCP update completed.")
@@ -185,7 +202,7 @@ func injectVSCodeMCPConfig(config map[string]interface{}) {
 		servers = make(map[string]interface{})
 		config["servers"] = servers
 	}
-	
+
 	if _, ok := config["inputs"]; !ok {
 		config["inputs"] = []interface{}{}
 	}

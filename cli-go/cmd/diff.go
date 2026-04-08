@@ -109,7 +109,10 @@ func computeDiff(ctx context.Context, projectID, targetEnv, targetFile string) (
 
 	client := api.NewClient()
 	path := fmt.Sprintf("/projects/%s/secrets?environment=%s", projectID, url.QueryEscape(targetEnv))
+	loader := ui.NewLoader(ui.LoaderThemeCheck, "ScanGrid comparing local vs remote secrets...")
+	loader.Start()
 	respBytes, err := client.GetWithContext(ctx, path)
+	loader.Stop()
 	if err != nil {
 		if handleEnvironmentAccessDenied(err, targetEnv) {
 			return diffResult{}, errors.New("environment access denied")

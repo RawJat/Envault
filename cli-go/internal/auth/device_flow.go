@@ -40,7 +40,7 @@ func Login() error {
 	fmt.Println(ui.ColorBlue("  Starting Device Authentication Flow...\n"))
 
 	// Spinner
-	s := ui.NewSpinner("Contacting Envault servers...")
+	s := ui.NewLoader(ui.LoaderThemeAuth, "Handshake connecting to Envault servers...")
 	s.Start()
 
 	hostname, _ := os.Hostname()
@@ -81,7 +81,7 @@ func Login() error {
 	_ = browser.OpenURL(codeResp.VerificationURI)
 
 	// Poll Spinner
-	s = ui.NewSpinner("Waiting for browser approval...")
+	s = ui.NewLoader(ui.LoaderThemeAuth, "Handshake waiting for browser approval...")
 	s.Start()
 
 	interval := time.Duration(codeResp.Interval) * time.Second

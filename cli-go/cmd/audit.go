@@ -163,7 +163,10 @@ func installPreCommitHook() (alreadyInstalled bool, binPath string, err error) {
 // runInstallHook is the CLI-facing wrapper for `envault audit --install-hook`.
 // It calls installPreCommitHook and handles printing / os.Exit behaviour.
 func runInstallHook() {
+	loader := ui.NewLoader(ui.LoaderThemeSync, "Installing git pre-commit protection...")
+	loader.Start()
 	alreadyInstalled, binPath, err := installPreCommitHook()
+	loader.Stop()
 	if err != nil {
 		if strings.Contains(err.Error(), "no .git directory") {
 			fmt.Fprintln(os.Stderr, ui.ColorRed("[X] No .git directory found. Run this command from the root of a git repository."))
@@ -184,11 +187,17 @@ func runInstallHook() {
 // --- Audit Runner -------------------------------------------------------------
 
 func runAudit() {
+	loader := ui.NewLoader(ui.LoaderThemeCheck, "ScanGrid running audit checks...")
+	loader.Start()
 	var issues []AuditIssue
 
+	loader.SetMessage("ScanGrid verifying .gitignore coverage...")
 	issues = append(issues, checkGitignore()...)
+	loader.SetMessage("ScanGrid checking tracked env files...")
 	issues = append(issues, checkTrackedEnvFiles()...)
+	loader.SetMessage("ScanGrid validating key parity...")
 	issues = append(issues, checkParity()...)
+	loader.Stop()
 
 	// Strict mode: promote all warnings to errors.
 	if auditStrict {

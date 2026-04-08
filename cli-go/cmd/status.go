@@ -49,7 +49,10 @@ var statusCmd = &cobra.Command{
 			path = fmt.Sprintf("/status?projectId=%s", projectID)
 		}
 
+		loader := ui.NewLoader(ui.LoaderThemeCheck, "ScanGrid checking account + project status...")
+		loader.Start()
 		statusBytes, err := client.Get(path)
+		loader.Stop()
 		if err != nil {
 			fmt.Fprintln(os.Stderr, ui.ColorRed("Status failed."))
 			fmt.Fprintln(os.Stderr, ui.ColorRed(classifyAPIError(err)))

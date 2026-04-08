@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/DinanathDash/Envault/cli-go/internal/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -25,14 +26,25 @@ var sdkInstallCmd = &cobra.Command{
 		local, global := resolveSDKInstallModes()
 
 		if local {
-			runPkgManagerCommand("install", "@dinanathdash/envault-sdk")
+			localLoader := ui.NewLoader(ui.LoaderThemeDeploy, "Installing SDK in local project...")
+			localLoader.Start()
+			if err := runPkgManagerCommand("install", "@dinanathdash/envault-sdk"); err != nil {
+				localLoader.Stop()
+				fmt.Printf("Failed to run %s. Please try installing manually.\n", getPackageManager())
+				os.Exit(1)
+			}
+			localLoader.Stop()
 		}
 
 		if global {
+			globalLoader := ui.NewLoader(ui.LoaderThemeDeploy, "Installing SDK globally via npm...")
+			globalLoader.Start()
 			if err := runNpmGlobalInstall("@dinanathdash/envault-sdk"); err != nil {
+				globalLoader.Stop()
 				fmt.Printf("Failed to globally install SDK via npm: %v\n", err)
 				os.Exit(1)
 			}
+			globalLoader.Stop()
 			fmt.Println("\n[OK] Global SDK install completed via npm.")
 		}
 	},
@@ -47,14 +59,25 @@ var sdkUpdateCmd = &cobra.Command{
 		local, global := resolveSDKInstallModes()
 
 		if local {
-			runPkgManagerCommand("update", "@dinanathdash/envault-sdk@latest")
+			localLoader := ui.NewLoader(ui.LoaderThemeDeploy, "Updating local SDK package...")
+			localLoader.Start()
+			if err := runPkgManagerCommand("update", "@dinanathdash/envault-sdk@latest"); err != nil {
+				localLoader.Stop()
+				fmt.Printf("Failed to run %s. Please try updating manually.\n", getPackageManager())
+				os.Exit(1)
+			}
+			localLoader.Stop()
 		}
 
 		if global {
+			globalLoader := ui.NewLoader(ui.LoaderThemeDeploy, "Updating global SDK package...")
+			globalLoader.Start()
 			if err := runNpmGlobalInstall("@dinanathdash/envault-sdk@latest"); err != nil {
+				globalLoader.Stop()
 				fmt.Printf("Failed to globally update SDK via npm: %v\n", err)
 				os.Exit(1)
 			}
+			globalLoader.Stop()
 			fmt.Println("\n[OK] Global SDK update completed via npm.")
 		}
 	},
@@ -97,7 +120,7 @@ func getPackageManager() string {
 	return "npm"
 }
 
-func runPkgManagerCommand(baseCmd, pkg string) {
+func runPkgManagerCommand(baseCmd, pkg string) error {
 	pm := getPackageManager()
 	var execArgs []string
 
@@ -117,9 +140,9 @@ func runPkgManagerCommand(baseCmd, pkg string) {
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
 	if err != nil {
-		fmt.Printf("Failed to run %s. Please try installing manually.\n", pm)
-		os.Exit(1)
+		return err
 	}
 
 	fmt.Printf("\n[OK] %s %s installed successfully using %s.\n", pkg, baseCmd, pm)
+	return nil
 }

@@ -86,7 +86,10 @@ func resolveTargetEnvironmentForProject(projectID string) (string, error) {
 
 func fetchAuthorizedEnvironments(projectID string) ([]cliEnvironment, error) {
 	client := api.NewClient()
+	loader := ui.NewLoader(ui.LoaderThemeFetch, "Fetching environment access...")
+	loader.Start()
 	respBytes, err := client.Get(fmt.Sprintf("/projects/%s/environments", projectID))
+	loader.Stop()
 	if err != nil {
 		return nil, err
 	}

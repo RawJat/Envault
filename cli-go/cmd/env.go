@@ -28,8 +28,11 @@ var envMapCmd = &cobra.Command{
 			return
 		}
 
+		loader := ui.NewLoader(ui.LoaderThemeSync, "Updating environment file mapping...")
+		loader.Start()
 		cfg, err := project.ReadConfig()
 		if err != nil {
+			loader.Stop()
 			fmt.Fprintln(os.Stderr, ui.ColorRed(fmt.Sprintf("Error reading config: %v", err)))
 			return
 		}
@@ -42,9 +45,11 @@ var envMapCmd = &cobra.Command{
 		}
 
 		if err := project.WriteConfig(cfg); err != nil {
+			loader.Stop()
 			fmt.Fprintln(os.Stderr, ui.ColorRed(fmt.Sprintf("Error writing config: %v", err)))
 			return
 		}
+		loader.Stop()
 
 		fmt.Println(ui.ColorGreen(fmt.Sprintf("[OK] Mapped %s -> %s", target, file)))
 	},
@@ -60,21 +65,27 @@ var envUnmapCmd = &cobra.Command{
 			return
 		}
 
+		loader := ui.NewLoader(ui.LoaderThemeSync, "Removing environment mapping...")
+		loader.Start()
 		cfg, err := project.ReadConfig()
 		if err != nil {
+			loader.Stop()
 			fmt.Fprintln(os.Stderr, ui.ColorRed(fmt.Sprintf("Error reading config: %v", err)))
 			return
 		}
 		if cfg.EnvironmentFiles == nil {
+			loader.Stop()
 			fmt.Fprintln(os.Stderr, ui.ColorYellow("No mappings found."))
 			return
 		}
 		delete(cfg.EnvironmentFiles, target)
 
 		if err := project.WriteConfig(cfg); err != nil {
+			loader.Stop()
 			fmt.Fprintln(os.Stderr, ui.ColorRed(fmt.Sprintf("Error writing config: %v", err)))
 			return
 		}
+		loader.Stop()
 
 		fmt.Println(ui.ColorGreen(fmt.Sprintf("[OK] Removed mapping for %s", target)))
 	},
@@ -90,16 +101,21 @@ var envDefaultCmd = &cobra.Command{
 			return
 		}
 
+		loader := ui.NewLoader(ui.LoaderThemeSync, "Setting default environment...")
+		loader.Start()
 		cfg, err := project.ReadConfig()
 		if err != nil {
+			loader.Stop()
 			fmt.Fprintln(os.Stderr, ui.ColorRed(fmt.Sprintf("Error reading config: %v", err)))
 			return
 		}
 		cfg.DefaultEnvironment = target
 		if err := project.WriteConfig(cfg); err != nil {
+			loader.Stop()
 			fmt.Fprintln(os.Stderr, ui.ColorRed(fmt.Sprintf("Error writing config: %v", err)))
 			return
 		}
+		loader.Stop()
 
 		fmt.Println(ui.ColorGreen(fmt.Sprintf("[OK] Default environment set to %s", target)))
 	},

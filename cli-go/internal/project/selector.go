@@ -37,7 +37,7 @@ type ProjectsResponse struct {
 // Returns the selected Project ID.
 func SelectProject() (string, error) {
 	client := api.NewClient()
-	s := ui.NewSpinner("Fetching your projects...")
+	s := ui.NewLoader(ui.LoaderThemeFetch, "VaultPulse fetching your projects...")
 	s.Start()
 
 	respBytes, err := client.Get("/projects")
@@ -223,7 +223,7 @@ func createNewProject(client *api.Client) (string, error) {
 		defaultEnvironment = "production"
 	}
 
-	s := ui.NewSpinner("Creating project...")
+	s := ui.NewLoader(ui.LoaderThemeSync, "Syncing new project setup...")
 	s.Start()
 
 	payload := map[string]interface{}{

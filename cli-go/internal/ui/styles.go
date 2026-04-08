@@ -2,9 +2,7 @@ package ui
 
 import (
 	"fmt"
-	"time"
 
-	"github.com/briandowns/spinner"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -37,10 +35,8 @@ var (
 			Align(lipgloss.Center)
 )
 
-func NewSpinner(msg string) *spinner.Spinner {
-	s := spinner.New(spinner.CharSets[14], 100*time.Millisecond) // 14 is classic dots
-	s.Suffix = " " + msg
-	return s
+func NewSpinner(msg string) *Loader {
+	return NewLoader(LoaderThemePulse, msg)
 }
 
 func RenderBox(title, content string, style lipgloss.Style) string {

@@ -157,7 +157,10 @@ var deployCmd = &cobra.Command{
 			client := api.NewClient()
 			projectName := "Envault"
 
+			projectLookupLoader := ui.NewLoader(ui.LoaderThemeCheck, "Resolving project details...")
+			projectLookupLoader.Start()
 			projectsBytes, err := client.GetWithContext(ctx, "/projects")
+			projectLookupLoader.Stop()
 			if ctx.Err() != nil {
 				fmt.Fprintln(os.Stderr, ui.ColorYellow("\nOperation cancelled."))
 				os.Exit(130)
@@ -208,7 +211,7 @@ var deployCmd = &cobra.Command{
 
 		// 4. Push Secrets
 		client := api.NewClient()
-		s := ui.NewSpinner(fmt.Sprintf("Encrypting and deploying secrets (%s)...", targetEnv))
+		s := ui.NewLoader(ui.LoaderThemeDeploy, fmt.Sprintf("SealForge encrypting + deploying (%s)...", targetEnv))
 		s.Start()
 
 		payload := map[string]interface{}{

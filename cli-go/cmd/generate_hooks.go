@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/DinanathDash/Envault/cli-go/internal/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -14,6 +15,10 @@ var generateHooksCmd = &cobra.Command{
 	Long: `Generate Git hooks for Envault to automatically pull environment variables after updating code workspace.
 This command creates a post-merge hook in your local .git/hooks directory that safely runs 'envault pull'.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		loader := ui.NewLoader(ui.LoaderThemeSync, "Generating git post-merge hook...")
+		loader.Start()
+		defer loader.Stop()
+
 		// Check if .git directory exists
 		if _, err := os.Stat(".git"); os.IsNotExist(err) {
 			fmt.Println("Error: .git directory not found. Please run this command at the root of a Git repository.")

@@ -84,7 +84,10 @@ var pullCmd = &cobra.Command{
 			projectName := "Envault"
 
 			// Try to get project name (best effort, ignore errors)
+			projectLookupLoader := ui.NewLoader(ui.LoaderThemeCheck, "Resolving project details...")
+			projectLookupLoader.Start()
 			projectsBytes, err := client.GetWithContext(ctx, "/projects")
+			projectLookupLoader.Stop()
 			if ctx.Err() != nil {
 				fmt.Fprintln(os.Stderr, ui.ColorYellow("\nOperation cancelled."))
 				os.Exit(130)
@@ -137,7 +140,7 @@ var pullCmd = &cobra.Command{
 
 		// 3. Fetch Secrets
 		client := api.NewClient()
-		s := ui.NewSpinner(fmt.Sprintf("Fetching secrets (%s)...", targetEnv))
+		s := ui.NewLoader(ui.LoaderThemeFetch, fmt.Sprintf("VaultPulse fetching secrets (%s)...", targetEnv))
 		s.Start()
 
 		path := fmt.Sprintf("/projects/%s/secrets?environment=%s", projectId, url.QueryEscape(targetEnv))
@@ -283,7 +286,7 @@ func handleAccessRequired(ctx context.Context, client *api.Client, projectId str
 		return
 	}
 
-	s := ui.NewSpinner("Sending access request...")
+	s := ui.NewLoader(ui.LoaderThemeSync, "Dispatching access request...")
 	s.Start()
 
 	path := fmt.Sprintf("/projects/%s/request-access", projectId)
