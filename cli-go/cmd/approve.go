@@ -84,7 +84,10 @@ var approveCmd = &cobra.Command{
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", "Bearer "+token)
 
+		loader := ui.NewLoader(ui.LoaderThemeSync, "Submitting approval...")
+		loader.Start()
 		resp, err := (&http.Client{}).Do(req)
+		loader.Stop()
 		if err != nil {
 			if ctx.Err() != nil {
 				fmt.Fprintln(os.Stderr, ui.ColorYellow("Operation cancelled."))

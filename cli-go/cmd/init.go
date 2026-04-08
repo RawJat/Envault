@@ -64,16 +64,23 @@ var initCmd = &cobra.Command{
 			cfg.EnvironmentFiles = map[string]string{}
 		}
 
+		saveLoader := ui.NewLoader(ui.LoaderThemeSync, "Saving local Envault project context...")
+		saveLoader.Start()
 		if err := project.WriteConfig(cfg); err != nil {
+			saveLoader.Stop()
 			fmt.Fprintln(os.Stderr, ui.ColorRed(fmt.Sprintf("\nError writing envault.json: %v", err)))
 			os.Exit(1)
 		}
+		saveLoader.Stop()
 
 		fmt.Println(ui.ColorGreen(fmt.Sprintf("\n[OK] Project linked! (ID: %s)", projectId)))
 
 		// Automatically install the audit pre-commit hook so the user never
 		// has to remember the separate --install-hook command.
+		hookLoader := ui.NewLoader(ui.LoaderThemeSync, "Installing git safety hook...")
+		hookLoader.Start()
 		alreadyInstalled, _, hookErr := installPreCommitHook()
+		hookLoader.Stop()
 		switch {
 		case hookErr != nil && strings.Contains(hookErr.Error(), "no .git directory"):
 			// No git repo yet - print a clear, actionable reminder instead of silently skipping.

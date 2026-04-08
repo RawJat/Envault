@@ -48,7 +48,10 @@ var runCmd = &cobra.Command{
 		path := fmt.Sprintf("/projects/%s/secrets?environment=%s", projectID, url.QueryEscape(targetEnv))
 
 		var secretsResp SecretsResponse
+		loader := ui.NewLoader(ui.LoaderThemeFetch, fmt.Sprintf("VaultPulse preparing runtime secrets (%s)...", targetEnv))
+		loader.Start()
 		respBytes, err := client.GetWithTimeout(path, resolveRunTimeout())
+		loader.Stop()
 		usedOfflineCache := false
 		cachedAt := time.Time{}
 		if err != nil {

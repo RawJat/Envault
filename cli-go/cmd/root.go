@@ -33,7 +33,7 @@ across your development workflow.`,
 	},
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
 		// Only check for updates if it's not the internal update check command itself
-		if cmd.Name() != "__update_check" {
+		if cmd.Name() != "__update_check" && cmd.Name() != "__loader-preview" {
 			update.ShouldNotifyIfUpdateAvailable(version)
 		}
 	},
