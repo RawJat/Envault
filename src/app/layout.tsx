@@ -86,9 +86,12 @@ export const metadata: Metadata = {
     images: ["/open-graph/Landing%20OG.png"],
   },
   icons: {
-    icon: "/favicon.svg",
+    icon: [
+      { url: "/favicon.ico", type: "image/x-icon" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
     apple: "/favicon.png",
-    shortcut: "/favicon.png",
+    shortcut: "/favicon.ico",
   },
 };
 

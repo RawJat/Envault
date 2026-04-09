@@ -10,6 +10,33 @@ All notable changes to Envault are documented here.
 
 ---
 
+## 1.11.0 - 2026-04-09
+
+> Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
+
+### Open Graph and Metadata Reliability
+
+- **Static Open Graph Coverage:** Added static Open Graph assets across route pages to reduce runtime dependency on dynamic OG generation.
+- **Platform Compatibility Improvement:** Updated Open Graph metadata references from `.svg` to `.png` across marketing, dashboard, auth, docs, and global layouts for broader crawler/client compatibility.
+
+### CLI UX and Developer Tooling
+
+- **Animated CLI Loaders:** Added branded, consistent animated loaders across key CLI commands (`approve`, `deploy`, `pull`, `run`, `audit`, `doctor`, `env`, `init`, `mcp`, `sdk`) with proper stop/cleanup behavior on error paths.
+- **Loader Preview Command:** Added hidden `__loader-preview` command for visual QA and loader theme validation.
+- **Command Robustness:** Refined command utility behavior to improve loader lifecycle handling and error propagation.
+
+### Skills and Documentation System
+
+- **View Transitions Skill Pack:** Added a complete Vercel React View Transitions skill package with implementation guidance, CSS recipes, Next.js integration notes, and supporting metadata/references.
+- **Skill Dependency Locking:** Added skills lock tracking to keep agent skill dependencies consistent.
+
+### Release Stream Updates
+
+- **SDK Stream:** Published `sdk-v1.3.0` release stream updates tied to the new view transitions skill artifacts.
+- **CLI Stream:** Published `v1.33.0` CLI release stream updates including loader and related enhancements.
+
+---
+
 ## 1.10.0 - 2026-04-05
 
 > Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
