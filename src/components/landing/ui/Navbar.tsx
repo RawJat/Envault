@@ -47,7 +47,7 @@ const NavItem = ({
     );
   }
   return (
-    <Link href={href} transitionTypes={[]} className={className}>
+    <Link href={href} className={className}>
       {children}
     </Link>
   );

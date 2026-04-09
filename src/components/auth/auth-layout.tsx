@@ -13,7 +13,6 @@ export function AuthLayout({ children }: AuthLayoutProps) {
             <div className="absolute top-0 left-0 right-0 z-50 flex items-center justify-between p-4 md:p-8">
                 <Link
                     href="/"
-                    transitionTypes={[]}
                     className="flex items-center gap-2 hover:opacity-80 transition-opacity"
                 >
                     <ShieldCheck className="w-8 h-8 text-primary" />

@@ -161,7 +161,6 @@ export default async function PrivacyPage() {
           licensing model, visit our{" "}
           <Link
             href="/licensing"
-            transitionTypes={[]}
             className="font-mono text-sm text-foreground hover:text-primary transition-colors underline underline-offset-4"
           >
             Licensing Page

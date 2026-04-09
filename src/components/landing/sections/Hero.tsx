@@ -6,8 +6,8 @@ import { InstallTerminal } from "@/components/landing/ui/install-terminal";
 import { SlideUp } from "@/components/landing/animations/SlideUp";
 export function Hero() {
   return (
-    <section className="relative h-screen w-full flex items-center justify-center overflow-hidden">
-      <div className="container relative z-20 px-4 md:px-6 grid md:grid-cols-2 gap-12 items-center pt-16">
+    <section className="relative min-h-screen w-full flex items-center justify-center overflow-hidden pt-24 pb-12">
+      <div className="container relative z-20 px-4 md:px-6 grid md:grid-cols-2 gap-12 items-center">
         <SlideUp className="flex flex-col items-start text-left space-y-8 max-w-2xl">
           <div className="flex items-center space-x-3 bg-primary/5 backdrop-blur-sm px-5 py-2 rounded-none border border-primary/10">
             <ShieldCheck className="w-5 h-5 text-primary" />
@@ -79,7 +79,7 @@ export function Hero() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-            <Link href="/login" transitionTypes={[]}>
+            <Link href="/login">
               <Button
                 size="lg"
                 className="w-full sm:w-auto min-w-[180px] h-12 text-base font-mono uppercase tracking-wider rounded-none flex items-center gap-2"
@@ -88,7 +88,7 @@ export function Hero() {
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
-            <Link href="/docs/platform" transitionTypes={[]}>
+            <Link href="/docs/platform">
               <Button
                 variant="outline"
                 size="lg"

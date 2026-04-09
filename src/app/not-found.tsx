@@ -34,7 +34,7 @@ export default async function NotFound() {
 
             <div className="flex flex-row items-center justify-center gap-4 pt-4">
               <BackButton />
-              <Link href="/" transitionTypes={[]}>
+              <Link href="/">
                 <Button size="lg">Return Home</Button>
               </Link>
             </div>
