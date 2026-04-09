@@ -203,7 +203,6 @@ export function NotificationDropdown() {
           <div className="border-t p-2">
             <Link
               href="/notifications"
-              transitionTypes={["nav-forward"]}
               onClick={() => setOpen(false)}
             >
               <Button variant="ghost" className="w-full text-sm">

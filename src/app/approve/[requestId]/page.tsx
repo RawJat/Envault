@@ -132,7 +132,7 @@ export default async function ApprovePage({ params }: ApprovePageProps) {
                   redirectPath={redirectPath}
                 />
                 <Button variant="ghost" asChild className="w-full h-11">
-                  <Link href="/dashboard" transitionTypes={["nav-back"]}>
+                  <Link href="/dashboard">
                     Back to Dashboard
                   </Link>
                 </Button>
@@ -166,7 +166,7 @@ export default async function ApprovePage({ params }: ApprovePageProps) {
             </CardHeader>
             <CardContent>
               <Button asChild className="w-full h-11" variant="outline">
-                <Link href="/dashboard" transitionTypes={["nav-back"]}>
+                <Link href="/dashboard">
                   Return to Dashboard
                 </Link>
               </Button>
@@ -264,7 +264,7 @@ export default async function ApprovePage({ params }: ApprovePageProps) {
               existingAllowedEnvironments={existingAllowedEnvironments}
             />
             <Button variant="ghost" asChild className="w-full h-11">
-              <Link href="/dashboard" transitionTypes={["nav-back"]}>
+              <Link href="/dashboard">
                 Back to Dashboard
               </Link>
             </Button>

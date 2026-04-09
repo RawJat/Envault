@@ -79,7 +79,7 @@ export function ForgotPasswordForm() {
                                 Please check your inbox and click the link to reset your password.
                             </p>
                             <Button asChild className="w-full" variant="outline">
-                                <Link href="/login" transitionTypes={["nav-back"]}>
+                                <Link href="/login">
                                     Return to Login
                                 </Link>
                             </Button>
@@ -110,8 +110,7 @@ export function ForgotPasswordForm() {
                     <CardFooter className="justify-center">
                         <Link
                             href="/login"
-                            transitionTypes={["nav-back"]}
-                            className="flex items-center text-sm text-muted-foreground hover:text-primary transition-colors"
+                            className="flex items-center text-sm font-medium hover:text-primary transition-colors text-muted-foreground"
                         >
                             <ArrowLeft className="w-4 h-4 mr-2" />
                             Back to Login

@@ -103,7 +103,6 @@ export async function PlatformHighlights() {
           <div className="flex flex-col sm:flex-row gap-3">
             <Link
               href="/docs/platform/guides/sdk-mcp-agent-workflows"
-              transitionTypes={[]}
             >
               <Button size="lg" className="rounded-none h-12 px-8 w-full sm:w-auto">
                 Explore SDK + MCP
