@@ -7,7 +7,7 @@ export const metadata: Metadata = {
     "Get help and support for Envault. Contact our team or view documentation.",
   openGraph: {
     siteName: "Envault",
-    images: ["/open-graph/Support%20OG.svg"],
+    images: ["/open-graph/Support%20OG.png"],
   },
 };
 

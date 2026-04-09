@@ -32,7 +32,7 @@ export const metadata: Metadata = {
   description: "Check the real-time status of Envault systems and incidents.",
   openGraph: {
     siteName: "Envault",
-    images: ["/open-graph/Status%20OG.svg"],
+    images: ["/open-graph/Status%20OG.png"],
   },
 };
 

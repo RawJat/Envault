@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   openGraph: {
     url: "https://www.envault.tech",
     siteName: "Envault",
-    images: ["/open-graph/Landing%20OG.svg"],
+    images: ["/open-graph/Landing%20OG.png"],
   },
 };
 

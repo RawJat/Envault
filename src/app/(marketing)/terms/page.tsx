@@ -8,7 +8,7 @@ export const metadata: Metadata = {
     "Read the terms and conditions for using Envault's secure environment variable management service.",
   openGraph: {
     siteName: "Envault",
-    images: ["/open-graph/Terms%20OG.svg"],
+    images: ["/open-graph/Terms%20OG.png"],
   },
 };
 

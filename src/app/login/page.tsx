@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     "Sign in to your Envault account to access your secure environment variables.",
   openGraph: {
     siteName: "Envault",
-    images: ["/open-graph/Login%20OG.svg"],
+    images: ["/open-graph/Login%20OG.png"],
   },
 };
 

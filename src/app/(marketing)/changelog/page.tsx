@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   openGraph: {
     url: "https://www.envault.tech/changelog",
     siteName: "Envault",
-    images: ["/open-graph/Changelog%20OG.svg"],
+    images: ["/open-graph/Changelog%20OG.png"],
   },
 };
 

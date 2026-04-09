@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   description: "View and manage all your secure environment variable projects.",
   openGraph: {
     siteName: "Envault",
-    images: ["/open-graph/Dashboard%20OG.svg"],
+    images: ["/open-graph/Dashboard%20OG.png"],
   },
 };
 
