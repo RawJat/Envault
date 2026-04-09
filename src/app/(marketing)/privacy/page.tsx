@@ -7,9 +7,7 @@ export const metadata: Metadata = {
   description: "Learn how Envault collects, uses, and protects your data.",
   openGraph: {
     siteName: "Envault",
-    images: [
-      "/api/og?title=Privacy%20Policy&description=Learn%20how%20we%20protect%20your%20data",
-    ],
+    images: ["/open-graph/Privacy%20OG.svg"],
   },
 };
 
@@ -141,14 +139,14 @@ export default async function PrivacyPage() {
           4. Source Code & Licensing
         </h2>
         <p className="text-muted-foreground mb-4 leading-relaxed">
-          Envault&apos;s source code is publicly available and licensed under the{" "}
-          <strong>Functional Source License (FSL), Version 1.1-MIT</strong>.
+          Envault&apos;s source code is publicly available and licensed under
+          the <strong>Functional Source License (FSL), Version 1.1-MIT</strong>.
           This means:
         </p>
         <ul className="list-disc pl-6 space-y-3 text-muted-foreground mb-4">
           <li className="leading-relaxed">
-            You can review our source code for security auditing and verification
-            of our encryption implementation.
+            You can review our source code for security auditing and
+            verification of our encryption implementation.
           </li>
           <li className="leading-relaxed">
             You can self-host Envault for your organization&apos;s internal use.

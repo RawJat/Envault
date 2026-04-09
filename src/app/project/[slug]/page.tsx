@@ -58,9 +58,7 @@ export async function generateMetadata({
     description: `Manage secrets and environment variables for ${title}`,
     openGraph: {
       siteName: "Envault",
-      images: [
-        `/api/og?title=${encodeURIComponent(title)}&section=Project&description=${encodeURIComponent("Encypted environment variables")}`,
-      ],
+      images: ["/open-graph/Dashboard%20OG.svg"],
     },
   };
 }

@@ -15,9 +15,7 @@ export const metadata: Metadata = {
   description: "Envault system administration.",
   openGraph: {
     siteName: "Envault",
-    images: [
-      "/api/og?title=Admin%20Dashboard&description=Envault%20system%20administration",
-    ],
+    images: ["/open-graph/Dashboard%20OG.svg"],
   },
 };
 

@@ -9,9 +9,7 @@ export const metadata: Metadata = {
   description: "Reset your Envault account password.",
   openGraph: {
     siteName: "Envault",
-    images: [
-      "/api/og?title=Forgot%20Password&description=Reset%20your%20Envault%20account%20password",
-    ],
+    images: ["/open-graph/Login%20OG.svg"],
   },
 };
 

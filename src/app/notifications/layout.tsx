@@ -5,9 +5,7 @@ export const metadata: Metadata = {
   description: "Manage your Envault notifications and alerts.",
   openGraph: {
     siteName: "Envault",
-    images: [
-      "/api/og?title=Notifications&description=Manage%20your%20notifications%20and%20alerts",
-    ],
+    images: ["/open-graph/Dashboard%20OG.svg"],
   },
 };
 
