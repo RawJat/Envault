@@ -58,7 +58,7 @@ export async function generateMetadata({
     description: `Manage secrets and environment variables for ${title}`,
     openGraph: {
       siteName: "Envault",
-      images: ["/open-graph/Dashboard%20OG.svg"],
+      images: ["/open-graph/Dashboard%20OG.png"],
     },
   };
 }

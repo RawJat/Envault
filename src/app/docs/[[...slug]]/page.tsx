@@ -92,7 +92,7 @@ export async function generateMetadata({
         ? `https://www.envault.tech/docs/${slug.join("/")}`
         : "https://www.envault.tech/docs",
       siteName: "Envault",
-      images: ["/open-graph/Docs%20OG.svg"],
+      images: ["/open-graph/Docs%20OG.png"],
     },
   };
 }

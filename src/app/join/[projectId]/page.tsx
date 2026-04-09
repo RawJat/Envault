@@ -48,7 +48,7 @@ export async function generateMetadata({
     description,
     openGraph: {
       siteName: "Envault",
-      images: ["/open-graph/Login%20OG.svg"],
+      images: ["/open-graph/Login%20OG.png"],
     },
   };
 }

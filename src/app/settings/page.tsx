@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     "Manage your Envault account settings, API keys, and preferences.",
   openGraph: {
     siteName: "Envault",
-    images: ["/open-graph/Dashboard%20OG.svg"],
+    images: ["/open-graph/Dashboard%20OG.png"],
   },
 };
 

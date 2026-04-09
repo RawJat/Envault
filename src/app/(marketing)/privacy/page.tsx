@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: "Learn how Envault collects, uses, and protects your data.",
   openGraph: {
     siteName: "Envault",
-    images: ["/open-graph/Privacy%20OG.svg"],
+    images: ["/open-graph/Privacy%20OG.png"],
   },
 };
 

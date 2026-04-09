@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     "Learn about Envault's Functional Source License (FSL) and what it means for you.",
   openGraph: {
     siteName: "Envault",
-    images: ["/open-graph/Licensing.svg"],
+    images: ["/open-graph/Licensing.png"],
   },
 };
 
