@@ -71,7 +71,7 @@ export const metadata: Metadata = {
     siteName: "Envault",
     images: [
       {
-        url: "/api/og?title=Envault",
+        url: "/open-graph/Landing%20OG.svg",
         width: 1200,
         height: 630,
         alt: "Envault - Secure Environment Variables",
@@ -83,7 +83,7 @@ export const metadata: Metadata = {
     title: "Envault - Secure Environment Variables",
     description: "Premium, secure vault for your environment variables.",
     creator: "@envault",
-    images: ["/api/og?title=Envault"],
+    images: ["/open-graph/Landing%20OG.svg"],
   },
   icons: {
     icon: "/favicon.svg",

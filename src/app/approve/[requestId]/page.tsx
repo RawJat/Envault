@@ -27,9 +27,7 @@ export async function generateMetadata(): Promise<Metadata> {
     description: "Approve or deny project access requests.",
     openGraph: {
       siteName: "Envault",
-      images: [
-        "/api/og?title=Approve%20Access&description=Manage%20project%20collaboration%20requests",
-      ],
+      images: ["/open-graph/Login%20OG.svg"],
     },
   };
 }
@@ -57,7 +55,9 @@ export default async function ApprovePage({ params }: ApprovePageProps) {
   if (requestError || !request) {
     const { data: pendingApproval } = await admin
       .from("pending_approvals")
-      .select("id, status, payload_hash, project_id, agent_id, projects(name, user_id, slug)")
+      .select(
+        "id, status, payload_hash, project_id, agent_id, projects(name, user_id, slug)",
+      )
       .eq("id", requestId)
       .single();
 
@@ -80,8 +80,8 @@ export default async function ApprovePage({ params }: ApprovePageProps) {
       }
 
       const projectName =
-        (pendingApproval.projects as unknown as { name?: string } | null)?.name ||
-        "Project";
+        (pendingApproval.projects as unknown as { name?: string } | null)
+          ?.name || "Project";
       const projectSlug =
         (pendingApproval.projects as unknown as { slug?: string } | null)
           ?.slug || "";
@@ -116,12 +116,16 @@ export default async function ApprovePage({ params }: ApprovePageProps) {
                   Agent Approval Required
                 </CardTitle>
                 <CardDescription>
-                  Agent request for <span className="font-medium text-foreground">{projectName}</span>
+                  Agent request for{" "}
+                  <span className="font-medium text-foreground">
+                    {projectName}
+                  </span>
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Status: <span className="font-medium text-foreground">Pending</span>
+                  Status:{" "}
+                  <span className="font-medium text-foreground">Pending</span>
                 </p>
                 <AgentApproveForm
                   requestId={requestId}
