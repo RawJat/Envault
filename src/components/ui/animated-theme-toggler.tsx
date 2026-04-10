@@ -32,46 +32,30 @@ export const AnimatedThemeToggler = ({
     const isDark = resolvedTheme === "dark";
     const newTheme = isDark ? "light" : "dark";
 
-    // Use View Transition only on non-canvas elements
-    if (document.startViewTransition) {
-      const transition = document.startViewTransition(() => {
-        flushSync(() => {
-          setTheme(newTheme);
-        });
-      });
+    const isReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
 
-      transition.ready.then(() => {
-        // Apply ripple animation from button
-        if (!buttonRef.current) return;
-
-        const { top, left, width, height } =
-          buttonRef.current.getBoundingClientRect();
-        const x = left + width / 2;
-        const y = top + height / 2;
-        const maxRadius = Math.hypot(
-          Math.max(left, window.innerWidth - left),
-          Math.max(top, window.innerHeight - top),
-        );
-
-        document.documentElement.animate(
-          {
-            clipPath: [
-              `circle(0px at ${x}px ${y}px)`,
-              `circle(${maxRadius}px at ${x}px ${y}px)`,
-            ],
-          },
-          {
-            duration,
-            easing: "cubic-bezier(0.16,1,0.3,1)",
-            pseudoElement: "::view-transition-new(root)",
-          },
-        );
-      });
-    } else {
-      // Fallback for browsers without View Transition API
+    if (!document.startViewTransition || isReducedMotion) {
       setTheme(newTheme);
+      return;
     }
-  }, [resolvedTheme, setTheme, duration]);
+
+    // Completely disable all CSS transitions natively to prevent them from bleeding into the new view-transition snapshot and causing black "pops".
+    document.documentElement.classList.add("disable-transitions");
+
+    const transition = document.startViewTransition(async () => {
+      flushSync(() => {
+        setTheme(newTheme);
+      });
+      // Await 100ms so WebGL engines (like React Three Fiber) can paint the new theme into their active buffers before the browser rasterizes the snapshot, preventing the planet from vanishing.
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    });
+
+    transition.finished.finally(() => {
+      document.documentElement.classList.remove("disable-transitions");
+    });
+  }, [resolvedTheme, setTheme]);
 
   if (!mounted) {
     return (
