@@ -1,53 +1,27 @@
-Functional Source License, Version 1.1-MIT
+Copyright (c) 2026 Dinanath Dash
+All Rights Reserved.
 
-Copyright (c) 2026 Dinanath (dinanath.dev)
-
-Licensor: Dinanath (dinanath.dev)
 Licensed Work: Envault
-Change Date: 24 months from the date of each specific published commit or release
-Change License: MIT License
+Website: https://envault.tech
 
-For information about alternative licensing arrangements for the Licensed Work, please visit: https://envault.tech/licensing
+1. PURPOSE AND INTENT
+The source code for the Licensed Work is made publicly available strictly for the purposes of transparency, security auditing, and education. This is NOT an open-source license.
 
----
+2. PERMITTED USE
+Subject to the terms of this License, you are granted a limited, non-exclusive, non-transferable, revocable permission solely to:
+(a) View, read, and inspect the source code of the Licensed Work.
+(b) Analyze the source code for the purpose of verifying security practices or identifying vulnerabilities.
 
-TERMS AND CONDITIONS
+3. RESTRICTIONS
+Unless you have been granted prior, explicit written permission from the Copyright Holder, you may NOT:
+(a) Execute, compile, run, or deploy the Licensed Work locally, internally, or on any server or infrastructure.
+(b) Copy, modify, fork, or create derivative works based on the Licensed Work.
+(c) Distribute, publish, sublicense, share, or sell the Licensed Work or any portion thereof.
+(d) Use the Licensed Work to provide a commercial or non-commercial service.
+(e) Remove or alter any proprietary notices, labels, or marks on the Licensed Work.
 
-1. GRANT OF LICENSE
+4. DISCLAIMER OF WARRANTY
+THE LICENSED WORK IS PROVIDED ON AN "AS-IS" BASIS AT THE COPYRIGHT HOLDER'S SOLE RISK AND WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OR CONDITIONS OF TITLE, MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. 
 
-Subject to the terms and conditions of this License, Licensor hereby grants to each recipient of the Licensed Work a non-exclusive, worldwide, royalty-free, fully paid-up, non-transferable license to use, display, non-commercially perform, internally distribute, and reproduce the Licensed Work and derivative works thereof for any purpose, including for internal business purposes, development, testing, and local deployment, except that Licensee may not offer the Licensed Work or any derivative thereof as a competing commercial service.
-
-2. RESTRICTIONS
-
-Licensee may not:
-(a) Use the Licensed Work or any portion thereof to provide a commercial service to third parties, including offering the Licensed Work or any modification or derivative thereof as a Software-as-a-Service (SaaS) offering or competing commercial service;
-(b) Remove or alter any proprietary notices, labels, or marks on the Licensed Work;
-(c) Sublicense, transfer, lease, or lend the Licensed Work to any third party;
-(d) Use the Licensed Work in violation of applicable law or regulation; or
-(e) Use the Licensed Work in a manner that is competitive with Licensor's business interests.
-
-For the purposes of this License, a "competing commercial service" means any product or service that competes directly with the Licensed Work and is offered for commercial purposes by any entity other than Licensor.
-
-3. CHANGE OF LICENSE
-
-On the Change Date for each version, the Licensed Work (including all prior versions) shall automatically convert to be licensed under the Change License (MIT License), at which point this License shall immediately terminate and the Change License shall apply retroactively to the Licensed Work and all versions thereof.
-
-4. COMING INTO COMPLIANCE
-
-If Licensee violates the restrictions in Section 2, Licensee may remedy such violation, at its sole expense, within thirty (30) days, and upon timely remedy, such violation shall not be deemed a material breach hereunder.
-
-5. DISCLAIMER OF WARRANTY
-
-THE LICENSED WORK IS PROVIDED ON AN "AS-IS" BASIS AT LICENSOR'S SOLE RISK AND WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OR CONDITIONS OF TITLE, MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT.
-
-6. LIMITATION OF LIABILITY
-
-IN NO EVENT SHALL LICENSOR BE LIABLE TO ANY PARTY FOR ANY INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, PUNITIVE, OR CONSEQUENTIAL DAMAGES ARISING FROM OR RELATING TO THIS LICENSE OR THE LICENSED WORK, EVEN IF LICENSOR HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
-
-7. SEVERABILITY
-
-If any provision of this License is held to be invalid or unenforceable, the remaining provisions shall remain in full force and effect.
-
-8. ENTIRE AGREEMENT
-
-This License constitutes the entire agreement between the parties relating to the Licensed Work and supersedes all prior or contemporaneous agreements, whether written or oral, relating to the subject matter.
+5. LIMITATION OF LIABILITY
+IN NO EVENT SHALL THE COPYRIGHT HOLDER OR AUTHORS BE LIABLE TO ANY PARTY FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE LICENSED WORK OR THE USE OR OTHER DEALINGS IN THE LICENSED WORK.
