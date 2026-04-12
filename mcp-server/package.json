@@ -1,6 +1,6 @@
 {
   "name": "@dinanathdash/envault-mcp-server",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "type": "module",
   "description": "MCP server for Envault CLI operations",
   "license": "SEE LICENSE IN LICENSE",
