@@ -45,7 +45,7 @@ The MCP server is a standalone Node.js package located in `./mcp-server`. To dev
 
 ## MCP Token Cleanup Automation
 
-MCP web tokens are automatically cleaned up through a protected cron endpoint. When developing locally or self-hosting, you need to ensure this cron job is configured.
+MCP web tokens are automatically cleaned up through a protected cron endpoint. When developing locally in an authorized environment, you need to ensure this cron job is configured.
 
 - **Endpoint:** `/api/cron/mcp-token-cleanup`
 - **Auth:** `Authorization: Bearer <CRON_SECRET>`

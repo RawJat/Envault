@@ -2,7 +2,7 @@
   "name": "@dinanathdash/envault-sdk",
   "version": "1.3.0",
   "description": "Envault TypeScript SDK",
-  "license": "MIT",
+  "license": "SEE LICENSE IN LICENSE",
   "repository": {
     "type": "git",
     "url": "https://github.com/DinanathDash/Envault"
@@ -14,7 +14,8 @@
   "files": [
     "dist",
     "README.md",
-    "postinstall.js"
+    "postinstall.js",
+    "LICENSE"
   ],
   "exports": {
     ".": {

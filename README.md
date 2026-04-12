@@ -324,6 +324,10 @@ npm install -g @dinanathdash/envault-mcp-server@latest
 
 ## License
 
-Envault is source-available under the Functional Source License (FSL). You are free to read the code, audit it for security, and self-host it for your own internal use. You are strictly prohibited from using this code to offer a competing commercial service. After 24 months, the license for specific versions automatically converts to the MIT License.
+Copyright (c) 2026 Dinanath Dash. All Rights Reserved.
 
-See the [LICENSE](LICENSE) file for the complete license text.
+The source code is provided strictly for transparency, security auditing, and education. This is not open-source software.
+
+You may inspect and analyze the code for security purposes. You may not execute, compile, run, deploy, copy, modify, fork, redistribute, sublicense, or provide any service using this code without prior explicit written permission.
+
+See the [LICENSE](LICENSE) file for the complete legal terms.
