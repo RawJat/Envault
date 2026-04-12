@@ -139,9 +139,8 @@ export default async function PrivacyPage() {
           4. Source Code & Licensing
         </h2>
         <p className="text-muted-foreground mb-4 leading-relaxed">
-          Envault&apos;s source code is publicly available and licensed under
-          the <strong>Functional Source License (FSL), Version 1.1-MIT</strong>.
-          This means:
+          Envault&apos;s source code is visible for transparency and security
+          auditing under a proprietary all-rights-reserved license. This means:
         </p>
         <ul className="list-disc pl-6 space-y-3 text-muted-foreground mb-4">
           <li className="leading-relaxed">
@@ -149,11 +148,8 @@ export default async function PrivacyPage() {
             verification of our encryption implementation.
           </li>
           <li className="leading-relaxed">
-            You can self-host Envault for your organization&apos;s internal use.
-          </li>
-          <li className="leading-relaxed">
-            The code will convert to the MIT License after 24 months from each
-            release, becoming fully permissive (MIT).
+            You cannot execute, compile, run, deploy, copy, or modify the code
+            without prior written permission.
           </li>
         </ul>
         <p className="text-muted-foreground leading-relaxed">

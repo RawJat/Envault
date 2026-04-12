@@ -53,7 +53,7 @@ export function FreeTierNotification() {
             </div>
             <button
               onClick={handleDismiss}
-              className="rounded-sm opacity-50 ring-offset-background transition-all duration-300 hover:scale-110 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              className="rounded-sm opacity-50 ring-offset-background transition-all duration-300 hover:scale-110 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 cursor-pointer"
             >
               <X className="h-4 w-4" />
               <span className="sr-only">Close</span>

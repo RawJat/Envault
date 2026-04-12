@@ -31,4 +31,6 @@ Release note: npm package publishing and `v*` tags are managed by semantic-relea
 
 ## License
 
-MIT © [Envault](https://envault.tech)
+Copyright (c) 2026 Dinanath Dash. All Rights Reserved.
+
+Use is governed by the repository [LICENSE](../LICENSE).
