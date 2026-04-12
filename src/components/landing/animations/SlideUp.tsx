@@ -20,9 +20,13 @@ export function SlideUp({
   yOffset = 40,
   viewMargin = "-50px",
 }: SlideUpProps) {
+  void yOffset;
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: yOffset }}
+      // Progressive enhancement:
+      // avoid SSR hidden content when JS/hydration is unavailable.
+      initial={false}
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration, delay, ease: "easeOut" }}
       viewport={{ once: true, margin: viewMargin }}

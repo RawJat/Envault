@@ -1,16 +1,27 @@
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { delimiter } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const isWindows = process.platform === "win32";
-const command = "portless";
-const args = ["run", "--name", "envault", "next", "dev", "--turbo"];
+const command = process.execPath;
+const portlessCli = fileURLToPath(new URL("../node_modules/portless/dist/cli.js", import.meta.url));
+const args = [portlessCli, "run", "--name", "envault", "next", "dev", "--turbo"];
+
+function buildNodeOptions() {
+  const existing = process.env.NODE_OPTIONS?.trim() ?? "";
+  return existing.includes("--disable-warning=DEP0190")
+    ? existing
+    : `${existing}${existing ? " " : ""}--disable-warning=DEP0190`;
+}
 
 function buildEnv() {
   const env = {
     ...process.env,
     // HTTPS is required for local dev.
     PORTLESS_HTTPS: "1",
+    // Portless currently triggers DEP0190 internally on Windows.
+    NODE_OPTIONS: buildNodeOptions(),
   };
 
   if (!isWindows) {
@@ -40,16 +51,14 @@ function buildEnv() {
 
 const child = spawn(command, args, {
   stdio: "inherit",
-  // On Windows, portless is exposed as a .cmd shim which requires a shell.
-  shell: isWindows,
   env: buildEnv(),
 });
 
 child.on("error", (error) => {
   if ((error && error.code) === "ENOENT") {
     console.error("Failed to start dev server: 'portless' was not found.");
-    console.error("Install it globally and retry:");
-    console.error("  npm install -g portless");
+    console.error("Install dependencies and retry:");
+    console.error("  npm install");
     process.exit(1);
   }
 

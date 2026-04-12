@@ -20,7 +20,9 @@ export function FadeIn({
 }: FadeInProps) {
   return (
     <motion.div
-      initial={{ opacity: 0 }}
+      // Progressive enhancement:
+      // avoid SSR hidden content when JS/hydration is unavailable.
+      initial={false}
       whileInView={{ opacity: 1 }}
       transition={{ duration, delay, ease: "easeOut" }}
       viewport={{ once: true, margin: viewMargin }}

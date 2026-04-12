@@ -21,6 +21,7 @@ interface Particle {
 // Global cache to preserve state across Next.js route navigations where Scene remounts
 let cachedParticles: Particle[] | null = null;
 const globalPlanetRotation = { x: 0, y: 0 };
+const MAX_FRAME_DELTA = 1 / 30;
 
 // Simple seeded PRNG for consistent particle generation
 function createPRNG(seed: number) {
@@ -183,14 +184,14 @@ function StonePlanet() {
   const groupRef = useRef<THREE.Group>(null);
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   const { resolvedTheme } = useTheme();
-  const [mouse, setMouse] = useState({ x: 0, y: 0 });
+  const mouseRef = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      setMouse({
+      mouseRef.current = {
         x: (e.clientX / window.innerWidth) * 2 - 1,
         y: -(e.clientY / window.innerHeight) * 2 + 1,
-      });
+      };
     };
 
     window.addEventListener("mousemove", handleMouseMove);
@@ -206,10 +207,12 @@ function StonePlanet() {
   }, [resolvedTheme]);
 
   useFrame((state, delta) => {
+    const safeDelta = Math.min(delta, MAX_FRAME_DELTA);
+
     if (meshRef.current && materialRef.current) {
       // Use global rotation state to prevent snapping back to 0 on route transitions
-      globalPlanetRotation.y += delta * 0.15;
-      globalPlanetRotation.x += delta * 0.05;
+      globalPlanetRotation.y += safeDelta * 0.15;
+      globalPlanetRotation.x += safeDelta * 0.05;
 
       meshRef.current.rotation.y = globalPlanetRotation.y;
       meshRef.current.rotation.x = globalPlanetRotation.x;
@@ -217,15 +220,16 @@ function StonePlanet() {
     }
 
     if (groupRef.current) {
+      const { x, y } = mouseRef.current;
       // Smooth subtle mouse parallax
       groupRef.current.position.x = THREE.MathUtils.lerp(
         groupRef.current.position.x,
-        mouse.x * 0.5,
+        x * 0.5,
         0.05,
       );
       groupRef.current.position.y = THREE.MathUtils.lerp(
         groupRef.current.position.y,
-        mouse.y * 0.3,
+        y * 0.3,
         0.05,
       );
     }
@@ -313,25 +317,39 @@ function OrbitingDebris() {
   });
 
   const dummy = useMemo(() => new THREE.Object3D(), []);
-  const [scrollVelocity, setScrollVelocity] = useState(0);
-  const lastScroll = useRef(0);
+  const scrollVelocityRef = useRef(0);
+  const lastScrollRef = useRef(0);
+  const scrollResetTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     const handleScroll = () => {
       const currentScroll = window.scrollY;
-      const velocity = Math.abs(currentScroll - lastScroll.current) * 0.001;
-      setScrollVelocity(velocity);
-      lastScroll.current = currentScroll;
+      const velocity = Math.abs(currentScroll - lastScrollRef.current) * 0.001;
+      scrollVelocityRef.current = Math.min(velocity, 0.2);
+      lastScrollRef.current = currentScroll;
 
-      setTimeout(() => setScrollVelocity(0), 150);
+      if (scrollResetTimerRef.current !== null) {
+        window.clearTimeout(scrollResetTimerRef.current);
+      }
+
+      scrollResetTimerRef.current = window.setTimeout(() => {
+        scrollVelocityRef.current = 0;
+        scrollResetTimerRef.current = null;
+      }, 150);
     };
 
     window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (scrollResetTimerRef.current !== null) {
+        window.clearTimeout(scrollResetTimerRef.current);
+      }
+    };
   }, []);
 
   useFrame((state, delta) => {
     if (!instancedMeshRef.current) return;
+    const safeDelta = Math.min(delta, MAX_FRAME_DELTA);
 
     // Reintroduce tilt to exactly match the requested look
     const tiltX = Math.PI / 5.5; // Forward tilt
@@ -339,7 +357,7 @@ function OrbitingDebris() {
 
     particles.forEach((particle, i) => {
       // Update orbital angle - consistent smooth rotation
-      particle.angle += delta * particle.orbitSpeed + scrollVelocity * 2;
+      particle.angle += safeDelta * particle.orbitSpeed + scrollVelocityRef.current * 2;
 
       // Base circle in XY plane (if tilt was 0)
       const baseRadius = particle.radius;
@@ -362,9 +380,9 @@ function OrbitingDebris() {
       const finalZ = y1 * Math.sin(tiltX) + z1 * Math.cos(tiltX);
 
       // Update particle rotation
-      particle.rotation.x += particle.rotationSpeed.x * delta;
-      particle.rotation.y += particle.rotationSpeed.y * delta;
-      particle.rotation.z += particle.rotationSpeed.z * delta;
+      particle.rotation.x += particle.rotationSpeed.x * safeDelta;
+      particle.rotation.y += particle.rotationSpeed.y * safeDelta;
+      particle.rotation.z += particle.rotationSpeed.z * safeDelta;
 
       dummy.position.set(finalX, finalY, finalZ);
       dummy.rotation.copy(particle.rotation);
@@ -375,6 +393,7 @@ function OrbitingDebris() {
     });
 
     instancedMeshRef.current.instanceMatrix.needsUpdate = true;
+    scrollVelocityRef.current = THREE.MathUtils.lerp(scrollVelocityRef.current, 0, 0.08);
   });
 
   const isDark = resolvedTheme === "dark";
@@ -410,7 +429,6 @@ export function SceneContent() {
 }
 
 export function Scene({ isAuthPage }: { isAuthPage?: boolean }) {
-  const { resolvedTheme } = useTheme();
   const [opacity, setOpacity] = useState(1);
 
   useEffect(() => {
@@ -432,17 +450,15 @@ export function Scene({ isAuthPage }: { isAuthPage?: boolean }) {
     <div
       className={
         isAuthPage
-          ? "absolute inset-0 pointer-events-none z-0"
-          : "absolute inset-0 pointer-events-none z-0 hidden md:block"
+          ? "absolute inset-0 pointer-events-none z-0 auth-scene-transition"
+          : "absolute inset-0 pointer-events-none z-0 hidden md:block auth-scene-transition"
       }
-      style={
-        {
-          opacity,
-          viewTransitionName: "auth-scene",
-        } as React.CSSProperties & { viewTransitionName?: string }
-      }
+      style={{ opacity }}
     >
-      <Canvas gl={{ preserveDrawingBuffer: true }} key={resolvedTheme}>
+      <Canvas
+        dpr={[1, 1.5]}
+        gl={{ preserveDrawingBuffer: false, powerPreference: "high-performance" }}
+      >
         <Suspense fallback={null}>
           <SceneContent />
         </Suspense>

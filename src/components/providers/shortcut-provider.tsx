@@ -1,6 +1,5 @@
 "use client";
 
-import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useHotkeys } from "@/hooks/use-hotkeys";
@@ -11,7 +10,6 @@ import { signOut } from "@/app/actions";
 import { pushWithTransition } from "@/lib/utils/view-transition-navigation";
 
 export function ShortcutProvider({ children }: { children: React.ReactNode }) {
-  const { theme, setTheme } = useTheme();
   const router = useRouter();
   const [showHelp, setShowHelp] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
@@ -46,7 +44,11 @@ export function ShortcutProvider({ children }: { children: React.ReactNode }) {
   useHotkeys(
     "t",
     () => {
-      setTheme(theme === "dark" ? "light" : "dark");
+      const toggles = Array.from(
+        document.querySelectorAll<HTMLButtonElement>("[data-theme-toggle]"),
+      );
+      const activeToggle = toggles.find((el) => el.offsetParent !== null);
+      activeToggle?.click();
     },
     { enableOnContentEditable: false, enableOnFormTags: false },
   );
