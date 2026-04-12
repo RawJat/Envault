@@ -20,9 +20,9 @@ const config = {
         },
         extend: {
             fontFamily: {
-                sans: ['"Google Sans"', "sans-serif"],
-                serif: ['"Instrument Serif"', "serif"],
-                mono: ['"JetBrains Mono"', "monospace"],
+                sans: ["var(--font-google-sans)", "sans-serif"],
+                serif: ["var(--font-instrument-serif)", "serif"],
+                mono: ["var(--font-jetbrains-mono)", "monospace"],
             },
             colors: {
                 bone: "#F2F2F0",
