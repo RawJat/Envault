@@ -16,7 +16,7 @@ const sections = [
   { id: "agreement", title: "Agreement to Terms" },
   { id: "accounts", title: "Accounts" },
   { id: "intellectual-property", title: "Intellectual Property" },
-  { id: "licensing", title: "Source-Available License" },
+  { id: "licensing", title: "Source Code License" },
   { id: "user-responsibilities", title: "User Responsibilities & Encryption" },
   { id: "authentication-methods", title: "Authentication Methods" },
   { id: "environment-management", title: "Environment Management" },
@@ -113,26 +113,25 @@ export default async function TermsPage() {
         className="scroll-mt-28 mb-12 pb-8 border-b border-border/30"
       >
         <h2 className="text-2xl font-semibold mb-4 font-serif">
-          4. Source-Available License
+          4. Source Code License
         </h2>
         <p className="text-muted-foreground mb-4 leading-relaxed">
-          Envault&apos;s source code is licensed under the{" "}
-          <strong>Functional Source License (FSL), Version 1.1-MIT</strong>. This
-          source-available license allows you to:
+          Envault&apos;s source code is provided under a proprietary,
+          all-rights-reserved license. Unless you have prior explicit written
+          permission, you may only inspect the code for transparency and
+          security auditing.
         </p>
         <ul className="list-disc pl-6 space-y-2 text-muted-foreground mb-4 leading-relaxed">
           <li>Read, review, and audit the source code</li>
-          <li>Self-host Envault for your internal use</li>
-          <li>Modify the code for your own needs</li>
-          <li>Use the CLI and integrate it into your applications</li>
+          <li>Analyze code to identify or verify security issues</li>
         </ul>
         <p className="text-muted-foreground mb-4 leading-relaxed">
-          However, you <strong>cannot</strong> use Envault&apos;s code to offer a
-          competing commercial service or SaaS without permission.
+          You <strong>cannot</strong> execute, compile, run, deploy, copy,
+          modify, fork, redistribute, sublicense, or use the code to provide a
+          service without written permission.
         </p>
         <p className="text-muted-foreground leading-relaxed">
-          The license automatically converts to MIT after 24 months from each
-          release date. For more details, see our{" "}
+          For complete terms, see our{" "}
           <Link
             href="/licensing"
             className="font-mono text-sm text-foreground hover:text-primary transition-colors underline underline-offset-4"
@@ -141,10 +140,10 @@ export default async function TermsPage() {
           </Link>{" "}
           or the{" "}
           <Link
-            href="/LICENSE"
+            href="/LICENSE.txt"
             className="font-mono text-sm text-foreground hover:text-primary transition-colors underline underline-offset-4"
           >
-            LICENSE
+            LICENSE.txt
           </Link>{" "}
           file.
         </p>

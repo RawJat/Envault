@@ -1,6 +1,6 @@
 {
   "name": "@dinanathdash/envault",
-  "version": "1.33.0",
+  "version": "1.34.0",
   "description": "Envault CLI - Securely manage your environment variables",
   "bin": {
     "envault": "bin/envault"
@@ -14,6 +14,6 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "SEE LICENSE IN LICENSE",
   "type": "commonjs"
 }

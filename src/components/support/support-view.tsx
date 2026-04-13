@@ -44,9 +44,9 @@ const faqs = [
       "Extremely secure. Envault employs end-to-end encryption using AES-256-GCM. Your secrets are encrypted client-side before ever reaching our servers, meaning even we cannot read your environment variables.",
   },
   {
-    question: "Can I self-host Envault?",
+    question: "Can I run or self-host Envault from this repository?",
     answer:
-      "Yes, Envault is source-available under the Functional Source License (FSL). You can clone the repository from GitHub and deploy it to your own infrastructure (like Vercel, Supabase, or custom servers) for complete control over your data. Commercial use to offer a competing service is restricted under FSL.",
+      "Not under the default license. The repository is available for source inspection and security auditing only. Running, compiling, modifying, forking, or deploying requires prior explicit written permission from the copyright holder.",
   },
   {
     question: "How does team collaboration work?",

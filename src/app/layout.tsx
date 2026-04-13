@@ -1,5 +1,5 @@
 // Copyright (c) 2026 Dinanath (dinanath.dev). All rights reserved.
-// Licensed under the Functional Source License, Version 1.1-MIT. See LICENSE file in the project root for full license information.
+// Use is governed by the LICENSE file in the project root.
 
 import type { Metadata } from "next";
 import "./globals.css";
@@ -14,6 +14,7 @@ import { ShortcutProvider } from "@/components/providers/shortcut-provider";
 import { HmacProvider } from "@/components/hmac-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { getServerOS } from "@/lib/utils/os";
+import { cn } from "@/lib/utils/utils";
 import { headers } from "next/headers";
 import { SystemStatusBanner } from "@/components/ui/system-status-banner";
 import { GlobalScene } from "@/components/landing/ui/GlobalScene";
@@ -21,6 +22,34 @@ import { RootRefreshHandler } from "@/components/RootRefreshHandler";
 import { FreeTierNotification } from "@/components/free-tier-notification";
 import { HapticProvider } from "@/components/providers/haptics-provider";
 import Script from "next/script";
+import { JetBrains_Mono, Instrument_Serif, Google_Sans } from "next/font/google";
+
+const googleSans = Google_Sans({
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+  preload: true,
+  fallback: ["system-ui", "Segoe UI", "Roboto", "Helvetica", "Arial", "sans-serif"],
+  variable: "--font-google-sans",
+});
+
+const instrumentSerif = Instrument_Serif({
+  subsets: ["latin", "latin-ext"],
+  weight: ["400"],
+  display: "swap",
+  preload: false,
+  fallback: ["Georgia", "Times New Roman", "Times", "serif"],
+  variable: "--font-instrument-serif",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+  preload: false,
+  fallback: ["ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "monospace"],
+  variable: "--font-jetbrains-mono",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.envault.tech"),
@@ -113,20 +142,12 @@ export default async function RootLayout({
   const showBanner = headersList.get("x-show-status-banner") === "1";
 
   return (
-    <html lang="en" suppressHydrationWarning data-os={os}>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
-        <link
-          href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Instrument+Serif:ital,wght@0,400;0,700;1,400;1,700&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      data-os={os}
+      className={cn(jetbrainsMono.variable, instrumentSerif.variable, googleSans.variable)}
+    >
       <body className="min-h-screen bg-background font-sans antialiased">
         <SystemStatusBanner show={showBanner} />
         <Script

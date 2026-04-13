@@ -58,7 +58,7 @@
   body,
   :root,
   * {
-    font-family: "Google Sans", sans-serif;
+    font-family: var(--font-google-sans), sans-serif;
   }
 
   body {
