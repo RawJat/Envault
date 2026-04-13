@@ -78,13 +78,17 @@
     isolation: isolate;
   }
 
-  ::view-transition-old(root),
-  .dark::view-transition-old(root) {
+  .theme-transitioning::view-transition-old(root) {
     animation: none;
     z-index: -1;
+    background: transparent;
   }
 
-  ::view-transition-new(root) {
+  .theme-transitioning::view-transition-group(root) {
+    animation-timing-function: linear;
+  }
+
+  .theme-transitioning::view-transition-new(root) {
     -webkit-mask: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><defs><filter id="blur"><feGaussianBlur stdDeviation="2"/></filter></defs><circle cx="40" cy="0" r="18" fill="white" filter="url(%23blur)"/></svg>')
       top right / 0 no-repeat;
     mask: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><defs><filter id="blur"><feGaussianBlur stdDeviation="2"/></filter></defs><circle cx="40" cy="0" r="18" fill="white" filter="url(%23blur)"/></svg>')
@@ -93,13 +97,10 @@
     mask-origin: border-box;
     -webkit-mask-repeat: no-repeat;
     mask-repeat: no-repeat;
-    animation: scale 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: scale 1s linear both;
     transform-origin: top right;
     will-change: -webkit-mask-size, mask-size;
-  }
-
-  .dark::view-transition-new(root) {
-    animation: scale 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+    background: transparent;
   }
 
   @keyframes scale {
