@@ -3,6 +3,8 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="supported-color-schemes" content="light dark" />
     <meta name="x-apple-disable-message-reformatting" />
     <title>Confirm Reauthentication</title>
     <style>
@@ -55,12 +57,17 @@
       }
 
       .logo {
-        font-size: 26px;
-        font-weight: 700;
-        color: #18181b;
         text-decoration: none;
-        letter-spacing: -0.75px;
+        color: #18181b;
         display: inline-block;
+        line-height: 0;
+      }
+
+      .logo img {
+        display: block;
+        width: 214px;
+        max-width: 100%;
+        height: auto;
       }
 
       .body {
@@ -116,6 +123,15 @@
         line-height: 1.6;
         margin: 0;
       }
+      @media (prefers-color-scheme: dark) {
+        .logo {
+          color: #ffffff !important;
+        }
+      }
+
+      [data-ogsc] .logo {
+        color: #ffffff !important;
+      }
 
       @media only screen and (max-width: 600px) {
         .wrapper {
@@ -154,16 +170,40 @@
           <td align="center">
             <div class="main">
               <div class="header">
-                <a href="https://envault.tech" class="logo">
+                <!--[if mso]>
                   <img
-                    src="https://www.envault.tech/favicon.png"
-                    width="26"
-                    height="26"
-                    alt=""
-                    style="vertical-align: middle; margin-right: 8px"
+                    src="https://envault.tech/email-logo-light.png"
+                    width="214"
+                    height="70"
+                    alt="Envault"
+                    style="
+                      display: block;
+                      width: 214px;
+                      height: auto;
+                      max-width: 100%;
+                    "
                   />
-                  <span style="vertical-align: middle">Envault</span>
-                </a>
+                <![endif]-->
+                <!--[if !mso]><!-->
+                <picture>
+                  <source
+                    media="(prefers-color-scheme: dark)"
+                    srcset="https://envault.tech/email-logo-dark.png"
+                  />
+                  <img
+                    src="https://envault.tech/email-logo-light.png"
+                    alt="Envault"
+                    width="214"
+                    height="70"
+                    style="
+                      display: block;
+                      width: 214px;
+                      height: auto;
+                      max-width: 100%;
+                    "
+                  />
+                </picture>
+                <!--<![endif]-->
               </div>
               <div class="body">
                 <h1 class="heading">Confirm Reauthentication</h1>
@@ -195,3 +235,5 @@
     </div>
   </body>
 </html>
+
+
