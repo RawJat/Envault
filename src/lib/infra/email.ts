@@ -20,7 +20,7 @@ const SENDERS = {
   digest: `Envault Digest <digest@${SENDER_DOMAIN}>`,
 };
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://envault.tech";
-const LOGO_URL = `https://www.envault.tech/favicon.png`;
+const LOGO_URL = `${APP_URL}/email-logo-light.png`;
 
 function isValidTimezone(timezone: string): boolean {
   try {

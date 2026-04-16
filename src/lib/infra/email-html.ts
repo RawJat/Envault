@@ -10,7 +10,13 @@ interface EmailProps {
   action?: EmailAction;
   footerText?: string; // Additional text below the button or main content
   logoUrl?: string;
+  logoDarkUrl?: string;
 }
+
+// Logo URLs - Light and Dark PNG variants
+const DEFAULT_APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://envault.tech").replace(/\/+$/, "");
+const DEFAULT_LOGO_LIGHT_URL = `${DEFAULT_APP_URL}/email-logo-light.png`;
+const DEFAULT_LOGO_DARK_URL = `${DEFAULT_APP_URL}/email-logo-dark.png`;
 
 /**
  * Generates a responsive, styled HTML email string.
@@ -22,6 +28,7 @@ export function getEmailHtml({
   action,
   footerText,
   logoUrl,
+  logoDarkUrl,
 }: EmailProps): string {
   // Brand Colors based on Envault's theme
   const primaryColor = "#18181b"; // Zinc-900
@@ -30,6 +37,8 @@ export function getEmailHtml({
   const textColor = "#18181b";
   const mutedColor = "#52525b"; // Zinc-600
   const borderColor = "#e4e4e7"; // Zinc-200
+  const logoLight = logoUrl || DEFAULT_LOGO_LIGHT_URL;
+  const logoDark = logoDarkUrl || DEFAULT_LOGO_DARK_URL;
 
   // Pre-header/Preview Text hidden element style
   const hiddenStyle =
@@ -41,6 +50,8 @@ export function getEmailHtml({
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
   <meta name="x-apple-disable-message-reformatting">
   <title>${heading}</title>
   <style>
@@ -85,16 +96,19 @@ export function getEmailHtml({
     }
     
     .logo { 
-      font-size: 26px; 
-      font-weight: 700; 
-      font-family: serif;
       color: ${textColor}; 
       text-decoration: none; 
-      letter-spacing: -0.75px; 
       display: inline-block;
-      line-height: 1;
+      line-height: 0;
       color: ${textColor} !important;
       text-decoration: none !important;
+    }
+
+    .logo svg {
+      display: block;
+      width: 214px;
+      max-width: 100%;
+      height: auto;
     }
 
     .logo,
@@ -103,6 +117,16 @@ export function getEmailHtml({
     .logo:active {
       color: ${textColor} !important;
       text-decoration: none !important;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .logo {
+        color: #ffffff !important;
+      }
+    }
+
+    [data-ogsc] .logo {
+      color: #ffffff !important;
     }
     
     .body { 
@@ -200,8 +224,21 @@ export function getEmailHtml({
           <div class="main">
             <div class="header">
               <a href="https://envault.tech" class="logo" style="color: ${textColor} !important; text-decoration: none !important;">
-                ${logoUrl ? `<img src="${logoUrl}" width="26" height="26" alt="" style="display: inline-block; vertical-align: middle; margin-right: 10px;" />` : ""}
-                <span style="display: inline-block; vertical-align: middle; color: ${textColor} !important; text-decoration: none !important;">Envault</span>
+                <!--[if mso]>
+                <!-- Outlook 2010+: MSO doesn't support CSS media queries or picture element, use light PNG -->
+                <img src="${logoLight}" width="214" height="70" alt="Envault" style="display: block; width: 214px; height: auto; max-width: 100%;" />
+                <![endif]-->
+                <!--[if !mso]><!-->
+                <!-- Modern email clients (Apple Mail, Yahoo, AOL, Thunderbird): Use picture element for theme support
+                     Dark mode: Shows logo-wordmark-dark.png
+                     Light mode: Shows logo-wordmark-light.png
+                     Gmail: Shows light PNG (doesn't support media queries)
+                -->
+                <picture>
+                  <source media="(prefers-color-scheme: dark)" srcset="${logoDark}">
+                  <img src="${logoLight}" alt="Envault" width="214" height="70" style="display: block; width: 214px; height: auto; max-width: 100%;">
+                </picture>
+                <!--<![endif]-->
               </a>
             </div>
             <div class="body">
