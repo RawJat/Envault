@@ -1,35 +1,54 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import type { EmailOtpType } from "@supabase/supabase-js";
+
+const EMAIL_OTP_TYPES: EmailOtpType[] = [
+  "signup",
+  "invite",
+  "magiclink",
+  "recovery",
+  "email_change",
+  "email",
+];
+
+function isEmailOtpType(value: string | null): value is EmailOtpType {
+  if (!value) return false;
+  return EMAIL_OTP_TYPES.includes(value as EmailOtpType);
+}
+
+function resolveAuthBaseUrl(request: Request, origin: string): string {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (appUrl) return appUrl.replace(/\/+$/, "");
+
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  if (process.env.NODE_ENV !== "development" && forwardedHost) {
+    return `https://${forwardedHost}`;
+  }
+
+  return origin.replace(/\/+$/, "");
+}
+
+function normalizeNextPath(next: string | null): string {
+  if (!next || !next.startsWith("/")) return "/";
+  return next;
+}
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
   const code = searchParams.get("code");
+  const tokenHash = searchParams.get("token_hash") ?? searchParams.get("token");
+  const otpType = searchParams.get("type");
   const authProvider = searchParams.get("authProvider");
   // if "next" is in param, use it as the redirect URL
-  const next = searchParams.get("next") ?? "/";
+  const next = normalizeNextPath(searchParams.get("next"));
+  const baseUrl = resolveAuthBaseUrl(request, origin);
+  const redirectTo = (path: string) => `${baseUrl}${path}`;
 
   if (code) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      const forwardedHost = request.headers.get("x-forwarded-host"); // original origin before load balancer
-      let redirectUrl: string;
-      if (appUrl) {
-        redirectUrl = `${appUrl}${next}`;
-      } else {
-        const isLocalEnv = process.env.NODE_ENV === "development";
-        if (isLocalEnv) {
-          // we can be sure that there is no load balancer in between, so no need to watch for X-Forwarded-Host
-          redirectUrl = `${origin}${next}`;
-        } else if (forwardedHost) {
-          redirectUrl = `https://${forwardedHost}${next}`;
-        } else {
-          redirectUrl = `${origin}${next}`;
-        }
-      }
-
-      const response = NextResponse.redirect(redirectUrl);
+      const response = NextResponse.redirect(redirectTo(next));
       if (authProvider === "google" || authProvider === "github") {
         response.cookies.set("envault_last_used_auth_provider", authProvider, {
           path: "/",
@@ -42,6 +61,19 @@ export async function GET(request: Request) {
     }
   }
 
-  // return the user to an error page with instructions
-  return NextResponse.redirect(`${origin}/auth/auth-code-error`);
+  if (tokenHash && isEmailOtpType(otpType)) {
+    const supabase = await createClient();
+    const { error } = await supabase.auth.verifyOtp({
+      token_hash: tokenHash,
+      type: otpType,
+    });
+
+    if (!error) {
+      return NextResponse.redirect(redirectTo(next));
+    }
+  }
+
+  return NextResponse.redirect(
+    redirectTo("/login?authError=invalid_or_expired"),
+  );
 }

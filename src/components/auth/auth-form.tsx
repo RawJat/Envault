@@ -104,6 +104,16 @@ export function AuthForm() {
         replaceWithTransition(router, "/login");
       }, 100);
     }
+    if (searchParams.get("authError") === "invalid_or_expired") {
+      setTimeout(() => {
+        triggerHaptic("cancel");
+        toast.error(
+          "This confirmation link is invalid or expired. Please request a new one.",
+        );
+        // Clean up the URL
+        replaceWithTransition(router, "/login");
+      }, 100);
+    }
   }, [searchParams, router]);
 
   React.useEffect(() => {

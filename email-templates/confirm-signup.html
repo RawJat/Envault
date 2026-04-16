@@ -175,7 +175,12 @@
                   securing your environment variables.
                 </p>
                 <div class="btn-container">
-                  <a href="{{ .ConfirmationURL }}" class="btn">Confirm Email</a>
+                  <a
+                    href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=signup"
+                    class="btn"
+                  >
+                    Confirm Email
+                  </a>
                 </div>
                 <p
                   class="text"
