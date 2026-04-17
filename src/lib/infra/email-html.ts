@@ -14,7 +14,9 @@ interface EmailProps {
 }
 
 // Logo URLs - Light and Dark PNG variants
-const DEFAULT_APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://envault.tech").replace(/\/+$/, "");
+const DEFAULT_APP_URL = (
+  process.env.NEXT_PUBLIC_APP_URL || "https://www.envault.tech"
+).replace(/\/+$/, "");
 const DEFAULT_LOGO_LIGHT_URL = `${DEFAULT_APP_URL}/email-logo-light.png`;
 const DEFAULT_LOGO_DARK_URL = `${DEFAULT_APP_URL}/email-logo-dark.png`;
 
@@ -104,11 +106,19 @@ export function getEmailHtml({
       text-decoration: none !important;
     }
 
-    .logo svg {
+    .logo img {
       display: block;
       width: 214px;
       max-width: 100%;
       height: auto;
+    }
+
+    .logo-light {
+      display: block !important;
+    }
+
+    .logo-dark {
+      display: none !important;
     }
 
     .logo,
@@ -123,10 +133,26 @@ export function getEmailHtml({
       .logo {
         color: #ffffff !important;
       }
+
+      .logo-light {
+        display: none !important;
+      }
+
+      .logo-dark {
+        display: block !important;
+      }
     }
 
     [data-ogsc] .logo {
       color: #ffffff !important;
+    }
+
+    [data-ogsc] .logo-light {
+      display: none !important;
+    }
+
+    [data-ogsc] .logo-dark {
+      display: block !important;
     }
     
     .body { 
@@ -223,21 +249,27 @@ export function getEmailHtml({
         <td align="center">
           <div class="main">
             <div class="header">
-              <a href="https://envault.tech" class="logo" style="color: ${textColor} !important; text-decoration: none !important;">
+              <a href="${DEFAULT_APP_URL}" class="logo" style="color: ${textColor} !important; text-decoration: none !important;">
                 <!--[if mso]>
-                <!-- Outlook 2010+: MSO doesn't support CSS media queries or picture element, use light PNG -->
                 <img src="${logoLight}" width="214" height="70" alt="Envault" style="display: block; width: 214px; height: auto; max-width: 100%;" />
                 <![endif]-->
-                <!--[if !mso]><!-->
-                <!-- Modern email clients (Apple Mail, Yahoo, AOL, Thunderbird): Use picture element for theme support
-                     Dark mode: Shows logo-wordmark-dark.png
-                     Light mode: Shows logo-wordmark-light.png
-                     Gmail: Shows light PNG (doesn't support media queries)
-                -->
-                <picture>
-                  <source media="(prefers-color-scheme: dark)" srcset="${logoDark}">
-                  <img src="${logoLight}" alt="Envault" width="214" height="70" style="display: block; width: 214px; height: auto; max-width: 100%;">
-                </picture>
+                <!--[if !mso]><!-- -->
+                <img
+                  src="${logoLight}"
+                  alt="Envault"
+                  width="214"
+                  height="70"
+                  class="logo-light"
+                  style="display: block; width: 214px; height: auto; max-width: 100%;"
+                >
+                <img
+                  src="${logoDark}"
+                  alt="Envault"
+                  width="214"
+                  height="70"
+                  class="logo-dark"
+                  style="display: none; width: 214px; height: auto; max-width: 100%;"
+                >
                 <!--<![endif]-->
               </a>
             </div>
