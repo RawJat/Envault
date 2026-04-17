@@ -19,10 +19,11 @@ const SENDERS = {
   system: `Envault System <system@${SENDER_DOMAIN}>`,
   digest: `Envault Digest <digest@${SENDER_DOMAIN}>`,
 };
-const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://www.envault.tech").replace(
-  /\/+$/,
-  "",
-);
+const APP_URL = (
+  process.env.EMAIL_PUBLIC_APP_URL ||
+  process.env.NEXT_PUBLIC_APP_URL ||
+  "https://www.envault.tech"
+).replace(/\/+$/, "");
 const LOGO_URL = `${APP_URL}/email-logo-light.png`;
 
 function isValidTimezone(timezone: string): boolean {

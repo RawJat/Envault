@@ -15,7 +15,9 @@ interface EmailProps {
 
 // Logo URLs - Light and Dark PNG variants
 const DEFAULT_APP_URL = (
-  process.env.NEXT_PUBLIC_APP_URL || "https://www.envault.tech"
+  process.env.EMAIL_PUBLIC_APP_URL ||
+  process.env.NEXT_PUBLIC_APP_URL ||
+  "https://www.envault.tech"
 ).replace(/\/+$/, "");
 const DEFAULT_LOGO_LIGHT_URL = `${DEFAULT_APP_URL}/email-logo-light.png`;
 const DEFAULT_LOGO_DARK_URL = `${DEFAULT_APP_URL}/email-logo-dark.png`;
