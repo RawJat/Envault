@@ -81,6 +81,18 @@ export async function GET(
     if (result.projectId !== projectId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
+    // If the token is environment-scoped, enforce strict environment matching
+    if (
+      result.environment &&
+      result.environment !== resolvedEnvironment.environment.slug
+    ) {
+      return NextResponse.json(
+        {
+          error: `Environment mismatch. Token is locked to ${result.environment}`,
+        },
+        { status: 403 },
+      );
+    }
     // Fetch all secrets for this project and environment
     const { data: secrets, error } = await supabase
       .from("secrets")
@@ -496,15 +508,12 @@ export async function POST(
   let actorAttributionEmail: string | null = null;
 
   if (result.type === "service") {
-    if (result.projectId !== projectId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
-    const { data: pData } = await supabase
-      .from("projects")
-      .select("user_id")
-      .eq("id", projectId)
-      .single();
-    if (pData) userId = pData.user_id;
+    return NextResponse.json(
+      {
+        error: "All Service Tokens are strictly read-only and cannot be used to deploy or modify secrets.",
+      },
+      { status: 403 },
+    );
   } else {
     userId = result.userId;
     // Verify Access: Owner OR Editor
@@ -704,8 +713,8 @@ export async function POST(
     revalidatePath(`/project/${projectId}`);
   }
 
-  const actorId = result.type === "service" ? result.tokenId : userId;
-  const actorType = result.type === "service" ? "machine" : "user";
+  const actorId = userId;
+  const actorType = "user";
 
   if (filteredUpsertData.length > 0) {
     const effectiveUpserts = filteredUpsertData;

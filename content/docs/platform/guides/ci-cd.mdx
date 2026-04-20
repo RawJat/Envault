@@ -1,0 +1,116 @@
+---
+title: Universal CI/CD Integration
+description: Use Envault as a runtime wrapper in any pipeline with a read-only Service Token.
+---
+
+import { Step, Steps } from "fumadocs-ui/components/steps";
+import { Callout } from "fumadocs-ui/components/callout";
+
+Use this guide when you want to run builds, tests, or app start commands in CI/CD without writing secrets to disk.
+
+Envault injects variables at process runtime through `envault run`, so secrets stay in memory and never get committed into files, image layers, or build artifacts.
+
+<Callout type="info">
+  CI/CD uses read-only Service Tokens (`envault_svc_`).
+</Callout>
+
+---
+
+## 1. One-time setup
+
+<Steps>
+  <Step>
+    ### Generate a Service Token
+    In the Envault dashboard, open your project and create a **Service Token**.
+
+    The token prefix should be `envault_svc_`.
+  </Step>
+
+  <Step>
+    ### Add it to your CI/CD provider
+    Save the token as a secret named `ENVAULT_TOKEN`.
+
+    Use your provider's secret manager (for example GitHub Actions Secrets, GitLab CI Variables, Render Environment Variables).
+  </Step>
+
+  <Step>
+    ### Use the runtime wrapper pattern
+    Wrap your existing command:
+
+    ```bash
+    npx @dinanathdash/envault run --env production -- <your-command>
+    ```
+  </Step>
+</Steps>
+
+---
+
+## 2. Direct templates
+
+### Frontend / Serverless (Vercel, Cloudflare)
+
+```bash
+npx @dinanathdash/envault run --env production -- npm run build
+```
+
+### Container pipelines (GitHub Actions / GitLab)
+
+```yaml title=".github/workflows/build.yml"
+name: Build
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm ci
+
+      - name: Build with Envault
+        env:
+          ENVAULT_TOKEN: ${{ secrets.ENVAULT_TOKEN }}
+        run: npx @dinanathdash/envault run --env production -- npm run build
+```
+
+### PaaS (Render / Railway)
+
+Set your start command to:
+
+```bash
+npx @dinanathdash/envault run --env production -- node server.js
+```
+
+### Docker
+
+```dockerfile
+FROM node:20-alpine
+
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+RUN npm install -g @dinanathdash/envault
+
+# Provide ENVAULT_TOKEN at runtime (docker run / orchestrator secret).
+CMD ["envault", "run", "--env", "production", "--", "node", "server.js"]
+```
+
+---
+
+## 3. Development usage (optional)
+
+For local development, keep using your normal developer auth (`envault login`) and run:
+
+```bash
+npx @dinanathdash/envault run --env development -- npm run dev
+```
+
+Use Service Tokens only for non-human automation contexts (CI/CD, bots, deploy systems).

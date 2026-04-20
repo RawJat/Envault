@@ -14,6 +14,7 @@ var (
 	envFlag     string
 	showVersion bool
 	verbose     bool
+	Headless    bool
 	version     = "dev"
 	commit      = "none"
 	date        = "unknown"
@@ -75,6 +76,10 @@ var versionCmd = &cobra.Command{
 }
 
 func initConfig() {
+	if os.Getenv("ENVAULT_TOKEN") != "" || os.Getenv("ENVAULT_SERVICE_TOKEN") != "" {
+		Headless = true
+	}
+
 	if cfgFile != "" {
 		viper.SetConfigFile(cfgFile)
 	} else {

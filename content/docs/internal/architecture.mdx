@@ -40,3 +40,12 @@ The `mcp-server` Node.js package implements exactly with the open `smithery.yaml
 
 - `envault_status`
 - `envault_pull` & `envault_push` (which invokes Human-In-The-Loop approvals via the `mcp-agent` interceptor).
+
+### 5. Headless Execution Paradigms
+
+Envault now has two distinct headless auth models:
+
+- **CI/CD integrations:** read-only Service Tokens (`envault_svc_`) used with `envault run` for runtime injection.
+- **AI agents (MCP):** short-lived delegated JWTs (`envault_agt_`) issued by `envault mcp install`, with HITL approval on mutations.
+
+This split prevents CI automation from mutating secrets while still enabling scoped agent workflows with explicit human approval.

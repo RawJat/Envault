@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -36,7 +37,11 @@ type Client struct {
 func NewClient() *Client {
 	baseURL := os.Getenv("ENVAULT_CLI_URL")
 	if baseURL == "" {
-		baseURL = "https://envault.tech/api/cli"
+		if rootBase := strings.TrimSpace(os.Getenv("ENVAULT_BASE_URL")); rootBase != "" {
+			baseURL = strings.TrimSuffix(rootBase, "/") + "/api/cli"
+		} else {
+			baseURL = "https://envault.tech/api/cli"
+		}
 	}
 
 	u, err := url.Parse(baseURL)
@@ -58,16 +63,8 @@ func NewClient() *Client {
 	}
 
 	if token != "" {
-		if strings.HasPrefix(token, "envault_svc_") {
-			// CI Guardrail
-			isCI := os.Getenv("CI") == "true" || os.Getenv("GITHUB_ACTIONS") == "true"
-			isLoginCmd := len(os.Args) >= 2 && os.Args[1] == "login"
-
-			if !isCI && !isLoginCmd {
-				fmt.Println("Error: Service tokens are for CI environments only.")
-				fmt.Println("Please run 'envault login' to authenticate your local machine.")
-				os.Exit(1)
-			}
+		if !strings.HasPrefix(token, "envault_svc_") && !strings.HasPrefix(token, "envault_agt_") {
+			log.Fatalf("Security Error: ENVAULT_TOKEN detected, but it is not a valid Service Token or Agent Token. Personal OAuth tokens cannot be used via environment variables.")
 		}
 	} else {
 		// Fallback to local session token
@@ -234,7 +231,17 @@ func (c *Client) doReqCtx(ctx context.Context, method, path string, body interfa
 
 	if resp.StatusCode >= 400 {
 		bodyBytes, _ := io.ReadAll(resp.Body)
-		return nil, &APIError{StatusCode: resp.StatusCode, Body: string(bodyBytes)}
+		bodyStr := string(bodyBytes)
+		contentType := resp.Header.Get("Content-Type")
+		if strings.Contains(contentType, "text/html") {
+			bodyStr = "Server returned an HTML page (" + resp.Status + "). Ensure the API server is running."
+		}
+		return nil, &APIError{StatusCode: resp.StatusCode, Body: bodyStr}
+	}
+
+	contentType := resp.Header.Get("Content-Type")
+	if strings.Contains(contentType, "text/html") {
+		return nil, &APIError{StatusCode: resp.StatusCode, Body: "Server returned HTML instead of expected JSON API response. Ensure the API server is running."}
 	}
 
 	return io.ReadAll(resp.Body)

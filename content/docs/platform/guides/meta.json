@@ -1,4 +1,9 @@
 {
   "title": "Guides",
-  "pages": ["sdk-mcp-agent-workflows", "github-integration"]
+  "pages": [
+    "ci-cd",
+    "mcp-agents",
+    "sdk-mcp-agent-workflows",
+    "github-integration"
+  ]
 }

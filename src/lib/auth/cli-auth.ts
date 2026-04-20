@@ -5,7 +5,12 @@ import { apiRateLimit } from "@/lib/infra/ratelimit";
 
 export type AuthIdentity =
   | { type: "user"; userId: string; tokenId: string }
-  | { type: "service"; projectId: string; tokenId: string };
+  | {
+      type: "service";
+      projectId: string;
+      tokenId: string;
+      environment?: string | null;
+    };
 
 export async function validateCliToken(
   request: Request,
@@ -35,7 +40,7 @@ export async function validateCliToken(
   if (token.startsWith("envault_svc_")) {
     const { data, error } = await supabase
       .from("service_tokens")
-      .select("id, project_id, last_used_at, expires_at")
+      .select("id, project_id, environment, last_used_at, expires_at")
       .eq("token_hash", tokenHash)
       .single();
 
@@ -56,7 +61,12 @@ export async function validateCliToken(
       .eq("token_hash", tokenHash)
       .then();
 
-    return { type: "service", projectId: data.project_id, tokenId: data.id };
+    return {
+      type: "service",
+      projectId: data.project_id,
+      tokenId: data.id,
+      environment: data.environment,
+    };
   }
 
   // Default to PAT check

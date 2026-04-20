@@ -9,6 +9,16 @@ The Envault MCP Server (`mcp-server/`) acts as a bridge between AI assistants (l
 
 This document outlines how to set up, test, and maintain the MCP server infrastructure locally.
 
+## Current Auth Model (Important)
+
+Default local agent setup no longer relies on long-lived standalone MCP web tokens.
+
+- `envault mcp install` now fetches a delegated project-scoped JWT (`envault_agt_`).
+- Delegated tokens are short-lived (1 hour) and scoped to one project.
+- Mutation calls remain gated by HITL approval.
+
+Manual standalone token configuration is now a fallback path for isolated environments where CLI-managed install is unavailable.
+
 ## Development Setup
 
 The MCP server is a standalone Node.js package located in `./mcp-server`. To develop locally:
@@ -43,9 +53,21 @@ The MCP server is a standalone Node.js package located in `./mcp-server`. To dev
    }
    ```
 
+## CLI-Managed Local Setup (Preferred)
+
+For end-to-end local validation of the production path:
+
+```bash
+envault init
+envault login
+envault mcp install --local
+```
+
+This exercises delegated token issuance and config injection used by real user flows.
+
 ## MCP Token Cleanup Automation
 
-MCP web tokens are automatically cleaned up through a protected cron endpoint. When developing locally in an authorized environment, you need to ensure this cron job is configured.
+Standalone MCP web tokens are automatically cleaned up through a protected cron endpoint. When testing that fallback mode locally in an authorized environment, ensure this cron job is configured.
 
 - **Endpoint:** `/api/cron/mcp-token-cleanup`
 - **Auth:** `Authorization: Bearer <CRON_SECRET>`
@@ -64,20 +86,22 @@ _Note: The cron SQL file safely unschedules legacy hourly cleanup routines befor
 
 Before merging MCP-related PRs, execute this local validation checklist:
 
-1. **Generate Token:** Generate a fresh MCP token from your local Envault dashboard (Settings -> Security).
-2. **Validate Auth:** Run a curl request against a CLI-protected route to ensure the token parses correctly:
+1. **Validate delegated auth path:** Run `envault mcp install --local` in a linked project and confirm generated config contains `ENVAULT_TOKEN=envault_agt_...` and valid base URL.
+2. **Validate delegated token behavior:** Run a read operation from MCP client (status/context) and confirm project scoping.
+3. **Validate HITL mutation path:** Trigger a mutation via MCP tool and confirm a `202 Accepted` + approval link flow.
+4. **Fallback token coverage (optional):** Generate a standalone MCP token from dashboard (Settings -> Security) and validate parsing against CLI-protected route:
    ```bash
    curl -k -i \
      -H "Authorization: Bearer <FULL_MCP_TOKEN>" \
      "http://localhost:3000/api/cli/me"
    ```
-3. **Trigger Cleanup:** Force-expire the token directly in the database, then trigger the cleanup manually:
+5. **Fallback cleanup:** Force-expire standalone token directly in database, then trigger cleanup manually:
    ```bash
    curl -k -i \
      -H "Authorization: Bearer <CRON_SECRET>" \
      "http://localhost:3000/api/cron/mcp-token-cleanup"
    ```
-4. **Verify Deletion:** Confirm the token is now invalid and the MCP profile token fields in the database are cleared.
+6. **Verify deletion:** Confirm fallback token is invalid and MCP profile token fields are cleared.
 
 ## HITL (Human-in-the-Loop) Interceptor Testing
 

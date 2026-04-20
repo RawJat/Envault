@@ -81,6 +81,11 @@ var pullCmd = &cobra.Command{
 
 		// 2. Check for existing .env
 		if _, err := os.Stat(targetFile); err == nil && !forcePull {
+			if Headless {
+				fmt.Fprintln(os.Stderr, ui.ColorRed("\nError: Pull requires confirmation to overwrite an existing file. Please use --force in headless environments."))
+				os.Exit(1)
+			}
+			
 			// Fetch project name for better warning
 			client := api.NewClient()
 			projectName := "Envault"
@@ -131,12 +136,12 @@ var pullCmd = &cobra.Command{
 			}
 			if err := survey.AskOne(prompt, &confirm); err != nil {
 				fmt.Fprintln(os.Stderr, ui.ColorYellow("\nOperation cancelled."))
-				return
+				os.Exit(1)
 			}
 
 			if !confirm {
 				fmt.Fprintln(os.Stderr, ui.ColorYellow("Operation cancelled."))
-				return
+				os.Exit(1)
 			}
 		}
 
@@ -165,7 +170,7 @@ var pullCmd = &cobra.Command{
 				}
 				if jsonErr := json.Unmarshal([]byte(apiErr.Body), &errBody); jsonErr == nil && errBody.Error == "ACCESS_REQUIRED" {
 					handleAccessRequired(ctx, client, projectId)
-					return
+					os.Exit(1)
 				}
 			}
 			fmt.Fprintln(os.Stderr, ui.ColorRed("Pull failed."))
