@@ -47,6 +47,15 @@ export async function GET(
   const requestedEnvironment = new URL(request.url).searchParams.get(
     "environment",
   );
+  const actorSource = (await headers())
+    .get("x-envault-actor-source")
+    ?.trim()
+    .toLowerCase();
+  const suppressPullNotifications =
+    actorSource === "dev" ||
+    actorSource === "build" ||
+    actorSource === "runtime" ||
+    actorSource === "ci";
 
   const supabase = createAdminClient();
   let resolvedEnvironment;
@@ -372,20 +381,22 @@ export async function GET(
     if (pData) notifUserId = pData.user_id;
   }
 
-  const { createSecretsPulledNotification } =
-    await import("@/lib/system/notifications");
-  createSecretsPulledNotification(
-    notifUserId,
-    projectName,
-    projectId,
-    "CLI",
-    preparedSecrets.length,
-    projectSlug,
-  ).catch((e) => console.error("Failed to create pull notification:", e));
+  if (!suppressPullNotifications) {
+    const { createSecretsPulledNotification } =
+      await import("@/lib/system/notifications");
+    createSecretsPulledNotification(
+      notifUserId,
+      projectName,
+      projectId,
+      "CLI",
+      preparedSecrets.length,
+      projectSlug,
+    ).catch((e) => console.error("Failed to create pull notification:", e));
+  }
 
   // CLI email if user has it toggled ON
   try {
-    if (notifUserId) {
+    if (notifUserId && !suppressPullNotifications) {
       const { data: userData } =
         await supabase.auth.admin.getUserById(notifUserId);
       if (userData?.user?.email) {

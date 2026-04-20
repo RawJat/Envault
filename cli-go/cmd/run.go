@@ -97,11 +97,15 @@ var runCmd = &cobra.Command{
 			envSecrets = make([]offlinecache.Secret, len(secretsResp.Secrets))
 			for i, s := range secretsResp.Secrets {
 				plaintext := "<<DECRYPTION_FAILED>>"
-				if s.Ciphertext != "<<DECRYPTION_FAILED>>" && s.Dek != "" {
+				if s.Ciphertext != "" && s.Ciphertext != "<<DECRYPTION_FAILED>>" && s.Dek != "" {
 					decrypted, err := crypto.DecryptAESGCM(s.Ciphertext, s.Dek)
 					if err == nil {
 						plaintext = decrypted
+					} else {
+						fmt.Fprintln(os.Stderr, ui.ColorYellow(fmt.Sprintf("Warning: failed to decrypt secret '%s': %v", s.Key, err)))
 					}
+				} else if s.Value != "" || (s.Ciphertext == "" && s.Dek == "") {
+					plaintext = s.Value
 				}
 				envSecrets[i] = offlinecache.Secret{Key: s.Key, Value: plaintext}
 			}

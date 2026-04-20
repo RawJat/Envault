@@ -4,10 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "node scripts/dev.mjs",
+    "dev:envault": "ENVAULT_CLI_ACTOR_SOURCE=dev envault run --env development -- node scripts/dev.mjs",
     "generate:llms": "tsx scripts/generate-llms.ts",
     "generate:cli-tool-def": "tsx scripts/generate-cli-tool-definition.ts",
     "generate:context": "npm run generate:llms && npm run generate:cli-tool-def",
-    "build": "npm run generate:context && next build",
+    "build": "ENVAULT_CLI_ACTOR_SOURCE=build npx --yes @dinanathdash/envault@latest run --env production -- sh -c \"npm run generate:context && next build\"",
+    "build:local": "ENVAULT_CLI_ACTOR_SOURCE=build envault run --env development -- sh -c \"npm run generate:context && next build\"",
     "start": "node scripts/start.mjs",
     "start:next": "next start",
     "start:portless": "node scripts/start.mjs",
