@@ -48,7 +48,7 @@ If you don't have a project yet, the CLI will seamlessly guide you through creat
 
 ## `pull`
 
-Fetch encrypted remote secrets, decrypt them in-memory, and write them to your local environment file.
+Fetch encrypted remote secrets, decrypt them locally on your machine via AES-256-GCM (Client-Side Decryption), and write them to your local environment file.
 
 ```bash
 envault pull --env development
@@ -82,7 +82,7 @@ Secrets are always written **alphabetically (A-Z) by key**. This ensures that Gi
 
 ## `deploy`
 
-Push local environment file values to a remote Envault environment.
+Push local environment file values to a remote Envault environment utilizing AES-256-GCM Client-Side Encryption out-of-the-box.
 
 ```bash
 envault deploy --env production
@@ -93,9 +93,9 @@ Alias: `envault push`
 Behavior:
 
 1. Reads your local environment file.
-2. Computes the cryptographic difference against the remote vault.
+2. Computes the cryptographic difference against the remote vault by pulling and locally decrypting existing secrets.
 3. Prints a visual diff summary (additions, deletions, modifications).
-4. Requests final confirmation before mutating remote state.
+4. Requests final confirmation before encrypting new/modified variables locally and mutating remote state.
 
 <Callout type="warn">
   **Tracked-file Block**: Just like `pull`, `deploy` will strictly refuse to run

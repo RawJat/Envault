@@ -18,20 +18,30 @@ We use a multi-tiered encryption strategy known as **Envelope Encryption**. This
 <Mermaid
   chart={`
 graph TD
-    User(["User / App"]) -->|Requests Secret| API[Envault API]
+    User(["Go CLI / Client"]) -->|Requests Secret| API[Envault API]
     API -->|1. Fetch Encrypted Data Key| DB[(Database)]
     DB -- Encrypted Data Key --> API
-    API -->|2. Decrypt Data Key| MasterKey["Master Key (Env Var)"]
-    MasterKey -- Decrypted Data Key --> API
+    API -->|2. Unwraps Data Key| MasterKey["Master Key (Env Var)"]
+    MasterKey -- Unwrapped Data Key --> API
     API -->|3. Fetch Encrypted Secret| DB
     DB -- Encrypted Secret --> API
-    API -->|4. Decrypt Secret| Memory[Memory]
-    Memory -- Plaintext Secret --> User
+    API -- "Unwrapped Data Key + Ciphertext" --> User
+    User -->|4. Client-Side Decryption| Memory[Local Memory]
+    Memory -- Plaintext Secret --> EnvFile[".env File"]
     
     style MasterKey fill:#f9f,stroke:#333,stroke-width:2px,color:#000
     style DB fill:#bbf,stroke:#333,stroke-width:2px,color:#000
+    style User fill:#dfd,stroke:#333,stroke-width:2px,color:#000
 `}
 />
+
+## True Client-Side Encryption (CSE)
+
+Envault recently transitioned its Go CLI to a **True Client-Side Encryption (CSE)** model.
+
+Unlike traditional architectures where the Node.js API server decrypts the payload and sends plaintext variables over the wire, Envault pushes the cryptographic heavy lifting to your local machine:
+- **`envault pull`**: The Next.js API provides the unwrapped Data Encryption Key (DEK) and the raw AES-256-GCM ciphertext to the Go CLI. The Go CLI performs the AES decryption locally on your machine.
+- **`envault deploy`**: The Go CLI requests the active DEK from the server, encrypts your local `.env` variables locally via AES-256-GCM, and transmits only the resulting ciphertexts to the Supabase database. The Node.js server never sees your plaintext secrets.
 
 <Accordions>
   <Accordion title="1. Master Key (KEK)">

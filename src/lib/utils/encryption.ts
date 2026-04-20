@@ -225,6 +225,30 @@ export async function decrypt(text: string): Promise<string> {
 }
 
 /**
+ * Extracts the ciphertext and unwrapped Data Encryption Key (DEK) for client-side decryption.
+ */
+export async function getDekAndCiphertext(
+  text: string,
+): Promise<{ ciphertext: string; dek: string }> {
+  try {
+    if (text.startsWith("v1:")) {
+      const parts = text.split(":");
+      if (parts.length !== 3) throw new Error("Invalid encrypted format");
+      const keyId = parts[1];
+      const ciphertext = parts[2];
+      const key = await getDataKey(keyId);
+      return { ciphertext, dek: key.toString("hex") };
+    } else {
+      const masterKey = getMasterKey();
+      return { ciphertext: text, dek: masterKey.toString("hex") };
+    }
+  } catch (error) {
+    console.error("Failed to extract DEK and ciphertext:", error);
+    throw new Error("Failed to extract DEK and ciphertext");
+  }
+}
+
+/**
  * Generate a new random key (returned as hex string)
  */
 export function generateRandomKey(): string {

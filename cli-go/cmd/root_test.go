@@ -200,7 +200,7 @@ func TestPullCmd_NoLeftoverTempFile(t *testing.T) {
 		}
 		if strings.Contains(r.URL.Path, "/secrets") {
 			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(`{"secrets":[{"key":"FOO","value":"bar"}]}`))
+			_, _ = w.Write([]byte(`{"secrets":[{"key":"FOO","ciphertext":"Fear6gV4lzhi349AzVKwifB0DcDd8WrC9rk6zU3dwGsDTq8=","dek":"51d186cde6e2410b91e98d9e0ddbd09f98aa38ba98fe67d1ce5dd3dbb6a84f33"}]}`))
 			return
 		}
 		w.WriteHeader(http.StatusOK)
@@ -240,7 +240,7 @@ func TestPullCmd_SecretWrittenToEnvFile(t *testing.T) {
 		}
 		if strings.Contains(r.URL.Path, "/secrets") {
 			w.Header().Set("Content-Type", "application/json")
-			_, _ = w.Write([]byte(`{"secrets":[{"key":"MY_KEY","value":"my_val"}]}`))
+			_, _ = w.Write([]byte(`{"secrets":[{"key":"MY_KEY","ciphertext":"Fear6gV4lzhi349AzVKwifB0DcDd8WrC9rk6zU3dwGsDTq8=","dek":"51d186cde6e2410b91e98d9e0ddbd09f98aa38ba98fe67d1ce5dd3dbb6a84f33"}]}`))
 			return
 		}
 		w.WriteHeader(http.StatusOK)
@@ -264,8 +264,8 @@ func TestPullCmd_SecretWrittenToEnvFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected .env file to be written: %v", err)
 	}
-	if !strings.Contains(string(data), "MY_KEY=my_val") {
-		t.Errorf("expected MY_KEY=my_val in .env, got:\n%s", data)
+	if !strings.Contains(string(data), "MY_KEY=bar") {
+		t.Errorf("expected MY_KEY=bar in .env, got:\n%s", data)
 	}
 }
 

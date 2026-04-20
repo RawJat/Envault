@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "node scripts/dev.mjs",
-    "generate:llms": "tsx scripts/generate-llms-full.ts",
+    "generate:llms": "tsx scripts/generate-llms.ts",
     "generate:cli-tool-def": "tsx scripts/generate-cli-tool-definition.ts",
     "generate:context": "npm run generate:llms && npm run generate:cli-tool-def",
     "build": "npm run generate:context && next build",

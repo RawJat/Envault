@@ -14,13 +14,15 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/DinanathDash/Envault/cli-go/internal/api"
+	"github.com/DinanathDash/Envault/cli-go/internal/crypto"
 	"github.com/DinanathDash/Envault/cli-go/internal/ui"
 	"github.com/spf13/cobra"
 )
 
 type Secret struct {
-	Key   string `json:"key"`
-	Value string `json:"value"`
+	Key        string `json:"key"`
+	Ciphertext string `json:"ciphertext"`
+	Dek        string `json:"dek"`
 }
 
 type SecretsResponse struct {
@@ -214,7 +216,15 @@ var pullCmd = &cobra.Command{
 		tmpPath := tmpFile.Name()
 
 		for _, secret := range secretsResp.Secrets {
-			if _, err := fmt.Fprintf(tmpFile, "%s=%s\n", secret.Key, secret.Value); err != nil {
+			plaintext := "<<DECRYPTION_FAILED>>"
+			if secret.Ciphertext != "<<DECRYPTION_FAILED>>" && secret.Dek != "" {
+				decrypted, err := crypto.DecryptAESGCM(secret.Ciphertext, secret.Dek)
+				if err == nil {
+					plaintext = decrypted
+				}
+			}
+
+			if _, err := fmt.Fprintf(tmpFile, "%s=%s\n", secret.Key, plaintext); err != nil {
 				_ = tmpFile.Close()
 				_ = os.Remove(tmpPath)
 				s.Stop()

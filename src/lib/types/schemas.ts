@@ -73,7 +73,14 @@ export const SecretSchema = z.object({
 });
 
 export const PushSecretsSchema = z.object({
-  secrets: z.array(SecretSchema).min(1, "At least one secret is required"),
+  secrets: z.array(
+    z.object({
+      key: z.string(),
+      ciphertext: z.string().optional(),
+      dek: z.string().optional(),
+      value: z.string().optional(),
+    }),
+  ),
   pruneMissing: z.boolean().optional(),
 });
 
