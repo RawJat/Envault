@@ -21,6 +21,7 @@ import (
 
 type Secret struct {
 	Key        string `json:"key"`
+	Value      string `json:"value"`
 	Ciphertext string `json:"ciphertext"`
 	Dek        string `json:"dek"`
 }
@@ -221,15 +222,19 @@ var pullCmd = &cobra.Command{
 		tmpPath := tmpFile.Name()
 
 		for _, secret := range secretsResp.Secrets {
-			plaintext := "<<DECRYPTION_FAILED>>"
-			if secret.Ciphertext != "<<DECRYPTION_FAILED>>" && secret.Dek != "" {
-				decrypted, err := crypto.DecryptAESGCM(secret.Ciphertext, secret.Dek)
-				if err == nil {
-					plaintext = decrypted
+				plaintext := "<<DECRYPTION_FAILED>>"
+				if secret.Ciphertext != "" && secret.Ciphertext != "<<DECRYPTION_FAILED>>" && secret.Dek != "" {
+					decrypted, err := crypto.DecryptAESGCM(secret.Ciphertext, secret.Dek)
+					if err == nil {
+						plaintext = decrypted
+					} else {
+						fmt.Fprintln(os.Stderr, ui.ColorYellow(fmt.Sprintf("Warning: failed to decrypt secret '%s': %v", secret.Key, err)))
+					}
+				} else if secret.Value != "" || (secret.Ciphertext == "" && secret.Dek == "") {
+					plaintext = secret.Value
 				}
-			}
 
-			if _, err := fmt.Fprintf(tmpFile, "%s=%s\n", secret.Key, plaintext); err != nil {
+				if _, err := fmt.Fprintf(tmpFile, "%s=%s\n", secret.Key, plaintext); err != nil {
 				_ = tmpFile.Close()
 				_ = os.Remove(tmpPath)
 				s.Stop()
