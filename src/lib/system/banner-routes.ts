@@ -26,7 +26,7 @@ const HIDE_PREFIXES = [
   "/_next",
   "/robots.txt",
   "/sitemap.xml",
-  "/llms-full.txt",
+  "/llms.txt",
   "/login",
   "/join",
   "/forgot-password",

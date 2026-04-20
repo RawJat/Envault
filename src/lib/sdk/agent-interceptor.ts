@@ -55,7 +55,10 @@ export class EnvaultAgentClient {
   }
 
   private resolveProjectIdFromEnvaultJson(): string | null {
-    const configPath = path.join(process.cwd(), "envault.json");
+    const configPath = path.join(
+      /*turbopackIgnore: true*/ process.cwd(),
+      "envault.json",
+    );
     if (!existsSync(configPath)) {
       return null;
     }
@@ -111,7 +114,10 @@ export class EnvaultAgentClient {
         .trim()
         .replace(/^v/i, "")
         .split(".")
-        .map((segment) => Number.parseInt(segment.replace(/[^0-9].*$/, ""), 10) || 0);
+        .map(
+          (segment) =>
+            Number.parseInt(segment.replace(/[^0-9].*$/, ""), 10) || 0,
+        );
     };
 
     const left = parse(a);
@@ -146,7 +152,8 @@ export class EnvaultAgentClient {
       };
 
       const latestVersion =
-        typeof data.latest_version === "string" && data.latest_version.trim().length > 0
+        typeof data.latest_version === "string" &&
+        data.latest_version.trim().length > 0
           ? data.latest_version.trim()
           : null;
       const minSupportedVersion =
@@ -155,19 +162,28 @@ export class EnvaultAgentClient {
           ? data.min_supported_version.trim()
           : null;
 
-      if (minSupportedVersion && this.compareVersions(SDK_VERSION, minSupportedVersion) < 0) {
+      if (
+        minSupportedVersion &&
+        this.compareVersions(SDK_VERSION, minSupportedVersion) < 0
+      ) {
         throw new Error(
           `Envault SDK ${SDK_VERSION} is below minimum supported version ${minSupportedVersion}. Please upgrade before continuing.`,
         );
       }
 
-      if (latestVersion && this.compareVersions(SDK_VERSION, latestVersion) < 0) {
+      if (
+        latestVersion &&
+        this.compareVersions(SDK_VERSION, latestVersion) < 0
+      ) {
         console.warn(
           `[Envault SDK] A newer SDK version (${latestVersion}) is available. You are running ${SDK_VERSION}.`,
         );
       }
     } catch (error) {
-      if (error instanceof Error && error.message.includes("minimum supported version")) {
+      if (
+        error instanceof Error &&
+        error.message.includes("minimum supported version")
+      ) {
         throw error;
       }
       // Best-effort network check should not block execution when endpoint is unavailable.
@@ -228,7 +244,8 @@ export class EnvaultAgentClient {
   private async triggerOsNotification(message: string, approvalUrl?: string) {
     const title = "Envault Agent Security";
     const notificationIcon = this.resolveNotificationIconPath();
-    const allowOsaFallback = process.env.ENVAULT_ALLOW_OSASCRIPT_NOTIFIER === "true";
+    const allowOsaFallback =
+      process.env.ENVAULT_ALLOW_OSASCRIPT_NOTIFIER === "true";
 
     const emitTerminalAttention = () => {
       // VS Code integrated terminal shows a bell/status icon for BEL events.
@@ -298,43 +315,52 @@ export class EnvaultAgentClient {
       }
 
       if (process.platform === "darwin") {
-          const terminalNotifierPath = this.resolveTerminalNotifierPath();
+        const terminalNotifierPath = this.resolveTerminalNotifierPath();
         try {
-            if (terminalNotifierPath) {
-              const args = ["-title", title, "-message", message, "-sound", "default"];
-              if (approvalUrl) {
-                args.push("-open", approvalUrl);
-              }
-              if (notificationIcon) {
-                const iconUrl = pathToFileURL(notificationIcon).toString();
-                  args.push("-appIcon", iconUrl);
-              }
-              execFileSync(terminalNotifierPath, args, { stdio: "ignore" });
-              return;
+          if (terminalNotifierPath) {
+            const args = [
+              "-title",
+              title,
+              "-message",
+              message,
+              "-sound",
+              "default",
+            ];
+            if (approvalUrl) {
+              args.push("-open", approvalUrl);
             }
+            if (notificationIcon) {
+              const iconUrl = pathToFileURL(notificationIcon).toString();
+              args.push("-appIcon", iconUrl);
+            }
+            execFileSync(terminalNotifierPath, args, { stdio: "ignore" });
+            return;
+          }
         } catch {
           // Keep fallback chain moving.
         }
 
-          if (allowOsaFallback) {
-            try {
-              const appleScript = `display notification "${message.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}" with title "${title.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}" sound name "default"`;
-              execFileSync("osascript", ["-e", appleScript], { stdio: "ignore" });
-              return;
-            } catch {
-              // Keep fallback chain moving.
-            }
+        if (allowOsaFallback) {
+          try {
+            const appleScript = `display notification "${message.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}" with title "${title.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}" sound name "default"`;
+            execFileSync("osascript", ["-e", appleScript], { stdio: "ignore" });
+            return;
+          } catch {
+            // Keep fallback chain moving.
           }
+        }
 
-          console.error(`[Envault Agent] Notification unavailable: ${message}`);
-          console.error("[Envault Agent] Install terminal-notifier (brew install terminal-notifier) to enable native macOS notifications.");
-          if (approvalUrl) {
-            console.error(`[Envault Agent] Approval URL: ${approvalUrl}`);
-          }
-          return;
+        console.error(`[Envault Agent] Notification unavailable: ${message}`);
+        console.error(
+          "[Envault Agent] Install terminal-notifier (brew install terminal-notifier) to enable native macOS notifications.",
+        );
+        if (approvalUrl) {
+          console.error(`[Envault Agent] Approval URL: ${approvalUrl}`);
+        }
+        return;
       } else if (process.platform === "linux") {
         const iconArg = notificationIcon
-          ? ` --icon="${notificationIcon.replace(/"/g, "\\\"")}"`
+          ? ` --icon="${notificationIcon.replace(/"/g, '\\"')}"`
           : "";
         execSync(
           `notify-send "Envault Agent Security" "${message.replace(/"/g, "'")}"${iconArg}`,
@@ -350,7 +376,11 @@ export class EnvaultAgentClient {
   }
 
   private resolveNotificationIconPath(): string | null {
-    const candidate = path.join(process.cwd(), "public", "favicon.png");
+    const candidate = path.join(
+      /*turbopackIgnore: true*/ process.cwd(),
+      "public",
+      "favicon.png",
+    );
     return existsSync(candidate) ? candidate : null;
   }
 
@@ -436,10 +466,14 @@ export class EnvaultAgentClient {
     const idempotencyKey = this.generateIdempotencyKey();
     const restoredPayload = this.restoreLlmContext(payload) as MutationPayload;
 
-    const selectedEnvironment =
-      (options?.environment || restoredPayload.environment || restoredPayload.environmentSlug || "")
-        .toString()
-        .trim();
+    const selectedEnvironment = (
+      options?.environment ||
+      restoredPayload.environment ||
+      restoredPayload.environmentSlug ||
+      ""
+    )
+      .toString()
+      .trim();
 
     const payloadForApi: MutationPayload = {
       ...restoredPayload,
@@ -522,7 +556,10 @@ export class EnvaultAgentClient {
           payload: approvedPayload,
         };
       } catch (error) {
-        if (error instanceof Error && error.message === "HitlApprovalRejected") {
+        if (
+          error instanceof Error &&
+          error.message === "HitlApprovalRejected"
+        ) {
           throw new Error("Mutation rejected by project administrator.");
         }
         throw error;
@@ -609,12 +646,17 @@ export class EnvaultAgentClient {
       }, 3000); // 3-second cycle
 
       // Safety timeout matching the 15m TTL constraint
-      const timeoutHandle = setTimeout(() => {
-        finish(() => {
-          console.log("\n\x1b[31m[Envault SDK] Polling timeout (15m).\x1b[0m");
-          reject(new Error("HitlApprovalTimeout"));
-        });
-      }, 15 * 60 * 1000);
+      const timeoutHandle = setTimeout(
+        () => {
+          finish(() => {
+            console.log(
+              "\n\x1b[31m[Envault SDK] Polling timeout (15m).\x1b[0m",
+            );
+            reject(new Error("HitlApprovalTimeout"));
+          });
+        },
+        15 * 60 * 1000,
+      );
     });
   }
 }

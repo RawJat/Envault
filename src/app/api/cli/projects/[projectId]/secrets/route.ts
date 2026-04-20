@@ -269,21 +269,24 @@ export async function GET(
     }
   }
 
-  // Decrypt secrets
-  const decryptedSecrets = await Promise.all(
+  const { getDekAndCiphertext } = await import("@/lib/utils/encryption");
+
+  // Prepare secrets for client-side decryption
+  const preparedSecrets = await Promise.all(
     targetSecrets.map(async (s) => {
       try {
-        const cleanValue = await decrypt(s.value);
+        const { ciphertext, dek } = await getDekAndCiphertext(s.value);
         return {
           key: s.key,
-          value: cleanValue,
+          ciphertext,
+          dek,
           // Keep original for rotation check
           _originalId: s.id,
           _originalValue: s.value,
         };
       } catch (e) {
-        console.error(`Failed to decrypt secret ${s.key}`, e);
-        return { key: s.key, value: "<<DECRYPTION_FAILED>>" };
+        console.error(`Failed to prepare secret ${s.key}`, e);
+        return { key: s.key, ciphertext: "<<DECRYPTION_FAILED>>", dek: "" };
       }
     }),
   );
@@ -305,7 +308,7 @@ export async function GET(
     const updates: { id: string; value: string; key_id: string }[] = [];
 
     await Promise.all(
-      decryptedSecrets.map(async (s) => {
+      preparedSecrets.map(async (s) => {
         if (!s._originalValue || !s._originalId) return;
 
         if (needsSecretRotation(s._originalValue, activeKeyId)) {
@@ -334,8 +337,8 @@ export async function GET(
   await performRotation();
 
   // Clean up internal keys before returning, sorted A-Z
-  const finalSecrets = decryptedSecrets
-    .map((s) => ({ key: s.key, value: s.value }))
+  const finalSecrets = preparedSecrets
+    .map((s) => ({ key: s.key, ciphertext: s.ciphertext, dek: s.dek }))
     .sort((a, b) => a.key.localeCompare(b.key));
 
   // Notification for Pull
@@ -364,7 +367,7 @@ export async function GET(
     projectName,
     projectId,
     "CLI",
-    decryptedSecrets.length,
+    preparedSecrets.length,
     projectSlug,
   ).catch((e) => console.error("Failed to create pull notification:", e));
 
@@ -379,7 +382,7 @@ export async function GET(
           userData.user.email,
           projectName,
           "pulled",
-          decryptedSecrets.length,
+          preparedSecrets.length,
           "CLI",
           projectId,
           notifUserId,
@@ -466,7 +469,8 @@ export async function POST(
 
   const { secrets, pruneMissing } = validation.data;
   const shouldPruneMissing =
-    pruneMissing === true || (pruneMissing === undefined && actorSource === "mcp");
+    pruneMissing === true ||
+    (pruneMissing === undefined && actorSource === "mcp");
   const supabase = createAdminClient();
   let resolvedEnvironment;
   try {
@@ -574,7 +578,7 @@ export async function POST(
       const existing = keyMap.get(s.key);
 
       // Avoid touching metadata/timestamps when the incoming plaintext value did not change.
-      if (existing) {
+      if (existing && s.value) {
         try {
           const existingPlaintext = await decrypt(existing.value);
           if (existingPlaintext === s.value) {
@@ -585,8 +589,18 @@ export async function POST(
         }
       }
 
-      const encryptedValue = await encrypt(s.value);
-      const keyId = encryptedValue.split(":")[1];
+      let encryptedValue = "";
+      let keyId = "";
+
+      if (s.ciphertext) {
+        encryptedValue = s.ciphertext;
+        keyId = encryptedValue.split(":")[1];
+      } else if (s.value !== undefined) {
+        encryptedValue = await encrypt(s.value);
+        keyId = encryptedValue.split(":")[1];
+      } else {
+        throw new Error(`Missing value and ciphertext for secret ${s.key}`);
+      }
 
       return {
         id: existing ? existing.id : uuidv4(),

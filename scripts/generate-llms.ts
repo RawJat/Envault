@@ -20,7 +20,7 @@ interface DocumentMetadata {
 }
 
 const DOCS_DIR = path.join(process.cwd(), "content", "docs");
-const OUTPUT_FILE = path.join(process.cwd(), "public", "llms-full.txt");
+const OUTPUT_FILE = path.join(process.cwd(), "public", "llms.txt");
 const BASE_URL = "https://envault.tech/docs";
 const SEPARATOR = "-".repeat(80);
 
@@ -31,25 +31,28 @@ function cleanMdxContent(content: string): string {
   // Remove import statements (single and multi-line)
   let cleaned = content.replace(
     /^import\s+(?:\{[\s\S]*?\}|[\w\s*,]+)\s+from\s+['"][^'"]+['"];?\s*/gm,
-    ""
+    "",
   );
-  
+
   // Remove side-effect imports like import "style.css";
   cleaned = cleaned.replace(/^import\s+['"][^'"]+['"];?\s*/gm, "");
 
   // Remove exports (like metadata)
-  cleaned = cleaned.replace(/^export\s+(?:const|let|var|default)\s+[\s\S]*?;?\s*/gm, "");
+  cleaned = cleaned.replace(
+    /^export\s+(?:const|let|var|default)\s+[\s\S]*?;?\s*/gm,
+    "",
+  );
 
   // Transform <Callout> to blockquotes
   // Handle with title prop
   cleaned = cleaned.replace(
     /<Callout[^>]*title="([^"]+)"[^>]*>\s*([\s\S]*?)\s*<\/Callout>/g,
-    (_, title, body) => `> **${title}**\n>\n> ${body.trim()}`
+    (_, title, body) => `> **${title}**\n>\n> ${body.trim()}`,
   );
   // Handle without title prop (uses type or default)
   cleaned = cleaned.replace(
     /<Callout[^>]*>\s*([\s\S]*?)\s*<\/Callout>/g,
-    (_, body) => `> ${body.trim()}`
+    (_, body) => `> ${body.trim()}`,
   );
 
   // Remove <Cards> wrapper
@@ -72,12 +75,12 @@ function cleanMdxContent(content: string): string {
     const href = hrefMatch ? hrefMatch[1] : "";
 
     if (title) {
-        let line = `- **${title}**`;
-        if (href) line = `- [**${title}**](${href})`; // Make title a link
-        if (desc) line += `: ${desc}`;
-        return line;
+      let line = `- **${title}**`;
+      if (href) line = `- [**${title}**](${href})`; // Make title a link
+      if (desc) line += `: ${desc}`;
+      return line;
     }
-    
+
     return ""; // Remove if no title
   });
 
@@ -85,7 +88,7 @@ function cleanMdxContent(content: string): string {
   // but be careful not to remove inline HTML or code blocks.
   // We'll target specific known components to be safe.
   const componentsToRemove = ["Step", "Steps", "Tab", "Tabs"];
-  componentsToRemove.forEach(comp => {
+  componentsToRemove.forEach((comp) => {
     // Remove opening tag <Comp ...>
     const regexOpen = new RegExp(`<${comp}[\\s\\S]*?>`, "g");
     // Remove closing tag </Comp>
@@ -116,9 +119,9 @@ function parseFrontMatter(content: string): {
   const match = content.match(frontmatterRegex);
 
   if (!match) {
-    return { 
-      frontmatter: { title: "", description: "" }, 
-      body: cleanMdxContent(content) 
+    return {
+      frontmatter: { title: "", description: "" },
+      body: cleanMdxContent(content),
     };
   }
 
@@ -130,15 +133,15 @@ function parseFrontMatter(content: string): {
   // Simple YAML parser for title and description
   const titleMatch = frontmatterStr.match(/^\s*title:\s*['"]?(.+?)['"]?\s*$/m);
   const descMatch = frontmatterStr.match(
-    /^\s*description:\s*['"]?(.+?)['"]?\s*$/m
+    /^\s*description:\s*['"]?(.+?)['"]?\s*$/m,
   );
 
   if (titleMatch) frontmatter.title = titleMatch[1].trim();
   if (descMatch) frontmatter.description = descMatch[1].trim();
 
-  return { 
-    frontmatter, 
-    body: cleanMdxContent(body) 
+  return {
+    frontmatter,
+    body: cleanMdxContent(body),
   };
 }
 
@@ -157,7 +160,7 @@ function getLastUpdated(filePath: string): string {
   try {
     const timestamp = execSync(
       `git log --follow --format="%aI" -1 -- "${filePath}"`,
-      { encoding: "utf-8", cwd: process.cwd() }
+      { encoding: "utf-8", cwd: process.cwd() },
     ).trim();
 
     // Convert to UTC Z format
@@ -195,7 +198,10 @@ function pathToSlug(filePath: string): string {
  * Load the documentation order from meta.json files
  */
 function loadDocOrder(): { root: string[]; nested: Record<string, string[]> } {
-  const order = { root: [] as string[], nested: {} as Record<string, string[]> };
+  const order = {
+    root: [] as string[],
+    nested: {} as Record<string, string[]>,
+  };
 
   try {
     // Load root meta.json
@@ -206,7 +212,9 @@ function loadDocOrder(): { root: string[]; nested: Record<string, string[]> } {
     }
 
     // Load nested meta.json files
-    const dirs = fs.readdirSync(DOCS_DIR).filter(f => fs.statSync(path.join(DOCS_DIR, f)).isDirectory());
+    const dirs = fs
+      .readdirSync(DOCS_DIR)
+      .filter((f) => fs.statSync(path.join(DOCS_DIR, f)).isDirectory());
     for (const dir of dirs) {
       const nestedMetaPath = path.join(DOCS_DIR, dir, "meta.json");
       if (fs.existsSync(nestedMetaPath)) {
@@ -249,7 +257,7 @@ function findDocFiles(dir: string, fileList: string[] = []): string[] {
  */
 function sortDocumentsByMetaOrder(
   files: string[],
-  docOrder: { root: string[]; nested: Record<string, string[]> }
+  docOrder: { root: string[]; nested: Record<string, string[]> },
 ): string[] {
   if (docOrder.root.length === 0) {
     return files.sort();
@@ -352,21 +360,20 @@ function processDocument(filePath: string): DocumentMetadata {
 }
 
 /**
- * Generate the llms-full.txt file
+ * Generate the llms.txt file
  */
-function generateLlmsFullTxt() {
+function generateLlmsTxt() {
   console.log("Scanning documentation...");
 
   // Load the desired order from meta.json
   const docOrder = loadDocOrder();
 
   // Find all doc files
-  const docFiles = findDocFiles(DOCS_DIR)
-    .filter((f) => {
-      // Skip files that shouldn't be included
-      const baseName = path.basename(f);
-      return !baseName.startsWith("_");
-    });
+  const docFiles = findDocFiles(DOCS_DIR).filter((f) => {
+    // Skip files that shouldn't be included
+    const baseName = path.basename(f);
+    return !baseName.startsWith("_");
+  });
 
   if (docFiles.length === 0) {
     throw new Error(`No documentation files found in ${DOCS_DIR}`);
@@ -388,7 +395,7 @@ function generateLlmsFullTxt() {
   });
 
   // Generate the output
-  console.log("Generating llms-full.txt...");
+  console.log("Generating llms.txt...");
 
   const sections = documents.map((doc) => {
     const metadata = `title: "${doc.title.replace(/"/g, '\\"')}"
@@ -412,12 +419,14 @@ source: "${doc.source}"`;
 
   console.log(`Generated: ${OUTPUT_FILE}`);
   console.log(`Total sections: ${documents.length}`);
-  console.log(`File size: ${(fs.statSync(OUTPUT_FILE).size / 1024).toFixed(2)} KB`);
+  console.log(
+    `File size: ${(fs.statSync(OUTPUT_FILE).size / 1024).toFixed(2)} KB`,
+  );
 }
 
 // Run the generator
 try {
-  generateLlmsFullTxt();
+  generateLlmsTxt();
   process.exit(0);
 } catch (error) {
   console.error("Generation failed:", error);

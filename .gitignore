@@ -59,7 +59,7 @@ cli-go/.env
 .source/
 
 # Generated documentation
-public/llms-full.txt
+public/llms.txt
 commit-log.txt
 
 # CLI Wrapper Binaries
@@ -81,3 +81,6 @@ src/lib/sdk/*.tgz
 # MCP server local artifacts
 mcp-server/node_modules/
 mcp-server/*.tgz
+
+# Demo Test
+demo-test

@@ -12,6 +12,7 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/DinanathDash/Envault/cli-go/internal/api"
+	"github.com/DinanathDash/Envault/cli-go/internal/crypto"
 	"github.com/DinanathDash/Envault/cli-go/internal/ui"
 	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
@@ -118,11 +119,16 @@ var deployCmd = &cobra.Command{
 			return
 		}
 
-		secrets := []Secret{}
+		type DeploySecret struct {
+			Key   string `json:"key"`
+			Value string `json:"value"`
+		}
+		secrets := []DeploySecret{}
 		for k, v := range envMap {
-			secrets = append(secrets, Secret{Key: k, Value: v})
+			secrets = append(secrets, DeploySecret{Key: k, Value: v})
 		}
 
+		var hasPruned bool
 		if diff, err := computeDiff(ctx, projectId, targetEnv, targetFile); err == nil {
 			fmt.Printf(
 				"%s %d additions, %d deletions, %d modifications, %d unchanged\n",
@@ -141,19 +147,39 @@ var deployCmd = &cobra.Command{
 			for _, k := range diff.Modifications {
 				fmt.Println(ui.ColorYellow("~ " + k))
 			}
+
+			// Filter out unchanged secrets to avoid unnecessary backend updates
+			changedMap := make(map[string]bool)
+			for _, k := range diff.Additions {
+				changedMap[k] = true
+			}
+			for _, k := range diff.Modifications {
+				changedMap[k] = true
+			}
+
+			var prunedSecrets []DeploySecret
+			for _, s := range secrets {
+				if changedMap[s.Key] {
+					prunedSecrets = append(prunedSecrets, s)
+				}
+			}
+			secrets = prunedSecrets
+			hasPruned = true
+
+			// Note: Because deploy does not currently send {"pruneMissing": true},
+			// we only check if there are secrets to upload.
+			if len(secrets) == 0 {
+				fmt.Println(ui.ColorGreen(fmt.Sprintf("\n[OK] No local modifications found! Environment %s is fully up to date.", targetEnv)))
+				return
+			}
 		}
 
 		if dryRun {
-			fmt.Println(ui.ColorBlue(fmt.Sprintf("Dry Run: Would deploy %d secrets to %s (%s)", len(secrets), projectId, targetEnv)))
-			for _, s := range secrets {
-				fmt.Printf("- %s\n", s.Key)
+			if hasPruned {
+				fmt.Println(ui.ColorBlue(fmt.Sprintf("Dry Run: Would deploy %d modified/added secrets to %s (%s)", len(secrets), projectId, targetEnv)))
+			} else {
+				fmt.Println(ui.ColorBlue(fmt.Sprintf("Dry Run: Would deploy %d secrets to %s (%s)", len(secrets), projectId, targetEnv)))
 			}
-			return
-		}
-
-		// 3. Confirmation
-		if !forceDeploy {
-			// Fetch project name for warning
 			client := api.NewClient()
 			projectName := "Envault"
 
@@ -209,13 +235,50 @@ var deployCmd = &cobra.Command{
 			}
 		}
 
-		// 4. Push Secrets
+		// 4. Fetch Active Key for Client-Side Encryption
 		client := api.NewClient()
+
+		keyFetchLoader := ui.NewLoader(ui.LoaderThemeFetch, "Fetching active encryption key...")
+		keyFetchLoader.Start()
+		keyBytes, err := client.GetWithContext(ctx, fmt.Sprintf("/projects/%s/active-key", projectId))
+		keyFetchLoader.Stop()
+
+		if err != nil {
+			fmt.Fprintln(os.Stderr, ui.ColorRed("Failed to fetch active encryption key."))
+			fmt.Fprintln(os.Stderr, ui.ColorRed(classifyAPIError(err)))
+			os.Exit(1)
+		}
+
+		var activeKeyResp struct {
+			KeyID string `json:"key_id"`
+			Dek   string `json:"dek"`
+		}
+		if err := json.Unmarshal(keyBytes, &activeKeyResp); err != nil {
+			fmt.Fprintln(os.Stderr, ui.ColorRed("Failed to parse active key response."))
+			os.Exit(1)
+		}
+
+		type PostSecret struct {
+			Key        string `json:"key"`
+			Ciphertext string `json:"ciphertext"`
+		}
+		postSecrets := []PostSecret{}
+		for _, s := range secrets {
+			ciphertext, err := crypto.EncryptAESGCM(s.Value, activeKeyResp.Dek)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, ui.ColorRed(fmt.Sprintf("Failed to encrypt secret %s: %v", s.Key, err)))
+				os.Exit(1)
+			}
+			// Construct the exact v1:{keyId}:{ciphertext} format
+			v1Ciphertext := fmt.Sprintf("v1:%s:%s", activeKeyResp.KeyID, ciphertext)
+			postSecrets = append(postSecrets, PostSecret{Key: s.Key, Ciphertext: v1Ciphertext})
+		}
+
 		s := ui.NewLoader(ui.LoaderThemeDeploy, fmt.Sprintf("SealForge encrypting + deploying (%s)...", targetEnv))
 		s.Start()
 
 		payload := map[string]interface{}{
-			"secrets": secrets,
+			"secrets": postSecrets,
 		}
 
 		path := fmt.Sprintf("/projects/%s/secrets?environment=%s", projectId, url.QueryEscape(targetEnv))

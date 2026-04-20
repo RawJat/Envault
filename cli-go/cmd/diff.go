@@ -13,6 +13,7 @@ import (
 	"syscall"
 
 	"github.com/DinanathDash/Envault/cli-go/internal/api"
+	"github.com/DinanathDash/Envault/cli-go/internal/crypto"
 	"github.com/DinanathDash/Envault/cli-go/internal/ui"
 	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
@@ -127,7 +128,14 @@ func computeDiff(ctx context.Context, projectID, targetEnv, targetFile string) (
 
 	remoteMap := make(map[string]string, len(remote.Secrets))
 	for _, s := range remote.Secrets {
-		remoteMap[s.Key] = s.Value
+		plaintext := "<<DECRYPTION_FAILED>>"
+		if s.Ciphertext != "<<DECRYPTION_FAILED>>" && s.Dek != "" {
+			decrypted, err := crypto.DecryptAESGCM(s.Ciphertext, s.Dek)
+			if err == nil {
+				plaintext = decrypted
+			}
+		}
+		remoteMap[s.Key] = plaintext
 	}
 
 	res := diffResult{LocalCount: len(localEnv), RemoteCount: len(remoteMap)}

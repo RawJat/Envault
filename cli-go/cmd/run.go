@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/DinanathDash/Envault/cli-go/internal/api"
+	"github.com/DinanathDash/Envault/cli-go/internal/crypto"
 	"github.com/DinanathDash/Envault/cli-go/internal/offlinecache"
 	"github.com/DinanathDash/Envault/cli-go/internal/ui"
 	"github.com/spf13/cobra"
@@ -48,6 +49,7 @@ var runCmd = &cobra.Command{
 		path := fmt.Sprintf("/projects/%s/secrets?environment=%s", projectID, url.QueryEscape(targetEnv))
 
 		var secretsResp SecretsResponse
+		var envSecrets []offlinecache.Secret
 		loader := ui.NewLoader(ui.LoaderThemeFetch, fmt.Sprintf("VaultPulse preparing runtime secrets (%s)...", targetEnv))
 		loader.Start()
 		respBytes, err := client.GetWithTimeout(path, resolveRunTimeout())
@@ -67,10 +69,7 @@ var runCmd = &cobra.Command{
 					os.Exit(1)
 				}
 
-				secretsResp.Secrets = make([]Secret, len(cachedSecrets))
-				for i, s := range cachedSecrets {
-					secretsResp.Secrets[i] = Secret{Key: s.Key, Value: s.Value}
-				}
+				envSecrets = cachedSecrets
 				usedOfflineCache = true
 				cachedAt = loadedAt
 			} else {
@@ -84,11 +83,18 @@ var runCmd = &cobra.Command{
 				os.Exit(1)
 			}
 
-			offlineSecrets := make([]offlinecache.Secret, len(secretsResp.Secrets))
+			envSecrets = make([]offlinecache.Secret, len(secretsResp.Secrets))
 			for i, s := range secretsResp.Secrets {
-				offlineSecrets[i] = offlinecache.Secret{Key: s.Key, Value: s.Value}
+				plaintext := "<<DECRYPTION_FAILED>>"
+				if s.Ciphertext != "<<DECRYPTION_FAILED>>" && s.Dek != "" {
+					decrypted, err := crypto.DecryptAESGCM(s.Ciphertext, s.Dek)
+					if err == nil {
+						plaintext = decrypted
+					}
+				}
+				envSecrets[i] = offlinecache.Secret{Key: s.Key, Value: plaintext}
 			}
-			if cacheErr := offlinecache.Save(projectID, targetEnv, offlineSecrets); cacheErr != nil {
+			if cacheErr := offlinecache.Save(projectID, targetEnv, envSecrets); cacheErr != nil {
 				fmt.Fprintln(os.Stderr, ui.ColorYellow(fmt.Sprintf("Warning: failed to update offline cache: %v", cacheErr)))
 			}
 		}
@@ -115,7 +121,7 @@ var runCmd = &cobra.Command{
 		}
 
 		command.Env = os.Environ()
-		for _, s := range secretsResp.Secrets {
+		for _, s := range envSecrets {
 			command.Env = append(command.Env, fmt.Sprintf("%s=%s", s.Key, s.Value))
 		}
 		command.Stdout = os.Stdout
