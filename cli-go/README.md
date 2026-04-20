@@ -84,6 +84,31 @@ npm install -g @dinanathdash/envault
    envault pull
    ```
 
+## Runtime Injection Strategy
+
+Envault supports two complementary patterns. Use them intentionally:
+
+1. `envault run` (fetch-first, process env injection)
+   - Best for CI/CD, builds, and deterministic startup.
+   - Flow: resolve project/environment from `envault.json` -> fetch/decrypt secrets -> start command.
+   - This is the default and recommended path for pipelines.
+
+2. Runtime SDK reads (live reads while app is running)
+   - Best only for secrets that must rotate without process restart.
+   - App fetches selected secrets at request/runtime with cache + retry policy.
+   - Do not use this for every variable unless you explicitly want network-dependent runtime behavior.
+
+### Local Dev Patterns
+
+- One-command dev (recommended):
+  - Use hosted API (do not set `ENVAULT_BASE_URL` / `ENVAULT_CLI_URL`).
+  - `envault run --env development -- npm run dev`
+
+- Local API testing:
+  - If `ENVAULT_BASE_URL` points to local portless URL, start local server first in one terminal.
+  - Then run `envault run` in another terminal.
+  - Reason: process env injection happens before command start; an already-running process cannot be retro-injected.
+
 ### Git Hooks Setup
 
 A common point of friction in development is pulling down the latest code but forgetting to sync environment variables. You can seamlessly bind Envault to Git operations by running:

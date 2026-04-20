@@ -16,6 +16,7 @@ import (
 	"github.com/DinanathDash/Envault/cli-go/internal/ui"
 	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var forceDeploy bool
@@ -26,6 +27,23 @@ var deployCmd = &cobra.Command{
 	Aliases: []string{"push"},
 	Short:   "Push secrets from .env to Envault",
 	Run: func(cmd *cobra.Command, args []string) {
+		// Hard gate: Service Tokens (CI/CD) are strictly read-only by design.
+		// A CI/CD runner should never push source-code secrets back to Envault.
+		token := os.Getenv("ENVAULT_TOKEN")
+		if token == "" {
+			token = os.Getenv("ENVAULT_SERVICE_TOKEN")
+		}
+		if token == "" {
+			// Fallback to check token stored in global config
+			token = viper.GetString("auth.token")
+		}
+		
+		if strings.HasPrefix(token, "envault_svc_") {
+			fmt.Fprintln(os.Stderr, ui.ColorRed("Error: Deploy is disabled for Service Tokens."))
+			fmt.Fprintln(os.Stderr, ui.ColorYellow("       CI/CD pipelines must be strictly read-only. Use 'envault run' or 'envault pull' instead."))
+			os.Exit(1)
+		}
+
 		// Graceful cancellation: cancel context on Ctrl+C / SIGTERM so that
 		// in-flight HTTP requests are aborted cleanly.
 		ctx, cancel := context.WithCancel(context.Background())
@@ -221,12 +239,16 @@ var deployCmd = &cobra.Command{
 			fmt.Fprintln(os.Stderr, ui.WarningBoxStyle.Render(warningMsg))
 
 			confirm := false
-			prompt := &survey.Confirm{
-				Message: fmt.Sprintf("Deploy %d secrets to %s environment?", len(secrets), targetEnv),
-			}
-			if err := survey.AskOne(prompt, &confirm); err != nil {
-				fmt.Fprintln(os.Stderr, ui.ColorYellow("\nOperation cancelled."))
-				return
+			if !Headless {
+				prompt := &survey.Confirm{
+					Message: fmt.Sprintf("Deploy %d secrets to %s environment?", len(secrets), targetEnv),
+				}
+				if err := survey.AskOne(prompt, &confirm); err != nil {
+					fmt.Fprintln(os.Stderr, ui.ColorYellow("\nOperation cancelled."))
+					return
+				}
+			} else {
+				fmt.Fprintln(os.Stderr, ui.ColorRed("\nError: Deploy is an interactive command and cannot be run in headless mode without --force."))
 			}
 
 			if !confirm {
@@ -254,7 +276,11 @@ var deployCmd = &cobra.Command{
 			Dek   string `json:"dek"`
 		}
 		if err := json.Unmarshal(keyBytes, &activeKeyResp); err != nil {
-			fmt.Fprintln(os.Stderr, ui.ColorRed("Failed to parse active key response."))
+			limit := len(keyBytes)
+			if limit > 200 {
+				limit = 200
+			}
+			fmt.Fprintf(os.Stderr, ui.ColorRed("Failed to parse active key response: %v\nResponse was: %s...\n"), err, string(keyBytes[:limit]))
 			os.Exit(1)
 		}
 

@@ -65,8 +65,9 @@ import { ShareProjectDialog } from "@/components/dialogs/share-project-dialog";
 import { RenameProjectDialog } from "@/components/dialogs/rename-project-dialog";
 import { GitHubIntegrationDialog } from "@/components/dialogs/github-integration-dialog";
 import { TransferOwnershipDialog } from "@/components/dialogs/transfer-ownership-dialog";
+import { ServiceTokenDialog } from "@/components/dialogs/service-token-dialog";
 import { AppHeader } from "@/components/dashboard/ui/app-header";
-import { Edit3, Github, Loader2, ShieldCheck } from "lucide-react";
+import { Edit3, Github, Loader2, ShieldCheck, Key } from "lucide-react";
 import { formatEnvironmentLabel } from "@/lib/utils/environment-label";
 import { getModifierKey } from "@/lib/utils/utils";
 import {
@@ -99,6 +100,7 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [githubDialogOpen, setGithubDialogOpen] = useState(false);
   const [transferDialogOpen, setTransferDialogOpen] = useState(false);
+  const [serviceTokenDialogOpen, setServiceTokenDialogOpen] = useState(false);
   const [agentAccessDialogOpen, setAgentAccessDialogOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
@@ -497,6 +499,11 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
               </DropdownMenuItem>
             )}
             {project.role === "owner" && (
+              <DropdownMenuItem onClick={() => setServiceTokenDialogOpen(true)}>
+                <Key className="w-4 h-4 mr-2" /> CI/CD Service Tokens
+              </DropdownMenuItem>
+            )}
+            {project.role === "owner" && (
               <DropdownMenuItem onClick={() => setGithubDialogOpen(true)}>
                 <Github className="w-4 h-4 mr-2" /> GitHub Integration
               </DropdownMenuItem>
@@ -787,6 +794,12 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
         project={project}
         open={transferDialogOpen}
         onOpenChange={setTransferDialogOpen}
+      />
+      <ServiceTokenDialog
+        project={project}
+        availableEnvironments={availableEnvironments}
+        open={serviceTokenDialogOpen}
+        onOpenChange={setServiceTokenDialogOpen}
       />
 
       <Dialog

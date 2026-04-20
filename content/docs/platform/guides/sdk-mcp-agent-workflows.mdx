@@ -1,57 +1,25 @@
 ---
-title: AI Agents & MCP
-description: Build secure agent workflows with Envault using the Model Context Protocol (MCP) and Human-in-the-Loop (HITL) approvals.
+title: MCP Advanced Setup & Reference
+description: Manual MCP configuration, tools reference, and security controls for advanced Envault agent workflows.
 ---
 
 import { Step, Steps } from "fumadocs-ui/components/steps";
 import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
 import { Callout } from "fumadocs-ui/components/callout";
 
-Envault provides first-class support for AI workflows through our seamless **Model Context Protocol (MCP)** server. Use your favorite AI coding assistants (like Claude Desktop, Cursor, and RooCode) to fetch, diff, and propose changes to your environment variables without ever leaving your editor.
+Use this page if you need **manual MCP wiring** or an explicit reference for tools and operational controls.
 
-Because AI agents can hallucinate or overwrite critical production secrets, Envault enforces a strict **Human-In-The-Loop (HITL) Approval Model**. Agents can propose changes, but a human must explicitly approve them via the CLI or Dashboard before they take effect.
+For the direct local setup flow (`envault mcp install`) and the delegated `envault_agt_` + HITL walkthrough, use [Local AI Agents (Claude & Cursor)](/docs/platform/guides/mcp-agents).
+
+<Callout type="info">
+  This page is intentionally advanced. It complements the quickstart guide and avoids duplicating it.
+</Callout>
 
 ---
 
-## 1. Setting up the MCP Server
+## 1. Manual Configuration (Standalone MCP Tokens)
 
-The absolute fastest way to give your AI assistants access to your Envault environment context is by using the CLI's automated installer.
-
-There are no manual JSON files to edit and no separate tokens to generate. The MCP Server runs as a local shadow daemon and inherits your terminal's secure OAuth session.
-
-<Steps>
-  <Step>
-    ### Install the MCP Server
-    To map the MCP Server strictly to your current VS Code workspace, run:
-    
-    ```bash
-    envault mcp install --local
-    ```
-
-    Alternatively, to install the server globally (so every Cursor window or Claude Desktop instance inherently has access to Envault without needing a `.vscode/mcp.json` file inside the repo), run:
-
-    ```bash
-    envault mcp install
-    ```
-
-  </Step>
-
-  <Step>
-    ### Restart your Client
-    After the script finishes injecting the configurations, fully restart your AI application (or reload the VS Code window) to initialize the Envault MCP Server.
-
-    When you update the `@dinanathdash/envault-mcp-server` integration in the future, just run:
-
-    ```bash
-    envault mcp update
-    ```
-
-  </Step>
-</Steps>
-
-## 2. Manual Configuration (Standalone MCP Tokens)
-
-For advanced users running isolated IDE instances (like a cloud-hosted DevContainer) where the standard Envault CLI OAuth session (`envault login`) is unavailable, or if you prefer to edit configurations manually, you can generate a standalone "Web Token".
+Use manual token wiring only when CLI-managed install is not possible (for example isolated DevContainers or custom remote IDE setups).
 
 <Steps>
   <Step>
@@ -134,9 +102,9 @@ For advanced users running isolated IDE instances (like a cloud-hosted DevContai
 
 ---
 
-## 3. How the HITL Approval Flow Works
+## 2. HITL Runtime Behavior (Reference)
 
-When you ask an AI Agent (like Claude) to "add a STRIPE_KEY environment variable to my production Envault project", the following secure sequence occurs:
+When an agent requests a mutation, Envault executes the same approval sequence below:
 
 1. **Agent Request:** The agent uses its MCP `envault_push` tool to request the mutation.
 2. **Envault Intercepts:** Instead of updating the database, Envault creates a `pending_approvals` record and returns a `202 Accepted` response.
@@ -154,7 +122,7 @@ When you ask an AI Agent (like Claude) to "add a STRIPE_KEY environment variable
   Project Audit Logs to ensure total compliance.
 </Callout>
 
-## 4. MCP Tools Reference
+## 3. MCP Tools Reference
 
 Once connected, your AI Agent gains access to the following tools:
 

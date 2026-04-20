@@ -8,7 +8,9 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 
+	"github.com/DinanathDash/Envault/cli-go/internal/api"
 	"github.com/DinanathDash/Envault/cli-go/internal/ui"
 	"github.com/spf13/cobra"
 )
@@ -16,6 +18,9 @@ import (
 var globalInstall bool
 var localInstall bool
 var mcpConfigOnly bool
+
+var mcpJwtToken string
+var mcpBaseUrl string
 
 var mcpCmd = &cobra.Command{
 	Use:   "mcp",
@@ -27,6 +32,8 @@ var mcpInstallCmd = &cobra.Command{
 	Short: "Install Envault MCP globally (Claude/Cursor) or locally (.vscode)",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Configuring AI Clients for Envault MCP...")
+
+		fetchAndSetDelegateToken()
 
 		if !globalInstall && !localInstall {
 			globalInstall = true
@@ -59,6 +66,8 @@ var mcpUpdateCmd = &cobra.Command{
 	Short: "Update the Envault MCP Server integration",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Updating Envault MCP Server...")
+
+		fetchAndSetDelegateToken()
 
 		if !mcpConfigOnly {
 			pkgLoader := ui.NewLoader(ui.LoaderThemeDeploy, "Updating global MCP package...")
@@ -192,7 +201,10 @@ func injectClaudeConfig(config map[string]interface{}) {
 			"-y",
 			"@dinanathdash/envault-mcp-server@latest",
 		},
-		"env": map[string]string{},
+		"env": map[string]string{
+			"ENVAULT_TOKEN":    mcpJwtToken,
+			"ENVAULT_BASE_URL": mcpBaseUrl,
+		},
 	}
 }
 
@@ -212,6 +224,10 @@ func injectVSCodeMCPConfig(config map[string]interface{}) {
 		"args": []string{
 			"-y",
 			"@dinanathdash/envault-mcp-server@latest",
+		},
+		"env": map[string]string{
+			"ENVAULT_TOKEN":    mcpJwtToken,
+			"ENVAULT_BASE_URL": mcpBaseUrl,
 		},
 		"type": "stdio",
 	}
@@ -244,6 +260,60 @@ func installGlobalCline() {
 	injectClaudeConfig(config)
 	writeJSON(path, config)
 	fmt.Printf("[OK] Added Envault MCP to Global Cline/RooCode (%s)\n", path)
+}
+
+func fetchAndSetDelegateToken() {
+	projectID := ensureProjectID()
+	if projectID == "" {
+		fmt.Fprintln(os.Stderr, ui.ColorYellow("No project linked."))
+		projectID = selectProjectAndPersistOrExit()
+		fmt.Fprintln(os.Stderr, ui.ColorGreen(fmt.Sprintf("[OK] Project linked! (ID: %s)\n", projectID)))
+	}
+
+	if !isValidProjectID(projectID) {
+		fmt.Fprintln(os.Stderr, ui.ColorRed("Invalid project ID. Expected a UUID."))
+		os.Exit(1)
+	}
+
+	fmt.Println("Fetching delegated JWT for local MCP server...")
+	apiClient := api.NewClient()
+	originalBaseURL := apiClient.BaseURL
+
+	// CLI starts at /api/cli, but delegate route is at /api/sdk...
+	apiClient.BaseURL = strings.TrimSuffix(originalBaseURL, "/cli")
+
+	payload := map[string]string{
+		"agentId":   "mcp-cli",
+		"projectId": projectID,
+	}
+
+	respBytes, err := apiClient.Post("/sdk/auth/delegate", payload)
+
+	// Restore original base URL immediately
+	apiClient.BaseURL = originalBaseURL
+
+	if err != nil {
+		fmt.Fprintln(os.Stderr, ui.ColorRed(fmt.Sprintf("Failed to fetch delegated JWT: %v", err)))
+		os.Exit(1)
+	}
+
+	var result struct {
+		Token string `json:"token"`
+		Error string `json:"error"`
+	}
+
+	if err := json.Unmarshal(respBytes, &result); err != nil {
+		fmt.Fprintln(os.Stderr, ui.ColorRed(fmt.Sprintf("Failed to parse delegated response: %v", err)))
+		os.Exit(1)
+	}
+	if result.Error != "" {
+		fmt.Fprintln(os.Stderr, ui.ColorRed(fmt.Sprintf("API Error: %s", result.Error)))
+		os.Exit(1)
+	}
+
+	mcpJwtToken = result.Token
+	// Envault MCP server expects root-level ENVAULT_BASE_URL (no /api/cli suffix)
+	mcpBaseUrl = strings.TrimSuffix(apiClient.BaseURL, "/api/cli")
 }
 
 func installLocalVSCodeMCP() {

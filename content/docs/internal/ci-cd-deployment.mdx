@@ -1,15 +1,41 @@
 ---
 title: CI/CD Deployment
-description: Integrating Envault into build pipelines (GitHub Actions, GitLab, Docker).
+description: Internal reference for headless CI/CD execution with read-only Service Tokens.
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
 
-This guide covers how to deploy the Envault stack or how we integrate Envault CLI inside continuous integration systems.
+This is the internal implementation reference for CI/CD usage of Envault.
+
+Envault now supports two headless paradigms through `envault run`:
+
+1. CI/CD integrations use read-only `envault_svc_` Service Tokens.
+2. AI agents (MCP) use short-lived delegated `envault_agt_` tokens and HITL approvals.
+
+This page only covers the CI/CD path.
+
+<Callout type="warn">
+  Service Tokens are strictly read-only. Mutating commands such as `envault deploy`
+  are blocked when using `envault_svc_` tokens.
+</Callout>
+
+## Runtime Wrapper Pattern
+
+In CI/CD we treat Envault as a runtime wrapper, not a file sync step.
+
+- `envault run` fetches and decrypts secrets before process start.
+- Secrets are injected into process memory.
+- Secrets do not need to be persisted to disk for build/start commands.
+
+Canonical shape:
+
+```bash
+npx @dinanathdash/envault run --env production -- <command>
+```
 
 ## GitHub Actions
 
-To run Envault operations dynamically during a GitHub Actions build (so that secrets are injected without being saved to `.env`), use the `envault run` wrapper.
+Use `ENVAULT_TOKEN` with a Service Token generated from the project dashboard.
 
 ```yaml title=".github/workflows/deploy.yml"
 name: Build and Deploy
@@ -20,7 +46,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      ENVAULT_TOKEN: ${{ secrets.ENVAULT_SERVICE_TOKEN }}
+      ENVAULT_TOKEN: ${{ secrets.ENVAULT_TOKEN }}
     steps:
       - uses: actions/checkout@v3
 
@@ -28,7 +54,7 @@ jobs:
         run: curl -fsSL https://raw.githubusercontent.com/DinanathDash/Envault/main/install.sh | sh
 
       - name: Build Application with Envault Secrets
-        run: envault run --project proj_123 --env production -- npm run build
+        run: envault run --env production -- npm run build
 ```
 
 ## GitLab CI
@@ -43,12 +69,12 @@ build_app:
   stage: build
   image: node:18
   variables:
-    ENVAULT_TOKEN: $ENVAULT_SERVICE_TOKEN
+    ENVAULT_TOKEN: $ENVAULT_TOKEN
   before_script:
     - curl -fsSL https://raw.githubusercontent.com/DinanathDash/Envault/main/install.sh | sh
   script:
     - npm ci
-    - envault run --project proj_123 --env production -- npm run build
+    - envault run --env production -- npm run build
 ```
 
 ## Docker Entrypoint
@@ -64,8 +90,18 @@ WORKDIR /app
 COPY . .
 RUN npm install
 
-CMD ["envault", "run", "--project", "proj_123", "--", "node", "server.js"]
+CMD ["envault", "run", "--env", "production", "--", "node", "server.js"]
 ```
+
+<Callout type="info">
+  Provide `ENVAULT_TOKEN` at runtime through your orchestrator secret manager.
+</Callout>
+
+## Headless Safety Rules
+
+- `envault deploy` requires explicit confirmation or `--force`; headless sessions should not use deploy with Service Tokens.
+- `envault pull` prompts before overwrite; in headless mode use `--force` if overwrite is intended.
+- Prefer `envault run` in CI/CD to avoid writing transient secrets to repository files.
 
 ## Pipeline Auditing
 

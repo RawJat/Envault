@@ -28,6 +28,9 @@ var runCmd = &cobra.Command{
 		return nil
 	},
 	Run: func(cmd *cobra.Command, args []string) {
+		runTarget := args[0]
+		runArgs := args[1:]
+
 		projectID := ensureProjectID()
 		if projectID == "" {
 			fmt.Fprintln(os.Stderr, ui.ColorYellow("No project linked."))
@@ -52,8 +55,9 @@ var runCmd = &cobra.Command{
 		var envSecrets []offlinecache.Secret
 		loader := ui.NewLoader(ui.LoaderThemeFetch, fmt.Sprintf("VaultPulse preparing runtime secrets (%s)...", targetEnv))
 		loader.Start()
-		respBytes, err := client.GetWithTimeout(path, resolveRunTimeout())
+		respBytes, err := client.GetWithTimeout(path, resolveRunTimeout(client.BaseURL))
 		loader.Stop()
+
 		usedOfflineCache := false
 		cachedAt := time.Time{}
 		if err != nil {
@@ -66,6 +70,13 @@ var runCmd = &cobra.Command{
 					fmt.Fprintln(os.Stderr, ui.ColorRed("Run failed."))
 					fmt.Fprintln(os.Stderr, ui.ColorRed(fmt.Sprintf("Network error: %v", err)))
 					fmt.Fprintln(os.Stderr, ui.ColorRed(fmt.Sprintf("Offline cache unavailable: %v", cacheErr)))
+					if isLocalBaseURL(client.BaseURL) {
+						fmt.Fprintln(os.Stderr, ui.ColorYellow("Hint: ENVAULT_BASE_URL/ENVAULT_CLI_URL points to a local server."))
+						if isLikelyDevCommand(runTarget, runArgs) {
+							fmt.Fprintln(os.Stderr, ui.ColorYellow("      This command starts a dev server, so secrets cannot be injected into an already-running process."))
+							fmt.Fprintln(os.Stderr, ui.ColorYellow("      Use hosted API URL for true one-command dev, or start local server in another terminal first."))
+						}
+					}
 					os.Exit(1)
 				}
 
@@ -109,15 +120,17 @@ var runCmd = &cobra.Command{
 			fmt.Fprintln(os.Stderr, ui.ColorYellow(fmt.Sprintf("Using offline cache for %s (%s). Cached at %s (%s ago).", projectID, targetEnv, cacheTime, cacheAge)))
 		}
 
-		runTarget := args[0]
-		runArgs := args[1:]
-
 		var command *exec.Cmd
 		if runtime.GOOS == "windows" {
 			allArgs := append([]string{"/c", runTarget}, runArgs...)
 			command = exec.Command("cmd", allArgs...)
 		} else {
-			command = exec.Command(runTarget, runArgs...)
+			binPath, err := exec.LookPath(runTarget)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, ui.ColorRed(fmt.Sprintf("Error locating executable '%s': %v", runTarget, err)))
+				os.Exit(1)
+			}
+			command = exec.Command(binPath, runArgs...)
 		}
 
 		command.Env = os.Environ()
@@ -148,20 +161,57 @@ func humanizeDuration(d time.Duration) string {
 	return d.Round(time.Minute).String()
 }
 
-func resolveRunTimeout() time.Duration {
-	const defaultSeconds = 3
+func resolveRunTimeout(baseURL string) time.Duration {
+	defaultSeconds := 10
+	if isLocalBaseURL(baseURL) {
+		defaultSeconds = 20
+	}
 
 	raw := strings.TrimSpace(os.Getenv("ENVAULT_RUN_TIMEOUT_SECONDS"))
 	if raw == "" {
-		return defaultSeconds * time.Second
+		return time.Duration(defaultSeconds) * time.Second
 	}
 
 	seconds, err := strconv.Atoi(raw)
 	if err != nil || seconds <= 0 {
-		return defaultSeconds * time.Second
+		return time.Duration(defaultSeconds) * time.Second
 	}
 
 	return time.Duration(seconds) * time.Second
+}
+
+func isLocalBaseURL(baseURL string) bool {
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		return strings.Contains(strings.ToLower(baseURL), "localhost")
+	}
+
+	host := strings.ToLower(u.Hostname())
+	if host == "localhost" || strings.HasSuffix(host, ".localhost") {
+		return true
+	}
+	if strings.HasPrefix(host, "127.") || host == "::1" {
+		return true
+	}
+
+	return false
+}
+
+func isLikelyDevCommand(runTarget string, runArgs []string) bool {
+	t := strings.ToLower(strings.TrimSpace(runTarget))
+	if t == "next" && len(runArgs) > 0 && strings.EqualFold(strings.TrimSpace(runArgs[0]), "dev") {
+		return true
+	}
+
+	if (t == "npm" || t == "pnpm" || t == "bun") && len(runArgs) >= 2 {
+		return strings.EqualFold(strings.TrimSpace(runArgs[0]), "run") && strings.EqualFold(strings.TrimSpace(runArgs[1]), "dev")
+	}
+
+	if t == "yarn" && len(runArgs) > 0 {
+		return strings.EqualFold(strings.TrimSpace(runArgs[0]), "dev")
+	}
+
+	return false
 }
 
 func init() {

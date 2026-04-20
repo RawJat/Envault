@@ -69,9 +69,11 @@ npm install -g portless
 To use the Envault CLI with the local development server, set the `ENVAULT_CLI_URL` environment variable:
 
 ```bash
-export ENVAULT_CLI_URL="https://envault.localhost/api/cli"
+export ENVAULT_CLI_URL="https://envault.localhost:1355/api/cli"
 envault login
 ```
+
+For one-command `envault run` local app startup, prefer hosted API fetch-first behavior by not setting `ENVAULT_CLI_URL`/`ENVAULT_BASE_URL`.
 
 ## Security Architecture
 
