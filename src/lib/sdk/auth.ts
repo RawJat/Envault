@@ -1,27 +1,56 @@
 import { Redis } from "@upstash/redis";
 import { Ratelimit } from "@upstash/ratelimit";
 import { createClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import jwt from "jsonwebtoken";
 
-// Initialize Redis client for Rate Limiting only
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-});
+let cachedRedis: Redis | null | undefined;
+let cachedRatelimit: Ratelimit | null | undefined;
+let cachedSupabase: SupabaseClient | null | undefined;
 
-const ratelimit = new Ratelimit({
-  redis: redis,
-  limiter: Ratelimit.tokenBucket(5, "1 s", 5),
-  analytics: true,
-});
+function getRedis(): Redis | null {
+  if (cachedRedis !== undefined) return cachedRedis;
 
-// Service Role client to bypass RLS for security checks
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) {
+    cachedRedis = null;
+    return cachedRedis;
+  }
+
+  cachedRedis = new Redis({ url, token });
+  return cachedRedis;
+}
+
+function getRatelimit(): Ratelimit | null {
+  if (cachedRatelimit !== undefined) return cachedRatelimit;
+  const redis = getRedis();
+  if (!redis) {
+    cachedRatelimit = null;
+    return cachedRatelimit;
+  }
+
+  cachedRatelimit = new Ratelimit({
+    redis,
+    limiter: Ratelimit.tokenBucket(5, "1 s", 5),
+    analytics: true,
+  });
+  return cachedRatelimit;
+}
+
+function getSupabaseService(): SupabaseClient | null {
+  if (cachedSupabase !== undefined) return cachedSupabase;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) {
+    cachedSupabase = null;
+    return cachedSupabase;
+  }
+  cachedSupabase = createClient(url, key) as SupabaseClient;
+  return cachedSupabase;
+}
 
 export async function verifySdkAuth(req: NextRequest, projectId: string) {
   const authHeader = req.headers.get("authorization");
@@ -38,7 +67,8 @@ export async function verifySdkAuth(req: NextRequest, projectId: string) {
 
   let payload: jwt.JwtPayload;
   try {
-    const secret = process.env.ENVAULT_AGENT_SECRET || "development-agent-secret";
+    const secret =
+      process.env.ENVAULT_AGENT_SECRET || "development-agent-secret";
     payload = jwt.verify(token, secret) as jwt.JwtPayload;
   } catch {
     return NextResponse.json(
@@ -59,18 +89,32 @@ export async function verifySdkAuth(req: NextRequest, projectId: string) {
 
   // 1. Rate Limiting Check
   try {
-    const { success } = await ratelimit.limit(`rate_limit:agent:${agentId}`);
-    if (!success) {
-      return NextResponse.json(
-        { error: "Too Many Requests from Agent Instance" },
-        { status: 429 },
-      );
+    const ratelimit = getRatelimit();
+    if (ratelimit) {
+      const { success } = await ratelimit.limit(`rate_limit:agent:${agentId}`);
+      if (!success) {
+        return NextResponse.json(
+          { error: "Too Many Requests from Agent Instance" },
+          { status: 429 },
+        );
+      }
+    } else {
+      console.warn("[Agent SDK] Rate limiter unavailable, falling open.");
     }
   } catch {
     console.warn("[Agent SDK] Rate limiter unavailable, falling open.");
   }
 
   // 2. Kill-Switch Check (Redis first, Postgres fallback)
+  const redis = getRedis();
+  const supabase = getSupabaseService();
+  if (!supabase) {
+    return NextResponse.json(
+      { error: "Internal Server Error (Auth backend not configured)" },
+      { status: 500 },
+    );
+  }
+
   const globalCacheKey = `users.global_agent_access:${userId}`;
   const projectCacheKey = `projects.agent_access:${projectId}`;
 
@@ -89,13 +133,15 @@ export async function verifySdkAuth(req: NextRequest, projectId: string) {
   let isProjectEnabled: boolean | null = null;
 
   try {
-    const p = redis.pipeline();
-    p.get(globalCacheKey);
-    p.get(projectCacheKey);
-    const [globalCache, projectCache] = await p.exec();
+    if (redis) {
+      const p = redis.pipeline();
+      p.get(globalCacheKey);
+      p.get(projectCacheKey);
+      const [globalCache, projectCache] = await p.exec();
 
-    isGlobalEnabled = asBoolean(globalCache);
-    isProjectEnabled = asBoolean(projectCache);
+      isGlobalEnabled = asBoolean(globalCache);
+      isProjectEnabled = asBoolean(projectCache);
+    }
   } catch {
     // Cache errors should not block auth; fallback to Postgres.
   }
@@ -135,22 +181,28 @@ export async function verifySdkAuth(req: NextRequest, projectId: string) {
     isGlobalEnabled = !!userRes.data.global_agent_access_enabled;
     isProjectEnabled = !!projectRes.data.agent_access_enabled;
 
-    await Promise.all([
-      redis.set(globalCacheKey, String(isGlobalEnabled), { ex: 3600 }),
-      redis.set(projectCacheKey, String(isProjectEnabled), { ex: 3600 }),
-    ]).catch(() => undefined);
+    if (redis) {
+      await Promise.all([
+        redis.set(globalCacheKey, String(isGlobalEnabled), { ex: 3600 }),
+        redis.set(projectCacheKey, String(isProjectEnabled), { ex: 3600 }),
+      ]).catch(() => undefined);
+    }
   }
 
   if (!isGlobalEnabled) {
     return NextResponse.json(
-      { error: "Agent access disabled globally by user (Kill Switch Activated)" },
+      {
+        error: "Agent access disabled globally by user (Kill Switch Activated)",
+      },
       { status: 403 },
     );
   }
 
   if (!isProjectEnabled) {
     return NextResponse.json(
-      { error: "Agent access disabled for this project (Kill Switch Activated)" },
+      {
+        error: "Agent access disabled for this project (Kill Switch Activated)",
+      },
       { status: 403 },
     );
   }

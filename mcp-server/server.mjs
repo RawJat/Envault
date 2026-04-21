@@ -4,7 +4,9 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import crypto from "node:crypto";
+import os from "node:os";
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -308,6 +310,76 @@ async function callEnvaultApi({ pathName, method = "GET", query, body }) {
   }
 }
 
+function resolveAgentId() {
+  const candidate =
+    (process.env.ENVAULT_AGENT_ID || "").trim() || `mcp:${os.hostname()}`;
+  return candidate.slice(0, 128);
+}
+
+async function delegateAgentToken(projectId) {
+  const result = await callEnvaultApi({
+    pathName: "/api/sdk/auth/delegate",
+    method: "POST",
+    body: { agentId: resolveAgentId(), projectId },
+  });
+
+  const token =
+    result?.ok && typeof result?.data?.token === "string"
+      ? result.data.token.trim()
+      : "";
+
+  if (!token.startsWith("envault_agt_")) {
+    return {
+      ok: false,
+      status: 401,
+      error:
+        typeof result?.data?.error === "string"
+          ? result.data.error
+          : "Failed to mint envault_agt_ token for HITL flow",
+      delegateResult: result,
+    };
+  }
+
+  return { ok: true, status: 200, token, delegateResult: result };
+}
+
+async function callSdkSecrets({ agentToken, projectId, payload }) {
+  const baseUrl = resolveBaseUrl();
+  const url = new URL(`${baseUrl}/api/sdk/secrets`);
+  const idempotencyKey = crypto.randomUUID();
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${agentToken}`,
+      "Content-Type": "application/json",
+      "Idempotency-Key": idempotencyKey,
+      "x-envault-actor-source": "mcp",
+    },
+    body: JSON.stringify({
+      projectId,
+      payload,
+      action: "update",
+    }),
+  });
+
+  const raw = await response.text();
+  const parsed = safeJsonParse(raw, null);
+  const defaultError = raw || `HTTP ${response.status}`;
+  const parsedError =
+    parsed && typeof parsed.error === "string" ? parsed.error : defaultError;
+
+  return {
+    ok: response.ok || response.status === 202,
+    status: response.status,
+    data: parsed ?? raw,
+    error: response.ok || response.status === 202 ? null : parsedError,
+    url: url.toString(),
+    method: "POST",
+    idempotencyKey,
+  };
+}
+
 function parseEnvFile(content) {
   const out = new Map();
   for (const line of String(content || "").split(/\r?\n/)) {
@@ -394,8 +466,10 @@ function enrichProjectEnvironmentError(apiResult, context) {
   }
 
   if (
-    (apiResult?.status === 404 && (lower.includes("project") || lower.includes("not found"))) ||
-    (apiResult?.status === 403 && (lower.includes("forbidden") || lower.includes("access_required")))
+    (apiResult?.status === 404 &&
+      (lower.includes("project") || lower.includes("not found"))) ||
+    (apiResult?.status === 403 &&
+      (lower.includes("forbidden") || lower.includes("access_required")))
   ) {
     return {
       ...apiResult,
@@ -444,37 +518,6 @@ function buildDiff(localMap, remoteSecrets) {
   };
 }
 
-async function buildSyncVerification({ projectId, environment, localMap }) {
-  const remoteResult = await callEnvaultApi({
-    pathName: `/api/cli/projects/${projectId}/secrets`,
-    query: { environment },
-  });
-
-  if (!remoteResult.ok) {
-    return {
-      verified: false,
-      checkError: remoteResult.error || "Failed to verify remote state",
-    };
-  }
-
-  const remoteSecrets = Array.isArray(remoteResult?.data?.secrets)
-    ? remoteResult.data.secrets
-    : [];
-  const diff = buildDiff(localMap, remoteSecrets);
-  const isClean =
-    diff.additions.length === 0 &&
-    diff.deletions.length === 0 &&
-    diff.modifications.length === 0;
-
-  return {
-    verified: true,
-    isClean,
-    localCount: localMap.size,
-    remoteCount: remoteSecrets.length,
-    diff,
-  };
-}
-
 function toToolResponse(payload, isError = false) {
   return {
     content: [{ type: "text", text: JSON.stringify(payload, null, 2) }],
@@ -496,6 +539,158 @@ function pushProjectAndEnvironment(cliArgs, args) {
   pushOptionalFlag(cliArgs, "--project", args.projectId);
   pushOptionalFlag(cliArgs, "--env", args.environment);
 }
+
+async function handleStandalonePushOrDeploy({ args, cwd, config }) {
+  const projectIdSource = isNonEmptyString(args.projectId)
+    ? "arguments"
+    : "envault.json";
+  const environmentSource = isNonEmptyString(args.environment)
+    ? "arguments"
+    : "envault.json";
+  const projectId = resolveProjectId(args, config);
+  if (!projectId) {
+    return toToolResponse(
+      {
+        error:
+          "projectId is required (or set projectId in envault.json) for standalone push.",
+      },
+      true,
+    );
+  }
+
+  const environment = resolveEnvironment(args, config);
+  const targetFile = resolveLocalEnvFile(config, environment, args.file);
+  const absoluteTarget = path.join(cwd, targetFile);
+
+  let content = "";
+  try {
+    content = await fs.readFile(absoluteTarget, "utf-8");
+  } catch {
+    return toToolResponse(
+      { error: `Local env file not found: ${targetFile}` },
+      true,
+    );
+  }
+
+  const localMap = parseEnvFile(content);
+
+  if (args.dryRun === true) {
+    const remoteResult = await callEnvaultApi({
+      pathName: `/api/cli/projects/${projectId}/secrets`,
+      query: { environment },
+    });
+
+    if (!remoteResult.ok) {
+      return toToolResponse(
+        enrichProjectEnvironmentError(remoteResult, {
+          projectId,
+          environment,
+          projectIdSource,
+          environmentSource,
+        }),
+        true,
+      );
+    }
+
+    const diff = buildDiff(localMap, remoteResult?.data?.secrets || []);
+    return toToolResponse({
+      ok: true,
+      mode: "api",
+      dryRun: true,
+      projectId,
+      environment,
+      file: targetFile,
+      localCount: localMap.size,
+      diff,
+    });
+  }
+
+  const remoteResult = await callEnvaultApi({
+    pathName: `/api/cli/projects/${projectId}/secrets`,
+    query: { environment },
+  });
+
+  if (!remoteResult.ok) {
+    return toToolResponse(
+      enrichProjectEnvironmentError(remoteResult, {
+        projectId,
+        environment,
+        projectIdSource,
+        environmentSource,
+      }),
+      true,
+    );
+  }
+
+  const remoteSecrets = Array.isArray(remoteResult?.data?.secrets)
+    ? remoteResult.data.secrets
+    : [];
+  const remoteKeys = new Set(
+    remoteSecrets
+      .map((s) => (typeof s?.key === "string" ? s.key : ""))
+      .filter(Boolean),
+  );
+
+  const mutations = [];
+  for (const [key, value] of localMap.entries()) {
+    mutations.push({ key, value, action: "upsert" });
+    remoteKeys.delete(key);
+  }
+  for (const key of remoteKeys) {
+    mutations.push({ key, action: "delete" });
+  }
+
+  const delegateResult = await delegateAgentToken(projectId);
+  if (!delegateResult.ok) {
+    return toToolResponse(
+      {
+        ok: false,
+        mode: "sdk",
+        error: delegateResult.error,
+        delegate: delegateResult.delegateResult,
+      },
+      true,
+    );
+  }
+
+  const sdkResult = await callSdkSecrets({
+    agentToken: delegateResult.token,
+    projectId,
+    payload: { mutations, environment, environmentSlug: environment },
+  });
+
+  if (!sdkResult.ok) {
+    return toToolResponse(
+      enrichProjectEnvironmentError(sdkResult, {
+        projectId,
+        environment,
+        projectIdSource,
+        environmentSource,
+      }),
+      true,
+    );
+  }
+
+  return toToolResponse(
+    {
+      ok: true,
+      mode: "sdk",
+      projectId,
+      environment,
+      file: targetFile,
+      result: sdkResult.data,
+      idempotencyKey: sdkResult.idempotencyKey,
+    },
+    false,
+  );
+}
+
+export const __test__ = {
+  resolveAgentId,
+  delegateAgentToken,
+  callSdkSecrets,
+  handleStandalonePushOrDeploy,
+};
 
 const RUNTIME_VERSION = await getCurrentPackageVersion();
 
@@ -910,110 +1105,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   if (name === "envault_push" || name === "envault_deploy") {
     if (standaloneToken) {
-      const projectIdSource = isNonEmptyString(args.projectId)
-        ? "arguments"
-        : "envault.json";
-      const environmentSource = isNonEmptyString(args.environment)
-        ? "arguments"
-        : "envault.json";
-      const projectId = resolveProjectId(args, config);
-      if (!projectId) {
-        return toToolResponse(
-          {
-            error:
-              "projectId is required (or set projectId in envault.json) for standalone push.",
-          },
-          true,
-        );
-      }
-
-      const environment = resolveEnvironment(args, config);
-      const targetFile = resolveLocalEnvFile(config, environment, args.file);
-      const absoluteTarget = path.join(cwd, targetFile);
-
-      let content = "";
-      try {
-        content = await fs.readFile(absoluteTarget, "utf-8");
-      } catch {
-        return toToolResponse(
-          { error: `Local env file not found: ${targetFile}` },
-          true,
-        );
-      }
-
-      const localMap = parseEnvFile(content);
-      const secrets = [...localMap.entries()].map(([key, value]) => ({
-        key,
-        value,
-      }));
-
-      if (args.dryRun === true) {
-        const remoteResult = await callEnvaultApi({
-          pathName: `/api/cli/projects/${projectId}/secrets`,
-          query: { environment },
-        });
-
-        if (!remoteResult.ok) {
-          return toToolResponse(
-            enrichProjectEnvironmentError(remoteResult, {
-              projectId,
-              environment,
-              projectIdSource,
-              environmentSource,
-            }),
-            true,
-          );
-        }
-
-        const diff = buildDiff(localMap, remoteResult?.data?.secrets || []);
-        return toToolResponse({
-          ok: true,
-          mode: "api",
-          dryRun: true,
-          projectId,
-          environment,
-          file: targetFile,
-          localCount: localMap.size,
-          diff,
-        });
-      }
-
-      const apiResult = await callEnvaultApi({
-        pathName: `/api/cli/projects/${projectId}/secrets`,
-        method: "POST",
-        query: { environment },
-        body: { secrets, pruneMissing: true },
-      });
-
-      if (!apiResult.ok) {
-        return toToolResponse(
-          enrichProjectEnvironmentError(apiResult, {
-            projectId,
-            environment,
-            projectIdSource,
-            environmentSource,
-          }),
-          true,
-        );
-      }
-
-      const sync = await buildSyncVerification({
-        projectId,
-        environment,
-        localMap,
-      });
-
-      const payload = {
-        ...apiResult,
-        sync,
-      };
-
-      if (sync.verified && !sync.isClean) {
-        payload.warning =
-          "Push/deploy completed but remote state still differs from local file. Server may not yet support full prune sync for this route deployment.";
-      }
-
-      return toToolResponse(payload, false);
+      return handleStandalonePushOrDeploy({ args, cwd, config });
     }
 
     const cliArgs = ["push"];
@@ -1311,39 +1403,55 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
         const environment = resolveEnvironment(args, config);
         const localContent = await fs.readFile(absoluteTarget, "utf-8");
-        const secrets = [...parseEnvFile(localContent).entries()].map(
-          ([k, v]) => ({ key: k, value: v }),
-        );
-        const pushResult = await callEnvaultApi({
+        const localMap = parseEnvFile(localContent);
+
+        const remoteResult = await callEnvaultApi({
           pathName: `/api/cli/projects/${projectId}/secrets`,
-          method: "POST",
           query: { environment },
-          body: { secrets, pruneMissing: true },
         });
 
-        const sync = pushResult.ok
-          ? await buildSyncVerification({ projectId, environment, localMap: parseEnvFile(localContent) })
-          : null;
+        if (!remoteResult.ok) {
+          response.autoPushed = false;
+          return toToolResponse(
+            { ...response, pushResult: remoteResult },
+            true,
+          );
+        }
 
-        const finalPushResult =
-          pushResult.ok && sync
-            ? {
-                ...pushResult,
-                sync,
-                ...(sync.verified && !sync.isClean
-                  ? {
-                      warning:
-                        "autoPush completed but remote state still differs from local file. Server may not yet support full prune sync for this route deployment.",
-                    }
-                  : {}),
-              }
-            : pushResult;
-
-        response.autoPushed = finalPushResult.ok;
-        return toToolResponse(
-          { ...response, pushResult: finalPushResult },
-          !finalPushResult.ok,
+        const remoteSecrets = Array.isArray(remoteResult?.data?.secrets)
+          ? remoteResult.data.secrets
+          : [];
+        const remoteKeys = new Set(
+          remoteSecrets
+            .map((s) => (typeof s?.key === "string" ? s.key : ""))
+            .filter(Boolean),
         );
+
+        const mutations = [];
+        for (const [k, v] of localMap.entries()) {
+          mutations.push({ key: k, value: v, action: "upsert" });
+          remoteKeys.delete(k);
+        }
+        for (const k of remoteKeys)
+          mutations.push({ key: k, action: "delete" });
+
+        const delegateResult = await delegateAgentToken(projectId);
+        if (!delegateResult.ok) {
+          response.autoPushed = false;
+          return toToolResponse(
+            { ...response, pushResult: delegateResult },
+            true,
+          );
+        }
+
+        const pushResult = await callSdkSecrets({
+          agentToken: delegateResult.token,
+          projectId,
+          payload: { mutations, environment, environmentSlug: environment },
+        });
+
+        response.autoPushed = pushResult.ok;
+        return toToolResponse({ ...response, pushResult }, !pushResult.ok);
       }
 
       const pushArgs = ["push", "--force"];
@@ -1406,39 +1514,55 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
         const environment = resolveEnvironment(args, config);
         const localContent = await fs.readFile(absoluteTarget, "utf-8");
-        const secrets = [...parseEnvFile(localContent).entries()].map(
-          ([k, v]) => ({ key: k, value: v }),
-        );
-        const pushResult = await callEnvaultApi({
+        const localMap = parseEnvFile(localContent);
+
+        const remoteResult = await callEnvaultApi({
           pathName: `/api/cli/projects/${projectId}/secrets`,
-          method: "POST",
           query: { environment },
-          body: { secrets, pruneMissing: true },
         });
 
-        const sync = pushResult.ok
-          ? await buildSyncVerification({ projectId, environment, localMap: parseEnvFile(localContent) })
-          : null;
+        if (!remoteResult.ok) {
+          response.autoPushed = false;
+          return toToolResponse(
+            { ...response, pushResult: remoteResult },
+            true,
+          );
+        }
 
-        const finalPushResult =
-          pushResult.ok && sync
-            ? {
-                ...pushResult,
-                sync,
-                ...(sync.verified && !sync.isClean
-                  ? {
-                      warning:
-                        "autoPush completed but remote state still differs from local file. Server may not yet support full prune sync for this route deployment.",
-                    }
-                  : {}),
-              }
-            : pushResult;
-
-        response.autoPushed = finalPushResult.ok;
-        return toToolResponse(
-          { ...response, pushResult: finalPushResult },
-          !finalPushResult.ok,
+        const remoteSecrets = Array.isArray(remoteResult?.data?.secrets)
+          ? remoteResult.data.secrets
+          : [];
+        const remoteKeys = new Set(
+          remoteSecrets
+            .map((s) => (typeof s?.key === "string" ? s.key : ""))
+            .filter(Boolean),
         );
+
+        const mutations = [];
+        for (const [k, v] of localMap.entries()) {
+          mutations.push({ key: k, value: v, action: "upsert" });
+          remoteKeys.delete(k);
+        }
+        for (const k of remoteKeys)
+          mutations.push({ key: k, action: "delete" });
+
+        const delegateResult = await delegateAgentToken(projectId);
+        if (!delegateResult.ok) {
+          response.autoPushed = false;
+          return toToolResponse(
+            { ...response, pushResult: delegateResult },
+            true,
+          );
+        }
+
+        const pushResult = await callSdkSecrets({
+          agentToken: delegateResult.token,
+          projectId,
+          payload: { mutations, environment, environmentSlug: environment },
+        });
+
+        response.autoPushed = pushResult.ok;
+        return toToolResponse({ ...response, pushResult }, !pushResult.ok);
       }
 
       const pushArgs = ["push", "--force"];
@@ -1466,8 +1590,19 @@ async function main() {
   await server.connect(transport);
 }
 
-main().catch((error) => {
-  const message = error instanceof Error ? error.message : String(error);
-  process.stderr.write(`[envault-mcp-server] Fatal: ${message}\n`);
-  process.exit(1);
-});
+const invokedAsScript = (() => {
+  try {
+    if (!process.argv[1]) return false;
+    return import.meta.url === pathToFileURL(process.argv[1]).href;
+  } catch {
+    return false;
+  }
+})();
+
+if (invokedAsScript) {
+  main().catch((error) => {
+    const message = error instanceof Error ? error.message : String(error);
+    process.stderr.write(`[envault-mcp-server] Fatal: ${message}\n`);
+    process.exit(1);
+  });
+}
