@@ -47,13 +47,16 @@ Envault injects variables at process runtime through `envault run`, so secrets s
 
 ## 2. Direct templates
 
-### Frontend / Serverless (Vercel, Cloudflare)
+### Frontend / Serverless (Vercel, Cloudflare, Netlify)
 
-```bash
-npx @dinanathdash/envault run --env production -- npm run build
-```
+<Callout type="warn">
+  **Do not use the CLI wrapper (`envault run`) for Serverless runtimes.**
+  Serverless platforms (like Vercel) execute isolated worker functions that do not inherit variables from the build/runtime wrapper securely or reliably.
+  <br/>
+  Instead, use `envault pull` locally to download a `.env` file, and **paste the variables natively** into your Vercel/Cloudflare project settings dashboard.
+</Callout>
 
-### Container pipelines (GitHub Actions / GitLab)
+### Container pipelines (Docker / GitHub Actions / GitLab)
 
 ```yaml title=".github/workflows/build.yml"
 name: Build

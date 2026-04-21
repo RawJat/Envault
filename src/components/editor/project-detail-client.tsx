@@ -64,10 +64,18 @@ import { pushWithTransition } from "@/lib/utils/view-transition-navigation";
 import { ShareProjectDialog } from "@/components/dialogs/share-project-dialog";
 import { RenameProjectDialog } from "@/components/dialogs/rename-project-dialog";
 import { GitHubIntegrationDialog } from "@/components/dialogs/github-integration-dialog";
+import { VercelIntegrationDialog } from "@/components/dialogs/vercel-integration-dialog";
 import { TransferOwnershipDialog } from "@/components/dialogs/transfer-ownership-dialog";
 import { ServiceTokenDialog } from "@/components/dialogs/service-token-dialog";
 import { AppHeader } from "@/components/dashboard/ui/app-header";
-import { Edit3, Github, Loader2, ShieldCheck, Key } from "lucide-react";
+import {
+  Edit3,
+  Github,
+  Loader2,
+  ShieldCheck,
+  Key,
+  Triangle,
+} from "lucide-react";
 import { formatEnvironmentLabel } from "@/lib/utils/environment-label";
 import { getModifierKey } from "@/lib/utils/utils";
 import {
@@ -99,6 +107,7 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [githubDialogOpen, setGithubDialogOpen] = useState(false);
+  const [vercelDialogOpen, setVercelDialogOpen] = useState(false);
   const [transferDialogOpen, setTransferDialogOpen] = useState(false);
   const [serviceTokenDialogOpen, setServiceTokenDialogOpen] = useState(false);
   const [agentAccessDialogOpen, setAgentAccessDialogOpen] = useState(false);
@@ -509,6 +518,15 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
               </DropdownMenuItem>
             )}
             {project.role === "owner" && (
+              <DropdownMenuItem onClick={() => setVercelDialogOpen(true)}>
+                <Triangle
+                  className="w-4 h-4 mr-2 fill-current"
+                  strokeWidth={0}
+                />{" "}
+                Vercel Integration
+              </DropdownMenuItem>
+            )}
+            {project.role === "owner" && (
               <DropdownMenuItem
                 onClick={() =>
                   pushWithTransition(
@@ -789,6 +807,11 @@ export function ProjectDetailClient({ project }: ProjectDetailClientProps) {
         project={project}
         open={githubDialogOpen}
         onOpenChange={setGithubDialogOpen}
+      />
+      <VercelIntegrationDialog
+        project={project}
+        open={vercelDialogOpen}
+        onOpenChange={setVercelDialogOpen}
       />
       <TransferOwnershipDialog
         project={project}

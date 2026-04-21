@@ -12,7 +12,11 @@ const nextConfig: NextConfig = {
   // Disable it in dev to speed up Turbopack compilation.
   reactCompiler: !isDev,
 
-  allowedDevOrigins: ["envault.localhost", "*.envault.localhost"],
+  allowedDevOrigins: [
+    "envault.localhost",
+    "*.envault.localhost",
+    "lionly-placeable-zina.ngrok-free.dev",
+  ],
 
   async redirects() {
     return [

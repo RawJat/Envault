@@ -7,6 +7,10 @@ import { getProjectEnvironments } from "@/lib/utils/cli-environments";
 import { headers } from "next/headers";
 import { writeRateLimit } from "@/lib/infra/ratelimit";
 import { logAuditEvent } from "@/lib/system/audit-logger";
+import {
+  syncFullEnvironmentToVercel,
+  syncVercelChangesForEnvironment,
+} from "@/lib/integrations/vercel-sync";
 
 type ProjectUIMode = "simple" | "advanced";
 
@@ -773,6 +777,16 @@ export async function addVariable(
 
   await touchProjectActivity(projectId);
 
+  try {
+    await syncVercelChangesForEnvironment({
+      envaultProjectId: projectId,
+      environmentSlug: environment.slug,
+      changes: [{ operation: "upsert", key, value }],
+    });
+  } catch (syncError) {
+    console.error("[Vercel Sync] addVariable sync failed:", syncError);
+  }
+
   revalidatePath("/project/[slug]", "page");
   return { data };
 }
@@ -943,6 +957,42 @@ export async function updateVariable(
 
   await touchProjectActivity(projectId);
 
+  try {
+    const nextKey = updates.key ?? existingSecret.key;
+    if (typeof updates.value === "string") {
+      const changes: Array<{
+        operation: "upsert" | "delete";
+        key: string;
+        value?: string;
+      }> = [];
+
+      if (updates.key && updates.key !== existingSecret.key) {
+        changes.push({ operation: "delete", key: existingSecret.key });
+      }
+
+      changes.push({
+        operation: "upsert",
+        key: nextKey,
+        value: updates.value,
+      });
+
+      await syncVercelChangesForEnvironment({
+        envaultProjectId: projectId,
+        environmentSlug: environment.slug,
+        changes,
+      });
+    } else if (updates.key && updates.key !== existingSecret.key) {
+      // Key-only rename has no plaintext value in this mutation payload,
+      // so perform a full environment resync to guarantee consistency.
+      await syncFullEnvironmentToVercel({
+        envaultProjectId: projectId,
+        environmentSlug: environment.slug,
+      });
+    }
+  } catch (syncError) {
+    console.error("[Vercel Sync] updateVariable sync failed:", syncError);
+  }
+
   revalidatePath("/project/[slug]", "page");
   return { success: true };
 }
@@ -1055,6 +1105,16 @@ export async function deleteVariable(
   });
 
   await touchProjectActivity(projectId);
+
+  try {
+    await syncVercelChangesForEnvironment({
+      envaultProjectId: projectId,
+      environmentSlug: environment.slug,
+      changes: [{ operation: "delete", key: deletedSecret.key }],
+    });
+  } catch (syncError) {
+    console.error("[Vercel Sync] deleteVariable sync failed:", syncError);
+  }
 
   revalidatePath("/project/[slug]", "page");
   return { success: true };
@@ -1280,6 +1340,36 @@ export async function addVariablesBulk(
           ).catch(() => {});
         }
       }
+    }
+
+    try {
+      const incomingValueByKey = new Map(
+        variables.map((variable) => [variable.key, variable.value]),
+      );
+      const syncChanges = itemsToUpsert
+        .map((item) => {
+          const plaintext = incomingValueByKey.get(item.key);
+          if (typeof plaintext !== "string") {
+            return null;
+          }
+
+          return {
+            operation: "upsert" as const,
+            key: item.key,
+            value: plaintext,
+          };
+        })
+        .filter((item): item is { operation: "upsert"; key: string; value: string } => item !== null);
+
+      if (syncChanges.length > 0) {
+        await syncVercelChangesForEnvironment({
+          envaultProjectId: projectId,
+          environmentSlug: environment.slug,
+          changes: syncChanges,
+        });
+      }
+    } catch (syncError) {
+      console.error("[Vercel Sync] addVariablesBulk sync failed:", syncError);
     }
   }
 

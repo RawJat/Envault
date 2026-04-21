@@ -12,6 +12,10 @@ import { cacheSet, CacheKeys, CACHE_TTL } from "@/lib/infra/cache";
 import { humanApiLimit, machineApiLimit } from "@/lib/infra/ratelimit";
 import { logAuditEvent } from "@/lib/system/audit-logger";
 import { headers } from "next/headers";
+import {
+  syncFullEnvironmentToVercel,
+  syncVercelChangesForEnvironment,
+} from "@/lib/integrations/vercel-sync";
 
 export async function GET(
   request: Request,
@@ -641,11 +645,14 @@ export async function POST(
 
   const filteredUpsertData = upsertData.filter((item) => item !== null);
   let deletedCount = 0;
+  let deletedKeys: string[] = [];
 
   if (shouldPruneMissing) {
     const keysToDelete = (existingSecrets || [])
       .map((s) => s.key)
       .filter((key) => !incomingKeys.has(key));
+
+    deletedKeys = keysToDelete;
 
     if (keysToDelete.length > 0) {
       const { error: deleteError } = await supabase
@@ -791,6 +798,53 @@ export async function POST(
         ...(actorType === "user" ? { beneficiary_user_id: userId } : {}),
       },
     });
+  }
+
+  try {
+    const changedKeySet = new Set(filteredUpsertData.map((item) => item.key));
+    const changePayload: Array<{
+      operation: "upsert" | "delete";
+      key: string;
+      value?: string;
+    }> = [];
+    let requiresFullResync = false;
+
+    for (const incomingSecret of secrets) {
+      if (!changedKeySet.has(incomingSecret.key)) {
+        continue;
+      }
+
+      if (typeof incomingSecret.value === "string") {
+        changePayload.push({
+          operation: "upsert",
+          key: incomingSecret.key,
+          value: incomingSecret.value,
+        });
+      } else {
+        // CLI can push ciphertext-only payloads. In that mode we do a full
+        // environment sync because plaintext is not present in this request.
+        requiresFullResync = true;
+      }
+    }
+
+    for (const key of deletedKeys) {
+      changePayload.push({ operation: "delete", key });
+    }
+
+    if (requiresFullResync) {
+      await syncFullEnvironmentToVercel({
+        envaultProjectId: projectId,
+        environmentSlug: resolvedEnvironment.environment.slug,
+      });
+    } else if (changePayload.length > 0) {
+      await syncVercelChangesForEnvironment({
+        envaultProjectId: projectId,
+        environmentSlug: resolvedEnvironment.environment.slug,
+        changes: changePayload,
+      });
+    }
+  } catch (syncError) {
+    console.error("[Vercel Sync] CLI push sync failed:", syncError);
   }
 
   return NextResponse.json({
