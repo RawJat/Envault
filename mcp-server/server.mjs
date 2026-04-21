@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 
 import fs from "node:fs/promises";
+import { realpathSync } from "node:fs";
 import path from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import crypto from "node:crypto";
 import os from "node:os";
 
@@ -1593,7 +1594,9 @@ async function main() {
 const invokedAsScript = (() => {
   try {
     if (!process.argv[1]) return false;
-    return import.meta.url === pathToFileURL(process.argv[1]).href;
+    const currentModulePath = realpathSync(fileURLToPath(import.meta.url));
+    const argvModulePath = realpathSync(path.resolve(process.argv[1]));
+    return currentModulePath === argvModulePath;
   } catch {
     return false;
   }
