@@ -1,0 +1,67 @@
+name: Publish to MCP Registry
+
+on:
+  workflow_run:
+    workflows:
+      - Publish MCP Server
+    types:
+      - completed
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write # CRITICAL: Required for GitHub OIDC authentication with the registry
+
+concurrency:
+  group: release-registry
+  cancel-in-progress: false
+
+jobs:
+  publish-registry:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    name: Publish to Official Registry
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Fetch Latest npm Version
+        id: get_version
+        shell: bash
+        run: |
+          set -euo pipefail
+          PKG="@dinanathdash/envault-mcp-server"
+          
+          # Fetch the absolute latest version from the npm registry
+          VERSION=$(npm view "$PKG" version)
+          echo "Latest version on npm is $VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Install mcp-publisher CLI
+        shell: bash
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
+          sudo mv mcp-publisher /usr/local/bin/
+
+      - name: Sync Version and Publish via OIDC
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.get_version.outputs.version }}"
+          
+          # Dynamically inject the new version into both required places in server.json
+          jq ".version = \"$VERSION\" | .packages[0].version = \"$VERSION\"" server.json > server-tmp.json
+          mv server-tmp.json server.json
+          
+          # The publisher automatically detects the GitHub Actions OIDC environment
+          # Because of id-token: write, this requires zero passwords/secrets.
+          mcp-publisher publish
