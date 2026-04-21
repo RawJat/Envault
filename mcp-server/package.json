@@ -1,6 +1,6 @@
 {
   "name": "@dinanathdash/envault-mcp-server",
-  "version": "1.11.0",
+  "version": "1.12.0",
   "mcpName": "io.github.DinanathDash/envault",
   "type": "module",
   "description": "MCP server for Envault CLI operations",
