@@ -62,6 +62,8 @@ jobs:
           jq ".version = \"$VERSION\" | .packages[0].version = \"$VERSION\"" server.json > server-tmp.json
           mv server-tmp.json server.json
           
-          # The publisher automatically detects the GitHub Actions OIDC environment
-          # Because of id-token: write, this requires zero passwords/secrets.
+          # Explicitly perform the OIDC handshake using the GitHub Actions token
+          mcp-publisher login github-oidc
+          
+          # Publish the updated payload
           mcp-publisher publish
