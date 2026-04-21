@@ -18,6 +18,7 @@
 - **Responsive Design**: Fully responsive layout that works seamlessly on desktop and mobile.
 - **Dark Mode Support**: Built-in support for light and dark themes.
 - **CLI Support**: Manage your secrets directly from your terminal, featuring automatic non-blocking background update checks.
+- **Native Vercel Integration**: Link Vercel projects, map environments, and sync secrets directly into Vercel env storage for serverless runtime compatibility.
 - **Real-time System Status**: Monitor system health, active incidents, and historical uptime with a dedicated status page.
 - **Dedicated Support Page**: Integrated support features directly within the app to help users manage troubleshooting options efficiently.
 - **Comprehensive Documentation**: Integrated docs site with guides, API reference, and CLI documentation.
@@ -164,6 +165,20 @@ Follow these steps to get the project running locally.
     ```
 
     Open [https://envault.localhost:1355](https://envault.localhost:1355) with your browser to see the result.
+
+### Optional: Native Vercel Integration Setup
+
+If you plan to use native Vercel sync (recommended for Vercel serverless runtimes), add these variables:
+
+```env
+VERCEL_CLIENT_ID=your_vercel_oauth_client_id
+VERCEL_CLIENT_SECRET=your_vercel_oauth_client_secret
+VERCEL_REDIRECT_URI=https://your-domain.com/api/integrations/vercel/callback
+VERCEL_WEBHOOK_SECRET=your_vercel_webhook_signing_secret
+NEXT_PUBLIC_VERCEL_INTEGRATION_INSTALL_URL=https://vercel.com/<team-or-user>/~/integrations/envault
+```
+
+Use production URLs in production. Do not use ngrok or localhost callback URLs outside local development.
 
 5.  **Test Email Configuration (Optional)**
 

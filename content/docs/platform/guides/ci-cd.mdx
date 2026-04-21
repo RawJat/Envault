@@ -50,11 +50,19 @@ Envault injects variables at process runtime through `envault run`, so secrets s
 ### Frontend / Serverless (Vercel, Cloudflare, Netlify)
 
 <Callout type="warn">
-  **Do not use the CLI wrapper (`envault run`) for Serverless runtimes.**
-  Serverless platforms (like Vercel) execute isolated worker functions that do not inherit variables from the build/runtime wrapper securely or reliably.
+  **Do not use the CLI wrapper (`envault run`) for Serverless runtime injection.**
+  Serverless workers do not reliably inherit build-wrapper process env at runtime.
   <br/>
-  Instead, use `envault pull` locally to download a `.env` file, and **paste the variables natively** into your Vercel/Cloudflare project settings dashboard.
+  For Vercel, use Envault's native integration to sync secrets directly into Vercel project env storage.
+  For other serverless providers, store variables in provider-native env storage.
 </Callout>
+
+Recommended Vercel flow:
+
+1. Link Envault project to Vercel project in the integration UI.
+2. Select enabled environments (Development, Preview, Production).
+3. Save mapping and run initial sync.
+4. Manage secrets in Envault as source of truth; updates sync to Vercel.
 
 ### Container pipelines (Docker / GitHub Actions / GitLab)
 

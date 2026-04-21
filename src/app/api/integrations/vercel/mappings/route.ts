@@ -154,6 +154,12 @@ type MappingBody = {
   }>;
 };
 
+const FIXED_TARGET_BY_ENV: Record<EnvironmentSlug, VercelTarget> = {
+  development: "development",
+  preview: "preview",
+  production: "production",
+};
+
 export async function PUT(request: Request) {
   try {
     const supabase = await createClient();
@@ -222,7 +228,8 @@ export async function PUT(request: Request) {
       configuration_id: configurationId,
       vercel_project_id: vercelProjectId,
       envault_environment_slug: mapping.envault_environment_slug,
-      vercel_target: mapping.vercel_target,
+      // Force fixed 1:1 mapping regardless of client payload.
+      vercel_target: FIXED_TARGET_BY_ENV[mapping.envault_environment_slug],
       updated_at: new Date().toISOString(),
     }));
 

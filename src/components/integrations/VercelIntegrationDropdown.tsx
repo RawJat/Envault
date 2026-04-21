@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import {
   Select,
   SelectContent,
@@ -115,8 +116,7 @@ export function VercelIntegrationDropdown({
   const [isSavingMappings, setIsSavingMappings] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [unlinkingLinkId, setUnlinkingLinkId] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+
   const isBusy =
     isBaseLoading ||
     isProjectsLoading ||
@@ -157,7 +157,6 @@ export function VercelIntegrationDropdown({
     async ({ silent = false }: { silent?: boolean } = {}) => {
       if (!silent) {
         setIsBaseLoading(true);
-        setError(null);
       }
       try {
         const res = await fetch(
@@ -179,7 +178,6 @@ export function VercelIntegrationDropdown({
         const nextInstallations = typedData.installations || [];
         setInstallations(nextInstallations);
         setLinkedProjects(typedData.linkedProjects || []);
-        setNotice(null);
 
         // Keep a valid selected account without forcing a manual re-selection.
         if (nextInstallations.length === 0) {
@@ -201,7 +199,7 @@ export function VercelIntegrationDropdown({
           });
         }
       } catch (err) {
-        setError(String(err));
+        toast.error(String(err));
       } finally {
         if (!silent) {
           setIsBaseLoading(false);
@@ -254,7 +252,6 @@ export function VercelIntegrationDropdown({
       if (!selectedConfigId) return;
 
       setIsProjectsLoading(true);
-      setError(null);
       try {
         const res = await fetch(
           `/api/integrations/vercel/projects?projectId=${envaultProjectId}&configurationId=${selectedConfigId}`,
@@ -270,7 +267,7 @@ export function VercelIntegrationDropdown({
         setVercelProjects(data.projects || []);
         setSelectedProjectId("");
       } catch (err) {
-        setError(String(err));
+        toast.error(String(err));
       } finally {
         setIsProjectsLoading(false);
       }
@@ -282,7 +279,6 @@ export function VercelIntegrationDropdown({
     if (!selectedConfigId || !selectedProjectId) return;
 
     setIsLinking(true);
-    setError(null);
 
     try {
       // Find name to display natively in the local mapping UI without constant API lookups
@@ -306,9 +302,9 @@ export function VercelIntegrationDropdown({
       if (!res.ok) throw new Error(data.error || "Failed to link project");
 
       await fetchBaseDependencies({ silent: true });
-      setNotice("Linked successfully. Default environment mappings were created.");
+      toast.success("Linked successfully. Default environment mappings were created.");
     } catch (err) {
-      setError(String(err));
+      toast.error(String(err));
     } finally {
       setIsLinking(false);
     }
@@ -316,7 +312,6 @@ export function VercelIntegrationDropdown({
 
   const handleUnlinkProject = async (linkId: string) => {
     setUnlinkingLinkId(linkId);
-    setError(null);
 
     try {
       const res = await fetch(`/api/integrations/vercel/link`, {
@@ -332,9 +327,9 @@ export function VercelIntegrationDropdown({
       if (!res.ok) throw new Error(data.error || "Failed to unlink project");
 
       await fetchBaseDependencies({ silent: true });
-      setNotice("Unlinked successfully.");
+      toast.success("Unlinked successfully.");
     } catch (err) {
-      setError(String(err));
+      toast.error(String(err));
     } finally {
       setUnlinkingLinkId(null);
     }
@@ -347,7 +342,6 @@ export function VercelIntegrationDropdown({
       }
 
       setIsMappingsLoading(true);
-      setError(null);
 
       try {
         const params = new URLSearchParams({
@@ -389,7 +383,7 @@ export function VercelIntegrationDropdown({
 
         setEnabledEnvironments(nextEnabled);
       } catch (err) {
-        setError(String(err));
+        toast.error(String(err));
       } finally {
         setIsMappingsLoading(false);
       }
@@ -409,8 +403,6 @@ export function VercelIntegrationDropdown({
     }
 
     setIsSavingMappings(true);
-    setError(null);
-    setNotice(null);
 
     try {
       const payload = {
@@ -436,9 +428,9 @@ export function VercelIntegrationDropdown({
         throw new Error(data.error || "Failed to save mappings");
       }
 
-      setNotice("Mappings saved.");
+      toast.success("Mappings saved.");
     } catch (err) {
-      setError(String(err));
+      toast.error(String(err));
     } finally {
       setIsSavingMappings(false);
     }
@@ -450,8 +442,6 @@ export function VercelIntegrationDropdown({
     }
 
     setIsSyncing(true);
-    setError(null);
-    setNotice(null);
 
     try {
       let hasAnyError = false;
@@ -460,7 +450,7 @@ export function VercelIntegrationDropdown({
       );
 
       if (selectedEnvironments.length === 0) {
-        setNotice("No environments selected for sync.");
+        toast.success("No environments selected for sync.");
         return;
       }
 
@@ -531,12 +521,12 @@ export function VercelIntegrationDropdown({
       }
 
       if (hasAnyError) {
-        setError("Manual sync completed with some errors. Check row status.");
+        toast.error("Manual sync completed with some errors. Check row status.");
       } else {
-        setNotice("Manual sync completed.");
+        toast.success("Manual sync completed.");
       }
     } catch (err) {
-      setError(String(err));
+      toast.error(String(err));
     } finally {
       setIsSyncing(false);
     }
@@ -623,18 +613,6 @@ export function VercelIntegrationDropdown({
       {selectedConfigId && scopedLinkedProjects.length === 0 && (
         <div className="text-xs text-muted-foreground border rounded-md p-3 bg-muted/20">
           No projects are linked under this account yet.
-        </div>
-      )}
-
-      {error && (
-        <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md">
-          {error}
-        </div>
-      )}
-
-      {notice && (
-        <div className="p-3 text-sm text-emerald-700 bg-emerald-500/10 border border-emerald-500/20 rounded-md">
-          {notice}
         </div>
       )}
 

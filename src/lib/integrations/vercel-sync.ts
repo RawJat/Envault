@@ -87,15 +87,41 @@ async function deleteEnvById(
   }
 }
 
+async function patchEnvTargetById(
+  accessToken: string,
+  vercelProjectId: string,
+  envId: string,
+  newTargets: string[],
+): Promise<void> {
+  const response = await fetch(
+    `https://api.vercel.com/v9/projects/${vercelProjectId}/env/${envId}`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ target: newTargets }),
+    },
+  );
+
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => ({}))) as {
+      error?: { message?: string };
+    };
+    throw new Error(payload.error?.message || "Failed to patch Vercel env");
+  }
+}
+
 async function createEnvValue(
   accessToken: string,
   vercelProjectId: string,
   key: string,
   value: string,
-  target: string,
+  targets: string[],
 ): Promise<void> {
   const response = await fetch(
-    `https://api.vercel.com/v10/projects/${vercelProjectId}/env`,
+    `https://api.vercel.com/v10/projects/${vercelProjectId}/env?upsert=true`,
     {
       method: "POST",
       headers: {
@@ -105,8 +131,8 @@ async function createEnvValue(
       body: JSON.stringify({
         key,
         value,
-        target: [target],
-        type: "encrypted",
+        target: targets,
+        type: "sensitive",
       }),
     },
   );
@@ -119,16 +145,17 @@ async function createEnvValue(
   }
 }
 
-function matchesTarget(env: VercelEnvItem, target: string): boolean {
-  return (env.target ?? []).includes(target);
-}
-
 async function resolveTargetsForLink(
   envaultProjectId: string,
   configurationId: string,
   vercelProjectId: string,
   environmentSlug: string,
 ): Promise<string[]> {
+  const fixedTarget = defaultTargetForEnvironment(environmentSlug);
+  if (!fixedTarget) {
+    return [];
+  }
+
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("vercel_environment_mappings")
@@ -139,7 +166,11 @@ async function resolveTargetsForLink(
     .eq("envault_environment_slug", environmentSlug);
 
   if (!error && data && data.length > 0) {
-    return Array.from(new Set(data.map((row) => row.vercel_target)));
+    // Advanced-mode UI is fixed 1:1 (Development->development,
+    // Preview->preview, Production->production). Old rows may still
+    // carry cross-target values, so treat row existence as enabled
+    // and force the fixed target to avoid mixed-target conflicts.
+    return [fixedTarget];
   }
 
   // If this link already has explicit mapping rows but none for this
@@ -158,8 +189,7 @@ async function resolveTargetsForLink(
     }
   }
 
-  const fallback = defaultTargetForEnvironment(environmentSlug);
-  return fallback ? [fallback] : [];
+  return [fixedTarget];
 }
 
 export async function syncVercelChangesForEnvironment(input: {
@@ -248,36 +278,52 @@ export async function syncVercelChangesForEnvironment(input: {
     try {
       let envs = await fetchProjectEnvs(accessToken, link.vercel_project_id);
 
-      for (const target of targets) {
-        for (const change of changes) {
-          const matching = envs.filter(
-            (env) => env.key === change.key && matchesTarget(env, target),
+      for (const change of changes) {
+        const matching = envs.filter((env) => env.key === change.key);
+        
+        // Remove our targets from any existing variables with the same key
+        for (const env of matching) {
+          const currentTargets = env.target ?? [];
+          const remainingTargets = currentTargets.filter(
+            (t) => !targets.includes(t),
           );
 
-          for (const env of matching) {
-            await deleteEnvById(accessToken, link.vercel_project_id, env.id);
+          if (remainingTargets.length === currentTargets.length) {
+            continue;
           }
 
-          envs = envs.filter((env) => !matching.some((item) => item.id === env.id));
-
-          if (change.operation === "upsert") {
-            if (typeof change.value !== "string") {
-              throw new Error(
-                `Missing plaintext value for upsert key ${change.key}`,
-              );
-            }
-
-            await createEnvValue(
+          if (remainingTargets.length === 0) {
+            await deleteEnvById(accessToken, link.vercel_project_id, env.id);
+          } else {
+            await patchEnvTargetById(
               accessToken,
               link.vercel_project_id,
-              change.key,
-              change.value,
-              target,
+              env.id,
+              remainingTargets,
+            );
+          }
+        }
+        
+        // Remove them from local cache so we don't process them again
+        envs = envs.filter((env) => !matching.some((item) => item.id === env.id));
+
+        if (change.operation === "upsert") {
+          if (typeof change.value !== "string") {
+            throw new Error(
+              `Missing plaintext value for upsert key ${change.key}`,
             );
           }
 
-          summary.appliedChanges += 1;
+          await createEnvValue(
+            accessToken,
+            link.vercel_project_id,
+            change.key,
+            change.value,
+            targets,
+          );
         }
+
+        summary.appliedChanges += 1;
       }
 
       summary.syncedLinks += 1;
@@ -304,7 +350,7 @@ export async function syncFullEnvironmentToVercel(input: {
   const admin = createAdminClient();
 
   const { data: environment, error: environmentError } = await admin
-    .from("environments")
+    .from("project_environments")
     .select("id")
     .eq("project_id", envaultProjectId)
     .eq("slug", environmentSlug)
