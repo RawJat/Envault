@@ -31,6 +31,11 @@ Before deploying, ensure you have the following environment variables configured
 | `NEXT_PUBLIC_GITHUB_APP_NAME`    | Your GitHub App's slug name                                                   | For GitHub Integration                     |
 | `RESEND_API_KEY`                 | Resend key for transactional + digest emails                                  | For email delivery                         |
 | `EMAIL_DOMAIN`                   | Sender domain for outgoing emails                                             | Optional (defaults to `mail.envault.tech`) |
+| `VERCEL_CLIENT_ID`               | Vercel OAuth client ID for Envault integration callback exchange              | For Vercel integration                     |
+| `VERCEL_CLIENT_SECRET`           | Vercel OAuth client secret                                                    | For Vercel integration                     |
+| `VERCEL_REDIRECT_URI`            | Exact callback URI registered in Vercel integration settings                  | For Vercel integration                     |
+| `VERCEL_WEBHOOK_SECRET`          | Vercel webhook signing secret for installation removal events                 | Strongly recommended for Vercel integration |
+| `NEXT_PUBLIC_VERCEL_INTEGRATION_INSTALL_URL` | Public install URL for your Vercel integration listing             | For Vercel integration                     |
 
 <Callout type="warn">
   Never check your `SUPABASE_SERVICE_ROLE_KEY` or `ENCRYPTION_KEY` into version
@@ -50,6 +55,17 @@ Vercel is the creators of Next.js and offers the seamless deployment experience.
 2.  Import the project into Vercel.
 3.  Add the **Environment Variables** listed above.
 4.  Click **Deploy**.
+
+### Vercel Native Integration Post-Deploy
+
+After deployment, complete these one-time steps for native sync:
+
+1. In Vercel integration settings, set callback URL to:
+  `https://<your-domain>/api/integrations/vercel/callback`
+2. Set webhook URL to:
+  `https://<your-domain>/api/integrations/vercel/webhook`
+3. Install integration from your production app/integration URL.
+4. In Envault project integration UI, link Vercel project, save environment mapping, and run initial sync.
 
   </Tab>
   <Tab value="Docker">

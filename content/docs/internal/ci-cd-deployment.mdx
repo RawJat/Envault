@@ -15,6 +15,12 @@ Envault now supports two headless paradigms through `envault run`:
 This page only covers the CI/CD path.
 
 <Callout type="warn">
+  For Vercel serverless runtime variables, prefer Envault native Vercel integration.
+  `envault run` remains correct for build/test/start commands in generic CI pipelines,
+  but should not be the only mechanism for Vercel runtime env propagation.
+</Callout>
+
+<Callout type="warn">
   Service Tokens are strictly read-only. Mutating commands such as `envault deploy`
   are blocked when using `envault_svc_` tokens.
 </Callout>

@@ -27,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Project } from "@/lib/stores/store";
 import { DateDisplay } from "@/components/ui/date-display";
@@ -89,14 +90,18 @@ export function ServiceTokenDialog({
     if (open) {
       setRawToken(null);
       setName("");
-      setEnvironment(isAdvancedMode ? "" : (project.default_environment_slug || "development"));
+      setEnvironment(
+        isAdvancedMode ? "" : project.default_environment_slug || "development",
+      );
       fetchTokens();
     }
   }, [open, fetchTokens, isAdvancedMode, project.default_environment_slug]);
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
-    const targetEnv = isAdvancedMode ? environment : (project.default_environment_slug || "development");
+    const targetEnv = isAdvancedMode
+      ? environment
+      : project.default_environment_slug || "development";
     if (!name || !targetEnv) {
       toast.error("Please fill out all fields");
       return;
@@ -229,7 +234,9 @@ export function ServiceTokenDialog({
             >
               <div>
                 <h4 className="font-medium text-sm mb-3">Create New Token</h4>
-                <div className={`grid grid-cols-1 ${isAdvancedMode ? "md:grid-cols-2" : ""} gap-4`}>
+                <div
+                  className={`grid grid-cols-1 ${isAdvancedMode ? "md:grid-cols-2" : ""} gap-4`}
+                >
                   <div className="space-y-2">
                     <Label htmlFor="token-name">Token Name</Label>
                     <Input
@@ -281,8 +288,10 @@ export function ServiceTokenDialog({
           <div className="space-y-3">
             <h4 className="font-medium text-sm">Active Tokens</h4>
             {loading ? (
-              <div className="flex items-center justify-center p-8">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <div className="space-y-2 p-2">
+                <Skeleton className="h-16 w-full rounded-md" />
+                <Skeleton className="h-16 w-full rounded-md" />
+                <Skeleton className="h-16 w-full rounded-md" />
               </div>
             ) : tokens.length === 0 ? (
               <div className="text-center p-8 border rounded-lg border-dashed bg-muted/20">
