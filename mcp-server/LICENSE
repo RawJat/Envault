@@ -1,27 +1,21 @@
+MIT License
+
 Copyright (c) 2026 Dinanath Dash
-All Rights Reserved.
 
-Licensed Work: Envault
-Website: https://envault.tech
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-1. PURPOSE AND INTENT
-The source code for the Licensed Work is made publicly available strictly for the purposes of transparency, security auditing, and education. This is NOT an open-source license.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-2. PERMITTED USE
-Subject to the terms of this License, you are granted a limited, non-exclusive, non-transferable, revocable permission solely to:
-(a) View, read, and inspect the source code of the Licensed Work.
-(b) Analyze the source code for the purpose of verifying security practices or identifying vulnerabilities.
-
-3. RESTRICTIONS
-Unless you have been granted prior, explicit written permission from the Copyright Holder, you may NOT:
-(a) Execute, compile, run, or deploy the Licensed Work locally, internally, or on any server or infrastructure.
-(b) Copy, modify, fork, or create derivative works based on the Licensed Work.
-(c) Distribute, publish, sublicense, share, or sell the Licensed Work or any portion thereof.
-(d) Use the Licensed Work to provide a commercial or non-commercial service.
-(e) Remove or alter any proprietary notices, labels, or marks on the Licensed Work.
-
-4. DISCLAIMER OF WARRANTY
-THE LICENSED WORK IS PROVIDED ON AN "AS-IS" BASIS AT THE COPYRIGHT HOLDER'S SOLE RISK AND WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OR CONDITIONS OF TITLE, MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. 
-
-5. LIMITATION OF LIABILITY
-IN NO EVENT SHALL THE COPYRIGHT HOLDER OR AUTHORS BE LIABLE TO ANY PARTY FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE LICENSED WORK OR THE USE OR OTHER DEALINGS IN THE LICENSED WORK.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
