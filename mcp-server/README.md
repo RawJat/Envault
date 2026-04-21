@@ -13,6 +13,7 @@ The MCP registry is a static phonebook. There is no onboarding UX and no safety 
 5. Use it as `ENVAULT_TOKEN` in your MCP client config (examples below).
 
 Notes:
+
 - Cloud `ENVAULT_BASE_URL` is `https://www.envault.tech` (recommended default).
 - If you rotate/revoke the token, you must update the MCP config and fully restart your MCP client.
 
@@ -57,6 +58,7 @@ Use `npx -y @dinanathdash/envault-mcp-server@latest`:
 ```
 
 Troubleshooting:
+
 - `spawn npx ENOENT` in GUI apps usually means your GUI PATH is incomplete. Use an absolute `npx` path (or `npx.cmd` on Windows).
 - `401 Unauthorized` almost always means `ENVAULT_TOKEN` is missing/expired/revoked/masked or `ENVAULT_BASE_URL` doesn’t match where the token was issued.
 
@@ -156,13 +158,16 @@ npm install -g @dinanathdash/envault-mcp-server@latest
 You have 3 practical distribution models:
 
 1. Local path (no publish required)
+
 - Ship this repo (or this folder) and point MCP client to local file path.
 
 2. npm package (recommended for broad adoption)
+
 - Publish this package and let users configure MCP with `npx`.
 - This is the simplest install UX for most LLM clients.
 
 3. Source install from GitHub
+
 - Users clone repo and run from local checkout.
 
 ### Recommended MCP config after npm publish
@@ -176,9 +181,7 @@ If you install locally in a workspace (`npm install @dinanathdash/envault-mcp-se
   "mcpServers": {
     "envault": {
       "command": "node",
-      "args": [
-        "node_modules/@dinanathdash/envault-mcp-server/server.mjs"
-      ]
+      "args": ["node_modules/@dinanathdash/envault-mcp-server/server.mjs"]
     }
   }
 }
@@ -197,7 +200,8 @@ If you install locally in a workspace (`npm install @dinanathdash/envault-mcp-se
   }
 }
 ```
-*Note: Using `npx` directly in MCP configuration often fails on Windows (requires `npx.cmd`) and macOS GUI apps due to missing shell environment variables.*
+
+_Note: Using `npx` directly in MCP configuration often fails on Windows (requires `npx.cmd`) and macOS GUI apps due to missing shell environment variables._
 
 ### MCP config for local repo path
 
@@ -212,41 +216,6 @@ If you install locally in a workspace (`npm install @dinanathdash/envault-mcp-se
   }
 }
 ```
-
-## Publishing workflow
-
-If you decide to publish on npm:
-
-1. Create npm org/package name you want to keep long-term.
-2. Verify package metadata in [mcp-server/package.json](mcp-server/package.json).
-3. Run:
-
-```bash
-cd mcp-server
-npm install
-npm run check
-npm publish --access public
-```
-
-4. Update docs/examples to your final package name if it changes.
-
-## Release alignment (SDK + MCP)
-
-- SDK package: `@dinanathdash/envault-sdk`
-- MCP package: `@dinanathdash/envault-mcp-server`
-
-Suggested publish sequence:
-
-1. Publish SDK from [src/lib/sdk/package.json](src/lib/sdk/package.json).
-2. Publish MCP from [mcp-server/package.json](mcp-server/package.json).
-3. Verify both install paths using `npm view` and a fresh `npx` call.
-
-Notes:
-- npm is not the only option, but it is the lowest-friction default for MCP users.
-- You can also keep this private/internal and distribute via local path configs.
-
-Release note:
-- Package versioning and npm publication are managed by semantic-release workflows.
 
 ## Behavior
 
