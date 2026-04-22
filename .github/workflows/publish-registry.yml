@@ -57,6 +57,20 @@ jobs:
         run: |
           set -euo pipefail
           VERSION="${{ steps.get_version.outputs.version }}"
+
+          # Skip publish when this exact server version already exists in MCP Registry.
+          SERVER_NAME_ENCODED=$(jq -nr --arg n "$(jq -r '.name' server.json)" '$n|@uri')
+          CHECK_URL="https://registry.modelcontextprotocol.io/v0/servers/${SERVER_NAME_ENCODED}/versions/${VERSION}"
+          HTTP_CODE=$(curl -sS -o /tmp/mcp-registry-version-check.json -w "%{http_code}" "$CHECK_URL")
+
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "MCP Registry already has ${VERSION} for $(jq -r '.name' server.json); skipping publish."
+            exit 0
+          fi
+
+          if [ "$HTTP_CODE" != "404" ]; then
+            echo "Version pre-check returned unexpected HTTP ${HTTP_CODE}; continuing to publish with duplicate guard."
+          fi
           
           # Dynamically inject the new version into both required places in server.json
           jq ".version = \"$VERSION\" | .packages[0].version = \"$VERSION\"" server.json > server-tmp.json
@@ -65,5 +79,21 @@ jobs:
           # Explicitly perform the OIDC handshake using the GitHub Actions token
           mcp-publisher login github-oidc
           
-          # Publish the updated payload
-          mcp-publisher publish
+          # Publish the updated payload. If the version already exists in MCP Registry,
+          # treat it as a no-op to avoid failing retriggered workflow_run executions.
+          set +e
+          PUBLISH_OUTPUT=$(mcp-publisher publish 2>&1)
+          PUBLISH_EXIT_CODE=$?
+          set -e
+
+          echo "$PUBLISH_OUTPUT"
+
+          if [ "$PUBLISH_EXIT_CODE" -ne 0 ]; then
+            if echo "$PUBLISH_OUTPUT" | grep -qi "duplicate version"; then
+              echo "Version $VERSION already exists in MCP Registry; skipping publish."
+              exit 0
+            fi
+
+            echo "mcp-publisher failed with exit code $PUBLISH_EXIT_CODE"
+            exit "$PUBLISH_EXIT_CODE"
+          fi
