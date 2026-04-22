@@ -343,8 +343,10 @@ npm install -g @dinanathdash/envault-mcp-server@latest
 
 Copyright (c) 2026 Dinanath Dash. All Rights Reserved.
 
-The source code is provided strictly for transparency, security auditing, and education. This is not open-source software.
+The repository root source code is provided strictly for transparency, security auditing, and education. This is not open-source software.
 
-You may inspect and analyze the code for security purposes. You may not execute, compile, run, deploy, copy, modify, fork, redistribute, sublicense, or provide any service using this code without prior explicit written permission.
+You may inspect and analyze the code for security purposes. You may not execute, compile, run, deploy, copy, modify, fork, redistribute, sublicense, or provide any service using proprietary repository code without prior explicit written permission.
+
+License scope exception: `mcp-server/` and `src/lib/sdk/` are distributed under MIT licenses in their respective directories.
 
 See the [LICENSE](LICENSE) file for the complete legal terms.

@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Licensing",
   description:
-    "Learn how Envault source code may be used under the current proprietary inspection license.",
+    "Learn how Envault source code and package subdirectories are licensed, including repository scope exceptions.",
   openGraph: {
     siteName: "Envault",
     images: ["/open-graph/Licensing.png"],
@@ -26,7 +26,7 @@ export default async function LicensingPage() {
   return (
     <LegalLayout
       title="Licensing"
-      lastUpdated="12 April 2026"
+      lastUpdated="22 April 2026"
       sections={sections}
     >
       <section
@@ -39,10 +39,15 @@ export default async function LicensingPage() {
           <strong>proprietary, all-rights-reserved inspection license</strong>.
         </p>
         <p className="text-muted-foreground leading-relaxed">
-          This is <strong>not open source</strong>. You may inspect the code for
-          transparency and security auditing, but you may not run, modify,
-          redistribute, or deploy it unless you have prior written permission
-          from the copyright holder.
+          Most of this repository is <strong>not open source</strong>. You may
+          inspect the code for transparency and security auditing, but you may
+          not run, modify, redistribute, or deploy proprietary portions unless
+          you have prior written permission from the copyright holder.
+        </p>
+        <p className="text-muted-foreground leading-relaxed mt-4">
+          <strong>Scope exception:</strong> the <code>mcp-server/</code> and{" "}
+          <code>src/lib/sdk/</code> directories are distributed under the MIT
+          License. The repository root LICENSE applies to all other paths.
         </p>
       </section>
 
@@ -95,8 +100,8 @@ export default async function LicensingPage() {
               </h3>
             </div>
             <p className="text-muted-foreground leading-relaxed">
-              You may not execute, compile, run, or deploy the Licensed Work in
-              any environment.
+              You may not execute, compile, run, or deploy proprietary
+              repository components in any environment.
             </p>
           </div>
           <div>
@@ -149,8 +154,8 @@ export default async function LicensingPage() {
               Is Envault open source?
             </h3>
             <p className="text-muted-foreground leading-relaxed">
-              No. Envault is source-visible for inspection and security auditing,
-              but it is not licensed as open-source software.
+              No. Envault is source-visible for inspection and security
+              auditing, but it is not licensed as open-source software.
             </p>
           </div>
 
@@ -159,9 +164,9 @@ export default async function LicensingPage() {
               Can I self-host or run Envault locally?
             </h3>
             <p className="text-muted-foreground leading-relaxed">
-              Not under the default license. Running, compiling, or deploying
-              the code requires prior explicit written permission from the
-              copyright holder.
+              Proprietary parts of the repository require prior explicit written
+              permission. The <code>mcp-server/</code> and{" "}
+              <code>src/lib/sdk/</code> directories are MIT-licensed exceptions.
             </p>
           </div>
 
@@ -170,8 +175,9 @@ export default async function LicensingPage() {
               Can I fork or modify this repository?
             </h3>
             <p className="text-muted-foreground leading-relaxed">
-              Not without written permission. The default license prohibits
-              copying, modification, and derivative works.
+              Proprietary repository sections cannot be forked or modified
+              without written permission. MIT-licensed subdirectories follow
+              their own license terms.
             </p>
           </div>
 

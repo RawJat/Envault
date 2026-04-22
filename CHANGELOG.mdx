@@ -10,6 +10,35 @@ All notable changes to Envault are documented here.
 
 ---
 
+## 1.13.0 - 2026-04-22
+
+> Authors: Dinanath Dash (DinanathDash), Rajat Patra (RawJat)
+
+### Vercel Native Integration and Zero-Knowledge Token Flow
+
+- **Zero-Knowledge Token Delivery:** Implemented token exchange and delivery refinements for Vercel integration with stronger secret-handling boundaries.
+- **CORS Validation Hardening:** Added stricter CORS checks and integration route protections across Vercel status, sync, callback, token, and webhook flows.
+- **Environment Mapping UX:** Improved Vercel project linking and environment mapping behavior in both backend routes and dashboard integration controls.
+
+### MCP Registry, HITL Security, and Operational Reliability
+
+- **Official MCP Registry Publishing:** Added automated MCP Registry publication workflow with `server.json` metadata and GitHub Actions OIDC login flow.
+- **HITL Enforcement for Standalone Mutations:** Routed standalone MCP mutation paths through the HITL SDK pipeline for non-bypassable approval semantics.
+- **MCP Runtime Stability:** Improved MCP module path resolution and release pipeline test signaling; added a macOS-safe HITL verification script for staging checks.
+- **MCP Security Docs Expansion:** Expanded MCP server security and contributor documentation to clarify HITL behavior, auth expectations, and release workflows.
+
+### Licensing and Documentation Alignment
+
+- **License Scope Clarification:** Updated repository license scope and exceptions, explicitly carving out `mcp-server/` and `src/lib/sdk/` paths.
+- **Deployment and CI/CD Guidance:** Refined internal and platform docs for Vercel-native sync, CI runtime wrapper usage, and MCP operational guidance.
+
+### Build and Release Stream Updates
+
+- **Build Script Reliability:** Reverted app build execution path to native `next build` for more predictable Vercel deployment behavior.
+- **SDK/MCP Stream Progression:** Included coordinated SDK and MCP package stream bumps (`sdk-v1.6.0` -> `sdk-v1.7.0`, `mcp-v1.10.0` -> `mcp-v1.12.0`) with matching release automation updates.
+
+---
+
 ## 1.12.0 - 2026-04-20
 
 > Authors: Dinanath Dash (DinanathDash)

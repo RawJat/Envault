@@ -7,7 +7,7 @@ import { Step, Steps } from "fumadocs-ui/components/steps";
 import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 import { Callout } from "fumadocs-ui/components/callout";
 
-This internal guide is for authorized contributors. Running or deploying Envault source code requires explicit written permission from the copyright holder under the repository license.
+This internal guide is for authorized contributors. Most repository paths are proprietary and require explicit written permission to run or deploy. The `mcp-server/` and `src/lib/sdk/` directories are MIT-licensed exceptions.
 
 ## Monorepo Components
 
@@ -49,10 +49,26 @@ cd envault
 We recommend using `pnpm` for faster installation, but `npm` or `yarn` work just as well.
 
 <Tabs items={["npm", "pnpm", "yarn", "bun"]}>
-  <Tab value="npm">```bash npm install ```</Tab>
-  <Tab value="pnpm">```bash pnpm install ```</Tab>
-  <Tab value="yarn">```bash yarn install ```</Tab>
-  <Tab value="bun">```bash bun install ```</Tab>
+  <Tab value="npm">
+    ```bash
+    npm install
+    ```
+  </Tab>
+  <Tab value="pnpm">
+    ```bash
+    pnpm install
+    ```
+  </Tab>
+  <Tab value="yarn">
+    ```bash
+    yarn install
+    ```
+  </Tab>
+  <Tab value="bun">
+    ```bash
+    bun install
+    ```
+  </Tab>
 </Tabs>
 
 If you will work on SDK and MCP packages, also install dependencies in each package folder:

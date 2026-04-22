@@ -142,6 +142,10 @@ export default async function PrivacyPage() {
           Envault&apos;s source code is visible for transparency and security
           auditing under a proprietary all-rights-reserved license. This means:
         </p>
+        <p className="text-muted-foreground mb-4 leading-relaxed">
+          Exception: <code>mcp-server/</code> and <code>src/lib/sdk/</code>
+          are distributed under MIT licenses in their respective directories.
+        </p>
         <ul className="list-disc pl-6 space-y-3 text-muted-foreground mb-4">
           <li className="leading-relaxed">
             You can review our source code for security auditing and
@@ -149,7 +153,7 @@ export default async function PrivacyPage() {
           </li>
           <li className="leading-relaxed">
             You cannot execute, compile, run, deploy, copy, or modify the code
-            without prior written permission.
+            in proprietary repository paths without prior written permission.
           </li>
         </ul>
         <p className="text-muted-foreground leading-relaxed">
