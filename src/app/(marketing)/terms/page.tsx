@@ -121,6 +121,10 @@ export default async function TermsPage() {
           permission, you may only inspect the code for transparency and
           security auditing.
         </p>
+        <p className="text-muted-foreground mb-4 leading-relaxed">
+          Exception: <code>mcp-server/</code> and <code>src/lib/sdk/</code> are
+          distributed under MIT licenses in their respective directories.
+        </p>
         <ul className="list-disc pl-6 space-y-2 text-muted-foreground mb-4 leading-relaxed">
           <li>Read, review, and audit the source code</li>
           <li>Analyze code to identify or verify security issues</li>
@@ -128,7 +132,7 @@ export default async function TermsPage() {
         <p className="text-muted-foreground mb-4 leading-relaxed">
           You <strong>cannot</strong> execute, compile, run, deploy, copy,
           modify, fork, redistribute, sublicense, or use the code to provide a
-          service without written permission.
+          service using proprietary repository paths without written permission.
         </p>
         <p className="text-muted-foreground leading-relaxed">
           For complete terms, see our{" "}
@@ -304,9 +308,9 @@ export default async function TermsPage() {
             overwhelming the service.
           </li>
           <li className="leading-relaxed">
-            Agent-based SDK and MCP mutation workflows are subject to
-            delegated token scope checks, rate limits, and explicit human
-            approval requirements.
+            Agent-based SDK and MCP mutation workflows are subject to delegated
+            token scope checks, rate limits, and explicit human approval
+            requirements.
           </li>
           <li className="leading-relaxed">
             You agree not to use the CLI for automated scraping or unauthorized
@@ -467,9 +471,8 @@ export default async function TermsPage() {
           notice or liability, for any reason whatsoever, including without
           limitation if you breach the Terms. Upon termination, your right to
           use the Service will immediately cease. If you request account
-          deletion through the Service, deletion is scheduled with a 7-day
-          grace period and may be canceled by signing back in during that
-          window.
+          deletion through the Service, deletion is scheduled with a 7-day grace
+          period and may be canceled by signing back in during that window.
         </p>
       </section>
 

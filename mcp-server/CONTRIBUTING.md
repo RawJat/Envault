@@ -36,3 +36,5 @@ Notes:
 Release note:
 
 - Package versioning and npm publication are managed by semantic-release workflows.
+- Official MCP Registry publication is automated via `.github/workflows/publish-registry.yml` using GitHub OIDC.
+- Registry metadata is sourced from repository root `server.json`; workflow syncs published npm version into that file payload before publish.
